@@ -17,11 +17,31 @@
 
 > We aim to automate SQL generation from natural language, offering tools and frameworks for query generation, schema exploration, and query optimization. Join us in advancing the field of AI-driven data analysis through open collaboration and innovation!
 
+## 프로젝트 개요 (Project Overview)
+
+
+`🚀 신입이 SQL을 두려워하지 않도록`
+
+🤔 처음 데이터팀에 합류하면 가장 먼저 마주하는 고민들:
+- 🤯 "테이블이 너무 많아! 뭐부터 봐야 하지?"
+- 🧐 "조인은 이렇게 걸어도 되나?"
+- 🐌 "이 SQL, 성능 괜찮을까?"
+- 😰 "왜 내 쿼리는 팀 리드가 짠 것보다 느리지?"
+
+💡 Lang2SQL로 해결해 봅시다.
+- ✅ 자연어 입력 → 적절한 테이블 추천
+- ✅ 올바른 컬럼 조합으로 SQL 자동 생성
+- ✅ Best Practice 기반 자동 성능 최적화
+
+🚀 우리는 SQL을 더 쉽게, 더 빠르게, 더 효율적으로 만들 것입니다.
+
+🌍 그리고, 우리는 오픈소스라는 무한한 가능성의 바다로 항해합니다.
+
 ## 🌟 프로젝트 목표 (Project Vision)
-_"박치기공룡들의 배포부터 시작하는 프로젝트"_  
+_"박치기공룡들의 배포부터 시작하는 프로젝트"_
 - [lang2sql](https://pypi.org/project/lang2sql/) 오픈소스 패키지 1.0.0 달성하기
-- 오픈소스 협업: 더 많은 사람들이 참여할 수 있도록, 코드와 아이디어를 GitHub으로 공유합니다.
 - LangGraph 기반 쿼리 생성: 단순한 SQL 생성이 아닌, 최적화된 SQL 제공을 목표로 합니다.
+- 오픈소스 협업: 더 많은 사람들이 참여할 수 있도록, 코드와 아이디어를 GitHub으로 공유합니다.
 
 
 ## 🧑 역동적인 팀 소개 (Dynamic Team)
@@ -75,12 +95,8 @@ class CollaborationFramework:
 
 | 날짜 | 내용 | 발표자 | 
 | -------- | -------- | ---- |
-| 2025/02/ | OT       |      |
-| 2025/02/ |  Part 1. | 미정 | 
-| 2025/02/ |  Part 2. | 미정 | 
-| 2025/02/ |  Part 3. | 미정 | 
-| 2025/03/ |  Part 4. | 미정 | 
-| 2025/03/ |  Part 5. | 미정 | 
+| 2025/03/03 | OT - 기초 지식 정리 및 프로젝트 이해도 Sync-Up / Issue 하나 생성하기      | 이동욱 |
+| 2025/03/10 |       | 이동욱 |
 
 
 
