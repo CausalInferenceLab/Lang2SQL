@@ -3,7 +3,7 @@
 <div align="center">
 <a href="https://pseudo-lab.com"><img src="https://img.shields.io/badge/PseudoLab-S10-3776AB" alt="PseudoLab"/></a>
 <a href="https://discord.gg/EPurkHVtp2"><img src="https://img.shields.io/badge/Discord-BF40BF" alt="Discord Community"/></a>
-<a href="https://github.com/Pseudo-Lab/lang2sql/stargazers"><img src="https://img.shields.io/github/stars/CausalInferenceLab/lang2sql" alt="Stars Badge"/></a>
+<a href="https://github.com/CausalInferenceLab/lang2sql/stargazers"><img src="https://img.shields.io/github/stars/CausalInferenceLab/lang2sql" alt="Stars Badge"/></a>
 <a href="https://github.com/CausalInferenceLab/lang2sql/network/members"><img src="https://img.shields.io/github/forks/CausalInferenceLab/lang2sql" alt="Forks Badge"/></a>
 <a href="https://github.com/CausalInferenceLab/lang2sql/pulls"><img src="https://img.shields.io/github/issues-pr/CausalInferenceLab/lang2sql" alt="Pull Requests Badge"/></a>
 <a href="https://github.com/CausalInferenceLab/lang2sql/issues"><img src="https://img.shields.io/github/issues/CausalInferenceLab/lang2sql" alt="Issues Badge"/></a>
@@ -58,12 +58,37 @@
 ```mermaid
 gantt
     title 2025 프로젝트 여정
-    section 핵심 마일스톤
-    기초 지식 정리 및 프로젝트 이해도 Sync Up :a1, 2025-02-23, 7d
-    메타데이터 활용성 다양화 및 최적화        :a2, after a1, 21d
-    기능 통합 테스트 및 실무 적용 테스트     :a3, after a2, 14d
-    오픈소스화 작업 및 배포                 :a4, after a3, 7d
-    etc - 인과추론, 데이터분석 추가하기       :a5, after a4, 7d
+    
+    section 프로젝트 준비
+    OT - 프로젝트 이해도 Sync-Up / Issue 하나 생성하기  :a1, 2025-03-03, 7d
+
+    section Table Retrieval 최적화
+    Table Retrieval 최적화 (1)  :a2, 2025-03-10, 7d
+    Table Retrieval 최적화 (2)  :a3, 2025-03-17, 7d
+    
+    section 휴식 및 리프레시
+    Magical Week 휴식 (1)       :break1, 2025-03-24, 7d
+
+    section SQL Generation
+    SQL Generation (1)         :a4, 2025-03-31, 7d
+    SQL Generation (2)         :a5, 2025-04-07, 7d
+
+    section SQL Optimization
+    SQL Optimization           :a6, 2025-04-14, 7d
+
+    section 중간 점검 및 조정
+    중간점검                   :a7, 2025-04-21, 7d
+
+    section 휴식 및 리프레시
+    Magical Week 휴식 (2)       :break2, 2025-04-28, 7d
+
+    section Dockerization
+    Dockerize (1)              :a8, 2025-05-05, 7d
+    Dockerize (2)              :a9, 2025-05-12, 7d
+
+    section 오픈소스화
+    오픈소스화 작업 (1)        :a10, 2025-05-19, 7d
+    오픈소스화 작업 (2)        :a11, 2025-05-26, 7d
 ```
 
 
@@ -99,9 +124,20 @@ class CollaborationFramework:
 | 날짜 | 내용 | 발표자 | 
 | -------- | -------- | ---- |
 | 2025/03/03 | OT - 프로젝트 이해도 Sync-Up / Issue 하나 생성하기      | 이동욱 |
-| 2025/03/10 | Table Retrieval 최적화 | 미정 |
-| 2025/03/17 | SQL Generation 최적화 | 미정 |
-| 2025/03/24 | ✨ Magical Week ✨| 미정 |
+| 2025/03/10 | 🔍 Table Retrieval 최적화 🔍 | 미정 |
+| 2025/03/17 | 🔍 Table Retrieval 최적화 🔍 | 미정 |
+| 2025/03/24 | ✨ Magical Week 휴식 ✨| 미정 |
+| 2025/03/31 | ✏️ SQL Generation ✏️ | 미정 |
+| 2025/04/07 | ✏️ SQL Generation ✏️ | 미정 |
+| 2025/04/14 | ⚡ SQL Optimization ⚡ | 미정 |
+| 2025/04/21 | ✨ 중간점검 ✨ | 미정 |
+| 2025/04/28 | ✨ Magical Week 휴식 ✨ | 미정 |
+| 2025/05/05 | 🛠️ Dockerize 🛠️ | 미정 |
+| 2025/05/12 | 🛠️ Dockerize 🛠️ | 미정 |
+| 2025/05/19 | 📖 오픈소스화 작업 📖 | 미정 |
+| 2025/05/26 | 📖 오픈소스화 작업 📖 | 미정 |
+
+_"본 계획표는 예시이며, 프로젝트의 방향성을 유지하면서 자유롭게 기여하는 것을 목표로 합니다."_
 
 ## 💡 학습 자원 (Learning Resources)
 
