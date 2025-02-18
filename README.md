@@ -15,7 +15,8 @@
 <!-- sheilds: https://shields.io/ -->
 <!-- hits badge: https://hits.seeyoufarm.com/ -->
 
-> We aim to automate SQL generation from natural language, offering tools and frameworks for query generation, schema exploration, and query optimization. Join us in advancing the field of AI-driven data analysis through open collaboration and innovation!
+> "우리는 함께 코드와 아이디어를 나누며 더 나은 데이터 환경을 만들기 위한 오픈소스 여정을 떠납니다. 🌍💡"
+
 
 ## 프로젝트 개요 (Project Overview)
 
