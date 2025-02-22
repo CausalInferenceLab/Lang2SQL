@@ -128,6 +128,7 @@ class CollaborationFramework:
 | 2025/03/10 | 🔍 Table Retrieval 최적화 🔍 | 미정 |
 | 2025/03/17 | 🔍 Table Retrieval 최적화 🔍 | 미정 |
 | 2025/03/24 | ✨ Magical Week 휴식 ✨| 미정 |
+| 2025/03/29 | ✨ 인과추론팀 행사 참여 ✨| 미정 |
 | 2025/03/31 | ✏️ SQL Generation ✏️ | 미정 |
 | 2025/04/07 | ✏️ SQL Generation ✏️ | 미정 |
 | 2025/04/14 | ⚡ SQL Optimization ⚡ | 미정 |
