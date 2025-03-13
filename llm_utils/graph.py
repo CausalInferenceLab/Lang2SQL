@@ -4,6 +4,9 @@ import json
 from typing_extensions import TypedDict, Annotated
 from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
+from langchain.chains.sql_database.prompt import SQL_PROMPTS
+from pydantic import BaseModel, Field
+from .llm_factory import get_llm
 
 from llm_utils.chains import (
     query_refiner_chain,
@@ -102,6 +105,33 @@ def query_maker_node(state: QueryMakerState):
     return state
 
 
+class SQLResult(BaseModel):
+    sql: str = Field(description="SQL 쿼리 문자열")
+    explanation: str = Field(description="SQL 쿼리 설명")
+
+
+def query_maker_node_with_db_guide(state: QueryMakerState):
+    sql_prompt = SQL_PROMPTS[state["user_database_env"]]
+    llm = get_llm(
+        model_type="openai",
+        model_name="gpt-4o-mini",
+        openai_api_key=os.getenv("OPENAI_API_KEY"),
+    )
+    chain = sql_prompt | llm.with_structured_output(SQLResult)
+    res = chain.invoke(
+        input={
+            "input": "\n\n---\n\n".join(
+                [state["messages"][0].content] + [state["refined_input"].content]
+            ),
+            "table_info": [json.dumps(state["searched_tables"])],
+            "top_k": 10,
+        }
+    )
+    state["generated_query"] = res.sql
+    state["messages"].append(res.explanation)
+    return state
+
+
 # StateGraph 생성 및 구성
 builder = StateGraph(QueryMakerState)
 builder.set_entry_point(QUERY_REFINER)
@@ -109,7 +139,10 @@ builder.set_entry_point(QUERY_REFINER)
 # 노드 추가
 builder.add_node(QUERY_REFINER, query_refiner_node)
 builder.add_node(GET_TABLE_INFO, get_table_info_node)
-builder.add_node(QUERY_MAKER, query_maker_node)
+# builder.add_node(QUERY_MAKER, query_maker_node)  #  query_maker_node_with_db_guide
+builder.add_node(
+    QUERY_MAKER, query_maker_node_with_db_guide
+)  #  query_maker_node_with_db_guide
 
 # 기본 엣지 설정
 builder.add_edge(QUERY_REFINER, GET_TABLE_INFO)
