@@ -1,0 +1,13 @@
+{
+    "evaluation_type": ["subscription", "hired_sdr", "subscription"],
+    "inputs": [
+        "구독서비스를 이용하는 유니크한 유저수",
+        "회사의 고용된 영업 SDR 수가 궁금해",
+        "subscription을 시작한 무료 사용자(free_users) 중 각 플랜별 사용자 수를 알고 싶습니다."
+    ],
+    "ground_truths": [
+        "SELECT toStartOfMonth(activity_ts) AS month, COUNT(DISTINCT entity_id) AS unique_users FROM client_stream_active_on_subscription WHERE activity_ts >= date_sub(current_date(), interval 3 month) GROUP BY month ORDER BY month",
+        "SELECT COUNT(DISTINCT entity_id) AS total_hired_sdrs FROM company_stream_hired_sdr WHERE activity_ts >= now() - INTERVAL 3 MONTH",
+        "SELECT feature_json, COUNT(entity_id) AS user_count FROM client_stream_started_subscription WHERE feature_json LIKE '%\"free_users\"%' GROUP BY feature_json"
+    ]
+}

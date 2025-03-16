@@ -24,6 +24,7 @@ setup(
         "streamlit==1.41.1",
         "python-dotenv==1.0.1",
         "faiss-cpu==1.10.0",
+        "mlflow==2.21.0",
     ],
     entry_points={
         "console_scripts": [
