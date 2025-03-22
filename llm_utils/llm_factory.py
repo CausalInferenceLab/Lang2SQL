@@ -17,7 +17,7 @@ def get_llm(
     if model_type == "openai":
         return ChatOpenAI(
             model=model_name,
-            openai_api_key=openai_api_key,
+            api_key=openai_api_key,
             **kwargs,
         )
 
