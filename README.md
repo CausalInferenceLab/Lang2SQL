@@ -53,12 +53,15 @@
 | 역할          | 이름 |  기술 스택 배지                                                                 | 주요 관심 분야                          |
 |---------------|------|-----------------------------------------------------------------------|----------------------------------------|
 | **Project Manager** | 이동욱 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB)  | LLM 오픈소스 인과추론             |
-| **ML Engineer** | 이호민 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB)  | 멀티 에이전트 시스템             |
-| **Data Scientist** | 안재일 | ![Python](https://img.shields.io/badge/Python-Intermediate-FF6C37)  | LLM 데이터분석 RAG             |
+| **AI Engineer** | 문찬국 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM AgenticRAG 오픈소스 |
 | **Data Analytics Engineer** | 박경태 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB)  | LLM 기반 엔지니어링             |
 | **AI Engineer** | 손봉균 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB)  | LLM RAG AI기획 인과추론             |
+| **Data Scientist** | 안재일 | ![Python](https://img.shields.io/badge/Python-Intermediate-FF6C37)  | LLM 데이터분석 RAG             |
+| **ML Engineer** | 이호민 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB)  | 멀티 에이전트 시스템             |
 | **AI Engineer** | 최세영 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB)  | LLM RAG 오픈소스 멀티 에이전트            |
-| **AI Engineer** | 문찬국 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM AgenticRAG 오픈소스 
+| **Full-Stack Developer** | 황윤진 | ![NextJs](https://img.shields.io/badge/NextJs-Expert-3776AB) ![React](https://img.shields.io/badge/React-Expert-3776AB) | LLM 오케스트레이션 |
+
+
 
 
 ## 🚀 프로젝트 로드맵 (Project Roadmap)
