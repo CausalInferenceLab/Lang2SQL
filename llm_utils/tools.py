@@ -66,3 +66,20 @@ def get_info_from_db() -> List[Document]:
 
     # table_info_str_list를 Document 객체 리스트로 변환
     return [Document(page_content=info) for info in table_info_str_list]
+
+
+def get_metadata_from_db() -> List[Dict]:
+    """
+    전체 테이블의 메타데이터(테이블 이름, 설명, 컬럼 이름, 설명, 테이블 lineage, 컬럼 별 lineage)를 가져오는 함수
+    """
+
+    fetcher = _get_fetcher()
+    urns = fetcher.get_urns()
+
+    metadata = []
+    for urn in urns:
+        print(f"Processing URN: {urn}")
+        table_metadata = fetcher.build_table_metadata(urn)
+        metadata.append(table_metadata)
+
+    return metadata
