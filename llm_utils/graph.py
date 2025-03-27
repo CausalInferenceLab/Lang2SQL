@@ -33,6 +33,9 @@ class QueryMakerState(TypedDict):
     best_practice_query: str
     refined_input: str
     generated_query: str
+    language: str
+    confidence: float
+    method: str
 
 
 # 노드 함수: 언어 감지
