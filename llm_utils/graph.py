@@ -103,7 +103,6 @@ def query_redefined_again_node(state: QueryMakerState):
         }
     )
     state["refined_input_again"] = res
-    print(state["refined_input_again"])
     return state
 
 
