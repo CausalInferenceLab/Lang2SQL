@@ -4,12 +4,16 @@ from langchain_core.prompts import PromptTemplate
 QUERY_PROMPT_TEMPLATE = PromptTemplate.from_template(
     """
 
+    ### 역할 ###
+    너는 SQL쿼리를 작성하는 전문가야
+    
+    ### 테이블 정보 ###
+    {context}
+    
+    
     ### 지시사항 ###
         답변은 SQL 쿼리로 해줘
         테이블 정보를 보고 사용자 입력에 맞는 SQL 쿼리를 생성해줘
-
-    ### 절대 하지 말아야 할 답변 ###
-        SQL 쿼리 없는 설명
 
     ### 답변 예시 ###
 
@@ -45,11 +49,11 @@ QUERY_PROMPT_TEMPLATE = PromptTemplate.from_template(
         ON 
             created_tickets.entity_id = closed_tickets.entity_id;
 
+            
+    ### 절대 하지 말아야 할 답변 ###
+        SQL 쿼리 없는 설명
 
-    ### 테이블 정보 ###
-    {context}
-
-
+    
     ### 사용자 입력 ###
     {question}
     

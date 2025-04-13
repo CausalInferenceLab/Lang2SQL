@@ -17,19 +17,14 @@ def update_available_functions():
     for function in functions:
         function_name = function["function"]["name"]
 
-        if function_name == "client_subscription":
+        if function_name == "text-to-sql":
             available_functions[function_name] = partial(
                 query_agent, table_name="client_subscription.json"
             )
 
-        elif function_name == "client_support":
-            available_functions[function_name] = partial(
-                query_agent, table_name="client_support.json"
-            )
-
-        elif function_name == "client_onboarding":
-            available_functions[function_name] = partial(
-                query_agent, table_name="client_onboarding.json"
-            )
+        # elif function_name == "client_support":
+        #     available_functions[function_name] = partial(
+        #         query_agent, table_name="client_support.json"
+        #     )
 
     return available_functions

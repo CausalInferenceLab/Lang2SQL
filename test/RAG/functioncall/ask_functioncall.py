@@ -56,7 +56,7 @@ def ask_gpt_functioncall(query):
 
             # 두 번째 응답 생성
             second_response = client.chat.completions.create(
-                model="gpt-4o",  # gpt-4o -> gpt-4로 수정
+                model="gpt-4.5-preview",  # gpt-4o -> gpt-4로 수정
                 messages=messages,
             )
 
