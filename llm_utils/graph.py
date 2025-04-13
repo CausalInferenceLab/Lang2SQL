@@ -10,7 +10,6 @@ from .llm_factory import get_llm
 
 from llm_utils.chains import (
     query_refiner_chain,
-    query_redefined_again_chain,
     query_maker_chain,
 )
 
@@ -18,7 +17,6 @@ from llm_utils.tools import get_info_from_db
 
 # 노드 식별자 정의
 QUERY_REFINER = "query_refiner"
-QUERY_REFINED_AGAIN = "query_redefined_again"
 GET_TABLE_INFO = "get_table_info"
 TOOL = "tool"
 TABLE_FILTER = "table_filter"
@@ -32,7 +30,6 @@ class QueryMakerState(TypedDict):
     searched_tables: dict[str, dict[str, str]]
     best_practice_query: str
     refined_input: str
-    refined_input_again: str
     generated_query: str
 
 
@@ -43,6 +40,7 @@ def query_refiner_node(state: QueryMakerState):
             "user_input": [state["messages"][0].content],
             "user_database_env": [state["user_database_env"]],
             "best_practice_query": [state["best_practice_query"]],
+            "searched_tables": [json.dumps(state["searched_tables"])],
         }
     )
     state["messages"].append(res)
@@ -66,9 +64,42 @@ def get_table_info_node(state: QueryMakerState):
         db = FAISS.from_documents(documents, embeddings)
         db.save_local(os.getcwd() + "/table_info_db")
         print("table_info_db not found")
-    doc_res = db.similarity_search(state["messages"][-1].content)
-    documents_dict = {}
 
+    retriever = db.as_retriever(search_kwargs={"k": 10})
+
+    from langchain.retrievers import ContextualCompressionRetriever
+    from langchain.retrievers.document_compressors import CrossEncoderReranker
+    from langchain_community.cross_encoders import HuggingFaceCrossEncoder
+    from transformers import AutoModelForSequenceClassification, AutoTokenizer
+
+    # Reranking 적용 여부 설정
+    use_rerank = True  # 필요에 따라 True 또는 False로 설정
+
+    if use_rerank:
+        local_model_path = os.path.join(os.getcwd(), "ko_reranker_local")
+
+        # 로컬에 저장된 모델이 있으면 불러오고, 없으면 다운로드 후 저장
+        if os.path.exists(local_model_path) and os.path.isdir(local_model_path):
+            print("🔄 ko-reranker 모델 로컬에서 로드 중...")
+        else:
+            print("⬇️ ko-reranker 모델 다운로드 및 저장 중...")
+            model = AutoModelForSequenceClassification.from_pretrained(
+                "Dongjin-kr/ko-reranker"
+            )
+            tokenizer = AutoTokenizer.from_pretrained("Dongjin-kr/ko-reranker")
+            model.save_pretrained(local_model_path)
+            tokenizer.save_pretrained(local_model_path)
+        model = HuggingFaceCrossEncoder(model_name=local_model_path)
+        compressor = CrossEncoderReranker(model=model, top_n=3)
+        retriever = db.as_retriever(search_kwargs={"k": 10})
+        compression_retriever = ContextualCompressionRetriever(
+            base_compressor=compressor, base_retriever=retriever
+        )
+
+        doc_res = compression_retriever.invoke(state["messages"][0].content)
+    else:  # Reranking 미적용
+        doc_res = db.similarity_search(state["messages"][0].content, k=10)
+    documents_dict = {}
     for doc in doc_res:
         lines = doc.page_content.split("\n")
 
@@ -90,19 +121,6 @@ def get_table_info_node(state: QueryMakerState):
         }
     state["searched_tables"] = documents_dict
 
-    return state
-
-
-def query_redefined_again_node(state: QueryMakerState):
-    res = query_redefined_again_chain.invoke(
-        input={
-            "user_input": [state["messages"][0].content],
-            "refined_input": [state["refined_input"]],
-            "user_database_env": [state["user_database_env"]],
-            "searched_tables": [json.dumps(state["searched_tables"])],
-        }
-    )
-    state["refined_input_again"] = res
     return state
 
 
@@ -137,9 +155,7 @@ def query_maker_node_with_db_guide(state: QueryMakerState):
     res = chain.invoke(
         input={
             "input": "\n\n---\n\n".join(
-                [state["messages"][0].content]
-                # + [state["refined_input"].content]
-                + [state["refined_input_again"].content]
+                [state["messages"][0].content] + [state["refined_input"].content]
             ),
             "table_info": [json.dumps(state["searched_tables"])],
             "top_k": 10,
@@ -152,21 +168,16 @@ def query_maker_node_with_db_guide(state: QueryMakerState):
 
 # StateGraph 생성 및 구성
 builder = StateGraph(QueryMakerState)
-builder.set_entry_point(QUERY_REFINER)
+builder.set_entry_point(GET_TABLE_INFO)
 
 # 노드 추가
-builder.add_node(QUERY_REFINER, query_refiner_node)
 builder.add_node(GET_TABLE_INFO, get_table_info_node)
-# builder.add_node(QUERY_MAKER, query_maker_node)  #  query_maker_node_with_db_guide
-builder.add_node(
-    QUERY_MAKER, query_maker_node_with_db_guide
-)  #  query_maker_node_with_db_guide
-builder.add_node(QUERY_REFINED_AGAIN, query_redefined_again_node)
+builder.add_node(QUERY_REFINER, query_refiner_node)
+builder.add_node(QUERY_MAKER, query_maker_node_with_db_guide)
 
 # 기본 엣지 설정
-builder.add_edge(QUERY_REFINER, GET_TABLE_INFO)
-builder.add_edge(GET_TABLE_INFO, QUERY_REFINED_AGAIN)
-builder.add_edge(QUERY_REFINED_AGAIN, QUERY_MAKER)
+builder.add_edge(GET_TABLE_INFO, QUERY_REFINER)
+builder.add_edge(QUERY_REFINER, QUERY_MAKER)
 
 # QUERY_MAKER 노드 후 종료
 builder.add_edge(QUERY_MAKER, END)

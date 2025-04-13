@@ -40,23 +40,28 @@ def create_query_refiner_chain(llm):
                 예시:
                 사용자가 "유저 이탈 원인이 궁금해요"라고 했다면,
                 재질문 형식이 아니라
-                "최근 1개월 간의 접속·결제 로그를 기준으로,
+                "접속·결제 로그를 기준으로,
                 주로 어떤 사용자가 어떤 과정을 거쳐 이탈하는지를 분석해야 한다"처럼
                 분석 방향이 명확해진 질문 한 문장(또는 한 문단)으로 정리해 주세요.
 
                 최종 출력 형식 예시:
                 ------------------------------
                 구체화된 질문:
-                "최근 1개월 동안 고액 결제 경험이 있는 유저가 
+                "고액 결제 경험이 있는 유저가 
                 행동 로그에서 이탈 전 어떤 패턴을 보였는지 분석"
 
                 가정한 조건:
-                - 최근 1개월치 행동 로그와 결제 로그 중심
+                - 행동 로그와 결제 로그 중심
                 - 고액 결제자(월 결제액 10만 원 이상) 그룹 대상으로 한정
                 ------------------------------
                 """,
             ),
             MessagesPlaceholder(variable_name="user_input"),
+            (
+                "system",
+                "다음은 사용자의 실제 사용 가능한 테이블 및 컬럼 정보입니다:",
+            ),
+            MessagesPlaceholder(variable_name="searched_tables"),
             (
                 "system",
                 """
@@ -70,61 +75,6 @@ def create_query_refiner_chain(llm):
     )
 
     return tool_choice_prompt | llm
-
-
-# QueryRefinedAgainChain
-def create_query_redefined_again_chain(llm):
-    query_redefined_again_prompt = ChatPromptTemplate.from_messages(
-        [
-            (
-                "system",
-                """
-                당신은 데이터 분석 전문가(데이터 분석가 페르소나)입니다.
-                사용자의 질문과 이미 구체화된 질문을 바탕으로, 실제 사용 가능한 테이블과 컬럼 정보를 검토하여
-                더욱 정교하게 질문을 재정의해 주세요.
-                
-                주의사항:
-                - 이전에 구체화된 질문을 기반으로 하되, 실제 DB 환경에서 사용 가능한 테이블/컬럼을 고려해 현실적인 분석 방향을 제시하세요.
-                - 불필요한 재질문 없이, 주어진 데이터로 최대한 분석 가능한 형태로 질문을 구체화하세요.
-                - 테이블 구조에 맞게 분석 질문을 조정하고, 필요한 가정을 추가하세요.
-                - 최종 출력 형식은 반드시 아래와 같아야 합니다.
-                
-                최종 형태 예시:
-                
-                <최종 구체화된 질문>
-                ```
-                최근 30일간 결제 금액이 10만원 이상인 사용자들의 서비스 이용 패턴과 이탈율을 분석하여, 
-                어떤 활동 패턴을 보이는 고액 결제자가 이탈하는지 파악
-                ```
-                
-                <분석 접근 방향>
-                ```
-                1. subscription_activities와 contract_activities 테이블을 조인하여 고액 결제자 식별
-                2. 해당 사용자들의 activity_type 분포 확인
-                3. 이탈 사용자(30일 이상 미접속)와 활성 사용자의 행동 패턴 비교 분석
-                4. 주요 이탈 지점 식별
-                ```
-                """,
-            ),
-            (
-                "system",
-                "아래는 사용자의 원래 질문 및 1차 구체화된 질문입니다:",
-            ),
-            MessagesPlaceholder(variable_name="user_input"),
-            MessagesPlaceholder(variable_name="refined_input"),
-            (
-                "system",
-                "다음은 사용자의 DB 환경정보와 실제 사용 가능한 테이블 및 컬럼 정보입니다:",
-            ),
-            MessagesPlaceholder(variable_name="user_database_env"),
-            MessagesPlaceholder(variable_name="searched_tables"),
-            (
-                "system",
-                "위 정보를 바탕으로 DB 구조에 맞게 더욱 구체화된 최종 질문과 분석 접근 방향을 최종 형태 예시와 같은 형식으로 작성해주세요.",
-            ),
-        ]
-    )
-    return query_redefined_again_prompt | llm
 
 
 # QueryMakerChain
@@ -165,7 +115,6 @@ def create_query_maker_chain(llm):
             ),
             MessagesPlaceholder(variable_name="user_input"),
             MessagesPlaceholder(variable_name="refined_input"),
-            MessagesPlaceholder(variable_name="refined_input_again"),
             (
                 "system",
                 "다음은 사용자의 db 환경정보와 사용 가능한 테이블 및 컬럼 정보입니다:",
@@ -182,5 +131,4 @@ def create_query_maker_chain(llm):
 
 
 query_refiner_chain = create_query_refiner_chain(llm)
-query_redefined_again_chain = create_query_redefined_again_chain(llm)
 query_maker_chain = create_query_maker_chain(llm)
