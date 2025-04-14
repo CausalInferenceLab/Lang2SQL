@@ -11,8 +11,8 @@ from langchain_core.runnables import RunnablePassthrough
 from langchain_openai import ChatOpenAI
 from langchain_core.output_parsers import CommaSeparatedListOutputParser
 
-from retriever import pinecone_retriever_invoke
-from prompt.prompt_template import *
+from RAG.agentic.retriever import pinecone_retriever_invoke
+from RAG.prompt.prompt_template import *
 
 
 class RAGChain:

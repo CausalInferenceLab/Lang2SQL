@@ -1,6 +1,6 @@
 import os
 import sys
-sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(__file__))))
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -8,7 +8,7 @@ from typing import TypedDict, Dict, Any
 from langgraph.graph import StateGraph, START, END
 # from langchain_upstage import UpstageGroundednessCheck
 
-from chain import RAGChain
+from RAG.agentic.chain import RAGChain
 
 
 class GraphState(TypedDict):
