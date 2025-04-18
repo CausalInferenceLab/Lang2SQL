@@ -1,0 +1,442 @@
+{
+    "questions": [
+        "지난 분기 동안 가장 높은 전환율을 기록한 마케팅 캠페인은 무엇인가요?",
+        "고객 활동 데이터에서 가장 많이 참여한 고객 세그먼트는 어떤 것인가요?",
+        "특정 캠페인에 대한 고객의 반응을 분석하기 위해 어떤 지표를 사용해야 하나요?",
+        "최근 6개월 동안 이메일 마케팅의 오픈율과 클릭률은 어떻게 변화했나요?",
+        "소셜 미디어 광고의 ROI를 측정하기 위한 가장 효과적인 방법은 무엇인가요?",
+        "고객의 재구매율을 높이기 위해 어떤 마케팅 전략이 가장 효과적이었나요?",
+        "특정 제품군에 대한 고객의 참여도를 분석하기 위해 어떤 데이터를 수집해야 하나요?",
+        "경쟁사의 마케팅 캠페인과 비교하여 우리 캠페인의 성과는 어떤가요?",
+        "고객 피드백 데이터를 활용하여 마케팅 전략을 개선할 수 있는 방법은 무엇인가요?",
+        "특정 지역에서의 캠페인 성과를 분석하기 위해 어떤 데이터를 활용해야 하나요?"
+    ],
+    "questions_md": "- 지난 분기 동안 가장 높은 전환율을 기록한 마케팅 캠페인은 무엇인가요?\n- 고객 활동 데이터에서 가장 많이 참여한 고객 세그먼트는 어떤 것인가요?\n- 특정 캠페인에 대한 고객의 반응을 분석하기 위해 어떤 지표를 사용해야 하나요?\n- 최근 6개월 동안 이메일 마케팅의 오픈율과 클릭률은 어떻게 변화했나요?\n- 소셜 미디어 광고의 ROI를 측정하기 위한 가장 효과적인 방법은 무엇인가요?\n- 고객의 재구매율을 높이기 위해 어떤 마케팅 전략이 가장 효과적이었나요?\n- 특정 제품군에 대한 고객의 참여도를 분석하기 위해 어떤 데이터를 수집해야 하나요?\n- 경쟁사의 마케팅 캠페인과 비교하여 우리 캠페인의 성과는 어떤가요?\n- 고객 피드백 데이터를 활용하여 마케팅 전략을 개선할 수 있는 방법은 무엇인가요?\n- 특정 지역에서의 캠페인 성과를 분석하기 위해 어떤 데이터를 활용해야 하나요?",
+    "persona": {
+        "name": "Diana Prince",
+        "department": "Marketing",
+        "role": "Marketing Analyst",
+        "background": "Diana has a strong analytical background and focuses on measuring the effectiveness of marketing campaigns. She uses customer activity data to assess engagement and conversion rates."
+    },
+    "answers": [
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", SUM(\"revenue_impact\") AS \"total_revenue_impact\" FROM \"client_stream_active_on_subscription\" WHERE \"activity_ts\" >= DATE_TRUNC('quarter', CURRENT_DATE) - INTERVAL '1 quarter' AND \"activity_ts\" < DATE_TRUNC('quarter', CURRENT_DATE) GROUP BY \"activity\" ORDER BY \"total_revenue_impact\" DESC LIMIT 10;",
+            "answer_explanation": "This query selects the 'activity' and the total revenue impact for each activity in the 'client_stream_active_on_subscription' table that occurred in the previous quarter. It groups the results by the activity and orders them by total revenue impact in descending order, limiting the results to 10 to find the most impactful marketing campaigns of the past quarter based on the revenue they generated. The time frame is set to cover the previous quarter by using the DATE_TRUNC function on the current date to ensure correct date handling for the quarter dimensions.  The use of `LIMIT 10` ensures that we do not return more than 10 results, aligning with the provided standard for queries to DuckDB.",
+            "question_refined": [
+                "지난 분기 동안 어떤 마케팅 캠페인이 가장 높은 전환율을 기록했나요?",
+                "마케팅 캠페인 중에서 지난 분기에 가장 효과적인 캠페인은 무엇이었나요?",
+                "전환율이 가장 높았던 최근 분기의 마케팅 캠페인은 어떤 것인가요?",
+                "어떤 마케팅 전략이 지난 분기에 최고의 전환율을 보였나요?"
+            ],
+            "searched_tables": {
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                },
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"feature_json\" FROM \"client_stream_active_on_subscription\" ORDER BY \"activity_ts\" DESC LIMIT 10",
+            "answer_explanation": "The query selects the \"feature_json\" column from the \"client_stream_active_on_subscription\" table, ordering by the \"activity_ts\" column to get the most recent activity data. The use of LIMIT ensures that no more than 10 results are returned, which will help identify the most active customer segments based on recent activities.",
+            "question_refined": [
+                "고객 활동 데이터에서 가장 활발히 참여하는 고객 세그먼트는 무엇인가요?",
+                "고객 활동 데이터 분석을 통해 가장 많이 활동하는 고객 그룹은 어떤 것인가요?",
+                "고객 참여 활동 데이터에서 가장 두드러진 고객 세그먼트는 무엇인가요?",
+                "고객 데이터에서 가장 많이 참여한 그룹은 무엇인가요?"
+            ],
+            "searched_tables": {
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", COUNT(\"entity_id\") AS \"response_count\"\nFROM \"client_stream_started_subscription\"\nGROUP BY \"activity\"\nORDER BY \"response_count\" DESC\nLIMIT 10",
+            "answer_explanation": "이 쿼리는 각 활동별로 고객의 수를 세어 가장 인기 있는 활동들을 찾기 위한 것입니다. 각 활동에 대해 고객의 반응(시작한 구독 수)을 분석할 수 있습니다. 결과적으로 가장 많이 시작된 구독 캠페인이 어떤 것인지 알 수 있습니다.",
+            "question_refined": [
+                "고객의 반응을 분석할 때 어떤 지표가 필요한가요?",
+                "특정 캠페인에 대한 고객 반응 분석을 위해 어떤 지표를 활용해야 하나요?",
+                "어떤 지표를 사용하면 특정 캠페인에 대한 고객 반응을 잘 분석할 수 있나요?"
+            ],
+            "searched_tables": {
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity_ts\", \"revenue_impact\" FROM \"client_stream_active_on_subscription\" WHERE \"activity\" = 'email_marketing' AND \"activity_ts\" >= date_add(today(), interval -6 month) LIMIT 10;",
+            "answer_explanation": "Query selects the timestamp and revenue impact from the client_stream_active_on_subscription table where the activity is 'email_marketing' within the last 6 months, limiting to 10 results since we are interested in how the metrics have changed over time for email marketing activities.",
+            "question_refined": [
+                "최근 6개월 간 이메일 마케팅의 오픈율은 어떻게 변화했습니까?",
+                "최근 6개월 간 이메일 마케팅에서 클릭률은 어떤 변화를 보였습니까?"
+            ],
+            "searched_tables": {
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"entity_id\", \"activity\", \"revenue_impact\" FROM \"client_stream_started_subscription\" WHERE \"activity\" LIKE '%social media%' OR \"activity\" LIKE '%advertising%' ORDER BY \"revenue_impact\" DESC LIMIT 10;",
+            "answer_explanation": "This query selects the entity ID, activity, and revenue impact from the client_stream_started_subscription table where the activity involves social media or advertising. It orders the results by revenue impact to identify activities with the highest ROI related to social media advertising, limiting the results to 10 entries for clarity and focus on the most significant data points to analyze ROI effectiveness in this context. The choice of relevant columns allows for assessing the activities that likely yield the best return on investment from social media ads based on impact on revenue, even though such metrics weren't detailed in the input question specifically because direct references to dedicated ROI metrics or calculations weren't provided in the tables. Therefore, we focus on financial returns from activities that can be interpreted as connected to social media campaigns rather than specific direct definitions of ROI measurement as the question might imply a broader context to explore effectiveness of social media advertising. The LIKE clauses are used to catch different variants of social media advertising to broaden the inquiry's effectiveness without overly restricting it, ensuring a more thorough assessment of potential ROI from various relevant activities in the database.",
+            "question_refined": [
+                "소셜 미디어 광고의 투자 수익률(ROI)을 평가하는 가장 유용한 방법은 무엇인가요?",
+                "소셜 미디어 광고의 효과성을 측정하는 최선의 방법은 무엇인지 알고 싶습니다."
+            ],
+            "searched_tables": {
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", COUNT(\"entity_id\") AS \"repeat_customers\" FROM \"client_stream_active_on_subscription\" WHERE \"activity_ts\" >= date_sub(today(), interval '30 days') GROUP BY \"activity\" ORDER BY \"repeat_customers\" DESC LIMIT 10;",
+            "answer_explanation": "This query selects the marketing activities performed in the past 30 days and counts how many unique customers (entity_id) were involved in each activity. It groups the activities to see which ones had the highest number of repeat customers and limits the results to the top 10 activities that drove the most re-engagement among users. The results are ordered by the count of repeat customers in descending order to highlight the most effective strategies first. The data is drawn from the client_stream_active_on_subscription table, which tracks customer activities during their subscription period. The COUNT function is used to aggregate the data, and activities are grouped to analyze their impacts on repeat purchases. The condition of the timestamp ensures that only recent activities are considered for relevance in identifying effective marketing strategies for increasing repeat purchases within a certain timeframe.  The use of today() for the timestamp ensures current data is analyzed against actual recent activity. Note: This method relies on the assumption that activity recorded signifies a meaningful engagement or marketing strategy. For a more accurate assessment, additional data regarding customer purchases directly linked to these activities would be ideal, though that is not available in the specified schema set of tables. The exact columns involved were also considered to ensure compliance with the existing tables available in the dataset. The primary nature of this query is to identify recurring activities that may foster customer re-engagement that could subsequently lead to repeat purchasing behaviors, informing potential future marketing strategies that could yield similar results.  It's important to clarify that the activity timestamp is taken for the last 30 days to gauge short-term effectiveness in that timeframe as marketing strategies are often evaluated on various time horizons for strategic adjustments and real-time responsiveness. Based on the data, the identified activities can be further evaluated for their strategic effectiveness and scaling potential based on their engagement outcomes and repeat customer conversions, refining marketing approaches accordingly based on descriptive insights compounded by this preliminary analysis. There are also aspects of customer segmentation, retention analysis, and potential targeted promotions that can be driven from these insights further. In this case, the findings will specifically point to actionable marketing strategies that have proven effective based on real data from actual customer engagements if the query reveals a consistent pattern.",
+            "question_refined": [
+                "고객의 재구매율을 증가시키기 위해 어떤 마케팅 방법이 가장 효과적이었나요?",
+                "어떤 마케팅 전략이 고객의 반복 구매를 촉진하는 데 가장 유효했나요?",
+                "재구매율 향상을 위해 어떤 마케팅 기법이 가장 적합했나요?",
+                "고객 재구매를 유도하기 위한 마케팅 전략으로 어떤 것들이 가장 효과적이었나요?"
+            ],
+            "searched_tables": {
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", \"activity_ts\", \"entity_id\" FROM \"client_stream_active_on_subscription\" ORDER BY \"activity_ts\" DESC LIMIT 10",
+            "answer_explanation": "The query selects the activity, the timestamp of the activity, and the customer entity ID from the 'client_stream_active_on_subscription' table. It orders the results by the activity timestamp in descending order to get the most recent activities, which are relevant for assessing customer engagement. The LIMIT clause restricts the output to the 10 most recent entries.",
+            "question_refined": [
+                "특정 제품군의 고객 참여를 분석하기 위해 어떤 정보를 수집해야 합니까?",
+                "고객 참여도를 평가하기 위해 어떤 유형의 데이터를 수집해야 합니까?",
+                "제품군에 대한 고객의 참여를 조사하기 위해 어떤 데이터를 모아야 합니까?",
+                "고객의 참여도를 분석하기 위해 어떤 데이터를 확보해야 하는지 알려주세요."
+            ],
+            "searched_tables": {
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", \"revenue_impact\" FROM \"client_stream_started_subscription\" UNION ALL SELECT \"activity\", \"revenue_impact\" FROM \"client_stream_ended_subscription\" LIMIT 10;",
+            "answer_explanation": "This query retrieves the activities and revenue impacts of our marketing campaigns by combining data from both started and ended subscriptions, giving us an overview of how our campaigns performed. I limited the result to the top 10 records to keep it concise and informative for analysis against competitor efforts if data were available in a similar format for competitors. However, since we lack direct competitor campaign performance data in the provided database schema, we will focus on our own results only for now.",
+            "question_refined": [
+                "우리 마케팅 캠페인의 성과는 경쟁사의 캠페인과 어떻게 비교될 수 있나요?",
+                "경쟁사의 마케팅 활동과 대비했을 때, 우리의 캠페인은 어떤 성과를 보였나요?",
+                "경쟁사와 비교했을 때, 우리 마케팅 캠페인의 성과는 어떤지 알고 싶습니다."
+            ],
+            "searched_tables": {
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                },
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", \"revenue_impact\", \"activity_ts\" FROM \"client_stream_active_on_subscription\" WHERE \"activity_ts\" >= DATE_ADD(today(), INTERVAL -30 DAY) ORDER BY \"revenue_impact\" DESC LIMIT 10",
+            "answer_explanation": "This query retrieves recent activities related to customer engagement from the \"client_stream_active_on_subscription\" table, specifically focusing on the activity name, revenue impact, and timestamp from the last 30 days. It orders the results by revenue impact to identify the most significant customer interactions that could inform marketing strategies, thus providing insights based on customer feedback and engagement trends.",
+            "question_refined": [
+                "고객 피드백 데이터를 이용해 마케팅 전략을 어떻게 개선할 수 있나요?",
+                "고객의 피드백을 바탕으로 마케팅 전략을 향상시키는 방법은 무엇인가요?",
+                "마케팅 전략을 개선하기 위해 고객 피드백 데이터를 활용하는 방법은 어떤 것이 있나요?",
+                "고객 피드백을 통해 마케팅 전략을 개선하는 구체적인 방법은 무엇인가요?"
+            ],
+            "searched_tables": {
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                }
+            }
+        },
+        {
+            "user_database_env": "duckdb",
+            "answer_SQL": "SELECT \"activity\", \"activity_ts\", \"revenue_impact\", \"entity_id\" FROM \"client_stream_ended_subscription\" LIMIT 10",
+            "answer_explanation": "This query selects relevant data from the client_stream_ended_subscription table to analyze campaign performance by focusing on the type of activity, the timestamp of the activity, any revenue impact, and the customer who engaged in that activity. This data is critical for measuring the effectiveness of specific campaigns in the defined region by examining user engagement and financial outcomes from subscriptions that ended as a result of these campaigns. The limit ensures that we do not retrieve excessive results, keeping the analysis concise and manageable for further interpretation or report generation by focusing solely on the columns needed to assess campaign impact effectively. We also avoid querying unnecessary columns as stipulated in the guidelines provided, ensuring the query is efficient and relevant to the user's needs, which is campaign performance analysis in specific regions.",
+            "question_refined": [
+                "특정 지역의 캠페인 결과를 평가하기 위해 어떤 정보를 수집해야 하나요?",
+                "특정 지역에서의 캠페인 효과를 분석하기 위한 데이터 유형은 무엇인가요?",
+                "특정 지역 캠페인 성과 분석 시 필요로 하는 데이터는 어떤 것들이 있나요?"
+            ],
+            "searched_tables": {
+                "client_stream_ended_subscription": {
+                    "table_description": "Activity data triggered when a customer ends a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'churn_risk_users', 'churned_users', 'canceled_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "client_stream_started_subscription": {
+                    "table_description": "Activity data triggered when a customer starts a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'free_users', 'paid_users', 'new_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan'."
+                },
+                "ga_cube_churned_revenue": {
+                    "table_description": "Flattened OLAP cube model for ChurnedMRR",
+                    "metric_date": "The primary key for this table"
+                },
+                "client_stream_active_on_subscription": {
+                    "table_description": "Activity data triggered when a customer is active on a subscription",
+                    "id": "The primary key for this table",
+                    "entity_id": "The entity id of the customer",
+                    "activity_ts": "The timestamp when the activity occurred",
+                    "activity": "The name of the activity",
+                    "revenue_impact": "The revenue impact of the activity, if applicable",
+                    "feature_json": "JSON string containing feature data related to the activity, including customer segments such as 'active_users', 'churn_risk_users', 'churned_users', 'free_users', 'paid_users', 'grace_period_users', 'canceled_users', 'new_users', 'returning_users', 'trial_users' and plan types like 'basic_plan', 'standard_plan', 'premium_plan', 'monthly_plan', 'annual_plan', 'lifetime_plan'."
+                },
+                "ga_cube_committed_revenue": {
+                    "table_description": "Flattened OLAP cube model for CommittedMRR",
+                    "anchor_date": "The primary key for this table"
+                }
+            }
+        }
+    ],
+    "name": "refine_update",
+    "version": "0.0.1",
+    "desc": ""
+}
