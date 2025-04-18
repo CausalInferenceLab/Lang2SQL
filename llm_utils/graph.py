@@ -14,6 +14,7 @@ from llm_utils.chains import (
 )
 
 from llm_utils.tools import get_info_from_db
+from llm_utils.retrieval import search_tables
 
 # 노드 식별자 정의
 QUERY_REFINER = "query_refiner"
@@ -31,6 +32,7 @@ class QueryMakerState(TypedDict):
     best_practice_query: str
     refined_input: str
     generated_query: str
+    use_rerank: bool
 
 
 # 노드 함수: QUERY_REFINER 노드
@@ -49,76 +51,10 @@ def query_refiner_node(state: QueryMakerState):
 
 
 def get_table_info_node(state: QueryMakerState):
-    from langchain_community.vectorstores import FAISS
-    from langchain_openai import OpenAIEmbeddings
-
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
-    try:
-        db = FAISS.load_local(
-            os.getcwd() + "/table_info_db",
-            embeddings,
-            allow_dangerous_deserialization=True,
-        )
-    except:
-        documents = get_info_from_db()
-        db = FAISS.from_documents(documents, embeddings)
-        db.save_local(os.getcwd() + "/table_info_db")
-        print("table_info_db not found")
-
-    retriever = db.as_retriever(search_kwargs={"k": 10})
-
-    from langchain.retrievers import ContextualCompressionRetriever
-    from langchain.retrievers.document_compressors import CrossEncoderReranker
-    from langchain_community.cross_encoders import HuggingFaceCrossEncoder
-    from transformers import AutoModelForSequenceClassification, AutoTokenizer
-
-    # Reranking 적용 여부 설정
-    use_rerank = True  # 필요에 따라 True 또는 False로 설정
-
-    if use_rerank:
-        local_model_path = os.path.join(os.getcwd(), "ko_reranker_local")
-
-        # 로컬에 저장된 모델이 있으면 불러오고, 없으면 다운로드 후 저장
-        if os.path.exists(local_model_path) and os.path.isdir(local_model_path):
-            print("🔄 ko-reranker 모델 로컬에서 로드 중...")
-        else:
-            print("⬇️ ko-reranker 모델 다운로드 및 저장 중...")
-            model = AutoModelForSequenceClassification.from_pretrained(
-                "Dongjin-kr/ko-reranker"
-            )
-            tokenizer = AutoTokenizer.from_pretrained("Dongjin-kr/ko-reranker")
-            model.save_pretrained(local_model_path)
-            tokenizer.save_pretrained(local_model_path)
-        model = HuggingFaceCrossEncoder(model_name=local_model_path)
-        compressor = CrossEncoderReranker(model=model, top_n=3)
-        retriever = db.as_retriever(search_kwargs={"k": 10})
-        compression_retriever = ContextualCompressionRetriever(
-            base_compressor=compressor, base_retriever=retriever
-        )
-
-        doc_res = compression_retriever.invoke(state["messages"][0].content)
-    else:  # Reranking 미적용
-        doc_res = db.similarity_search(state["messages"][0].content, k=10)
-    documents_dict = {}
-    for doc in doc_res:
-        lines = doc.page_content.split("\n")
-
-        # 테이블명 및 설명 추출
-        table_name, table_desc = lines[0].split(": ", 1)
-
-        # 컬럼 정보 추출
-        columns = {}
-        if len(lines) > 2 and lines[1].strip() == "Columns:":
-            for line in lines[2:]:
-                if ": " in line:
-                    col_name, col_desc = line.split(": ", 1)
-                    columns[col_name.strip()] = col_desc.strip()
-
-        # 딕셔너리 저장
-        documents_dict[table_name] = {
-            "table_description": table_desc.strip(),
-            **columns,  # 컬럼 정보 추가
-        }
+    # state의 use_rerank 값을 이용하여 검색 수행
+    documents_dict = search_tables(
+        state["messages"][0].content, use_rerank=state["use_rerank"]
+    )
     state["searched_tables"] = documents_dict
 
     return state

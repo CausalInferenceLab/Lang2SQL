@@ -28,6 +28,12 @@ def summarize_total_tokens(data):
     return total_tokens
 
 
+use_reranker = st.checkbox(
+    "리랭킹(Reranking) 기능 사용",
+    value=False,
+    help="검색 결과의 정확도를 높이기 위한 리랭킹 기능을 사용합니다.",
+)
+
 # 버튼 클릭 시 실행
 if st.button("쿼리 실행"):
     # 그래프 컴파일 및 쿼리 실행
@@ -38,6 +44,7 @@ if st.button("쿼리 실행"):
             "messages": [HumanMessage(content=user_query)],
             "user_database_env": user_database_env,
             "best_practice_query": "",
+            "use_rerank": use_reranker,
         }
     )
     total_tokens = summarize_total_tokens(res["messages"])

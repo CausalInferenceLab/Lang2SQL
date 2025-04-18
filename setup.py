@@ -24,6 +24,8 @@ setup(
         "streamlit==1.41.1",
         "python-dotenv==1.0.1",
         "faiss-cpu==1.10.0",
+        "transformers==4.51.2",
+        "langchain-huggingface==0.1.2",
     ],
     entry_points={
         "console_scripts": [
