@@ -73,12 +73,14 @@ class SearchQuery:
         for table_name in table_names:
             context +=  self.format_docs(retriever.invoke("name: " + table_name))
         print(context)
-        return context
+        return GraphState(
+            context=context
+        )
 
 
     def search_table_chain_invoke(self, state: GraphState):
         question = state["question"]
-        context = self.table_names_retriever(question)
+        context = state["context"]
         prompt = SEARCH_TABLE_PROMPT
 
         chain = (
