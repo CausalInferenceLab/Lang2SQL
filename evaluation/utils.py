@@ -1,7 +1,8 @@
 import json
-from persona_class import PersonaList
-from glob import glob
 import os
+from glob import glob
+
+from persona_class import PersonaList
 
 
 def save_persona_json(data, filepath):

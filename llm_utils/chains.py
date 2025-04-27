@@ -1,14 +1,15 @@
 import os
+
+from dotenv import load_dotenv
 from langchain_core.prompts import (
     ChatPromptTemplate,
     MessagesPlaceholder,
     SystemMessagePromptTemplate,
 )
 
-from .llm_factory import get_llm
-
-from dotenv import load_dotenv
 from prompt.template_loader import get_prompt_template
+
+from .llm_factory import get_llm
 
 env_path = os.path.join(os.getcwd(), ".env")
 

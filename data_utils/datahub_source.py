@@ -1,13 +1,18 @@
-from datahub.metadata.schema_classes import DatasetPropertiesClass, SchemaMetadataClass
+from collections import defaultdict
+
+import requests
 from datahub.emitter.rest_emitter import DatahubRestEmitter
 from datahub.ingestion.graph.client import DatahubClientConfig, DataHubGraph
-from datahub.metadata.schema_classes import UpstreamLineageClass
-from collections import defaultdict
-import requests
+from datahub.metadata.schema_classes import (
+    DatasetPropertiesClass,
+    SchemaMetadataClass,
+    UpstreamLineageClass,
+)
+
 from data_utils.queries import (
-    ROOT_GLOSSARY_NODES_QUERY,
     GLOSSARY_NODE_QUERY,
     LIST_QUERIES_QUERY,
+    ROOT_GLOSSARY_NODES_QUERY,
 )
 
 

@@ -1,10 +1,10 @@
-from utils import load_persona_json, save_question_json
+import os
+from argparse import ArgumentParser
+
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai.chat_models import ChatOpenAI
 from tqdm import tqdm
-
-from argparse import ArgumentParser
-import os
+from utils import load_persona_json, save_question_json
 
 
 def get_persona_prompt(persona):

@@ -1,10 +1,9 @@
-from argparse import ArgumentParser
-from langchain_core.messages import HumanMessage
-
-from utils import load_question_json, save_answer_json
-
-from tqdm import tqdm
 import uuid
+from argparse import ArgumentParser
+
+from langchain_core.messages import HumanMessage
+from tqdm import tqdm
+from utils import load_question_json, save_answer_json
 
 from llm_utils.graph import builder
 

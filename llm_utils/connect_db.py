@@ -1,5 +1,6 @@
 import os
 from typing import Union
+
 import pandas as pd
 from clickhouse_driver import Client
 from dotenv import load_dotenv

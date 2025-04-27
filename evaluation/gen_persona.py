@@ -1,12 +1,12 @@
 import os
+from argparse import ArgumentParser
 
-from utils import save_persona_json, pretty_print_persona
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_openai.chat_models import ChatOpenAI
 from persona_class import PersonaList
+from utils import pretty_print_persona, save_persona_json
 
 from llm_utils.tools import _get_table_info
-from langchain_openai.chat_models import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate
-from argparse import ArgumentParser
 
 
 def get_table_des_string(tables_desc):

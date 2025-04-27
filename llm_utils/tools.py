@@ -1,11 +1,11 @@
 import os
-from typing import List, Dict, Optional, TypeVar, Callable, Iterable, Any
+from concurrent.futures import ThreadPoolExecutor
+from typing import Any, Callable, Dict, Iterable, List, Optional, TypeVar
 
 from langchain.schema import Document
+from tqdm import tqdm
 
 from data_utils.datahub_source import DatahubMetadataFetcher
-from tqdm import tqdm
-from concurrent.futures import ThreadPoolExecutor
 
 T = TypeVar("T")
 R = TypeVar("R")

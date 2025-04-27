@@ -1,6 +1,6 @@
-from langchain.chains.sql_database.prompt import SQL_PROMPTS
 import os
 
+from langchain.chains.sql_database.prompt import SQL_PROMPTS
 from langchain_core.prompts import load_prompt
 
 
