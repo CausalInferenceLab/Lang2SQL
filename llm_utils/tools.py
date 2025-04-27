@@ -1,4 +1,9 @@
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 from typing import List, Dict
 
 from langchain.schema import Document
@@ -16,7 +21,10 @@ def set_gms_server(gms_server: str):
 
 
 def _get_fetcher():
-    gms_server = os.getenv("DATAHUB_SERVER")
+    # gms_server = os.getenv("DATAHUB_SERVER")
+    # gms_server = os.getenv("DATAHUB_SERVER", "http://34.125.222.80:9002/")
+    # gms_server = os.getenv("DATAHUB_SERVER", "http://34.125.222.80:8080")
+    gms_server = "http://34.125.222.80:8080"
     if not gms_server:
         raise ValueError("GMS 서버가 설정되지 않았습니다.")
     return DatahubMetadataFetcher(gms_server=gms_server)
@@ -66,3 +74,7 @@ def get_info_from_db() -> List[Document]:
 
     # table_info_str_list를 Document 객체 리스트로 변환
     return [Document(page_content=info) for info in table_info_str_list]
+
+
+if __name__ == "__main__":
+    print(_get_table_info())
