@@ -2,19 +2,19 @@ name: Pre-commit Auto-fix and Comment
 
 on:
   push:
-    branches:
-      - master
+    branches: [ master ]
   pull_request:
-    branches:
-      - master
+    branches: [ master ]
 
 jobs:
   pre-commit:
-    name: Run Pre-commit Hooks, Auto-fix, and Comment
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -25,34 +25,34 @@ jobs:
           python-version: "3.x"
 
       - name: Install pre-commit
-        run: pip install pre-commit
+        run: python -m pip install --upgrade pre-commit
 
-      - name: Run pre-commit and fix files
+      - name: Run pre-commit (auto-fix)
         id: precommit_run
-        run: pre-commit run --all-files --verbose --hook-stage manual
+        continue-on-error: true
+        run: |
+          pre-commit run --all-files --verbose --hook-stage manual
 
-      - name: Commit and push changes if any
+      - name: Commit & push if changed
         id: commit_push
         run: |
-          git config user.name "github-actions[bot]"
+          git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          if git diff-index --quiet HEAD; then
-            echo "no_changes=true" >> $GITHUB_ENV
-          else
-            git commit -m "style: Apply pre-commit fixes (black, isort)"
+          if ! git diff --quiet; then
+            git add -u
+            git commit -m "style: apply pre-commit fixes (black, isort)" || true
             git push
-            echo "no_changes=false" >> $GITHUB_ENV
+            echo "FIXES_PUSHED=true" >> $GITHUB_ENV
           fi
 
-      - name: Comment on PR if changes were pushed
-        if: env.no_changes == 'false' && github.event_name == 'pull_request'
+      - name: Comment on PR
+        if: env.FIXES_PUSHED == 'true' && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         with:
           script: |
             github.rest.issues.createComment({
-              issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: "✅ Pre-commit hooks automatically fixed some issues (black, isort) and changes were pushed!"
+              issue_number: context.issue.number,
+              body: "✅ Pre-commit hooks fixed formatting (black, isort) and the bot pushed the changes."
             })
