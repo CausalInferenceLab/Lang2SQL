@@ -1,4 +1,4 @@
-name: Pre-commit Black Check
+name: Pre-commit Auto-fix and Comment
 
 on:
   push:
@@ -10,12 +10,14 @@ on:
 
 jobs:
   pre-commit:
-    name: Run Pre-commit Hooks
+    name: Run Pre-commit Hooks, Auto-fix, and Comment
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -25,5 +27,32 @@ jobs:
       - name: Install pre-commit
         run: pip install pre-commit
 
-      - name: Run pre-commit
-        run: pre-commit run --all-files --verbose
+      - name: Run pre-commit and fix files
+        id: precommit_run
+        run: pre-commit run --all-files --verbose --hook-stage manual
+
+      - name: Commit and push changes if any
+        id: commit_push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .
+          if git diff-index --quiet HEAD; then
+            echo "no_changes=true" >> $GITHUB_ENV
+          else
+            git commit -m "style: Apply pre-commit fixes (black, isort)"
+            git push
+            echo "no_changes=false" >> $GITHUB_ENV
+          fi
+
+      - name: Comment on PR if changes were pushed
+        if: env.no_changes == 'false' && github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: "✅ Pre-commit hooks automatically fixed some issues (black, isort) and changes were pushed!"
+            })
