@@ -22,6 +22,8 @@ SIDEBAR_OPTIONS = {
     "show_table": "Show Table",
     "show_chart": "Show Chart",
 }
+
+
 def summarize_total_tokens(data: list) -> int:
     """
     메시지 데이터에서 총 토큰 사용량을 집계합니다.
