@@ -11,6 +11,7 @@ from langchain_core.messages import HumanMessage
 
 from llm_utils.connect_db import ConnectDB
 from llm_utils.graph import builder
+from llm_utils.display_chart import DisplayChart
 
 DEFAULT_QUERY = "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
 SIDEBAR_OPTIONS = {
@@ -115,9 +116,22 @@ def display_result(
     if st.session_state.get("show_referenced_tables", True):
         st.write("참고한 테이블 목록:", res["searched_tables"])
     if st.session_state.get("show_table", True):
-        sql = res["generated_query"]
+        st.write("쿼리 실행 결과")
+        sql = res["generated_query"].content.split("```")[1][
+            3:
+        ]  # 쿼리 앞쪽의 "sql " 제거
         df = database.run_sql(sql)
         st.dataframe(df.head(10) if len(df) > 10 else df)
+    if st.session_state.get("show_chart", True):
+        st.write("쿼리 결과 시각화")
+        display_code = DisplayChart(
+            question=res["refined_input"].content,
+            sql=sql,
+            df_metadata=f"Running df.dtypes gives:\n {df.dtypes}",
+        )
+        plotly_code = display_code.generate_plotly_code()
+        fig = display_code.get_plotly_figure(plotly_code=plotly_code, df=df)
+        st.plotly_chart(fig)
 
 
 db = ConnectDB()
