@@ -13,3 +13,7 @@ class QueryMakerState(TypedDict):
     retriever_name: str
     top_n: int
     device: str
+    intent: str
+    intent_reason: str
+    user_input: str
+

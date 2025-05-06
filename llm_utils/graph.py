@@ -59,7 +59,7 @@ def query_refiner_node(state: QueryMakerState):
 def get_table_info_node(state: QueryMakerState):
     # retriever_name과 top_n을 이용하여 검색 수행
     documents_dict = search_tables(
-        query=state["messages"][0].content,
+        query=state["user_input"],
         retriever_name=state["retriever_name"],
         top_n=state["top_n"],
         device=state["device"],
@@ -74,7 +74,7 @@ def query_maker_node(state: QueryMakerState):
     # sturctured output 사용
     res = query_maker_chain.invoke(
         input={
-            "user_input": [state["messages"][0].content],
+            "user_input": [state["user_input"]],
             "refined_input": [state["refined_input"]],
             "searched_tables": [json.dumps(state["searched_tables"])],
             "user_database_env": [state["user_database_env"]],

@@ -28,8 +28,6 @@ main_agent_schema = {
 }
 main_agent_parser = JsonOutputParser(schema=main_agent_schema)
 
-
-
 def manager_agent(state: QueryMakerState) -> dict:
     """
     가장 처음 시작하는 agent로 질문의 유무를 판단해서 적절한 Agent를 호출합니다.
@@ -44,7 +42,7 @@ def manager_agent(state: QueryMakerState) -> dict:
         state.update({
             "messages": state["messages"] + [response], # 기록용
             "intent": parsed_output.get("intent", "end"), # 분기용
-            "user_input": parsed_output.get("user_input", ""), # SQL 쿼리 변환 대상 질문
+            "user_input": parsed_output.get("user_input",state['messages'][-1].content), # SQL 쿼리 변환 대상 질문
             "intent_reason": parsed_output.get("intent_reason", "") # 분기 이유
         })
         return state
