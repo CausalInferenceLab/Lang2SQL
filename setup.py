@@ -1,5 +1,5 @@
 # setup.py
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 with open("docs/README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
@@ -29,6 +29,7 @@ setup(
         "langchain-ollama>=0.3.2,<0.4.0",
         "langchain-huggingface>=0.1.2,<0.2.0",
         "transformers==4.51.2",
+        "pytest>=8.3.5",
     ],
     entry_points={
         "console_scripts": [
