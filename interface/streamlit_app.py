@@ -60,7 +60,7 @@ if st.button("쿼리 실행"):
     # 결과 출력
     st.write("총 토큰 사용량:", total_tokens)
     # st.write("결과:", res["generated_query"].content)
-    st.write("결과:", "\n\n```sql\n" + res["generated_query"] + "\n```")
+    # st.write("결과:", "\n\n```sql\n" + res["generated_query"] + "\n```")
     st.write("결과 설명:\n\n", res["messages"][-1].content)
     st.write("AI가 재해석한 사용자 질문:\n", res["refined_input"].content)
     st.write("참고한 테이블 목록:", res["searched_tables"])
