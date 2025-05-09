@@ -124,6 +124,25 @@ FIND_TABLE_NAMES = PromptTemplate.from_template(
 )
 
 
+TABLE_NAME_GENERATOR = PromptTemplate.from_template(
+    """
+    
+    ### 역할 ###
+    사용자의 질문에 맞는 테이블을 찾아야 하는데 테이블 정보를 보고 테이블 이름을 추측해줘
+
+    ### 질문 ###
+    {question}
+
+    ### 테이블 정보 ###
+    {context}
+
+    ### 출력 ###
+    {instructions}
+
+    """
+)
+
+
 
 
 SEARCH_TABLE_PROMPT = PromptTemplate.from_template(
@@ -145,4 +164,18 @@ SEARCH_TABLE_PROMPT = PromptTemplate.from_template(
 )
 
 
+QUERY_GENERATOR = PromptTemplate.from_template(
+    """
+    ### 역할 ###
+    너는 사용자의 질문에 맞는 SQL쿼리를 생성해줘
+
+
+    ### 테이블 정보 ###
+    {context}
+
+    ### 질문 ###
+    {question}
+
+    """
+)
 
