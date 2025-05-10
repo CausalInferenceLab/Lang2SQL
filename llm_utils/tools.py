@@ -11,7 +11,7 @@ T = TypeVar("T")
 R = TypeVar("R")
 
 
-def parallel_process[T, R](
+def parallel_process(
     items: Iterable[T],
     process_fn: Callable[[T], R],
     max_workers: int = 8,
