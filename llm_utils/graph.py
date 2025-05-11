@@ -1,5 +1,6 @@
 import os
 import json
+import sys
 
 from typing_extensions import TypedDict, Annotated
 from langgraph.graph import END, StateGraph
@@ -11,6 +12,7 @@ from llm_utils.chains import (
 )
 
 from llm_utils.tools import get_info_from_db
+from agent.query_generator.query_generator import QueryGenerator
 
 # 노드 식별자 정의
 QUERY_REFINER = "query_refiner"
@@ -18,6 +20,7 @@ GET_TABLE_INFO = "get_table_info"
 TOOL = "tool"
 TABLE_FILTER = "table_filter"
 QUERY_MAKER = "query_maker"
+QUERY_GENERATOR = "query_generator"  
 
 
 # 상태 타입 정의 (추가 상태 정보와 메시지들을 포함)
@@ -102,6 +105,30 @@ def query_maker_node(state: QueryMakerState):
     return state
 
 
+
+_query_generator = QueryGenerator()
+
+
+def query_generator_node(state: QueryMakerState):
+    """
+    쿼리 제너레이터를 사용하여 SQL을 생성하는 노드입니다.
+    사용자 질문만 입력으로 받습니다.
+    """
+    # 사용자 질문 추출 (원본 질문과 정제된 질문 모두 사용)
+    original_question = state["messages"][0].content
+    refined_question = state["refined_input"]
+    
+    # 쿼리 제너레이터로 SQL 생성
+    sql_result = _query_generator.graph_response(refined_question)
+    
+    # 결과 저장
+    state["generated_query"] = sql_result["messages"][-1].content
+    state["messages"].append(sql_result["messages"][-1])
+    state["searched_tables"] = sql_result.get("searched_tables", {})
+    
+    return state
+
+
 # StateGraph 생성 및 구성
 builder = StateGraph(QueryMakerState)
 builder.set_entry_point(QUERY_REFINER)
@@ -110,10 +137,13 @@ builder.set_entry_point(QUERY_REFINER)
 builder.add_node(QUERY_REFINER, query_refiner_node)
 builder.add_node(GET_TABLE_INFO, get_table_info_node)
 builder.add_node(QUERY_MAKER, query_maker_node)
+builder.add_node(QUERY_GENERATOR, query_generator_node)  
 
 # 기본 엣지 설정
-builder.add_edge(QUERY_REFINER, GET_TABLE_INFO)
-builder.add_edge(GET_TABLE_INFO, QUERY_MAKER)
+builder.add_edge(QUERY_REFINER, QUERY_GENERATOR)  
+builder.add_edge(QUERY_GENERATOR, END)  
 
-# QUERY_MAKER 노드 후 종료
-builder.add_edge(QUERY_MAKER, END)
+
+# builder.add_edge(QUERY_REFINER, GET_TABLE_INFO)
+# builder.add_edge(GET_TABLE_INFO, QUERY_MAKER) 
+# builder.add_edge(QUERY_MAKER, END)

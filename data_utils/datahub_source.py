@@ -5,6 +5,7 @@ from datahub.emitter.rest_emitter import DatahubRestEmitter
 import requests
 
 
+# "http://localhost:8080"
 class DatahubMetadataFetcher:
     def __init__(self, gms_server="http://localhost:8080", extra_headers={}):
         # gms_server 주소 유효성 검사

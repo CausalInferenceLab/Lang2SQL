@@ -1,4 +1,5 @@
 from dotenv import load_dotenv
+
 load_dotenv()
 
 from langgraph.checkpoint.memory import MemorySaver
@@ -6,8 +7,6 @@ from langgraph.graph import StateGraph, MessagesState, START, END
 from langchain_openai import ChatOpenAI
 from langchain_core.tools import tool
 from langgraph.prebuilt import ToolNode, tools_condition
-
-
 
 
 @tool
@@ -20,13 +19,12 @@ tools = [search_query]
 tool_node = ToolNode(tools)
 model_with_tools = ChatOpenAI(model="gpt-4o-mini", temperature=0).bind_tools(tools)
 
+
 # LLM 모델을 사용하여 메시지 처리 및 응답 생성, 도구 호출이 포함된 응답 반환
 def call_model(state: MessagesState):
     messages = state["messages"]
     response = model_with_tools.invoke(messages)
     return {"messages": [response]}
-
-
 
 
 # 메시지 상태 기반 워크플로우 그래프 초기화
