@@ -9,8 +9,11 @@ import streamlit as st
 from langchain.chains.sql_database.prompt import SQL_PROMPTS
 from langchain_core.messages import HumanMessage
 
-from llm_utils.connect_db import ConnectDB
+from db_utils import get_db_connector
+from db_utils.base_connector import BaseConnector
 from llm_utils.graph import builder
+
+import re
 
 DEFAULT_QUERY = "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
 SIDEBAR_OPTIONS = {
@@ -85,7 +88,7 @@ def execute_query(
 def display_result(
     *,
     res: dict,
-    database: ConnectDB,
+    database: BaseConnector,
 ) -> None:
     """
     Lang2SQL 실행 결과를 Streamlit 화면에 출력합니다.
@@ -115,12 +118,21 @@ def display_result(
     if st.session_state.get("show_referenced_tables", True):
         st.write("참고한 테이블 목록:", res["searched_tables"])
     if st.session_state.get("show_table", True):
-        sql = res["generated_query"]
+        try:
+            sql = re.findall(r"```sql(.*?)```", res["generated_query"].content, re.DOTALL)
+            sql = sql[0].strip()
+        except ValueError:
+            st.error("SQL 쿼리를 찾을 수 없습니다.")
+            return
+        
+        if not sql:
+            st.error("SQL 쿼리가 비어 있습니다.")
+            return
         df = database.run_sql(sql)
         st.dataframe(df.head(10) if len(df) > 10 else df)
 
 
-db = ConnectDB()
+db = get_db_connector()
 
 st.title("Lang2SQL")
 

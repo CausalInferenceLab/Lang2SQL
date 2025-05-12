@@ -7,11 +7,12 @@ from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from .tools import get_info_from_db
+from .llm_factory import get_embeddings
 
 
 def get_vector_db():
     """벡터 데이터베이스를 로드하거나 생성합니다."""
-    embeddings = OpenAIEmbeddings(model="text-embedding-3-small")
+    embeddings = get_embeddings()
     try:
         db = FAISS.load_local(
             os.getcwd() + "/table_info_db",
