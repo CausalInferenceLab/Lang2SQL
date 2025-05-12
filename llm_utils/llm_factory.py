@@ -18,7 +18,6 @@ from langchain_openai import (
     AzureChatOpenAI,
     OpenAIEmbeddings,
 )
-from langchain_community.llms.bedrock import Bedrock
 
 # .env 파일 로딩
 load_dotenv()

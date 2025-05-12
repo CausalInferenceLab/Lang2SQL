@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict, Optional, TypeVar, Callable, Iterable, Any
+from typing import List, Dict, Optional, TypeVar, Callable, Iterable
 
 from langchain.schema import Document
 
@@ -40,7 +40,7 @@ def parallel_process[T, R](
 def set_gms_server(gms_server: str):
     try:
         os.environ["DATAHUB_SERVER"] = gms_server
-        fetcher = DatahubMetadataFetcher(gms_server=gms_server)
+        DatahubMetadataFetcher(gms_server=gms_server)
     except ValueError as e:
         raise ValueError(f"GMS 서버 설정 실패: {str(e)}")
 
