@@ -16,4 +16,3 @@ class QueryMakerState(TypedDict):
     intent: str
     intent_reason: str
     user_input: str
-

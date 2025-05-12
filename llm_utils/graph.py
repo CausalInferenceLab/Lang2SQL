@@ -36,7 +36,6 @@ def exception_end_node(state: QueryMakerState):
     }
 
 
-
 # 노드 함수: QUERY_REFINER 노드
 def query_refiner_node(state: QueryMakerState):
     # refined_node의 결과값으로 바로 AIMessages 반환
