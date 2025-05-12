@@ -1,4 +1,3 @@
-import os
 
 from utils import save_persona_json, pretty_print_persona
 from persona_class import PersonaList

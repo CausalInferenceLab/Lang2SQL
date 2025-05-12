@@ -18,7 +18,7 @@ def get_vector_db():
             embeddings,
             allow_dangerous_deserialization=True,
         )
-    except:
+    except Exception:
         documents = get_info_from_db()
         db = FAISS.from_documents(documents, embeddings)
         db.save_local(os.getcwd() + "/table_info_db")
