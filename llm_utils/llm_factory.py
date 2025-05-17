@@ -2,7 +2,6 @@
 import os
 from typing import Optional
 
-from dotenv import load_dotenv
 from langchain.llms.base import BaseLanguageModel
 from langchain_aws import ChatBedrockConverse, BedrockEmbeddings
 from langchain_google_genai import ChatGoogleGenerativeAI, GoogleGenerativeAIEmbeddings
@@ -19,9 +18,6 @@ from langchain_openai import (
     OpenAIEmbeddings,
 )
 from langchain_community.llms.bedrock import Bedrock
-
-# .env 파일 로딩
-load_dotenv()
 
 
 def get_llm() -> BaseLanguageModel:

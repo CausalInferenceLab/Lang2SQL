@@ -10,13 +10,6 @@ from .llm_factory import get_llm
 from dotenv import load_dotenv
 from prompt.template_loader import get_prompt_template
 
-env_path = os.path.join(os.getcwd(), ".env")
-
-if os.path.exists(env_path):
-    load_dotenv(env_path)
-else:
-    print(f"⚠️  환경변수 파일(.env)이 {os.getcwd()}에 없습니다!")
-
 llm = get_llm()
 
 

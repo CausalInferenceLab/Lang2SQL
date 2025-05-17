@@ -13,9 +13,6 @@ from typing import Optional
 
 import pandas as pd
 from clickhouse_driver import Client
-from dotenv import load_dotenv
-
-load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,

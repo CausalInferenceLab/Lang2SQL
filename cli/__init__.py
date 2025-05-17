@@ -2,9 +2,11 @@
 Datahub GMS 서버 URL을 설정하고, 필요 시 Streamlit 인터페이스를 실행하는 CLI 프로그램입니다.
 """
 
+import os
 import subprocess
 
 import click
+import dotenv
 
 from llm_utils.tools import set_gms_server
 
@@ -39,12 +41,24 @@ from llm_utils.tools import set_gms_server
         "기본 포트는 8501이며, 포트 충돌을 피하거나 여러 인스턴스를 실행할 때 변경할 수 있습니다."
     ),
 )
+@click.option(
+    "--env-file-path",
+    type=click.Path(exists=True, file_okay=True, dir_okay=False, readable=True),
+    help="환경 변수를 로드할 .env 파일의 경로를 지정합니다. 지정하지 않으면 기본 경로를 사용합니다.",
+)
+@click.option(
+    "--prompt-dir-path",
+    type=click.Path(exists=True, file_okay=False, dir_okay=True, readable=True),
+    help="프롬프트 템플릿(.md 파일)이 저장된 디렉토리 경로를 지정합니다. 지정하지 않으면 기본 경로를 사용합니다.",
+)
 # pylint: disable=redefined-outer-name
 def cli(
     ctx: click.Context,
     datahub_server: str,
     run_streamlit: bool,
     port: int,
+    env_file_path: str = None,
+    prompt_dir_path: str = None,
 ) -> None:
     """
     Datahub GMS 서버 URL을 설정하고, Streamlit 애플리케이션을 실행할 수 있는 CLI 명령 그룹입니다.
@@ -53,16 +67,42 @@ def cli(
     - 전달받은 'datahub_server' URL을 바탕으로 GMS 서버 연결을 설정합니다.
     - 설정 과정 중 오류가 발생하면 오류 메시지를 출력하고 프로그램을 종료합니다.
     - '--run-streamlit' 옵션이 활성화된 경우, 지정된 포트에서 Streamlit 웹 앱을 즉시 실행합니다.
+    - '--env-file-path' 옵션이 지정된 경우, 해당 .env 파일에서 환경 변수를 로드합니다.
+    - '--prompt-dir-path' 옵션이 지정된 경우, 해당 디렉토리에서 프롬프트 템플릿을 로드합니다.
 
     매개변수:
         ctx (click.Context): 명령어 실행 컨텍스트 객체입니다.
         datahub_server (str): 설정할 Datahub GMS 서버의 URL입니다.
         run_streamlit (bool): Streamlit 앱을 실행할지 여부를 나타내는 플래그입니다.
         port (int): Streamlit 서버가 바인딩될 포트 번호입니다.
+        env_file_path (str, optional): 환경 변수를 로드할 .env 파일 경로입니다.
+        prompt_dir_path (str, optional): 프롬프트 템플릿을 로드할 디렉토리 경로입니다.
 
     주의:
         'set_gms_server' 함수에서 ValueError가 발생할 경우, 프로그램은 비정상 종료(exit code 1)합니다.
     """
+
+    # 환경 변수 파일 로드
+    if env_file_path:
+        try:
+            if not dotenv.load_dotenv(env_file_path, override=True):
+                click.secho(f"환경 변수 파일 로드 실패: {env_file_path}", fg="yellow")
+            else:
+                click.secho(f"환경 변수 파일 로드 성공: {env_file_path}", fg="green")
+        except Exception as e:
+            click.secho(f"환경 변수 로드 중 오류 발생: {str(e)}", fg="red")
+            ctx.exit(1)
+
+    # 프롬프트 디렉토리를 환경 변수로 설정
+    if prompt_dir_path:
+        try:
+            os.environ["PROMPT_TEMPLATES_DIR"] = prompt_dir_path
+            click.secho(
+                f"프롬프트 디렉토리 환경변수 설정됨: {prompt_dir_path}", fg="green"
+            )
+        except Exception as e:
+            click.secho(f"프롬프트 디렉토리 환경변수 설정 실패: {str(e)}", fg="red")
+            ctx.exit(1)
 
     try:
         set_gms_server(datahub_server)
