@@ -10,14 +10,16 @@ from langchain.chains.sql_database.prompt import SQL_PROMPTS
 from langchain_core.messages import AIMessage, HumanMessage
 
 from llm_utils.connect_db import ConnectDB
-from llm_utils.graph import builder
-from llm_utils.enriched_graph import builder as enriched_builder
 from llm_utils.display_chart import DisplayChart
+from llm_utils.enriched_graph import builder as enriched_builder
+from llm_utils.graph import builder
 from llm_utils.llm_response_parser import LLMResponseParser
+from llm_utils.token_utils import TokenUtils
 
+TITLE = "Lang2SQL"
 DEFAULT_QUERY = "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
 SIDEBAR_OPTIONS = {
-    "show_total_token_usage": "Show Total Token Usage",
+    "show_token_usage": "Show Token Usage",
     "show_result_description": "Show Result Description",
     "show_sql": "Show SQL",
     "show_question_reinterpreted_by_ai": "Show User Question Reinterpreted by AI",
@@ -25,24 +27,6 @@ SIDEBAR_OPTIONS = {
     "show_table": "Show Table",
     "show_chart": "Show Chart",
 }
-
-
-def summarize_total_tokens(data: list) -> int:
-    """
-    메시지 데이터에서 총 토큰 사용량을 집계합니다.
-
-    Args:
-        data (list): usage_metadata를 포함하는 객체들의 리스트.
-
-    Returns:
-        int: 총 토큰 사용량 합계.
-    """
-
-    total_tokens = 0
-    for item in data:
-        token_usage = getattr(item, "usage_metadata", {})
-        total_tokens += token_usage.get("total_tokens", 0)
-    return total_tokens
 
 
 def execute_query(
@@ -119,14 +103,22 @@ def display_result(
     """
 
     def should_show(_key: str) -> bool:
-        st.markdown("---")
         return st.session_state.get(_key, True)
 
-    if should_show("show_total_token_usage"):
-        total_tokens = summarize_total_tokens(res["messages"])
-        st.write("**총 토큰 사용량:**", total_tokens)
+    if should_show("show_token_usage"):
+        st.markdown("---")
+        token_summary = TokenUtils.get_token_usage_summary(data=res["messages"])
+        st.write("**토큰 사용량:**")
+        st.markdown(
+            f"""
+        - Input tokens: `{token_summary['input_tokens']}`
+        - Output tokens: `{token_summary['output_tokens']}`
+        - Total tokens: `{token_summary['total_tokens']}`
+        """
+        )
 
     if should_show("show_sql"):
+        st.markdown("---")
         generated_query = res.get("generated_query")
         query_text = (
             generated_query.content
@@ -148,6 +140,7 @@ def display_result(
             st.code(interpretation)
 
     if should_show("show_result_description"):
+        st.markdown("---")
         st.markdown("**결과 설명:**")
         result_message = res["messages"][-1].content
 
@@ -163,14 +156,17 @@ def display_result(
             st.code(interpretation, language="plaintext")
 
     if should_show("show_question_reinterpreted_by_ai"):
+        st.markdown("---")
         st.markdown("**AI가 재해석한 사용자 질문:**")
         st.code(res["refined_input"].content)
 
     if should_show("show_referenced_tables"):
+        st.markdown("---")
         st.markdown("**참고한 테이블 목록:**")
         st.write(res.get("searched_tables", []))
 
     if should_show("show_table"):
+        st.markdown("---")
         try:
             sql_raw = (
                 res["generated_query"].content
@@ -182,7 +178,9 @@ def display_result(
             st.dataframe(df.head(10) if len(df) > 10 else df)
         except Exception as e:
             st.error(f"쿼리 실행 중 오류 발생: {e}")
+
     if should_show("show_chart"):
+        st.markdown("---")
         df = database.run_sql(sql)
         st.markdown("**쿼리 결과 시각화:**")
         display_code = DisplayChart(
@@ -199,7 +197,7 @@ def display_result(
 
 db = ConnectDB()
 
-st.title("Lang2SQL")
+st.title(TITLE)
 
 # 워크플로우 선택(UI)
 use_enriched = st.sidebar.checkbox(
