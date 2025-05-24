@@ -7,6 +7,8 @@ pip 또는 Python 배포 도구들이 이 정보를 바탕으로 설치를 수�
 
 from setuptools import find_packages, setup
 
+from version import __version__
+
 
 def load_requirements(path="requirements.txt"):
     """
@@ -32,7 +34,7 @@ with open("docs/README.md", "r", encoding="utf-8") as fh:
 
 setup(
     name="lang2sql",
-    version="0.1.9",
+    version=__version__,
     author="ehddnr301",
     author_email="dy95032@gmail.com",
     url="https://github.com/CausalInferenceLab/Lang2SQL",
