@@ -18,81 +18,91 @@ from langchain_openai import (
     AzureChatOpenAI,
     OpenAIEmbeddings,
 )
-from langchain_community.llms.bedrock import Bedrock
 
-# .env 파일 로딩
-load_dotenv()
+env_path = os.path.join(os.getcwd(), ".env")
+
+if os.path.exists(env_path):
+    load_dotenv(env_path, override=True)
+    print(f"✅ 환경변수 파일(.env)이 {os.getcwd()}에 로드되었습니다!")
+else:
+    print(f"⚠️  환경변수 파일(.env)이 {os.getcwd()}에 없습니다!")
 
 
-def get_llm() -> BaseLanguageModel:
+def get_llm(**kwargs) -> BaseLanguageModel:
     """
     return chat model interface
     """
     provider = os.getenv("LLM_PROVIDER")
+    print(os.environ["LLM_PROVIDER"])
 
     if provider is None:
         raise ValueError("LLM_PROVIDER environment variable is not set.")
 
     if provider == "openai":
-        return get_llm_openai()
+        return get_llm_openai(**kwargs)
 
     elif provider == "azure":
-        return get_llm_azure()
+        return get_llm_azure(**kwargs)
 
     elif provider == "bedrock":
-        return get_llm_bedrock()
+        return get_llm_bedrock(**kwargs)
 
     elif provider == "gemini":
-        return get_llm_gemini()
+        return get_llm_gemini(**kwargs)
 
     elif provider == "ollama":
-        return get_llm_ollama()
+        return get_llm_ollama(**kwargs)
 
     elif provider == "huggingface":
-        return get_llm_huggingface()
+        return get_llm_huggingface(**kwargs)
 
     else:
         raise ValueError(f"Invalid LLM API Provider: {provider}")
 
 
-def get_llm_openai() -> BaseLanguageModel:
+def get_llm_openai(**kwargs) -> BaseLanguageModel:
     return ChatOpenAI(
-        model=os.getenv("OPEN_MODEL_PREF", "gpt-4o"),
+        model=os.getenv("OPEN_AI_LLM_MODEL", "gpt-4o"),
         api_key=os.getenv("OPEN_AI_KEY"),
+        **kwargs,
     )
 
 
-def get_llm_azure() -> BaseLanguageModel:
+def get_llm_azure(**kwargs) -> BaseLanguageModel:
     return AzureChatOpenAI(
         api_key=os.getenv("AZURE_OPENAI_LLM_KEY"),
         azure_endpoint=os.getenv("AZURE_OPENAI_LLM_ENDPOINT"),
         azure_deployment=os.getenv("AZURE_OPENAI_LLM_MODEL"),  # Deployment name
         api_version=os.getenv("AZURE_OPENAI_LLM_API_VERSION", "2023-07-01-preview"),
+        **kwargs,
     )
 
 
-def get_llm_bedrock() -> BaseLanguageModel:
+def get_llm_bedrock(**kwargs) -> BaseLanguageModel:
     return ChatBedrockConverse(
         model=os.getenv("AWS_BEDROCK_LLM_MODEL"),
         aws_access_key_id=os.getenv("AWS_BEDROCK_LLM_ACCESS_KEY_ID"),
         aws_secret_access_key=os.getenv("AWS_BEDROCK_LLM_SECRET_ACCESS_KEY"),
         region_name=os.getenv("AWS_BEDROCK_LLM_REGION", "us-east-1"),
+        **kwargs,
     )
 
 
-def get_llm_gemini() -> BaseLanguageModel:
-    return ChatGoogleGenerativeAI(model=os.getenv("GEMINI_LLM_MODEL"))
+def get_llm_gemini(**kwargs) -> BaseLanguageModel:
+    return ChatGoogleGenerativeAI(model=os.getenv("GEMINI_LLM_MODEL"), **kwargs)
 
 
-def get_llm_ollama() -> BaseLanguageModel:
+def get_llm_ollama(**kwargs) -> BaseLanguageModel:
     base_url = os.getenv("OLLAMA_LLM_BASE_URL")
     if base_url:
-        return ChatOllama(base_url=base_url, model=os.getenv("OLLAMA_LLM_MODEL"))
+        return ChatOllama(
+            base_url=base_url, model=os.getenv("OLLAMA_LLM_MODEL"), **kwargs
+        )
     else:
-        return ChatOllama(model=os.getenv("OLLAMA_LLM_MODEL"))
+        return ChatOllama(model=os.getenv("OLLAMA_LLM_MODEL"), **kwargs)
 
 
-def get_llm_huggingface() -> BaseLanguageModel:
+def get_llm_huggingface(**kwargs) -> BaseLanguageModel:
     return ChatHuggingFace(
         llm=HuggingFaceEndpoint(
             model=os.getenv("HUGGING_FACE_LLM_MODEL"),
@@ -100,6 +110,7 @@ def get_llm_huggingface() -> BaseLanguageModel:
             task="text-generation",
             endpoint_url=os.getenv("HUGGING_FACE_LLM_ENDPOINT"),
             huggingfacehub_api_token=os.getenv("HUGGING_FACE_LLM_API_TOKEN"),
+            **kwargs,
         )
     )
 
@@ -109,6 +120,7 @@ def get_embeddings() -> Optional[BaseLanguageModel]:
     return embedding model interface
     """
     provider = os.getenv("EMBEDDING_PROVIDER")
+    print(provider)
 
     if provider is None:
         raise ValueError("EMBEDDING_PROVIDER environment variable is not set.")
@@ -135,7 +147,7 @@ def get_embeddings() -> Optional[BaseLanguageModel]:
 def get_embeddings_openai() -> BaseLanguageModel:
     return OpenAIEmbeddings(
         model=os.getenv("OPEN_AI_EMBEDDING_MODEL"),
-        openai_api_key=os.getenv("OPEN_AI_EMBEDDING_KEY"),
+        openai_api_key=os.getenv("OPEN_AI_KEY"),
     )
 
 
