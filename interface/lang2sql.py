@@ -5,16 +5,21 @@ Lang2SQL Streamlit 애플리케이션.
 ClickHouse 데이터베이스에 실행한 결과를 출력합니다.
 """
 
+import re
+
 import streamlit as st
 from langchain.chains.sql_database.prompt import SQL_PROMPTS
 from langchain_core.messages import AIMessage, HumanMessage
 
+from db_utils import get_db_connector
+from db_utils.base_connector import BaseConnector
 from llm_utils.connect_db import ConnectDB
 from llm_utils.display_chart import DisplayChart
 from llm_utils.enriched_graph import builder as enriched_builder
 from llm_utils.graph import builder
 from llm_utils.llm_response_parser import LLMResponseParser
 from llm_utils.token_utils import TokenUtils
+
 
 TITLE = "Lang2SQL"
 DEFAULT_QUERY = "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
@@ -84,7 +89,7 @@ def execute_query(
 def display_result(
     *,
     res: dict,
-    database: ConnectDB,
+    database: BaseConnector,
 ) -> None:
     """
     Lang2SQL 실행 결과를 Streamlit 화면에 출력합니다.
@@ -195,7 +200,7 @@ def display_result(
         st.plotly_chart(fig)
 
 
-db = ConnectDB()
+db = get_db_connector()
 
 st.title(TITLE)
 

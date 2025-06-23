@@ -4,7 +4,7 @@ from utils import save_persona_json, pretty_print_persona
 from persona_class import PersonaList
 
 from llm_utils.tools import _get_table_info
-from langchain_openai.chat_models import ChatOpenAI
+from llm_utils.llm_factory import get_llm
 from langchain_core.prompts import ChatPromptTemplate
 from argparse import ArgumentParser
 
@@ -19,7 +19,7 @@ def get_table_des_string(tables_desc):
 def generate_persona(tables_desc):
     description_string = get_table_des_string(tables_desc)
 
-    llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+    llm = get_llm(temperature=0)
     system_prompt = """주어진 Tabel description들을 참고하여 Text2SQL 서비스로 질문을 할만한 패르소나를 생성하세요"""
 
     prompt = ChatPromptTemplate.from_messages(
