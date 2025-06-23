@@ -5,6 +5,8 @@ setup.py - lang2sql 패키지의 설치 및 배포 구성을 정의하는 파일
 pip 또는 Python 배포 도구들이 이 정보를 바탕으로 설치를 수행합니다.
 """
 
+import os
+import glob
 from setuptools import find_packages, setup
 
 from version import __version__
@@ -41,7 +43,11 @@ setup(
     description="Lang2SQL - Query Generator for Data Warehouse",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    packages=find_packages(),
+    packages=find_packages() + ["prompt"],
+    include_package_data=False,
+    package_data={
+        "prompt": ["*.md"],
+    },
     install_requires=requirements,
     entry_points={
         "console_scripts": [
