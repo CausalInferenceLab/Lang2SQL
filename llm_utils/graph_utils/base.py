@@ -6,7 +6,7 @@ from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 from langchain.chains.sql_database.prompt import SQL_PROMPTS
 from pydantic import BaseModel, Field
-from .llm_factory import get_llm
+from llm_utils.llm_factory import get_llm
 
 from llm_utils.chains import (
     query_refiner_chain,
@@ -119,7 +119,7 @@ def context_enrichment_node(state: QueryMakerState):
     주요 작업:
     - 주어진 질문의 메타데이터 (`question_profile` 및 `searched_tables`)를 활용하여, 질문을 수정하거나 추가 정보를 삽입합니다.
     - 질문이 시계열 분석 또는 집계 함수 관련인 경우, 이를 명시적으로 강조합니다 (예: "지난 30일 동안").
-    - 자연어에서 실제 열 이름 또는 값으로 잘못 매칭된 용어를 수정합니다 (예: ‘미국’ → ‘USA’).
+    - 자연어에서 실제 열 이름 또는 값으로 잘못 매칭된 용어를 수정합니다 (예: '미국' → 'USA').
     - 보강된 질문을 출력합니다.
 
     Args:
@@ -207,23 +207,3 @@ def query_maker_node_with_db_guide(state: QueryMakerState):
     state["generated_query"] = res.sql
     state["messages"].append(res.explanation)
     return state
-
-
-# StateGraph 생성 및 구성
-builder = StateGraph(QueryMakerState)
-builder.set_entry_point(GET_TABLE_INFO)
-
-# 노드 추가
-builder.add_node(GET_TABLE_INFO, get_table_info_node)
-builder.add_node(QUERY_REFINER, query_refiner_node)
-builder.add_node(QUERY_MAKER, query_maker_node)  #  query_maker_node_with_db_guide
-# builder.add_node(
-#     QUERY_MAKER, query_maker_node_with_db_guide
-# )  #  query_maker_node_with_db_guide
-
-# 기본 엣지 설정
-builder.add_edge(GET_TABLE_INFO, QUERY_REFINER)
-builder.add_edge(QUERY_REFINER, QUERY_MAKER)
-
-# QUERY_MAKER 노드 후 종료
-builder.add_edge(QUERY_MAKER, END)

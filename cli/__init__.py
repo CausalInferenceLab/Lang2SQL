@@ -159,3 +159,91 @@ def run_streamlit_cli_command(port: int) -> None:
 
     logger.info("Executing 'run-streamlit' command on port %d...", port)
     run_streamlit_command(port)
+
+
+@cli.command(name="query")
+@click.argument("question", type=str)
+@click.option(
+    "--database-env",
+    default="clickhouse",
+    help="사용할 데이터베이스 환경 (기본값: clickhouse)",
+)
+@click.option(
+    "--retriever-name",
+    default="기본",
+    help="테이블 검색기 이름 (기본값: 기본)",
+)
+@click.option(
+    "--top-n",
+    type=int,
+    default=5,
+    help="검색된 상위 테이블 수 제한 (기본값: 5)",
+)
+@click.option(
+    "--device",
+    default="cpu",
+    help="LLM 실행에 사용할 디바이스 (기본값: cpu)",
+)
+@click.option(
+    "--use-enriched-graph",
+    is_flag=True,
+    help="확장된 그래프(프로파일 추출 + 컨텍스트 보강) 사용 여부",
+)
+def query_command(
+    question: str,
+    database_env: str,
+    retriever_name: str,
+    top_n: int,
+    device: str,
+    use_enriched_graph: bool,
+) -> None:
+    """
+    자연어 질문을 SQL 쿼리로 변환하여 출력하는 명령어입니다.
+
+    이 명령은 사용자가 입력한 자연어 질문을 받아서 SQL 쿼리로 변환하고,
+    생성된 SQL 쿼리만을 표준 출력으로 출력합니다.
+
+    매개변수:
+        question (str): SQL로 변환할 자연어 질문
+        database_env (str): 사용할 데이터베이스 환경
+        retriever_name (str): 테이블 검색기 이름
+        top_n (int): 검색된 상위 테이블 수 제한
+        device (str): LLM 실행에 사용할 디바이스
+        use_enriched_graph (bool): 확장된 그래프 사용 여부
+
+    예시:
+        lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
+        lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리" --use-enriched-graph
+    """
+
+    try:
+        from llm_utils.query_executor import execute_query, extract_sql_from_result
+
+        # 공용 함수를 사용하여 쿼리 실행
+        res = execute_query(
+            query=question,
+            database_env=database_env,
+            retriever_name=retriever_name,
+            top_n=top_n,
+            device=device,
+            use_enriched_graph=use_enriched_graph,
+        )
+
+        # SQL 추출 및 출력
+        sql = extract_sql_from_result(res)
+        if sql:
+            print(sql)
+        else:
+            # SQL 추출 실패 시 원본 쿼리 텍스트 출력
+            generated_query = res.get("generated_query")
+            if generated_query:
+                query_text = (
+                    generated_query.content
+                    if hasattr(generated_query, "content")
+                    else str(generated_query)
+                )
+                print(query_text)
+
+    except Exception as e:
+        logger.error("쿼리 처리 중 오류 발생: %s", e)
+        raise

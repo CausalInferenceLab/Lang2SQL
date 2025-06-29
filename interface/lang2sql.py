@@ -7,14 +7,15 @@ ClickHouse 데이터베이스에 실행한 결과를 출력합니다.
 
 import streamlit as st
 from langchain.chains.sql_database.prompt import SQL_PROMPTS
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 
 from llm_utils.connect_db import ConnectDB
 from llm_utils.display_chart import DisplayChart
-from llm_utils.enriched_graph import builder as enriched_builder
-from llm_utils.graph import builder
+from llm_utils.query_executor import execute_query as execute_query_common
 from llm_utils.llm_response_parser import LLMResponseParser
 from llm_utils.token_utils import TokenUtils
+from llm_utils.graph_utils.enriched_graph import builder as enriched_builder
+from llm_utils.graph_utils.basic_graph import builder
 
 TITLE = "Lang2SQL"
 DEFAULT_QUERY = "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
@@ -40,9 +41,8 @@ def execute_query(
     """
     자연어 쿼리를 SQL로 변환하고 실행 결과를 반환하는 Lang2SQL 그래프 인터페이스 함수입니다.
 
-    이 함수는 Lang2SQL 파이프라인(graph)을 세션 상태에서 가져오거나 새로 컴파일한 뒤,
-    사용자의 자연어 질문을 SQL 쿼리로 변환하고 관련 메타데이터와 함께 결과를 반환합니다.
-    내부적으로 LangChain의 `graph.invoke` 메서드를 호출합니다.
+    이 함수는 공용 execute_query 함수를 호출하여 Lang2SQL 파이프라인을 실행합니다.
+    Streamlit 세션 상태를 활용하여 그래프를 재사용합니다.
 
     Args:
         query (str): 사용자가 입력한 자연어 기반 질문.
@@ -59,26 +59,15 @@ def execute_query(
             - "searched_tables": 참조된 테이블 목록 등 추가 정보
     """
 
-    graph = st.session_state.get("graph")
-    if graph is None:
-        graph_builder = (
-            enriched_builder if st.session_state.get("use_enriched") else builder
-        )
-        graph = graph_builder.compile()
-        st.session_state["graph"] = graph
-
-    res = graph.invoke(
-        input={
-            "messages": [HumanMessage(content=query)],
-            "user_database_env": database_env,
-            "best_practice_query": "",
-            "retriever_name": retriever_name,
-            "top_n": top_n,
-            "device": device,
-        }
+    return execute_query_common(
+        query=query,
+        database_env=database_env,
+        retriever_name=retriever_name,
+        top_n=top_n,
+        device=device,
+        use_enriched_graph=st.session_state.get("use_enriched", False),
+        session_state=st.session_state,
     )
-
-    return res
 
 
 def display_result(
@@ -120,40 +109,50 @@ def display_result(
     if should_show("show_sql"):
         st.markdown("---")
         generated_query = res.get("generated_query")
-        query_text = (
-            generated_query.content
-            if isinstance(generated_query, AIMessage)
-            else str(generated_query)
-        )
+        if generated_query:
+            query_text = (
+                generated_query.content
+                if isinstance(generated_query, AIMessage)
+                else str(generated_query)
+            )
 
-        try:
-            sql = LLMResponseParser.extract_sql(query_text)
-            st.markdown("**생성된 SQL 쿼리:**")
-            st.code(sql, language="sql")
-        except ValueError:
-            st.warning("SQL 블록을 추출할 수 없습니다.")
-            st.text(query_text)
+            # query_text가 문자열인지 확인
+            if isinstance(query_text, str):
+                try:
+                    sql = LLMResponseParser.extract_sql(query_text)
+                    st.markdown("**생성된 SQL 쿼리:**")
+                    st.code(sql, language="sql")
+                except ValueError:
+                    st.warning("SQL 블록을 추출할 수 없습니다.")
+                    st.text(query_text)
 
-        interpretation = LLMResponseParser.extract_interpretation(query_text)
-        if interpretation:
-            st.markdown("**결과 해석:**")
-            st.code(interpretation)
+                interpretation = LLMResponseParser.extract_interpretation(query_text)
+                if interpretation:
+                    st.markdown("**결과 해석:**")
+                    st.code(interpretation)
+            else:
+                st.warning("쿼리 텍스트가 문자열이 아닙니다.")
+                st.text(str(query_text))
 
     if should_show("show_result_description"):
         st.markdown("---")
         st.markdown("**결과 설명:**")
         result_message = res["messages"][-1].content
 
-        try:
-            sql = LLMResponseParser.extract_sql(result_message)
-            st.code(sql, language="sql")
-        except ValueError:
-            st.warning("SQL 블록을 추출할 수 없습니다.")
-            st.text(result_message)
+        if isinstance(result_message, str):
+            try:
+                sql = LLMResponseParser.extract_sql(result_message)
+                st.code(sql, language="sql")
+            except ValueError:
+                st.warning("SQL 블록을 추출할 수 없습니다.")
+                st.text(result_message)
 
-        interpretation = LLMResponseParser.extract_interpretation(result_message)
-        if interpretation:
-            st.code(interpretation, language="plaintext")
+            interpretation = LLMResponseParser.extract_interpretation(result_message)
+            if interpretation:
+                st.code(interpretation, language="plaintext")
+        else:
+            st.warning("결과 메시지가 문자열이 아닙니다.")
+            st.text(str(result_message))
 
     if should_show("show_question_reinterpreted_by_ai"):
         st.markdown("---")
@@ -173,26 +172,41 @@ def display_result(
                 if isinstance(res["generated_query"], AIMessage)
                 else str(res["generated_query"])
             )
-            sql = LLMResponseParser.extract_sql(sql_raw)
-            df = database.run_sql(sql)
-            st.dataframe(df.head(10) if len(df) > 10 else df)
+            if isinstance(sql_raw, str):
+                sql = LLMResponseParser.extract_sql(sql_raw)
+                df = database.run_sql(sql)
+                st.dataframe(df.head(10) if len(df) > 10 else df)
+            else:
+                st.error("SQL 원본이 문자열이 아닙니다.")
         except Exception as e:
             st.error(f"쿼리 실행 중 오류 발생: {e}")
 
     if should_show("show_chart"):
         st.markdown("---")
-        df = database.run_sql(sql)
-        st.markdown("**쿼리 결과 시각화:**")
-        display_code = DisplayChart(
-            question=res["refined_input"].content,
-            sql=sql,
-            df_metadata=f"Running df.dtypes gives:\n{df.dtypes}",
-        )
-        # plotly_code 변수도 따로 보관할 필요 없이 바로 그려도 됩니다
-        fig = display_code.get_plotly_figure(
-            plotly_code=display_code.generate_plotly_code(), df=df
-        )
-        st.plotly_chart(fig)
+        try:
+            sql_raw = (
+                res["generated_query"].content
+                if isinstance(res["generated_query"], AIMessage)
+                else str(res["generated_query"])
+            )
+            if isinstance(sql_raw, str):
+                sql = LLMResponseParser.extract_sql(sql_raw)
+                df = database.run_sql(sql)
+                st.markdown("**쿼리 결과 시각화:**")
+                display_code = DisplayChart(
+                    question=res["refined_input"].content,
+                    sql=sql,
+                    df_metadata=f"Running df.dtypes gives:\n{df.dtypes}",
+                )
+                # plotly_code 변수도 따로 보관할 필요 없이 바로 그려도 됩니다
+                fig = display_code.get_plotly_figure(
+                    plotly_code=display_code.generate_plotly_code(), df=df
+                )
+                st.plotly_chart(fig)
+            else:
+                st.error("SQL 원본이 문자열이 아닙니다.")
+        except Exception as e:
+            st.error(f"차트 생성 중 오류 발생: {e}")
 
 
 db = ConnectDB()

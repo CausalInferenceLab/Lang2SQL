@@ -1,7 +1,7 @@
 import json
 
 from langgraph.graph import StateGraph, END
-from llm_utils.graph import (
+from llm_utils.graph_utils.base import (
     QueryMakerState,
     GET_TABLE_INFO,
     PROFILE_EXTRACTION,
@@ -26,8 +26,8 @@ builder.set_entry_point(GET_TABLE_INFO)
 
 # 노드 추가
 builder.add_node(GET_TABLE_INFO, get_table_info_node)
-builder.add_node(QUERY_REFINER, query_refiner_with_profile_node)
 builder.add_node(PROFILE_EXTRACTION, profile_extraction_node)
+builder.add_node(QUERY_REFINER, query_refiner_with_profile_node)
 builder.add_node(CONTEXT_ENRICHMENT, context_enrichment_node)
 builder.add_node(QUERY_MAKER, query_maker_node)
 

@@ -6,7 +6,7 @@ from utils import load_question_json, save_answer_json
 from tqdm import tqdm
 import uuid
 
-from llm_utils.graph import builder
+from llm_utils.graph_utils.basic_graph import builder
 
 
 def get_eval_result(
