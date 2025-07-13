@@ -34,6 +34,7 @@ Lang2SQL은 자연어 쿼리를 최적화된 SQL 문으로 변환하는 오픈�
 - **🔍 스키마 인식**: DataHub 메타데이터를 활용한 정확한 컬럼 매핑
 - **🛠️ 웹 인터페이스**: 대화형 Streamlit 앱을 통한 사용
 - **📈 시각화**: 생성된 SQL 쿼리 결과를 다양한 차트와 그래프로 시각화하여 데이터 인사이트를 직관적으로 파악
+- **🗄️ 유연한 VectorDB**: FAISS(로컬)와 pgvector(PostgreSQL) 중 선택 가능한 벡터 데이터베이스 지원
 
 ### 🤔 해결하는 문제
 
@@ -83,6 +84,28 @@ lang2sql run-streamlit
 
 ```bash
 lang2sql --datahub_server http://your-datahub-server:8080 run-streamlit -p 8888
+```
+
+### VectorDB 선택
+
+FAISS(로컬) 또는 pgvector(PostgreSQL) 중 선택:
+
+```bash
+# FAISS 사용 (기본값)
+lang2sql --vectordb-type faiss run-streamlit
+
+# pgvector 사용
+lang2sql --vectordb-type pgvector run-streamlit
+```
+
+### 자연어 쿼리 실행
+
+```bash
+# 기본 FAISS 사용
+lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
+
+# pgvector 사용
+lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리" --vectordb-type pgvector --vectordb-location "postgresql://postgres:postgres@localhost:5432/postgres"
 ```
 
 ### 환경 설정

@@ -8,23 +8,7 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from .tools import get_info_from_db
 from .llm_factory import get_embeddings
-
-
-def get_vector_db():
-    """벡터 데이터베이스를 로드하거나 생성합니다."""
-    embeddings = get_embeddings()
-    try:
-        db = FAISS.load_local(
-            os.getcwd() + "/table_info_db",
-            embeddings,
-            allow_dangerous_deserialization=True,
-        )
-    except:
-        documents = get_info_from_db()
-        db = FAISS.from_documents(documents, embeddings)
-        db.save_local(os.getcwd() + "/table_info_db")
-        print("table_info_db not found")
-    return db
+from .vectordb import get_vector_db
 
 
 def load_reranker_model(device: str = "cpu"):

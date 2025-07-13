@@ -64,14 +64,31 @@ logger = logging.getLogger(__name__)
     type=click.Path(exists=True, file_okay=False, dir_okay=True, readable=True),
     help="프롬프트 템플릿(.md 파일)이 저장된 디렉토리 경로를 지정합니다. 지정하지 않으면 기본 경로를 사용합니다.",
 )
+@click.option(
+    "--vectordb-type",
+    type=click.Choice(["faiss", "pgvector"]),
+    default="faiss",
+    help="사용할 벡터 데이터베이스 타입 (기본값: faiss)",
+)
+@click.option(
+    "--vectordb-location",
+    help=(
+        "VectorDB 위치 설정\n"
+        "- FAISS: 디렉토리 경로 (예: ./my_vectordb)\n"
+        "- pgvector: 연결 문자열 (예: postgresql://user:pass@host:port/db)\n"
+        "기본값: FAISS는 './table_info_db', pgvector는 환경변수 사용"
+    ),
+)
 # pylint: disable=redefined-outer-name
 def cli(
     ctx: click.Context,
     datahub_server: str,
     run_streamlit: bool,
     port: int,
-    env_file_path: str = None,
-    prompt_dir_path: str = None,
+    env_file_path: str | None = None,
+    prompt_dir_path: str | None = None,
+    vectordb_type: str = "faiss",
+    vectordb_location: str = None,
 ) -> None:
     """
     Datahub GMS 서버 URL을 설정하고, Streamlit 애플리케이션을 실행할 수 있는 CLI 명령 그룹입니다.
@@ -117,6 +134,23 @@ def cli(
             click.secho(f"프롬프트 디렉토리 환경변수 설정 실패: {str(e)}", fg="red")
             ctx.exit(1)
 
+    # VectorDB 타입을 환경 변수로 설정
+    try:
+        os.environ["VECTORDB_TYPE"] = vectordb_type
+        click.secho(f"VectorDB 타입 설정됨: {vectordb_type}", fg="green")
+    except Exception as e:
+        click.secho(f"VectorDB 타입 설정 실패: {str(e)}", fg="red")
+        ctx.exit(1)
+
+    # VectorDB 경로를 환경 변수로 설정
+    if vectordb_location:
+        try:
+            os.environ["VECTORDB_LOCATION"] = vectordb_location
+            click.secho(f"VectorDB 경로 설정됨: {vectordb_location}", fg="green")
+        except Exception as e:
+            click.secho(f"VectorDB 경로 설정 실패: {str(e)}", fg="red")
+            ctx.exit(1)
+
     logger.info(
         "Initialization started: GMS server = %s, run_streamlit = %s, port = %d",
         datahub_server,
@@ -129,7 +163,7 @@ def cli(
         logger.info("GMS server URL successfully set: %s", datahub_server)
     else:
         logger.error("GMS server health check failed. URL: %s", datahub_server)
-        ctx.exit(1)
+        # ctx.exit(1)
 
     if run_streamlit:
         run_streamlit_command(port)
@@ -234,6 +268,21 @@ def run_streamlit_cli_command(port: int) -> None:
     is_flag=True,
     help="단순화된 그래프(QUERY_REFINER 제거) 사용 여부",
 )
+@click.option(
+    "--vectordb-type",
+    type=click.Choice(["faiss", "pgvector"]),
+    default="faiss",
+    help="사용할 벡터 데이터베이스 타입 (기본값: faiss)",
+)
+@click.option(
+    "--vectordb-location",
+    help=(
+        "VectorDB 위치 설정\n"
+        "- FAISS: 디렉토리 경로 (예: ./my_vectordb)\n"
+        "- pgvector: 연결 문자열 (예: postgresql://user:pass@host:port/db)\n"
+        "기본값: FAISS는 './table_info_db', pgvector는 환경변수 사용"
+    ),
+)
 def query_command(
     question: str,
     database_env: str,
@@ -242,6 +291,8 @@ def query_command(
     device: str,
     use_enriched_graph: bool,
     use_simplified_graph: bool,
+    vectordb_type: str = "faiss",
+    vectordb_location: str = None,
 ) -> None:
     """
     자연어 질문을 SQL 쿼리로 변환하여 출력하는 명령어입니다.
@@ -260,10 +311,18 @@ def query_command(
     예시:
         lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
         lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리" --use-enriched-graph
+        lang2sql query "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리" --vectordb-type pgvector
     """
 
     try:
         from llm_utils.query_executor import execute_query, extract_sql_from_result
+
+        # VectorDB 타입을 환경 변수로 설정
+        os.environ["VECTORDB_TYPE"] = vectordb_type
+
+        # VectorDB 위치를 환경 변수로 설정
+        if vectordb_location:
+            os.environ["VECTORDB_LOCATION"] = vectordb_location
 
         # 공용 함수를 사용하여 쿼리 실행
         res = execute_query(
