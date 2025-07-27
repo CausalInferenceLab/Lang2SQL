@@ -97,18 +97,79 @@ def search_tables(
         # 테이블명 및 설명 추출
         table_name, table_desc = lines[0].split(": ", 1)
 
-        # 컬럼 정보 추출
+        # 섹션별로 정보 추출
         columns = {}
-        if len(lines) > 2 and lines[1].strip() == "Columns:":
-            for line in lines[2:]:
-                if ": " in line:
-                    col_name, col_desc = line.split(": ", 1)
-                    columns[col_name.strip()] = col_desc.strip()
+        queries = []
+        terms = []
+
+        current_section = None
+        current_query = {}
+        current_term = {}
+
+        for i, line in enumerate(lines[1:], 1):
+            line = line.strip()
+
+            # 섹션 헤더 확인
+            if line == "Columns:":
+                current_section = "columns"
+                continue
+            elif line == "Queries:":
+                current_section = "queries"
+                continue
+            elif line == "Terms:":
+                current_section = "terms"
+                continue
+
+            # 각 섹션의 내용 파싱
+            if current_section == "columns" and ": " in line:
+                col_name, col_desc = line.split(": ", 1)
+                columns[col_name.strip()] = col_desc.strip()
+
+            elif current_section == "queries" and line and line != "No queries":
+                # 쿼리 구분자 확인
+                if line == "---":
+                    # 이전 쿼리 저장
+                    if current_query:
+                        queries.append(current_query)
+                        current_query = {}
+                elif line.startswith("Name: "):
+                    # 이전 쿼리가 있다면 저장
+                    if current_query:
+                        queries.append(current_query)
+                    current_query = {"name": line[6:]}  # "Name: " 제거
+                elif line.startswith("Description: "):
+                    if current_query:
+                        current_query["description"] = line[13:]  # "Description: " 제거
+                elif line.startswith("Query: "):
+                    if current_query:
+                        current_query["statement"] = line[7:]  # "Query: " 제거
+
+            elif current_section == "terms" and line and line != "No terms":
+                if line.startswith("Term: "):
+                    # 이전 용어가 있다면 저장
+                    if current_term:
+                        terms.append(current_term)
+                    # 새로운 용어 시작
+                    current_term = {"name": line[6:]}  # "Term: " 제거
+                elif line.startswith("Description: ") and current_term:
+                    current_term["description"] = line[13:]  # "Description: " 제거
+                elif line.startswith("Definition: ") and current_term:
+                    current_term["definition"] = line[12:]  # "Definition: " 제거
+
+        # 마지막 쿼리 저장
+        if current_query and current_section == "queries":
+            queries.append(current_query)
+
+        # 마지막 용어 저장
+        if current_term and current_section == "terms":
+            terms.append(current_term)
 
         # 딕셔너리 저장
         documents_dict[table_name] = {
             "table_description": table_desc.strip(),
             **columns,  # 컬럼 정보 추가
+            "queries": queries,  # 쿼리 정보 추가 (딕셔너리 형태로)
+            "glossary_terms": terms,  # 용어집 정보 추가
         }
 
     return documents_dict

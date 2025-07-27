@@ -140,6 +140,12 @@ def get_info_from_db(max_workers: int = 8) -> List[Document]:
 
     def process_table_info(item: tuple[str, str]) -> str:
         table_name, table_description = item
+        urn = urn_table_mapping.get(table_name, "")
+
+        # fetcher 인스턴스 생성
+        local_fetcher = _get_fetcher()
+
+        # 컬럼 정보 가져오기
         column_info = _get_column_info(
             table_name, urn_table_mapping, max_workers=max_workers
         )
@@ -149,7 +155,80 @@ def get_info_from_db(max_workers: int = 8) -> List[Document]:
                 for col in column_info
             ]
         )
-        return f"{table_name}: {table_description}\nColumns:\n {column_info_str}"
+
+        # 쿼리 및 용어집 정보 가져오기
+        queries_result = local_fetcher.get_queries_by_urn(urn) if urn else {}
+        glossary_terms_result = (
+            local_fetcher.get_glossary_terms_by_urn(urn) if urn else {}
+        )
+
+        # GraphQL 응답에서 실제 쿼리 리스트 추출
+        queries = []
+        if (
+            queries_result
+            and "data" in queries_result
+            and "listQueries" in queries_result["data"]
+            and "queries" in queries_result["data"]["listQueries"]
+        ):
+            queries = queries_result["data"]["listQueries"]["queries"]
+
+        # GraphQL 응답에서 실제 glossary terms 추출
+        glossary_terms = []
+        if (
+            glossary_terms_result
+            and "data" in glossary_terms_result
+            and "dataset" in glossary_terms_result["data"]
+            and "glossaryTerms" in glossary_terms_result["data"]["dataset"]
+            and glossary_terms_result["data"]["dataset"]["glossaryTerms"] is not None
+            and "terms" in glossary_terms_result["data"]["dataset"]["glossaryTerms"]
+        ):
+            terms_data = glossary_terms_result["data"]["dataset"]["glossaryTerms"][
+                "terms"
+            ]
+            for term_item in terms_data:
+                if "term" in term_item and "properties" in term_item["term"]:
+                    props = term_item["term"]["properties"]
+                    name = props.get("name", "")
+                    description = props.get("description", "")
+                    definition = props.get("definition", "")
+                    glossary_terms.append(
+                        {
+                            "name": name,
+                            "description": description,
+                            "definition": definition,
+                        }
+                    )
+
+        # 쿼리 정보를 name, description, statement.value만 추출하여 포맷
+        if queries:
+            formatted_queries = []
+            for q in queries[:3]:  # 최대 3개 쿼리만
+                if isinstance(q, dict) and "properties" in q:
+                    props = q["properties"]
+                    name = props.get("name", "No name")
+                    description = props.get("description", "No description")
+                    statement_value = props.get("statement", {}).get(
+                        "value", "No query statement"
+                    )
+                    formatted_query = f"Name: {name}\nDescription: {description}\nQuery: {statement_value}"
+                    formatted_queries.append(formatted_query)
+            queries_str = (
+                "\n---\n".join(formatted_queries) if formatted_queries else "No queries"
+            )
+        else:
+            queries_str = "No queries"
+        terms_str = (
+            "\n".join(
+                [
+                    f"Term: {term['name']}\nDescription: {term['description']}\nDefinition: {term['definition']}"
+                    for term in glossary_terms
+                ]
+            )
+            if glossary_terms
+            else "No terms"
+        )
+
+        return f"{table_name}: {table_description}\nColumns:\n {column_info_str}\nQueries:\n {queries_str}\nTerms:\n {terms_str}"
 
     table_info_str_list = parallel_process(
         table_info.items(),

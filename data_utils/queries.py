@@ -3617,3 +3617,78 @@ fragment entityField on SchemaFieldEntity {
   __typename
 }
 """
+
+# 특정 URN과 연관된 쿼리를 찾는 GraphQL 쿼리 (수정된 버전)
+QUERIES_BY_URN_QUERY = """
+query listQueries($input: ListQueriesInput!) {
+  listQueries(input: $input) {
+    start
+    total
+    count
+    queries {
+      urn
+      properties {
+        name
+        description
+        statement {
+          value
+          language
+          __typename
+        }
+        __typename
+      }
+      subjects {
+        dataset {
+          urn
+          name
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+"""
+
+# 특정 URN의 glossary terms를 조회하는 GraphQL 쿼리
+GLOSSARY_TERMS_BY_URN_QUERY = """
+query getDataset($urn: String!) {
+  dataset(urn: $urn) {
+    urn
+    name
+    glossaryTerms {
+      terms {
+        term {
+          urn
+          name
+          type
+          hierarchicalName
+          properties {
+            name
+            description
+            definition
+            __typename
+          }
+          parentNodes {
+            nodes {
+              urn
+              properties {
+                name
+                __typename
+              }
+              __typename
+            }
+            __typename
+          }
+          __typename
+        }
+        __typename
+      }
+      __typename
+    }
+    __typename
+  }
+}
+"""

@@ -31,7 +31,7 @@ def create_query_refiner_chain(llm):
             SystemMessagePromptTemplate.from_template(prompt),
             MessagesPlaceholder(variable_name="user_input"),
             SystemMessagePromptTemplate.from_template(
-                "다음은 사용자의 실제 사용 가능한 테이블 및 컬럼 정보입니다:"
+                "다음은 사용자의 실제 사용 가능한 테이블 및 컬럼 정보 와 예시쿼리 및 용어집 정보입니다:"
             ),
             MessagesPlaceholder(variable_name="searched_tables"),
             SystemMessagePromptTemplate.from_template(
@@ -63,7 +63,7 @@ def create_query_maker_chain(llm):
             MessagesPlaceholder(variable_name="refined_input"),
             (
                 "system",
-                "다음은 사용자의 db 환경정보와 사용 가능한 테이블 및 컬럼 정보입니다:",
+                "다음은 사용자의 db 환경정보와 사용 가능한 테이블 및 컬럼 정보 와 예시쿼리 및 용어집 정보입니다:",
             ),
             MessagesPlaceholder(variable_name="user_database_env"),
             MessagesPlaceholder(variable_name="searched_tables"),
@@ -84,7 +84,7 @@ def create_query_refiner_with_profile_chain(llm):
             SystemMessagePromptTemplate.from_template(prompt),
             MessagesPlaceholder(variable_name="user_input"),
             SystemMessagePromptTemplate.from_template(
-                "다음은 사용자의 실제 사용 가능한 테이블 및 컬럼 정보입니다:"
+                "다음은 사용자의 실제 사용 가능한 테이블 및 컬럼 정보 와 예시쿼리 및 용어집 정보입니다:"
             ),
             MessagesPlaceholder(variable_name="searched_tables"),
             # 프로파일 정보 입력

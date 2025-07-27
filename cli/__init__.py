@@ -105,6 +105,8 @@ def cli(
         except Exception as e:
             click.secho(f"환경 변수 로드 중 오류 발생: {str(e)}", fg="red")
             ctx.exit(1)
+    else:
+        dotenv.load_dotenv(override=True)
 
     # 프롬프트 디렉토리를 환경 변수로 설정
     if prompt_dir_path:
