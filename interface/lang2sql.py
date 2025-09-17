@@ -13,7 +13,6 @@ from langchain_core.messages import AIMessage
 
 from db_utils import get_db_connector
 from db_utils.base_connector import BaseConnector
-from infra.db.connect_db import ConnectDB
 from viz.display_chart import DisplayChart
 from engine.query_executor import execute_query as execute_query_common
 from llm_utils.llm_response_parser import LLMResponseParser
@@ -30,6 +29,8 @@ SIDEBAR_OPTIONS = {
     "show_sql": "Show SQL",
     "show_question_reinterpreted_by_ai": "Show User Question Reinterpreted by AI",
     "show_referenced_tables": "Show List of Referenced Tables",
+    "show_question_gate_result": "Show Question Gate Result",
+    "show_document_suitability": "Show Document Suitability",
     "show_table": "Show Table",
     "show_chart": "Show Chart",
 }
@@ -103,8 +104,55 @@ def display_result(
     show_sql_section = has_query and should_show("show_sql")
     show_result_desc = has_query and should_show("show_result_description")
     show_reinterpreted = has_query and should_show("show_question_reinterpreted_by_ai")
+    show_gate_result = should_show("show_question_gate_result")
+    show_doc_suitability = should_show("show_document_suitability")
     show_table_section = has_query and should_show("show_table")
     show_chart_section = has_query and should_show("show_chart")
+    if show_gate_result and ("question_gate_result" in res):
+        st.markdown("---")
+        st.markdown("**Question Gate 결과:**")
+        details = res.get("question_gate_result")
+        if details:
+            try:
+                import json as _json
+
+                st.code(
+                    _json.dumps(details, ensure_ascii=False, indent=2), language="json"
+                )
+            except Exception:
+                st.write(details)
+
+    if show_doc_suitability and ("document_suitability" in res):
+        st.markdown("---")
+        st.markdown("**문서 적합성 평가:**")
+        ds = res.get("document_suitability")
+        if not isinstance(ds, dict):
+            st.write(ds)
+        else:
+
+            def _as_float(value):
+                try:
+                    return float(value)
+                except Exception:
+                    return -1.0
+
+            rows = [
+                {
+                    "table": table_name,
+                    "score": _as_float(info.get("score", -1)),
+                    "matched_columns": ", ".join(info.get("matched_columns", [])),
+                    "missing_entities": ", ".join(info.get("missing_entities", [])),
+                    "reason": info.get("reason", ""),
+                }
+                for table_name, info in ds.items()
+                if isinstance(info, dict)
+            ]
+
+            rows.sort(key=lambda r: r["score"], reverse=True)
+            if rows:
+                st.dataframe(rows, use_container_width=True)
+            else:
+                st.info("문서 적합성 평가 결과가 비어 있습니다.")
 
     if should_show("show_token_usage"):
         st.markdown("---")

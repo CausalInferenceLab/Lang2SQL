@@ -1,8 +1,6 @@
-import os
 import json
 
 from typing_extensions import TypedDict, Annotated
-from langgraph.graph import END, StateGraph
 from langgraph.graph.message import add_messages
 
 
@@ -10,13 +8,15 @@ from llm_utils.chains import (
     query_maker_chain,
     profile_extraction_chain,
     query_enrichment_chain,
+    question_gate_chain,
+    document_suitability_chain,
 )
 
-from llm_utils.tools import get_info_from_db
 from llm_utils.retrieval import search_tables
-from llm_utils.graph_utils.profile_utils import profile_to_text
 
 # 노드 식별자 정의
+QUESTION_GATE = "question_gate"
+EVALUATE_DOCUMENT_SUITABILITY = "evaluate_document_suitability"
 GET_TABLE_INFO = "get_table_info"
 TOOL = "tool"
 TABLE_FILTER = "table_filter"
@@ -30,12 +30,39 @@ class QueryMakerState(TypedDict):
     messages: Annotated[list, add_messages]
     user_database_env: str
     searched_tables: dict[str, dict[str, str]]
+    document_suitability: dict
     best_practice_query: str
     question_profile: dict
     generated_query: str
     retriever_name: str
     top_n: int
     device: str
+    question_gate_result: dict
+
+
+# 노드 함수: QUESTION_GATE 노드
+def question_gate_node(state: QueryMakerState):
+    """
+    사용자의 질문이 SQL로 답변 가능한지 판별하고, 구조화된 결과를 반환하는 게이트 노드입니다.
+
+    - question_gate_chain 으로 적합성을 판정하여
+      `question_gate_result`를 설정합니다.
+
+    Args:
+        state (QueryMakerState): 그래프 상태
+
+    Returns:
+        QueryMakerState: 게이트 판정 결과가 반영된 상태
+    """
+
+    question_text = state["messages"][0].content
+    suitability = question_gate_chain.invoke({"question": question_text})
+    state["question_gate_result"] = {
+        "reason": getattr(suitability, "reason", ""),
+        "missing_entities": getattr(suitability, "missing_entities", []),
+        "requires_data_science": getattr(suitability, "requires_data_science", False),
+    }
+    return state
 
 
 # 노드 함수: PROFILE_EXTRACTION 노드
@@ -128,6 +155,70 @@ def get_table_info_node(state: QueryMakerState):
         device=state["device"],
     )
     state["searched_tables"] = documents_dict
+
+    return state
+
+
+# 노드 함수: DOCUMENT_SUITABILITY 노드
+def document_suitability_node(state: QueryMakerState):
+    """
+    GET_TABLE_INFO에서 수집된 테이블 후보들에 대해 문서 적합성 점수를 계산하는 노드입니다.
+
+    질문(`messages[0].content`)과 `searched_tables`(테이블→칼럼 설명 맵)를 입력으로
+    프롬프트 체인(`document_suitability_chain`)을 호출하고, 결과 딕셔너리를
+    `document_suitability` 상태 키에 저장합니다.
+
+    Returns:
+        QueryMakerState: 문서 적합성 평가 결과가 포함된 상태
+    """
+
+    # 관련 테이블이 없으면 즉시 반환
+    if not state.get("searched_tables"):
+        state["document_suitability"] = {}
+        return state
+
+    res = document_suitability_chain.invoke(
+        {
+            "question": state["messages"][0].content,
+            "tables": state["searched_tables"],
+        }
+    )
+
+    items = (
+        res.get("results", [])
+        if isinstance(res, dict)
+        else getattr(res, "results", None)
+        or (res.model_dump().get("results", []) if hasattr(res, "model_dump") else [])
+    )
+
+    normalized = {}
+    for x in items:
+        d = (
+            x.model_dump()
+            if hasattr(x, "model_dump")
+            else (
+                x
+                if isinstance(x, dict)
+                else {
+                    "table_name": getattr(x, "table_name", ""),
+                    "score": getattr(x, "score", 0),
+                    "reason": getattr(x, "reason", ""),
+                    "matched_columns": getattr(x, "matched_columns", []),
+                    "missing_entities": getattr(x, "missing_entities", []),
+                }
+            )
+        )
+        t = d.get("table_name")
+        if not t:
+            continue
+        normalized[t] = {
+            "score": float(d.get("score", 0)),
+            "reason": d.get("reason", ""),
+            "matched_columns": d.get("matched_columns", []),
+            "missing_entities": d.get("missing_entities", []),
+        }
+
+    state["document_suitability"] = normalized
 
     return state
 
