@@ -2,13 +2,15 @@ services:
   streamlit:
     hostname: streamlit
     container_name: streamlit
-    build: .
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
     ports:
       - "8501:8501"
     volumes:
-      - .:/app
+      - ../:/app
     env_file:
-      - .env
+      - ../.env
     environment:
       - STREAMLIT_SERVER_PORT=8501
       - DATABASE_URL=postgresql://pgvector:pgvector@pgvector:5432/streamlit
@@ -27,7 +29,6 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./postgres/schema.sql:/docker-entrypoint-initdb.d/schema.sql
 
 volumes:
   pgdata:
