@@ -1,0 +1,23 @@
+# docker compose -f docker-compose-postgres.yml up
+# docker compose -f docker-compose-postgres.yml down
+
+services:
+  postgres:
+    image: postgres:15
+    hostname: postgres
+    container_name: postgres
+    restart: always
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: root
+      POSTGRES_PASSWORD: rootpassword
+      POSTGRES_DB: postgres
+      TZ: Asia/Seoul
+      LANG: en_US.utf8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/init:/docker-entrypoint-initdb.d/init.sql
+
+volumes:
+  postgres_data:
