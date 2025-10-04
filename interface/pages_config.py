@@ -16,4 +16,5 @@ PAGES = [
     st.Page("app_pages/home.py", title="🏠 홈"),
     st.Page("app_pages/lang2sql.py", title="🔍 Lang2SQL"),
     st.Page("app_pages/graph_builder.py", title="📊 그래프 빌더"),
+    st.Page("app_pages/settings.py", title="⚙️ 설정"),
 ]

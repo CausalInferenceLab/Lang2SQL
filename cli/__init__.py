@@ -1,7 +1,8 @@
 """Lang2SQL CLI 프로그램입니다.
-이 프로그램은 Datahub GMS 서버 URL을 설정하고, 필요 시 Streamlit 인터페이스를 실행합니다.
+이 프로그램은 환경 초기화와 Streamlit 실행을 제공합니다.
 
-명령어 예시: lang2sql --datahub_server http://localhost:8080 --run-streamlit
+주의: --datahub_server 옵션은 더 이상 사용되지 않습니다(deprecated).
+DataHub 설정은 UI의 설정 > 데이터 소스 탭에서 관리하세요.
 """
 
 import click
@@ -11,8 +12,7 @@ from cli.commands.run_streamlit import run_streamlit_cli_command
 from cli.core.environment import initialize_environment
 from cli.core.streamlit_runner import run_streamlit_command
 from cli.utils.logger import configure_logging
-from infra.monitoring.check_server import CheckServer
-from llm_utils.tools import set_gms_server
+
 from version import __version__
 
 logger = configure_logging()
@@ -24,12 +24,8 @@ logger = configure_logging()
 @click.pass_context
 @click.option(
     "--datahub_server",
-    default="http://localhost:8080",
-    help=(
-        "Datahub GMS 서버의 URL을 설정합니다. "
-        "기본값은 'http://localhost:8080'이며, "
-        "운영 환경 또는 테스트 환경에 맞게 변경할 수 있습니다."
-    ),
+    default=None,
+    help=("[Deprecated] DataHub GMS URL. 이제는 UI 설정 > 데이터 소스에서 관리하세요."),
 )
 @click.option(
     "--run-streamlit",
@@ -61,60 +57,57 @@ logger = configure_logging()
 )
 @click.option(
     "--vectordb-type",
-    type=click.Choice(["faiss", "pgvector"]),
-    default="faiss",
-    help="사용할 벡터 데이터베이스 타입 (기본값: faiss)",
+    default=None,
+    help="[Deprecated] VectorDB 타입. 이제는 UI 설정 > 데이터 소스에서 관리하세요.",
 )
 @click.option(
     "--vectordb-location",
-    help=(
-        "VectorDB 위치 설정\n"
-        "- FAISS: 디렉토리 경로 (예: ./my_vectordb)\n"
-        "- pgvector: 연결 문자열 (예: postgresql://user:pass@host:port/db)\n"
-        "기본값: FAISS는 './dev/table_info_db', pgvector는 환경변수 사용"
-    ),
+    default=None,
+    help="[Deprecated] VectorDB 위치. 이제는 UI 설정 > 데이터 소스에서 관리하세요.",
 )
 def cli(
     ctx: click.Context,
-    datahub_server: str,
+    datahub_server: str | None,
     run_streamlit: bool,
     port: int,
     env_file_path: str | None = None,
     prompt_dir_path: str | None = None,
-    vectordb_type: str = "faiss",
-    vectordb_location: str = None,
+    vectordb_type: str | None = None,
+    vectordb_location: str | None = None,
 ) -> None:
     """Lang2SQL CLI 엔트리포인트.
 
     - 환경 변수 및 VectorDB 설정 초기화
-    - GMS 서버 연결 및 헬스체크
     - 필요 시 Streamlit 애플리케이션 실행
     """
 
     try:
         initialize_environment(
-            env_file_path=env_file_path,
-            prompt_dir_path=prompt_dir_path,
-            vectordb_type=vectordb_type,
-            vectordb_location=vectordb_location,
+            env_file_path=env_file_path, prompt_dir_path=prompt_dir_path
         )
     except Exception:
         logger.error("Initialization failed.", exc_info=True)
         ctx.exit(1)
 
     logger.info(
-        "Initialization started: GMS server = %s, run_streamlit = %s, port = %d",
-        datahub_server,
+        "Initialization started: run_streamlit = %s, port = %d",
         run_streamlit,
         port,
     )
 
-    if CheckServer.is_gms_server_healthy(url=datahub_server):
-        set_gms_server(datahub_server)
-        logger.info("GMS server URL successfully set: %s", datahub_server)
-    else:
-        logger.error("GMS server health check failed. URL: %s", datahub_server)
-        # ctx.exit(1)
+    # Deprecated 안내: CLI에서 DataHub 설정은 더 이상 처리하지 않습니다
+    if datahub_server:
+        click.secho(
+            "[Deprecated] --datahub_server 옵션은 더 이상 사용되지 않습니다. 설정 > 데이터 소스 탭에서 설정하세요.",
+            fg="yellow",
+        )
+
+    # Deprecated 안내: CLI에서 VectorDB 설정은 더 이상 처리하지 않습니다
+    if vectordb_type or vectordb_location:
+        click.secho(
+            "[Deprecated] --vectordb-type/--vectordb-location 옵션은 더 이상 사용되지 않습니다. 설정 > 데이터 소스 탭에서 설정하세요.",
+            fg="yellow",
+        )
 
     if run_streamlit:
         run_streamlit_command(port)
