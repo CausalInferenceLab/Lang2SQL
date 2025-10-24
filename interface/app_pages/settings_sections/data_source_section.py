@@ -183,6 +183,12 @@ def render_data_source_section(config: Config | None = None) -> None:
                         st.error(f"추가 실패: {e}")
 
     else:  # VectorDB
+        # TODO: PLACEHOLDER 다른 곳으로 옮기긴
+        PLACEHOLDERS = {
+            "faiss": "FAISS 디렉토리 경로 (예: ./dev/table_info_db)",
+            "pgvector": "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)",
+            "qdrant": "Qdrant 디렉토리 경로 (예: ./dev/table_info_db)"
+        }
         with st.container(border=True):
             st.write("등록된 VectorDB")
             for source in list(registry.vectordb):
@@ -216,15 +222,12 @@ def render_data_source_section(config: Config | None = None) -> None:
                 if existing:
                     new_type = st.selectbox(
                         "타입",
-                        options=["faiss", "pgvector"],
-                        index=(0 if existing.type == "faiss" else 1),
+                        options=["faiss", "pgvector", "qdrant"],
+                        index=["faiss", "pgvector", "qdrant"].index(existing.type),
                         key="vdb_edit_type",
                     )
-                    new_loc_placeholder = (
-                        "FAISS 디렉토리 경로 (예: ./dev/table_info_db)"
-                        if new_type == "faiss"
-                        else "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)"
-                    )
+                    st.write(new_type)
+                    new_loc_placeholder = PLACEHOLDERS.get(new_type)
                     new_location = st.text_input(
                         "위치",
                         value=existing.location,
@@ -275,13 +278,14 @@ def render_data_source_section(config: Config | None = None) -> None:
             st.write("VectorDB 추가")
             vdb_name = st.text_input("이름", key="vdb_name")
             vdb_type = st.selectbox(
-                "타입", options=["faiss", "pgvector"], key="vdb_type"
+                "타입", options=["faiss", "pgvector", "qdrant"], key="vdb_type"
             )
             vdb_loc_placeholder = (
                 "FAISS 디렉토리 경로 (예: ./dev/table_info_db)"
                 if vdb_type == "faiss"
                 else "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)"
             )
+            vdb_loc_placeholder = PLACEHOLDERS.get(vdb_type)
             vdb_location = st.text_input(
                 "위치", key="vdb_location", placeholder=vdb_loc_placeholder
             )

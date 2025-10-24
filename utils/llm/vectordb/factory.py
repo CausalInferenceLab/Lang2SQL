@@ -7,6 +7,7 @@ from typing import Optional
 
 from utils.llm.vectordb.faiss_db import get_faiss_vector_db
 from utils.llm.vectordb.pgvector_db import get_pgvector_db
+# from utils.llm.vectordb.qdrant_db import get_qdrant_db
 
 
 def get_vector_db(
@@ -32,6 +33,8 @@ def get_vector_db(
         return get_faiss_vector_db(vectordb_location)
     elif vectordb_type == "pgvector":
         return get_pgvector_db(vectordb_location)
+    # elif vectordb_type == 'qdrant':
+    #     return get_qdrant_db(vectordb_location)
     else:
         raise ValueError(
             f"지원하지 않는 VectorDB 타입: {vectordb_type}. 'faiss' 또는 'pgvector'를 사용하세요."

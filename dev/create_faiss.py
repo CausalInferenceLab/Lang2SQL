@@ -18,13 +18,26 @@ from collections import defaultdict
 
 from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
-from langchain_openai import OpenAIEmbeddings
+# from langchain_openai import OpenAIEmbeddings
+from langchain_openai import AzureOpenAIEmbeddings
 
 load_dotenv()
 # CSV 파일 경로
-CSV_PATH = "./dev/table_catalog.csv"
+# CSV_PATH = "./dev/table_catalog.csv"
 # .env의 VECTORDB_LOCATION과 동일하게 맞추세요
-OUTPUT_DIR = "./dev/table_info_db"
+# OUTPUT_DIR = "./dev/table_info_faiss"
+
+CSV_PATH = r"D:\Code\lang2sql\Lang2SQL\dev\table_catalog.csv"
+OUTPUT_DIR = "D:\Code\lang2sql\Lang2SQL\dev\table_info_faiss"
+
+
+emb = AzureOpenAIEmbeddings(
+    azure_deployment=os.getenv('AZURE_OPENAI_EMBEDDING_MODEL'),
+    azure_endpoint=os.getenv('AZURE_OPENAI_EMBEDDING_ENDPOINT'),
+    api_key=os.getenv('AZURE_OPENAI_EMBEDDING_KEY'),
+    openai_api_version=os.getenv('AZURE_OPENAI_EMBEDDING_API_VERSION')
+)
+
 
 tables = defaultdict(lambda: {"desc": "", "columns": []})
 with open(CSV_PATH, newline="", encoding="utf-8") as f:
@@ -44,9 +57,6 @@ for t, info in tables.items():
 
     docs.append(Document(page_content=page))
 
-emb = OpenAIEmbeddings(
-    model=os.getenv("OPEN_AI_EMBEDDING_MODEL"), openai_api_key=os.getenv("OPEN_AI_KEY")
-)
 db = FAISS.from_documents(docs, emb)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 db.save_local(OUTPUT_DIR)

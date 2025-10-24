@@ -156,9 +156,10 @@ def update_vectordb_settings(
       - vectordb_type must be 'faiss' or 'pgvector'
       - if type == 'faiss' and location provided: must be an existing directory
       - if type == 'pgvector' and location provided: must start with 'postgresql://'
+      - if type == 'qdrant' and location provided: must be an existing directory
     """
     vtype = (vectordb_type or "").lower()
-    if vtype not in ("faiss", "pgvector"):
+    if vtype not in ("faiss", "pgvector", "qdrant"):
         raise ValueError(f"지원하지 않는 VectorDB 타입: {vectordb_type}")
 
     vloc = vectordb_location or ""
@@ -178,6 +179,19 @@ def update_vectordb_settings(
         elif vtype == "pgvector":
             if not vloc.startswith("postgresql://"):
                 raise ValueError("pgvector URL은 'postgresql://'로 시작해야 합니다")
+        elif vtype == 'qdrant':
+            path = Path(vloc)
+            # 신규 경로 허용: 존재하면 디렉토리인지 확인, 없으면 상위 디렉토리 생성
+            if path.exists() and not path.is_dir():
+                raise ValueError(
+                    f"유효하지 않은 Qdrant 디렉토리 경로(파일 경로임): {vloc}"
+                )
+            if not path.exists():
+                try:
+                    path.mkdir(parents=True, exist_ok=True)
+                except Exception as e:
+                    raise ValueError(f"Qdrant 경로 생성 실패: {vloc} | {e}")
+
 
     # Persist to runtime config
     config.vectordb_type = vtype

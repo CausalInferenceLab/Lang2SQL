@@ -81,7 +81,7 @@ def add_vectordb_source(
     note: Optional[str] = None,
 ) -> None:
     vtype = (vtype or "").lower()
-    if vtype not in ("faiss", "pgvector"):
+    if vtype not in ("faiss", "pgvector", "qdrant"):
         raise ValueError("VectorDB 타입은 'faiss' 또는 'pgvector'여야 합니다")
     registry = get_data_sources_registry()
     if any(s.name == name for s in registry.vectordb):
@@ -107,7 +107,7 @@ def update_vectordb_source(
     note: Optional[str],
 ) -> None:
     vtype = (vtype or "").lower()
-    if vtype not in ("faiss", "pgvector"):
+    if vtype not in ("faiss", "pgvector", "qdrant"):
         raise ValueError("VectorDB 타입은 'faiss' 또는 'pgvector'여야 합니다")
     registry = get_data_sources_registry()
     for idx, s in enumerate(registry.vectordb):
