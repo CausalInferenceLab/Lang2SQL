@@ -49,7 +49,6 @@ def execute_query(
             - "messages": 전체 LLM 응답 메시지 목록
             - "searched_tables": 참조된 테이블 목록 등 추가 정보
     """
-
     logger.info("Processing query: %s", query)
 
     # 그래프 선택

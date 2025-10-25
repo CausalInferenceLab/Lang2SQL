@@ -142,5 +142,6 @@ if st.button("쿼리 실행"):
         retriever_name=user_retriever,
         top_n=user_top_n,
         device=device,
+        use_enriched=use_enriched,
     )
     display_result(res=res)

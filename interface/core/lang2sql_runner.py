@@ -16,6 +16,7 @@ def run_lang2sql(
     retriever_name,
     top_n,
     device,
+    use_enriched,
 ):
     """
     Lang2SQL 실행 함수.
@@ -40,4 +41,5 @@ def run_lang2sql(
         retriever_name=retriever_name,
         top_n=top_n,
         device=device,
+        use_enriched_graph=use_enriched,
     )
