@@ -139,20 +139,31 @@ def render_llm_section(config: Config | None = None) -> None:
         values: dict[str, str | None] = {}
         non_secret_values: dict[str, str | None] = {}
         for label, env_key, is_secret in fields:
-            prefill = st.session_state.get(env_key) or os.getenv(env_key) or ""
+            current_val = st.session_state.get(env_key) or os.getenv(env_key) or ""
             if is_secret:
-                values[env_key] = st.text_input(
-                    label, value=prefill, type="password", key=f"llm_{env_key}"
+                # 비밀키는 값을 미리 채우지 않음 (보안)
+                # 값이 설정되어 있으면 placeholder로 표시
+                placeholder = (
+                    "값 설정됨 (변경하려면 입력)" if current_val else "값 없음"
                 )
+                new_val = st.text_input(
+                    label,
+                    value="",
+                    type="password",
+                    key=f"llm_{env_key}",
+                    placeholder=placeholder,
+                )
+                # 입력값이 없으면 기존 값 유지, 있으면 새 값 사용
+                values[env_key] = new_val if new_val else current_val
             else:
-                v = st.text_input(label, value=prefill, key=f"llm_{env_key}")
+                v = st.text_input(label, value=current_val, key=f"llm_{env_key}")
                 values[env_key] = v
                 non_secret_values[env_key] = v
 
         # 메시지 영역
         llm_msg = st.empty()
 
-        st.markdown("**프로파일 저장 (비밀키 제외)**")
+        st.markdown("**프로파일 저장**")
         with st.form("llm_profile_save_form"):
             prof_cols = st.columns([2, 2])
             with prof_cols[0]:
@@ -185,10 +196,16 @@ def render_llm_section(config: Config | None = None) -> None:
             with st.expander("저장된 LLM 프로파일", expanded=False):
                 for p in reg.profiles:
                     if p.fields:
-                        pairs = [
-                            f"{k}={p.fields.get(k, '')}"
-                            for k in sorted(p.fields.keys())
-                        ]
+                        # 필드 정의 가져오기 (시크릿 여부 확인용)
+                        fields_def = _llm_fields(p.provider)
+                        secret_keys = {k for _, k, is_secret in fields_def if is_secret}
+
+                        pairs = []
+                        for k in sorted(p.fields.keys()):
+                            val = p.fields.get(k, "")
+                            if k in secret_keys:
+                                val = "***"
+                            pairs.append(f"{k}={val}")
                         fields_text = ", ".join(pairs)
                     else:
                         fields_text = "-"
@@ -217,20 +234,28 @@ def render_llm_section(config: Config | None = None) -> None:
         e_fields = _embedding_fields(e_provider)
         e_values: dict[str, str | None] = {}
         for label, env_key, is_secret in e_fields:
-            prefill = st.session_state.get(env_key) or os.getenv(env_key) or ""
+            current_val = st.session_state.get(env_key) or os.getenv(env_key) or ""
             if is_secret:
-                e_values[env_key] = st.text_input(
-                    label, value=prefill, type="password", key=f"emb_{env_key}"
+                placeholder = (
+                    "값 설정됨 (변경하려면 입력)" if current_val else "값 없음"
                 )
+                new_val = st.text_input(
+                    label,
+                    value="",
+                    type="password",
+                    key=f"emb_{env_key}",
+                    placeholder=placeholder,
+                )
+                e_values[env_key] = new_val if new_val else current_val
             else:
                 e_values[env_key] = st.text_input(
-                    label, value=prefill, key=f"emb_{env_key}"
+                    label, value=current_val, key=f"emb_{env_key}"
                 )
 
         # 메시지 영역: 버튼 컬럼 밖(섹션 폭)
         emb_msg = st.empty()
 
-        st.markdown("**Embeddings 프로파일 저장 (시크릿 포함)**")
+        st.markdown("**Embeddings 프로파일 저장**")
         with st.form("embedding_profile_save_form"):
             e_prof_cols = st.columns([2, 2])
             with e_prof_cols[0]:
@@ -263,10 +288,16 @@ def render_llm_section(config: Config | None = None) -> None:
             with st.expander("저장된 Embeddings 프로파일", expanded=False):
                 for p in e_reg.profiles:
                     if p.fields:
-                        pairs = [
-                            f"{k}={p.fields.get(k, '')}"
-                            for k in sorted(p.fields.keys())
-                        ]
+                        # 필드 정의 가져오기 (시크릿 여부 확인용)
+                        fields_def = _embedding_fields(p.provider)
+                        secret_keys = {k for _, k, is_secret in fields_def if is_secret}
+
+                        pairs = []
+                        for k in sorted(p.fields.keys()):
+                            val = p.fields.get(k, "")
+                            if k in secret_keys:
+                                val = "***"
+                            pairs.append(f"{k}={val}")
                         fields_text = ", ".join(pairs)
                     else:
                         fields_text = "-"
