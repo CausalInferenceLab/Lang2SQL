@@ -1,7 +1,13 @@
-# docker compose -f docker-compose-postgres.yml up
-# docker compose -f docker-compose-postgres.yml down
+# docker compose -f docker/docker-compose.yml -f docker/docker-compose-postgres.yml up
+# docker compose -f docker/docker-compose.yml -f docker/docker-compose-postgres.yml down
 
 services:
+  streamlit:
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@postgres:5432/streamlit
+    depends_on:
+      - postgres
+
   postgres:
     image: postgres:15
     hostname: postgres
@@ -12,7 +18,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-      POSTGRES_DB: postgres
+      POSTGRES_DB: streamlit
       TZ: Asia/Seoul
       LANG: en_US.utf8
     volumes:
