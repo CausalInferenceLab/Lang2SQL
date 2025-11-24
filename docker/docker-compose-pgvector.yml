@@ -1,7 +1,13 @@
-# docker compose -f docker-compose-pgvector.yml up
-# docker compose -f docker-compose-pgvector.yml down
+# docker compose -f docker/docker-compose.yml -f docker/docker-compose-pgvector.yml up
+# docker compose -f docker/docker-compose.yml -f docker/docker-compose-pgvector.yml down
 
 services:
+  streamlit:
+    environment:
+      - DATABASE_URL=postgresql://pgvector:pgvector@pgvector:5432/streamlit
+    depends_on:
+      - pgvector
+
   pgvector:
     image: pgvector/pgvector:pg17
     hostname: pgvector
@@ -12,7 +18,7 @@ services:
     environment:
       POSTGRES_USER: pgvector
       POSTGRES_PASSWORD: pgvector
-      POSTGRES_DB: pgvector
+      POSTGRES_DB: streamlit
       TZ: Asia/Seoul
       LANG: en_US.utf8
     volumes:
