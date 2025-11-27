@@ -103,10 +103,36 @@ def render_data_source_section(config: Config | None = None) -> None:
                     new_url = st.text_input(
                         "URL", value=existing.url, key="dh_edit_url"
                     )
-                    new_faiss = st.text_input(
-                        "FAISS 저장 경로(선택)",
-                        value=existing.faiss_path or "",
-                        key="dh_edit_faiss",
+                    new_vdb_type = st.selectbox(
+                        "VectorDB 타입",
+                        options=["faiss", "pgvector", "qdrant"],
+                        index=(
+                            0
+                            if existing.vectordb_type == "faiss"
+                            else (1 if existing.vectordb_type == "pgvector" else 2)
+                        ),
+                        key="dh_edit_vdb_type",
+                    )
+                    new_vdb_loc_placeholder = (
+                        "FAISS 디렉토리 경로 (예: ./dev/table_info_db)"
+                        if new_vdb_type == "faiss"
+                        else (
+                            "pgvector 연결 문자열 (postgresql://...)"
+                            if new_vdb_type == "pgvector"
+                            else "Qdrant URL (예: http://localhost:6333)"
+                        )
+                    )
+                    new_vdb_location = st.text_input(
+                        "VectorDB 위치",
+                        value=existing.vectordb_location or existing.faiss_path or "",
+                        key="dh_edit_vdb_loc",
+                        placeholder=new_vdb_loc_placeholder,
+                    )
+                    new_vdb_api_key = st.text_input(
+                        "VectorDB API Key (선택)",
+                        value=existing.vectordb_api_key or "",
+                        type="password",
+                        key="dh_edit_vdb_key",
                     )
                     new_note = st.text_input(
                         "메모", value=existing.note or "", key="dh_edit_note"
@@ -128,7 +154,14 @@ def render_data_source_section(config: Config | None = None) -> None:
                                 update_datahub_source(
                                     name=edit_dh,
                                     url=new_url,
-                                    faiss_path=(new_faiss or None),
+                                    faiss_path=(
+                                        new_vdb_location
+                                        if new_vdb_type == "faiss"
+                                        else None
+                                    ),
+                                    vectordb_type=new_vdb_type,
+                                    vectordb_location=(new_vdb_location or None),
+                                    vectordb_api_key=(new_vdb_api_key or None),
                                     note=(new_note or None),
                                 )
                                 st.success("저장되었습니다.")
@@ -147,10 +180,29 @@ def render_data_source_section(config: Config | None = None) -> None:
             dh_url = st.text_input(
                 "URL", key="dh_url", placeholder="http://localhost:8080"
             )
-            dh_faiss = st.text_input(
-                "FAISS 저장 경로(선택)",
-                key="dh_faiss",
-                placeholder="예: ./dev/table_info_db",
+            dh_vdb_type = st.selectbox(
+                "VectorDB 타입",
+                options=["faiss", "pgvector", "qdrant"],
+                key="dh_new_vdb_type",
+            )
+            dh_vdb_loc_placeholder = (
+                "FAISS 디렉토리 경로 (예: ./dev/table_info_db)"
+                if dh_vdb_type == "faiss"
+                else (
+                    "pgvector 연결 문자열 (postgresql://...)"
+                    if dh_vdb_type == "pgvector"
+                    else "Qdrant URL (예: http://localhost:6333)"
+                )
+            )
+            dh_vdb_location = st.text_input(
+                "VectorDB 위치",
+                key="dh_new_vdb_loc",
+                placeholder=dh_vdb_loc_placeholder,
+            )
+            dh_vdb_api_key = st.text_input(
+                "VectorDB API Key (선택)",
+                type="password",
+                key="dh_new_vdb_key",
             )
             dh_note = st.text_input("메모", key="dh_note", placeholder="선택")
 
@@ -174,7 +226,12 @@ def render_data_source_section(config: Config | None = None) -> None:
                             add_datahub_source(
                                 name=dh_name,
                                 url=dh_url,
-                                faiss_path=(dh_faiss or None),
+                                faiss_path=(
+                                    dh_vdb_location if dh_vdb_type == "faiss" else None
+                                ),
+                                vectordb_type=dh_vdb_type,
+                                vectordb_location=(dh_vdb_location or None),
+                                vectordb_api_key=(dh_vdb_api_key or None),
                                 note=dh_note or None,
                             )
                             st.success("추가되었습니다.")
@@ -216,20 +273,34 @@ def render_data_source_section(config: Config | None = None) -> None:
                 if existing:
                     new_type = st.selectbox(
                         "타입",
-                        options=["faiss", "pgvector"],
-                        index=(0 if existing.type == "faiss" else 1),
+                        options=["faiss", "pgvector", "qdrant"],
+                        index=(
+                            0
+                            if existing.type == "faiss"
+                            else (1 if existing.type == "pgvector" else 2)
+                        ),
                         key="vdb_edit_type",
                     )
                     new_loc_placeholder = (
                         "FAISS 디렉토리 경로 (예: ./dev/table_info_db)"
                         if new_type == "faiss"
-                        else "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)"
+                        else (
+                            "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)"
+                            if new_type == "pgvector"
+                            else "Qdrant URL (예: http://localhost:6333)"
+                        )
                     )
                     new_location = st.text_input(
                         "위치",
                         value=existing.location,
                         key="vdb_edit_location",
                         placeholder=new_loc_placeholder,
+                    )
+                    new_api_key = st.text_input(
+                        "API Key (선택)",
+                        value=existing.api_key or "",
+                        type="password",
+                        key="vdb_edit_key",
                     )
                     new_prefix = st.text_input(
                         "컬렉션 접두사(선택)",
@@ -258,6 +329,7 @@ def render_data_source_section(config: Config | None = None) -> None:
                                     name=edit_vdb,
                                     vtype=new_type,
                                     location=new_location,
+                                    api_key=(new_api_key or None),
                                     collection_prefix=(new_prefix or None),
                                     note=(new_note or None),
                                 )
@@ -275,15 +347,22 @@ def render_data_source_section(config: Config | None = None) -> None:
             st.write("VectorDB 추가")
             vdb_name = st.text_input("이름", key="vdb_name")
             vdb_type = st.selectbox(
-                "타입", options=["faiss", "pgvector"], key="vdb_type"
+                "타입", options=["faiss", "pgvector", "qdrant"], key="vdb_type"
             )
             vdb_loc_placeholder = (
                 "FAISS 디렉토리 경로 (예: ./dev/table_info_db)"
                 if vdb_type == "faiss"
-                else "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)"
+                else (
+                    "pgvector 연결 문자열 (postgresql://user:pass@host:port/db)"
+                    if vdb_type == "pgvector"
+                    else "Qdrant URL (예: http://localhost:6333)"
+                )
             )
             vdb_location = st.text_input(
                 "위치", key="vdb_location", placeholder=vdb_loc_placeholder
+            )
+            vdb_api_key = st.text_input(
+                "API Key (선택)", type="password", key="vdb_new_key"
             )
             vdb_prefix = st.text_input(
                 "컬렉션 접두사(선택)", key="vdb_prefix", placeholder="예: app1_"
@@ -312,6 +391,7 @@ def render_data_source_section(config: Config | None = None) -> None:
                                 name=vdb_name,
                                 vtype=vdb_type,
                                 location=vdb_location,
+                                api_key=(vdb_api_key or None),
                                 collection_prefix=(vdb_prefix or None),
                                 note=(vdb_note or None),
                             )

@@ -153,12 +153,13 @@ def update_vectordb_settings(
     """Validate and update VectorDB settings into env and session.
 
     Basic validation rules follow CLI's behavior:
-      - vectordb_type must be 'faiss' or 'pgvector'
+      - vectordb_type must be 'faiss' or 'pgvector' or 'qdrant'
       - if type == 'faiss' and location provided: must be an existing directory
       - if type == 'pgvector' and location provided: must start with 'postgresql://'
+      - if type == 'qdrant' and location provided: must start with 'http://'
     """
     vtype = (vectordb_type or "").lower()
-    if vtype not in ("faiss", "pgvector"):
+    if vtype not in ("faiss", "pgvector", "qdrant"):
         raise ValueError(f"지원하지 않는 VectorDB 타입: {vectordb_type}")
 
     vloc = vectordb_location or ""
