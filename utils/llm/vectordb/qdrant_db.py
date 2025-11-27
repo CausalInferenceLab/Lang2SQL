@@ -1,5 +1,5 @@
 from qdrant_client import QdrantClient, models
-from typing import List, Dict, Any, Optional, Union
+from typing import List, Dict, Any, Optional, Union, Callable
 import os
 from dotenv import load_dotenv
 
@@ -112,7 +112,7 @@ class QdrantDB:
         )
 
     def similarity_search(
-        self, query: str, k: int = 5, collection_name: str = "table_info"
+        self, query: str, k: int = 5, collection_name: str = "lang2sql_table_schema"
     ) -> List[Any]:
         """
         LangChain 호환성을 위한 유사도 검색 메서드.
@@ -179,28 +179,13 @@ class QdrantDB:
         # 여기서는 간단하게 구현
         return self.similarity_search(query)
 
-    def initialize_collection_if_empty(self, collection_name: str = "table_info"):
+    def _get_table_schema_points(self) -> List[Dict[str, Any]]:
         """
-        컬렉션이 비어있거나 없으면 스키마 정보를 가져와서 채웁니다.
+        기본 테이블 스키마 정보를 가져와서 포인트 리스트로 변환합니다.
         """
         from utils.llm.tools.datahub import get_table_schema
         from utils.llm.core import get_embeddings
 
-        # 컬렉션 존재 여부 확인 및 생성
-        if not self.client.collection_exists(collection_name):
-            self.create_collection(collection_name)
-
-        # 데이터 존재 여부 확인
-        count_result = self.client.count(collection_name=collection_name)
-        if count_result.count > 0:
-            print(
-                f"Collection '{collection_name}' is not empty. Skipping initialization."
-            )
-            return
-
-        print(f"Initializing collection '{collection_name}' with table schema...")
-
-        # 스키마 정보 가져오기
         raw_data = get_table_schema()
         embeddings = get_embeddings()
 
@@ -229,8 +214,46 @@ class QdrantDB:
                         "payload": payload,
                     }
                 )
+        return points
+
+    def initialize_collection_if_empty(
+        self,
+        collection_name: str = "lang2sql_table_schema",
+        force_update: bool = False,
+        data_loader: Optional[Callable[[], List[Dict[str, Any]]]] = None,
+    ):
+        """
+        컬렉션이 비어있거나 없으면 데이터를 채웁니다.
+
+        Args:
+            collection_name: 초기화할 컬렉션 이름.
+            force_update: 데이터가 있어도 강제로 업데이트할지 여부.
+            data_loader: 데이터를 가져오는 함수. 포인트 리스트(id, vector, payload)를 반환해야 합니다.
+                         None인 경우 기본 테이블 스키마 로더를 사용합니다.
+        """
+        # 컬렉션 존재 여부 확인 및 생성
+        if not self.client.collection_exists(collection_name):
+            self.create_collection(collection_name)
+
+        # 데이터 존재 여부 확인
+        if not force_update:
+            count_result = self.client.count(collection_name=collection_name)
+            if count_result.count > 0:
+                print(
+                    f"Collection '{collection_name}' is not empty. Skipping initialization."
+                )
+                return
+
+        print(f"Initializing collection '{collection_name}'...")
+
+        # 데이터 로드
+        if data_loader is None:
+            # 기본 동작: 테이블 스키마 정보 사용
+            points = self._get_table_schema_points()
+        else:
+            points = data_loader()
 
         if points:
             self.upsert(collection_name, points)
         else:
-            print("No table schema found to initialize.")
+            print("No data found to initialize.")
