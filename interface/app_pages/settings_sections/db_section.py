@@ -168,14 +168,23 @@ def render_db_section() -> None:
                     default_secret = (existing.extra or {}).get(
                         k, ""
                     ) or _prefill_from_env(new_type, k)
+
+                # 비밀키는 값을 미리 채우지 않음 (보안)
+                placeholder = (
+                    "값 설정됨 (변경하려면 입력)" if default_secret else "값 없음"
+                )
                 sv = st.text_input(
                     label,
-                    value=str(default_secret or ""),
+                    value="",
                     type="password",
                     key=f"db_edit_secret_{k}",
+                    placeholder=placeholder,
                 )
-                if sv != "":
+                # 입력값이 없으면 기존 값 유지, 있으면 새 값 사용
+                if sv:
                     secrets[k] = sv
+                elif default_secret:
+                    secrets[k] = default_secret
 
             cols = st.columns([1, 1, 2])
             with cols[0]:
@@ -257,7 +266,7 @@ def render_db_section() -> None:
 
     secrets_new: dict[str, str] = {}
     for label, k in _secret_fields(db_type):
-        sv = st.text_input(label, key=f"db_new_secret_{k}")
+        sv = st.text_input(label, key=f"db_new_secret_{k}", type="password")
         if sv != "":
             secrets_new[k] = sv
 
