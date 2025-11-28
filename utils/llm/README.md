@@ -10,7 +10,10 @@ utils/llm/
 ├── chains.py                    # LangChain 체인 생성 모듈
 ├── retrieval.py                 # 테이블 메타 검색 및 재순위화
 ├── llm_response_parser.py       # LLM 응답에서 SQL 블록 추출
-├── chatbot.py                   # LangGraph ChatBot 구현
+├── chatbot/                   # LangGraph ChatBot 패키지
+│   ├── __init__.py
+│   ├── core.py                # ChatBot 핵심 로직
+│   └── README.md                # [상세 문서](./chatbot/README.md)
 ├── core/                        # LLM/Embedding 팩토리 모듈
 │   ├── __init__.py
 │   ├── factory.py               # LLM 및 Embedding 모델 생성 팩토리
@@ -152,7 +155,7 @@ utils/llm/
 **사용처:**
 - `utils/llm/vectordb/faiss_db.py`: 벡터DB 초기화 시 메타데이터 수집
 - `utils/llm/vectordb/pgvector_db.py`: 벡터DB 초기화 시 메타데이터 수집
-- `utils/llm/chatbot.py`: ChatBot 도구로 사용
+- `utils/llm/chatbot/`: ChatBot 도구로 사용
 
 **상세 문서**: [tools/README.md](./tools/README.md)
 
