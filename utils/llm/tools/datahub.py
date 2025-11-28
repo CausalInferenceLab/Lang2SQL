@@ -1,12 +1,16 @@
 import os
 import re
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Dict, Iterable, List, Optional, TypeVar
 
 from langchain.schema import Document
 from tqdm import tqdm
 
+from utils.data.datahub_services.glossary_service import GlossaryService
+from utils.data.datahub_services.query_service import QueryService
 from utils.data.datahub_source import DatahubMetadataFetcher
+from utils.data.datahub_services.base_client import DataHubBaseClient
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -180,3 +184,104 @@ def get_table_schema(max_workers: int = 8) -> List[Dict]:
     )
 
     return table_info_list
+
+
+def get_glossary_vector_data() -> List[Dict]:
+    """
+    Vector Search를 위한 용어집 데이터를 조회하고 포맷팅합니다.
+    """
+    gms_server = os.getenv("DATAHUB_SERVER", "http://35.222.65.99:8080")
+    client = DataHubBaseClient(gms_server=gms_server)
+    glossary_service = GlossaryService(client)
+
+    glossary_data = glossary_service.get_glossary_data()
+
+    points = []
+    if "error" in glossary_data:
+        print(f"Error fetching glossary data: {glossary_data.get('message')}")
+        return points
+
+    # Flatten the glossary structure
+    def process_node(node):
+        # Current node
+        name = node.get("name")
+        description = node.get("description", "")
+
+        # Create point for the node itself if it has meaningful content
+        if name:
+            # Generate deterministic UUID based on name
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, name))
+            points.append(
+                {
+                    "id": point_id,
+                    "vector": {},  # Placeholder, will be embedded later
+                    "payload": {
+                        "name": name,
+                        "description": description,
+                        "type": "term",  # or node
+                    },
+                }
+            )
+
+        # Process children
+        if "details" in node and "children" in node["details"]:
+            for child in node["details"]["children"]:
+                child_name = child.get("name")
+                child_desc = child.get("description", "")
+                if child_name:
+                    child_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, child_name))
+                    points.append(
+                        {
+                            "id": child_id,
+                            "vector": {},
+                            "payload": {
+                                "name": child_name,
+                                "description": child_desc,
+                                "type": "term",
+                            },
+                        }
+                    )
+
+    for node in glossary_data.get("nodes", []):
+        process_node(node)
+
+    return points
+
+
+def get_query_vector_data() -> List[Dict]:
+    """
+    Vector Search를 위한 쿼리 예제 데이터를 조회하고 포맷팅합니다.
+    """
+    gms_server = os.getenv("DATAHUB_SERVER", "http://35.222.65.99:8080")
+    client = DataHubBaseClient(gms_server=gms_server)
+    query_service = QueryService(client)
+
+    # Fetch all queries (adjust count as needed)
+    query_data = query_service.get_query_data(count=1000)
+
+    points = []
+    if "error" in query_data:
+        print(f"Error fetching query data: {query_data.get('message')}")
+        return points
+
+    for query in query_data.get("queries", []):
+        name = query.get("name")
+        description = query.get("description", "")
+        statement = query.get("statement", "")
+
+        if name and statement:
+            # Generate deterministic UUID based on name
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, name))
+            points.append(
+                {
+                    "id": point_id,
+                    "vector": {},
+                    "payload": {
+                        "name": name,
+                        "description": description,
+                        "statement": statement,
+                    },
+                }
+            )
+
+    return points

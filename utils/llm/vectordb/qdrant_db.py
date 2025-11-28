@@ -1,6 +1,7 @@
 from qdrant_client import QdrantClient, models
 from typing import List, Dict, Any, Optional, Union, Callable
 import os
+import uuid
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -102,7 +103,6 @@ class QdrantDB:
         Returns:
             검색 결과 리스트 (ScoredPoint 객체들의 리스트).
         """
-        print("This is QdrantDB search")
         return self.client.search(
             collection_name=collection_name,
             query_vector=query_vector,
@@ -207,9 +207,12 @@ class QdrantDB:
                     "columns": table_info["columns"],
                 }
 
+                # Generate deterministic UUID based on table_name
+                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, table_name))
+
                 points.append(
                     {
-                        "id": idx,
+                        "id": point_id,
                         "vector": {"dense": vector},  # dense vector only for now
                         "payload": payload,
                     }

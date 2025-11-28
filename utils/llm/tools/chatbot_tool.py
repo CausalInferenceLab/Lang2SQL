@@ -6,6 +6,7 @@ from langchain_core.tools import tool
 from utils.data.datahub_services.base_client import DataHubBaseClient
 from utils.data.datahub_services.glossary_service import GlossaryService
 from utils.data.datahub_services.query_service import QueryService
+from utils.llm.retrieval import search_glossary, search_query_examples
 
 
 @tool
@@ -105,11 +106,11 @@ def _simplify_glossary_data(glossary_data):
 
 
 @tool
-def get_glossary_terms(gms_server: str = "http://35.222.65.99:8080") -> list:
+def get_glossary_terms(query: str, force_update: bool = False) -> list:
     """
-    DataHub에서 용어집(Glossary) 정보를 조회합니다.
+    DataHub에서 용어집(Glossary) 정보를 검색합니다.
 
-    이 함수는 DataHub 서버에 연결하여 전체 용어집 데이터를 가져옵니다.
+    이 함수는 사용자의 질문과 관련된 용어 정의를 찾기 위해 Vector Search를 수행합니다.
     용어집은 비즈니스 용어, 도메인 지식, 데이터 정의 등을 표준화하여 관리하는 곳입니다.
 
     **중요**: 사용자의 질문이나 대화에서 다음과 같은 상황이 발생하면 반드시 이 도구를 사용하세요:
@@ -120,40 +121,26 @@ def get_glossary_terms(gms_server: str = "http://35.222.65.99:8080") -> list:
     5. 표준 정의가 필요한 비즈니스 용어가 나왔을 때
 
     Args:
-        gms_server (str, optional): DataHub GMS 서버 URL입니다.
-                                   기본값은 "http://35.222.65.99:8080"
+        query (str): 검색할 용어 또는 관련 질문입니다.
+        force_update (bool, optional): True일 경우 데이터를 새로고침하여 검색 인덱스를 재생성합니다. 기본값은 False.
 
     Returns:
-        list: 간소화된 용어집 데이터 리스트입니다.
-              각 항목은 name, description, children(선택적) 필드를 포함합니다.
+        list: 검색된 용어집 데이터 리스트입니다.
+              각 항목은 name, description 등을 포함합니다.
 
               예시 형태:
               [
                   {
                       "name": "가짜연구소",
                       "description": "스터디 단체 가짜연구소를 의미하며...",
-                      "children": [
-                          {
-                              "name": "빌더",
-                              "description": "가짜연구소 스터디 리더를 지칭..."
-                          }
-                      ]
+                      "type": "term"
                   },
-                  {
-                      "name": "PII",
-                      "description": "개인 식별 정보...",
-                      "children": [
-                          {
-                              "name": "identifier",
-                              "description": "개인식별정보중 github 아이디..."
-                          }
-                      ]
-                  }
+                  ...
               ]
 
     Examples:
-        >>> get_glossary_terms()
-        [{'name': '가짜연구소', 'description': '...', 'children': [...]}]
+        >>> get_glossary_terms("PII가 뭐야?")
+        [{'name': 'PII', 'description': '개인 식별 정보...', ...}]
 
     Note:
         이 도구는 다음과 같은 경우에 **반드시** 사용하세요:
@@ -178,37 +165,22 @@ def get_glossary_terms(gms_server: str = "http://35.222.65.99:8080") -> list:
         있는지 확인하고, 있다면 먼저 이 도구를 호출하여 정확한 정의를 파악하세요.
     """
     try:
-        # DataHub 클라이언트 초기화
-        client = DataHubBaseClient(gms_server=gms_server)
+        return search_glossary(query=query, force_update=force_update)
 
-        # GlossaryService 초기화
-        glossary_service = GlossaryService(client)
-
-        # 전체 용어집 데이터 가져오기
-        glossary_data = glossary_service.get_glossary_data()
-
-        # 간소화된 데이터 반환
-        simplified_data = _simplify_glossary_data(glossary_data)
-
-        return simplified_data
-
-    except ValueError as e:
-        return {"error": True, "message": f"DataHub 서버 연결 실패: {str(e)}"}
     except Exception as e:
         return {"error": True, "message": f"용어집 조회 중 오류 발생: {str(e)}"}
 
 
 @tool
 def get_query_examples(
-    gms_server: str = "http://35.222.65.99:8080",
-    start: int = 0,
-    count: int = 10,
-    query: str = "*",
+    query: str,
+    force_update: bool = False,
+    count: int = 5,
 ) -> list:
     """
-    DataHub에서 저장된 쿼리 예제들을 조회합니다.
+    DataHub에서 저장된 쿼리 예제들을 검색합니다.
 
-    이 함수는 DataHub 서버에 연결하여 저장된 SQL 쿼리 목록을 가져옵니다.
+    이 함수는 사용자의 질문과 관련된 SQL 쿼리 예제를 찾기 위해 Vector Search를 수행합니다.
     조직에서 실제로 사용되고 검증된 쿼리 패턴을 참고하여 더 정확한 SQL을 생성할 수 있습니다.
 
     **중요**: 사용자의 질문이나 대화에서 다음과 같은 상황이 발생하면 반드시 이 도구를 사용하세요:
@@ -220,11 +192,9 @@ def get_query_examples(
     6. 조직 내에서 검증된 쿼리 작성 방식을 확인해야 할 때
 
     Args:
-        gms_server (str, optional): DataHub GMS 서버 URL입니다.
-                                   기본값은 "http://35.222.65.99:8080"
-        start (int, optional): 조회 시작 위치입니다. 기본값은 0
-        count (int, optional): 조회할 쿼리 개수입니다. 기본값은 10
-        query (str, optional): 검색 쿼리입니다. 기본값은 "*" (모든 쿼리)
+        query (str): 검색할 쿼리 관련 질문이나 키워드입니다.
+        force_update (bool, optional): True일 경우 데이터를 새로고침하여 검색 인덱스를 재생성합니다. 기본값은 False.
+        count (int, optional): 반환할 검색 결과 개수입니다. 기본값은 5.
 
     Returns:
         list: 쿼리 정보 리스트입니다.
@@ -237,19 +207,12 @@ def get_query_examples(
                       "description": "각 고객별 주문 건수를 집계하는 쿼리",
                       "statement": "SELECT customer_id, COUNT(*) as order_count FROM orders GROUP BY customer_id"
                   },
-                  {
-                      "name": "월별 매출 현황",
-                      "description": "월별 총 매출을 계산하는 쿼리",
-                      "statement": "SELECT DATE_TRUNC('month', order_date) as month, SUM(amount) FROM orders GROUP BY month"
-                  }
+                  ...
               ]
 
     Examples:
-        >>> get_query_examples()
-        [{'name': '고객별 주문 수 조회', 'description': '...', 'statement': 'SELECT ...'}]
-
-        >>> get_query_examples(count=5)
-        # 5개의 쿼리 예제만 조회
+        >>> get_query_examples("매출 집계 쿼리 보여줘")
+        [{'name': '월별 매출 현황', 'description': '...', 'statement': 'SELECT ...'}]
 
     Note:
         이 도구는 다음과 같은 경우에 **반드시** 사용하세요:
@@ -280,33 +243,10 @@ def get_query_examples(
         SQL을 생성하는 데 큰 도움이 됩니다.
     """
     try:
-        # DataHub 클라이언트 초기화
-        client = DataHubBaseClient(gms_server=gms_server)
+        return search_query_examples(
+            query=query, force_update=force_update, top_n=count
+        )
 
-        # QueryService 초기화
-        query_service = QueryService(client)
-
-        # 쿼리 데이터 가져오기
-        result = query_service.get_query_data(start=start, count=count, query=query)
-
-        # 오류 체크
-        if "error" in result and result["error"]:
-            return {"error": True, "message": result.get("message")}
-
-        # name, description, statement만 추출하여 리스트 생성
-        simplified_queries = []
-        for query_item in result.get("queries", []):
-            simplified_query = {
-                "name": query_item.get("name"),
-                "description": query_item.get("description", ""),
-                "statement": query_item.get("statement", ""),
-            }
-            simplified_queries.append(simplified_query)
-
-        return simplified_queries
-
-    except ValueError as e:
-        return {"error": True, "message": f"DataHub 서버 연결 실패: {str(e)}"}
     except Exception as e:
         return {
             "error": True,
