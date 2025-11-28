@@ -17,14 +17,18 @@ class DataHubSource:
     name: str
     url: str
     faiss_path: Optional[str] = None
+    vectordb_type: str = "faiss"
+    vectordb_location: Optional[str] = None
+    vectordb_api_key: Optional[str] = None
     note: Optional[str] = None
 
 
 @dataclass
 class VectorDBSource:
     name: str
-    type: str  # 'faiss' | 'pgvector'
+    type: str  # 'faiss' | 'pgvector' | 'qdrant'
     location: str
+    api_key: Optional[str] = None
     collection_prefix: Optional[str] = None
     note: Optional[str] = None
 

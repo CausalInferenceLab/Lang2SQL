@@ -146,7 +146,7 @@ utils/llm/
 **목적**: DataHub 메타데이터 수집 및 LangGraph ChatBot용 Tool 함수 제공
 
 **주요 기능:**
-- `get_info_from_db()`: DataHub에서 테이블 메타데이터를 LangChain Document로 수집
+- `get_table_schema()`: DataHub에서 테이블 메타데이터를 dictionary 형태로 반환
 - `get_metadata_from_db()`: 전체 메타데이터 딕셔너리 반환
 - `search_database_tables()`: 벡터 검색 기반 테이블 정보 검색 Tool
 - `get_glossary_terms()`: 용어집 정보 조회 Tool
@@ -301,7 +301,7 @@ engine/query_executor.py
 │       └── utils/llm/retrieval.py
 │           └── utils/llm/vectordb/get_vector_db()
 │               ├── utils/llm/core/get_embeddings()
-│               └── utils/llm/tools/get_info_from_db()
+│               └── utils/llm/tools/get_table_schema()
 └── utils/llm/llm_response_parser.py
 ```
 
@@ -319,8 +319,8 @@ engine/query_executor.py
 - `retrieval.py` → `vectordb/get_vector_db()` 사용
 
 **vectordb 모듈:**
-- `vectordb/faiss_db.py` → `core/get_embeddings()`, `tools/get_info_from_db()` 사용
-- `vectordb/pgvector_db.py` → `core/get_embeddings()`, `tools/get_info_from_db()` 사용
+- `vectordb/faiss_db.py` → `core/get_embeddings()`, `tools/get_table_schema()` 사용
+- `vectordb/pgvector_db.py` → `core/get_embeddings()`, `tools/get_table_schema()` 사용
 
 **tools 모듈:**
 - `tools/datahub.py` → DataHub 메타데이터 수집

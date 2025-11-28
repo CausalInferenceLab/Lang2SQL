@@ -41,25 +41,53 @@ def _save_registry(registry: DataSourcesRegistry) -> None:
 
 
 def add_datahub_source(
-    *, name: str, url: str, faiss_path: Optional[str] = None, note: Optional[str] = None
+    *,
+    name: str,
+    url: str,
+    faiss_path: Optional[str] = None,
+    vectordb_type: str = "faiss",
+    vectordb_location: Optional[str] = None,
+    vectordb_api_key: Optional[str] = None,
+    note: Optional[str] = None,
 ) -> None:
     registry = get_data_sources_registry()
     if any(s.name == name for s in registry.datahub):
         raise ValueError(f"이미 존재하는 DataHub 이름입니다: {name}")
     registry.datahub.append(
-        DataHubSource(name=name, url=url, faiss_path=faiss_path, note=note)
+        DataHubSource(
+            name=name,
+            url=url,
+            faiss_path=faiss_path,
+            vectordb_type=vectordb_type,
+            vectordb_location=vectordb_location,
+            vectordb_api_key=vectordb_api_key,
+            note=note,
+        )
     )
     _save_registry(registry)
 
 
 def update_datahub_source(
-    *, name: str, url: str, faiss_path: Optional[str], note: Optional[str]
+    *,
+    name: str,
+    url: str,
+    faiss_path: Optional[str],
+    vectordb_type: str = "faiss",
+    vectordb_location: Optional[str] = None,
+    vectordb_api_key: Optional[str] = None,
+    note: Optional[str],
 ) -> None:
     registry = get_data_sources_registry()
     for idx, s in enumerate(registry.datahub):
         if s.name == name:
             registry.datahub[idx] = DataHubSource(
-                name=name, url=url, faiss_path=faiss_path, note=note
+                name=name,
+                url=url,
+                faiss_path=faiss_path,
+                vectordb_type=vectordb_type,
+                vectordb_location=vectordb_location,
+                vectordb_api_key=vectordb_api_key,
+                note=note,
             )
             _save_registry(registry)
             return
@@ -77,12 +105,15 @@ def add_vectordb_source(
     name: str,
     vtype: str,
     location: str,
+    api_key: Optional[str] = None,
     collection_prefix: Optional[str] = None,
     note: Optional[str] = None,
 ) -> None:
     vtype = (vtype or "").lower()
-    if vtype not in ("faiss", "pgvector"):
-        raise ValueError("VectorDB 타입은 'faiss' 또는 'pgvector'여야 합니다")
+    if vtype not in ("faiss", "pgvector", "qdrant"):
+        raise ValueError(
+            "VectorDB 타입은 'faiss', 'pgvector', 'qdrant' 중 하나여야 합니다"
+        )
     registry = get_data_sources_registry()
     if any(s.name == name for s in registry.vectordb):
         raise ValueError(f"이미 존재하는 VectorDB 이름입니다: {name}")
@@ -91,6 +122,7 @@ def add_vectordb_source(
             name=name,
             type=vtype,
             location=location,
+            api_key=api_key,
             collection_prefix=collection_prefix,
             note=note,
         )
@@ -103,12 +135,15 @@ def update_vectordb_source(
     name: str,
     vtype: str,
     location: str,
+    api_key: Optional[str] = None,
     collection_prefix: Optional[str],
     note: Optional[str],
 ) -> None:
     vtype = (vtype or "").lower()
-    if vtype not in ("faiss", "pgvector"):
-        raise ValueError("VectorDB 타입은 'faiss' 또는 'pgvector'여야 합니다")
+    if vtype not in ("faiss", "pgvector", "qdrant"):
+        raise ValueError(
+            "VectorDB 타입은 'faiss', 'pgvector', 'qdrant' 중 하나여야 합니다"
+        )
     registry = get_data_sources_registry()
     for idx, s in enumerate(registry.vectordb):
         if s.name == name:
@@ -116,6 +151,7 @@ def update_vectordb_source(
                 name=name,
                 type=vtype,
                 location=location,
+                api_key=api_key,
                 collection_prefix=collection_prefix,
                 note=note,
             )

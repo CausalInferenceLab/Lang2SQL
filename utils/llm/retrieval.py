@@ -6,6 +6,8 @@ from langchain_community.cross_encoders import HuggingFaceCrossEncoder
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 from utils.llm.vectordb import get_vector_db
+from utils.llm.tools.datahub import get_glossary_vector_data, get_query_vector_data
+from utils.llm.core import get_embeddings
 
 
 def load_reranker_model(device: str = "cpu"):
@@ -102,3 +104,86 @@ def search_tables(
         }
 
     return documents_dict
+
+
+def _prepare_vector_data(data_fetcher, text_fields):
+    """
+    데이터를 가져와서 임베딩을 생성하는 헬퍼 함수
+    """
+    points = data_fetcher()
+    embeddings = get_embeddings()
+
+    for point in points:
+        payload = point["payload"]
+        # 텍스트 필드들을 결합하여 임베딩 생성
+        text_to_embed = " ".join([str(payload.get(field, "")) for field in text_fields])
+        vector = embeddings.embed_query(text_to_embed)
+        point["vector"] = {"dense": vector}
+
+    return points
+
+
+def search_glossary(query: str, force_update: bool = False, top_n: int = 5) -> list:
+    """
+    용어집 검색 함수
+    """
+    collection_name = "lang2sql_glossary"
+    db = get_vector_db()
+
+    # 데이터 로더 정의 (임베딩 생성 포함)
+    def data_loader():
+        return _prepare_vector_data(get_glossary_vector_data, ["name", "description"])
+
+    # 컬렉션 초기화 (필요시)
+    db.initialize_collection_if_empty(
+        collection_name=collection_name,
+        force_update=force_update,
+        data_loader=data_loader,
+    )
+
+    # 검색 수행
+    embeddings = get_embeddings()
+    query_vector = embeddings.embed_query(query)
+
+    results = db.search(
+        collection_name=collection_name,
+        query_vector=("dense", query_vector),
+        limit=top_n,
+    )
+
+    # 결과 포맷팅
+    return [res.payload for res in results]
+
+
+def search_query_examples(
+    query: str, force_update: bool = False, top_n: int = 5
+) -> list:
+    """
+    쿼리 예제 검색 함수
+    """
+    collection_name = "lang2sql_query_example"
+    db = get_vector_db()
+
+    # 데이터 로더 정의 (임베딩 생성 포함)
+    def data_loader():
+        return _prepare_vector_data(get_query_vector_data, ["name", "description"])
+
+    # 컬렉션 초기화 (필요시)
+    db.initialize_collection_if_empty(
+        collection_name=collection_name,
+        force_update=force_update,
+        data_loader=data_loader,
+    )
+
+    # 검색 수행
+    embeddings = get_embeddings()
+    query_vector = embeddings.embed_query(query)
+
+    results = db.search(
+        collection_name=collection_name,
+        query_vector=("dense", query_vector),
+        limit=top_n,
+    )
+
+    # 결과 포맷팅
+    return [res.payload for res in results]

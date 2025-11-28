@@ -63,11 +63,22 @@ def _parse_datahub_list(items: List[Dict[str, Any]]) -> List[DataHubSource]:
         name = str(item.get("name", "")).strip()
         url = str(item.get("url", "")).strip()
         faiss_path = item.get("faiss_path")
+        vectordb_type = item.get("vectordb_type", "faiss")
+        vectordb_location = item.get("vectordb_location")
+        vectordb_api_key = item.get("vectordb_api_key")
         note = item.get("note")
         if not name or not url:
             continue
         parsed.append(
-            DataHubSource(name=name, url=url, faiss_path=faiss_path, note=note)
+            DataHubSource(
+                name=name,
+                url=url,
+                faiss_path=faiss_path,
+                vectordb_type=vectordb_type,
+                vectordb_location=vectordb_location,
+                vectordb_api_key=vectordb_api_key,
+                note=note,
+            )
         )
     return parsed
 
@@ -81,12 +92,14 @@ def _parse_vectordb_list(items: List[Dict[str, Any]]) -> List[VectorDBSource]:
         if not name or not vtype or not location:
             continue
         collection_prefix = item.get("collection_prefix")
+        api_key = item.get("api_key")
         note = item.get("note")
         parsed.append(
             VectorDBSource(
                 name=name,
                 type=vtype,
                 location=location,
+                api_key=api_key,
                 collection_prefix=collection_prefix,
                 note=note,
             )

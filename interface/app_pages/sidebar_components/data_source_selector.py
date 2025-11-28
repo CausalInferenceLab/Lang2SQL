@@ -39,8 +39,18 @@ def render_sidebar_data_source_selector(config=None) -> None:
                 return
             try:
                 update_datahub_server(config, selected.url)
-                # DataHub 선택 시, FAISS 경로가 정의되어 있으면 기본 VectorDB 로케이션으로도 반영
-                if selected.faiss_path:
+                # DataHub 선택 시, VectorDB 설정이 정의되어 있으면 기본 VectorDB 로케이션으로도 반영
+                if selected.vectordb_location:
+                    try:
+                        update_vectordb_settings(
+                            config,
+                            vectordb_type=selected.vectordb_type or "faiss",
+                            vectordb_location=selected.vectordb_location,
+                        )
+                    except Exception as e:
+                        st.sidebar.warning(f"VectorDB 설정 적용 경고: {e}")
+                elif selected.faiss_path:
+                    # Backward compatibility
                     try:
                         update_vectordb_settings(
                             config,

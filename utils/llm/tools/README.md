@@ -21,7 +21,7 @@ utils/llm/tools/
 
 **datahub 모듈에서**:
 - `set_gms_server`: GMS 서버 설정
-- `get_info_from_db`: LangChain Document 리스트로 테이블/컬럼 정보 반환
+- `get_table_schema`: LangChain Document 리스트로 테이블/컬럼 정보 반환
 - `get_metadata_from_db`: 전체 메타데이터 딕셔너리 리스트 반환
 
 **chatbot_tool 모듈에서**:
@@ -39,7 +39,7 @@ utils/llm/tools/
    - 환경변수 `DATAHUB_SERVER`를 설정하고 DatahubMetadataFetcher 초기화
    - 유효하지 않은 서버 URL 시 ValueError 발생
 
-2. **`get_info_from_db(max_workers: int = 8) -> List[Document]`**
+2. **`get_table_schema(max_workers: int = 8) -> List[Document]`**
    - DataHub에서 모든 테이블 메타데이터를 수집하여 LangChain Document 리스트 반환
    - 각 Document에는 테이블명, 설명, 컬럼 정보가 포함
    - 형식: `"{테이블명}: {설명}\nColumns:\n {컬럼명}: {컬럼설명}"`
@@ -157,10 +157,10 @@ utils/llm/tools/
 #### 1. DataHub 메타데이터 수집 (vectorDB 초기화)
 
 ```python
-from utils.llm.tools import get_info_from_db
+from utils.llm.tools import get_table_schema
 
 # 모든 테이블 메타데이터를 LangChain Document로 수집
-documents = get_info_from_db(max_workers=8)
+documents = get_table_schema(max_workers=8)
 
 # 각 document는 다음과 같은 형식:
 # "테이블명: 설명\nColumns:\n 컬럼1: 설명1\n 컬럼2: 설명2"
@@ -224,8 +224,8 @@ queries = get_query_examples(
 
 **import하는 파일**:
 - `utils/llm/chatbot.py`: `from utils.llm.tools import search_database_tables, get_glossary_terms, get_query_examples`
-- `utils/llm/vectordb/faiss_db.py`: `from utils.llm.tools import get_info_from_db`
-- `utils/llm/vectordb/pgvector_db.py`: `from utils.llm.tools import get_info_from_db`
+- `utils/llm/vectordb/faiss_db.py`: `from utils.llm.tools import get_table_schema`
+- `utils/llm/vectordb/pgvector_db.py`: `from utils.llm.tools import get_table_schema`
 - `interface/core/config/settings.py`: `from utils.llm.tools import set_gms_server`
 
 **내부 의존성**:
@@ -258,7 +258,7 @@ queries = get_query_examples(
 
 #### 메타데이터 수집 흐름 (벡터DB 초기화 시)
 
-1. `get_info_from_db()` 호출
+1. `get_table_schema()` 호출
 2. `_get_fetcher()`로 DatahubMetadataFetcher 인스턴스 생성
 3. `parallel_process()`로 병렬 테이블 정보 수집
 4. 각 테이블별로 컬럼 정보 추가 수집

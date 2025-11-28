@@ -1,12 +1,16 @@
 import os
 import re
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from typing import Callable, Dict, Iterable, List, Optional, TypeVar
 
 from langchain.schema import Document
 from tqdm import tqdm
 
+from utils.data.datahub_services.glossary_service import GlossaryService
+from utils.data.datahub_services.query_service import QueryService
 from utils.data.datahub_source import DatahubMetadataFetcher
+from utils.data.datahub_services.base_client import DataHubBaseClient
 
 T = TypeVar("T")
 R = TypeVar("R")
@@ -76,7 +80,7 @@ def _get_table_info(max_workers: int = 8) -> Dict[str, str]:
 
 
 def _get_column_info(
-    table_name: str, urn_table_mapping: Dict[str, str], max_workers: int = 8
+    table_name: str, urn_table_mapping: Dict[str, str]
 ) -> List[Dict[str, str]]:
     target_urn = urn_table_mapping.get(table_name)
     if not target_urn:
@@ -103,7 +107,21 @@ def _extract_dataset_name_from_urn(urn: str) -> Optional[str]:
     return None
 
 
-def get_info_from_db(max_workers: int = 8) -> List[Document]:
+def get_metadata_from_db() -> List[Dict]:
+    fetcher = _get_fetcher()
+    urns = list(fetcher.get_urns())
+
+    metadata = []
+    total = len(urns)
+    for idx, urn in enumerate(urns, 1):
+        print(f"[{idx}/{total}] Processing URN: {urn}")
+        table_metadata = fetcher.build_table_metadata(urn)
+        metadata.append(table_metadata)
+
+    return metadata
+
+
+def _prepare_datahub_metadata_mappings(max_workers: int = 8):
     table_info = _get_table_info(max_workers=max_workers)
 
     fetcher = _get_fetcher()
@@ -118,20 +136,31 @@ def get_info_from_db(max_workers: int = 8) -> List[Document]:
             if parsed_name:
                 display_name_by_table[original_name] = parsed_name
 
-    def process_table_info(item: tuple[str, str, str]) -> str:
-        original_table_name, table_description, display_table_name = item
-        # 컬럼 조회는 기존 테이블 이름으로 수행 (urn_table_mapping과 일치)
-        column_info = _get_column_info(
-            original_table_name, urn_table_mapping, max_workers=max_workers
-        )
-        column_info_str = "\n".join(
-            [
-                f"{col['column_name']}: {col['column_description']}"
-                for col in column_info
-            ]
-        )
-        used_name = display_table_name or original_table_name
-        return f"{used_name}: {table_description}\nColumns:\n {column_info_str}"
+    return table_info, urn_table_mapping, display_name_by_table
+
+
+def _format_datahub_table_info(
+    item: tuple[str, str, str], urn_table_mapping: Dict[str, str]
+) -> Dict:
+    original_table_name, table_description, display_table_name = item
+    # 컬럼 조회는 기존 테이블 이름으로 수행 (urn_table_mapping과 일치)
+    column_info = _get_column_info(original_table_name, urn_table_mapping)
+
+    columns = {col["column_name"]: col["column_description"] for col in column_info}
+
+    used_name = display_table_name or original_table_name
+    return {
+        used_name: {
+            "table_description": table_description,
+            "columns": columns,
+        }
+    }
+
+
+def get_table_schema(max_workers: int = 8) -> List[Dict]:
+    table_info, urn_table_mapping, display_name_by_table = (
+        _prepare_datahub_metadata_mappings(max_workers)
+    )
 
     # 표시용 이름을 세 번째 파라미터로 함께 전달
     items_with_display = [
@@ -143,25 +172,116 @@ def get_info_from_db(max_workers: int = 8) -> List[Document]:
         for name, desc in table_info.items()
     ]
 
-    table_info_str_list = parallel_process(
+    # parallel_process에 전달할 함수 래핑
+    def process_fn(item):
+        return _format_datahub_table_info(item, urn_table_mapping)
+
+    table_info_list = parallel_process(
         items_with_display,
-        process_table_info,
+        process_fn,
         max_workers=max_workers,
         desc="컬럼 정보 수집 중",
     )
 
-    return [Document(page_content=info) for info in table_info_str_list]
+    return table_info_list
 
 
-def get_metadata_from_db() -> List[Dict]:
-    fetcher = _get_fetcher()
-    urns = list(fetcher.get_urns())
+def get_glossary_vector_data() -> List[Dict]:
+    """
+    Vector Search를 위한 용어집 데이터를 조회하고 포맷팅합니다.
+    """
+    gms_server = os.getenv("DATAHUB_SERVER", "http://35.222.65.99:8080")
+    client = DataHubBaseClient(gms_server=gms_server)
+    glossary_service = GlossaryService(client)
 
-    metadata = []
-    total = len(urns)
-    for idx, urn in enumerate(urns, 1):
-        print(f"[{idx}/{total}] Processing URN: {urn}")
-        table_metadata = fetcher.build_table_metadata(urn)
-        metadata.append(table_metadata)
+    glossary_data = glossary_service.get_glossary_data()
 
-    return metadata
+    points = []
+    if "error" in glossary_data:
+        print(f"Error fetching glossary data: {glossary_data.get('message')}")
+        return points
+
+    # Flatten the glossary structure
+    def process_node(node):
+        # Current node
+        name = node.get("name")
+        description = node.get("description", "")
+
+        # Create point for the node itself if it has meaningful content
+        if name:
+            # Generate deterministic UUID based on name
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, name))
+            points.append(
+                {
+                    "id": point_id,
+                    "vector": {},  # Placeholder, will be embedded later
+                    "payload": {
+                        "name": name,
+                        "description": description,
+                        "type": "term",  # or node
+                    },
+                }
+            )
+
+        # Process children
+        if "details" in node and "children" in node["details"]:
+            for child in node["details"]["children"]:
+                child_name = child.get("name")
+                child_desc = child.get("description", "")
+                if child_name:
+                    child_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, child_name))
+                    points.append(
+                        {
+                            "id": child_id,
+                            "vector": {},
+                            "payload": {
+                                "name": child_name,
+                                "description": child_desc,
+                                "type": "term",
+                            },
+                        }
+                    )
+
+    for node in glossary_data.get("nodes", []):
+        process_node(node)
+
+    return points
+
+
+def get_query_vector_data() -> List[Dict]:
+    """
+    Vector Search를 위한 쿼리 예제 데이터를 조회하고 포맷팅합니다.
+    """
+    gms_server = os.getenv("DATAHUB_SERVER", "http://35.222.65.99:8080")
+    client = DataHubBaseClient(gms_server=gms_server)
+    query_service = QueryService(client)
+
+    # Fetch all queries (adjust count as needed)
+    query_data = query_service.get_query_data(count=1000)
+
+    points = []
+    if "error" in query_data:
+        print(f"Error fetching query data: {query_data.get('message')}")
+        return points
+
+    for query in query_data.get("queries", []):
+        name = query.get("name")
+        description = query.get("description", "")
+        statement = query.get("statement", "")
+
+        if name and statement:
+            # Generate deterministic UUID based on name
+            point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, name))
+            points.append(
+                {
+                    "id": point_id,
+                    "vector": {},
+                    "payload": {
+                        "name": name,
+                        "description": description,
+                        "statement": statement,
+                    },
+                }
+            )
+
+    return points

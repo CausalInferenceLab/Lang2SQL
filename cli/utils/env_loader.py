@@ -71,14 +71,14 @@ def set_vectordb(
     """VectorDB 타입과 위치를 설정합니다.
 
     Args:
-        vectordb_type (str): VectorDB 타입 ("faiss" 또는 "pgvector").
+        vectordb_type (str): VectorDB 타입 ("faiss" 또는 "pgvector" 또는 "qdrant").
         vectordb_location (Optional[str]): 경로 또는 연결 URL.
 
     Raises:
         ValueError: 잘못된 타입이나 경로/URL일 경우.
     """
 
-    if vectordb_type not in ("faiss", "pgvector"):
+    if vectordb_type not in ("faiss", "pgvector", "qdrant"):
         raise ValueError(f"지원하지 않는 VectorDB 타입: {vectordb_type}")
 
     os.environ["VECTORDB_TYPE"] = vectordb_type

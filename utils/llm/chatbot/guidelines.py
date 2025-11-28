@@ -18,13 +18,13 @@ def search_database_tables_tool(ctx: Dict[str, Any]) -> str:
 
 
 def get_glossary_terms_tool(ctx: Dict[str, Any]) -> str:
-    gms_server = ctx.get("gms_server", "http://localhost:8080")
-    return str(get_glossary_terms.invoke({"gms_server": gms_server}))
+    query = ctx.get("query") or ctx.get("last_user_message", "")
+    return str(get_glossary_terms.invoke({"query": query}))
 
 
 def get_query_examples_tool(ctx: Dict[str, Any]) -> str:
-    gms_server = ctx.get("gms_server", "http://localhost:8080")
-    return str(get_query_examples.invoke({"gms_server": gms_server}))
+    query = ctx.get("query") or ctx.get("last_user_message", "")
+    return str(get_query_examples.invoke({"query": query}))
 
 
 GUIDELINES: List[Guideline] = [

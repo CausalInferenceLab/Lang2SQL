@@ -52,13 +52,13 @@ utils/llm/vectordb/
    - `vectordb_path`: 저장 경로 (기본: `dev/table_info_db`)
    - 동작 방식:
      - 기존 DB가 있으면 `FAISS.load_local()`로 로드
-     - 없으면 `get_info_from_db()`로 문서 수집 후 `FAISS.from_documents()` 생성 및 저장
+     - 없으면 `get_table_schema()`로 문서 수집 후 `FAISS.from_documents()` 생성 및 저장
    - 반환: FAISS 벡터스토어 인스턴스
 
 **의존성**:
 - `langchain_community.vectorstores.FAISS`: LangChain FAISS 래퍼
 - `utils.llm.core.get_embeddings`: 임베딩 모델 로드
-- `utils.llm.tools.get_info_from_db`: DataHub에서 테이블 메타데이터 수집
+- `utils.llm.tools.get_table_schema`: DataHub에서 테이블 메타데이터 수집
 
 **특징**:
 - 로컬 디스크에 저장되어 네트워크 연결 불필요
@@ -84,7 +84,7 @@ utils/llm/vectordb/
      - `PGVECTOR_COLLECTION`: "lang2sql_table_info_db"
    - 동작 방식:
      - 기존 컬렉션이 있고 비어있지 않으면 로드
-     - 없거나 비어있으면 `get_info_from_db()`로 문서 수집 후 `PGVector.from_documents()` 생성
+     - 없거나 비어있으면 `get_table_schema()`로 문서 수집 후 `PGVector.from_documents()` 생성
    - 반환: PGVector 벡터스토어 인스턴스
 
 2. **`_check_collection_exists(connection_string, collection_name)`**
@@ -96,7 +96,7 @@ utils/llm/vectordb/
 - `langchain_postgres.vectorstores.PGVector`: LangChain pgvector 래퍼
 - `psycopg2`: PostgreSQL 연결
 - `utils.llm.core.get_embeddings`: 임베딩 모델 로드
-- `utils.llm.tools.get_info_from_db`: DataHub에서 테이블 메타데이터 수집
+- `utils.llm.tools.get_table_schema`: DataHub에서 테이블 메타데이터 수집
 
 **특징**:
 - PostgreSQL 데이터베이스에 저장되어 다중 서버 환경에 적합
@@ -181,7 +181,7 @@ export PGVECTOR_COLLECTION=lang2sql_table_info_db
 
 **내부 의존성**:
 - `utils/llm/core/factory.py`: `get_embeddings()` - 임베딩 모델 로드
-- `utils/llm/tools/datahub.py`: `get_info_from_db()` - DataHub 메타데이터 수집
+- `utils/llm/tools/datahub.py`: `get_table_schema()` - DataHub 메타데이터 수집
 
 **외부 의존성**:
 - `langchain_community.vectorstores.FAISS`: FAISS 벡터스토어

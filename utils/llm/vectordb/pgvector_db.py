@@ -7,9 +7,10 @@ from typing import Optional
 
 import psycopg2
 from langchain_postgres.vectorstores import PGVector
+from langchain.schema import Document
 
 from utils.llm.core import get_embeddings
-from utils.llm.tools import get_info_from_db
+from utils.llm.tools import get_table_schema
 
 
 def _check_collection_exists(connection_string: str, collection_name: str) -> bool:
@@ -71,7 +72,15 @@ def get_pgvector_db(
     except Exception as e:
         print(f"exception: {e}")
         # 컬렉션이 없거나 불러오기에 실패한 경우, 문서를 다시 인덱싱
-        documents = get_info_from_db()
+        raw_data = get_table_schema()
+        documents = []
+        for item in raw_data:
+            for table_name, table_info in item.items():
+                column_info_str = "\n".join(
+                    [f"{k}: {v}" for k, v in table_info["columns"].items()]
+                )
+                page_content = f"{table_name}: {table_info['table_description']}\nColumns:\n {column_info_str}"
+                documents.append(Document(page_content=page_content))
         vector_store = PGVector.from_documents(
             documents=documents,
             embedding=embeddings,
