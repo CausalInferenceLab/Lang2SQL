@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional, Sequence, TypedDict, Annotated
+import operator
 
 from langchain_core.messages import BaseMessage
 from langgraph.graph.message import add_messages
@@ -31,6 +32,6 @@ class ChatBotState(TypedDict):
     context: Dict[str, Any]
     selected_ids: List[str]
 
-    table_schema_outputs: List[str]
-    glossary_outputs: List[str]
-    query_example_outputs: List[str]
+    table_schema_outputs: Annotated[List[Optional[Dict[str, Any]]], operator.add]
+    glossary_outputs: Annotated[List[Optional[Dict[str, Any]]], operator.add]
+    query_example_outputs: Annotated[List[Optional[Dict[str, Any]]], operator.add]

@@ -107,9 +107,10 @@ class ChatBot:
                 for tool in g.tools or []:
                     try:
                         result = tool(ctx)
-                        target_list.append(f"[{g.id}] {result}")
+                        # 구조화된 데이터를 그대로 저장 (UI 렌더링용)
+                        target_list.append(result)
                     except Exception as exc:
-                        target_list.append(f"[tool_error] {tool.__name__}: {exc}")
+                        target_list.append({"error": str(exc), "tool": tool.__name__})
 
             # 빈 리스트인 필드는 제거하여 State 업데이트 시 기존 값을 덮어쓰지 않도록 함
             # (LangGraph State 업데이트 동작: 딕셔너리에 포함된 키만 업데이트됨)
@@ -135,17 +136,20 @@ class ChatBot:
                 if gid in self.guideline_map
             ] or ["- 적용 가능한 가이드라인 없음 (일반 대화 진행)"]
 
-            # 툴 실행 결과 통합
+            # 툴 실행 결과 통합 (LLM 프롬프트용 문자열 변환)
             all_tool_lines = []
             if table_outs:
                 all_tool_lines.append("## 테이블 스키마 정보")
-                all_tool_lines.extend(table_outs)
+                for item in table_outs:
+                    all_tool_lines.append(str(item))
             if glossary_outs:
                 all_tool_lines.append("## 용어집 정보")
-                all_tool_lines.extend(glossary_outs)
+                for item in glossary_outs:
+                    all_tool_lines.append(str(item))
             if query_outs:
                 all_tool_lines.append("## 쿼리 예제 정보")
-                all_tool_lines.extend(query_outs)
+                for item in query_outs:
+                    all_tool_lines.append(str(item))
 
             if not all_tool_lines:
                 all_tool_lines = ["(툴 실행 결과 없음)"]

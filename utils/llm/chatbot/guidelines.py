@@ -14,17 +14,17 @@ from utils.llm.chatbot.types import Guideline
 
 def search_database_tables_tool(ctx: Dict[str, Any]) -> str:
     query = ctx.get("query") or ctx.get("last_user_message", "")
-    return str(search_database_tables.invoke({"query": query}))
+    return search_database_tables.invoke({"query": query})
 
 
 def get_glossary_terms_tool(ctx: Dict[str, Any]) -> str:
     query = ctx.get("query") or ctx.get("last_user_message", "")
-    return str(get_glossary_terms.invoke({"query": query}))
+    return get_glossary_terms.invoke({"query": query})
 
 
 def get_query_examples_tool(ctx: Dict[str, Any]) -> str:
     query = ctx.get("query") or ctx.get("last_user_message", "")
-    return str(get_query_examples.invoke({"query": query}))
+    return get_query_examples.invoke({"query": query})
 
 
 GUIDELINES: List[Guideline] = [
