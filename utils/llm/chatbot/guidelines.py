@@ -29,7 +29,7 @@ def get_query_examples_tool(ctx: Dict[str, Any]) -> str:
 
 GUIDELINES: List[Guideline] = [
     Guideline(
-        id="db_search",
+        id="table_schema",
         description="데이터베이스 테이블 정보나 스키마 확인이 필요할 때 사용",
         example_phrases=[
             "테이블 정보 알려줘",

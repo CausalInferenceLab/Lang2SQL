@@ -30,4 +30,7 @@ class ChatBotState(TypedDict):
     messages: Annotated[Sequence[BaseMessage], add_messages]
     context: Dict[str, Any]
     selected_ids: List[str]
-    tool_outputs: List[str]
+
+    table_schema_outputs: List[str]
+    glossary_outputs: List[str]
+    query_example_outputs: List[str]

@@ -84,25 +84,50 @@ class ChatBot:
             # search_database_tables_tool을 위해 query 키도 설정
             ctx["query"] = user_text
 
-            outs: List[str] = []
+            # 결과 저장을 위한 임시 딕셔너리
+            updates = {
+                "table_schema_outputs": [],
+                "glossary_outputs": [],
+                "query_example_outputs": [],
+            }
+
             for g in matched:
+                target_list = None
+                if g.id == "table_schema":
+                    target_list = updates["table_schema_outputs"]
+                elif g.id == "glossary":
+                    target_list = updates["glossary_outputs"]
+                elif g.id == "query_examples":
+                    target_list = updates["query_example_outputs"]
+
+                # 매칭되는 카테고리가 없으면 스킵하거나 로깅 (현재는 스킵)
+                if target_list is None:
+                    continue
+
                 for tool in g.tools or []:
                     try:
-                        # tool 실행
                         result = tool(ctx)
-                        outs.append(f"[{g.id}] {result}")
+                        target_list.append(f"[{g.id}] {result}")
                     except Exception as exc:
-                        outs.append(f"[tool_error] {tool.__name__}: {exc}")
+                        target_list.append(f"[tool_error] {tool.__name__}: {exc}")
+
+            # 빈 리스트인 필드는 제거하여 State 업데이트 시 기존 값을 덮어쓰지 않도록 함
+            # (LangGraph State 업데이트 동작: 딕셔너리에 포함된 키만 업데이트됨)
+            final_updates = {k: v for k, v in updates.items() if v}
 
             return {
                 "selected_ids": [g.id for g in matched],
-                "tool_outputs": outs,
                 "context": ctx,
+                **final_updates,
             }
 
         def call_model(state: ChatBotState):
             selected_ids = state.get("selected_ids", [])
-            tool_outs = state.get("tool_outputs", [])
+
+            # 각 출력 필드 가져오기
+            table_outs = state.get("table_schema_outputs", [])
+            glossary_outs = state.get("glossary_outputs", [])
+            query_outs = state.get("query_example_outputs", [])
 
             guideline_lines = [
                 f"- {gid}: {self.guideline_map[gid].description}"
@@ -110,7 +135,20 @@ class ChatBot:
                 if gid in self.guideline_map
             ] or ["- 적용 가능한 가이드라인 없음 (일반 대화 진행)"]
 
-            tool_lines = tool_outs or ["(툴 실행 결과 없음)"]
+            # 툴 실행 결과 통합
+            all_tool_lines = []
+            if table_outs:
+                all_tool_lines.append("## 테이블 스키마 정보")
+                all_tool_lines.extend(table_outs)
+            if glossary_outs:
+                all_tool_lines.append("## 용어집 정보")
+                all_tool_lines.extend(glossary_outs)
+            if query_outs:
+                all_tool_lines.append("## 쿼리 예제 정보")
+                all_tool_lines.extend(query_outs)
+
+            if not all_tool_lines:
+                all_tool_lines = ["(툴 실행 결과 없음)"]
 
             sys_msg = SystemMessage(
                 content=(
@@ -120,7 +158,7 @@ class ChatBot:
                     "# 적용된 가이드라인\n"
                     + "\n".join(guideline_lines)
                     + "\n\n# 툴 실행 결과 (참고 정보)\n"
-                    + "\n".join(f"- {line}" for line in tool_lines)
+                    + "\n".join(all_tool_lines)
                     + "\n\n# 지침\n"
                     "- 툴 실행 결과에 유용한 정보가 있다면 적극적으로 인용하여 답변하세요.\n"
                     "- 정보가 부족하다면 추가 질문을 통해 구체화하세요.\n"
@@ -163,7 +201,9 @@ class ChatBot:
             "messages": [HumanMessage(content=message)],
             "context": {"gms_server": self.gms_server},
             "selected_ids": [],
-            "tool_outputs": [],
+            "table_schema_outputs": [],
+            "glossary_outputs": [],
+            "query_example_outputs": [],
         }
 
         return self.app.invoke(input_state, config)

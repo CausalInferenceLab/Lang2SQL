@@ -36,7 +36,7 @@ utils/llm/chatbot/
 
 ### `GUIDELINES` (`guidelines.py`)
 기본적으로 제공되는 가이드라인 목록입니다.
-- `db_search`: 데이터베이스 테이블 정보 검색
+- `table_schema`: 데이터베이스 테이블 정보 검색
 - `glossary`: 용어집 조회
 - `query_examples`: 쿼리 예제 조회
 
