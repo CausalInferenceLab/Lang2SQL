@@ -16,6 +16,8 @@ from interface.app_pages.sidebar_components import (
 )
 from interface.core.config import load_config
 
+from interface.app_pages.chatbot_components import render_context_cards
+
 
 def initialize_session_state():
     """세션 상태 초기화 함수
@@ -123,6 +125,9 @@ if not st.session_state.chatbot_messages:
 for message in st.session_state.chatbot_messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        # 컨텍스트 정보가 있으면 렌더링
+        if "context" in message:
+            render_context_cards(message["context"])
 
 # 사용자 입력 처리
 if prompt := st.chat_input("메시지를 입력하세요"):
@@ -147,10 +152,28 @@ if prompt := st.chat_input("메시지를 입력하세요"):
             # 응답 표시
             st.markdown(response_content)
 
+            # 컨텍스트 데이터 추출
+            context_data = {}
+            if response.get("table_schema_outputs"):
+                context_data["table_schema_outputs"] = response["table_schema_outputs"]
+            if response.get("glossary_outputs"):
+                context_data["glossary_outputs"] = response["glossary_outputs"]
+            if response.get("query_example_outputs"):
+                context_data["query_example_outputs"] = response[
+                    "query_example_outputs"
+                ]
+
+            # 컨텍스트 카드가 있으면 렌더링
+            if context_data:
+                render_context_cards(context_data)
+
             # AI 응답을 기록에 추가
-            st.session_state.chatbot_messages.append(
-                {"role": "assistant", "content": response_content}
-            )
+            msg_data = {"role": "assistant", "content": response_content}
+            if context_data:
+                msg_data["context"] = context_data
+
+            st.session_state.chatbot_messages.append(msg_data)
+
         except Exception as e:
             error_msg = f"오류가 발생했습니다: {str(e)}"
             st.error(error_msg)
