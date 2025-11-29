@@ -154,6 +154,46 @@ class ChatBot:
                 "query_example_outputs": filtered.get("query_example_outputs", []),
             }
 
+        def generate_analysis_guide(state: ChatBotState):
+            """
+            필터링된 컨텍스트를 바탕으로 분석 가이드를 생성하는 노드
+            """
+            user_text = ""
+            for msg in reversed(state["messages"]):
+                if isinstance(msg, HumanMessage) or (
+                    hasattr(msg, "type") and msg.type == "human"
+                ):
+                    user_text = msg.content
+                    break
+
+            if not user_text and state["messages"]:
+                user_text = state["messages"][-1].content
+
+            table_outs = state.get("table_schema_outputs", [])
+            glossary_outs = state.get("glossary_outputs", [])
+            query_outs = state.get("query_example_outputs", [])
+
+            # 컨텍스트가 없으면 가이드 생성 생략
+            if not (table_outs or glossary_outs or query_outs):
+                return {"analysis_guide": None}
+
+            prompt = (
+                "당신은 데이터 분석 전문가입니다. 사용자의 질문과 제공된 컨텍스트(테이블 스키마, 용어집, 쿼리 예제)를 바탕으로 "
+                "데이터 분석 시나리오(Analysis Guide)를 작성해주세요.\n\n"
+                "다음 우선순위에 따라 분석 전략을 수립하세요:\n"
+                "1. Query Example 활용: 유사한 쿼리 예제가 있다면 이를 변형하여 분석하는 방법을 제안하세요.\n"
+                "2. Glossary 활용: 질문에 포함된 모호한 용어가 용어집에 있다면 그 정의를 바탕으로 분석 방법을 제안하세요.\n"
+                "3. Table Schema 활용: 위 정보가 부족하다면 테이블 스키마를 보고 어떤 컬럼을 조합하여 분석할지 제안하세요.\n\n"
+                f"# 사용자 질문: {user_text}\n\n"
+                f"# 테이블 스키마 정보: {table_outs}\n"
+                f"# 용어집 정보: {glossary_outs}\n"
+                f"# 쿼리 예제 정보: {query_outs}\n\n"
+                "분석 가이드는 명확하고 논리적인 단계로 작성해주세요."
+            )
+
+            response = self.llm.invoke([HumanMessage(content=prompt)])
+            return {"analysis_guide": response.content}
+
         def call_model(state: ChatBotState):
             selected_ids = state.get("selected_ids", [])
 
@@ -161,6 +201,7 @@ class ChatBot:
             table_outs = state.get("table_schema_outputs", [])
             glossary_outs = state.get("glossary_outputs", [])
             query_outs = state.get("query_example_outputs", [])
+            analysis_guide = state.get("analysis_guide")
 
             guideline_lines = [
                 f"- {gid}: {self.guideline_map[gid].description}"
@@ -186,15 +227,23 @@ class ChatBot:
             if not all_tool_lines:
                 all_tool_lines = ["(툴 실행 결과 없음)"]
 
+            # 분석 가이드 추가
+            analysis_guide_text = ""
+            if analysis_guide:
+                analysis_guide_text = (
+                    f"\n\n# 분석 가이드 (Analysis Guide)\n{analysis_guide}"
+                )
+
             sys_msg = SystemMessage(
                 content=(
                     "# 역할\n"
-                    "당신은 사용자의 모호한 질문을 명확하고 구체적인 질문으로 만드는 전문 AI 어시스턴트입니다.\n"
-                    "제공된 툴 실행 결과와 가이드라인을 바탕으로 사용자에게 답변하세요.\n\n"
+                    "당신은 사용자의 비즈니스 질문을 구체적인 데이터 분석 시나리오로 연결해주는 '데이터 분석 컨설턴트'입니다.\n"
+                    "단순히 질문을 구체화하는 것을 넘어, 제공된 데이터 자산(테이블, 용어, 쿼리)을 활용하여 '어떤 데이터를 어떻게 분석하면 답을 얻을 수 있는지'를 전문적으로 가이드해야 합니다.\n"
                     "# 적용된 가이드라인\n"
                     + "\n".join(guideline_lines)
                     + "\n\n# 툴 실행 결과 (참고 정보)\n"
                     + "\n".join(all_tool_lines)
+                    + analysis_guide_text
                     + "\n\n# 지침\n"
                     "- 툴 실행 결과에 유용한 정보가 있다면 적극적으로 인용하여 답변하세요.\n"
                     "- 정보가 부족하다면 추가 질문을 통해 구체화하세요.\n"
@@ -211,11 +260,13 @@ class ChatBot:
 
         workflow.add_node("select", select_guidelines)
         workflow.add_node("filter", filter_context)
+        workflow.add_node("generate_analysis_guide", generate_analysis_guide)
         workflow.add_node("respond", call_model)
 
         workflow.add_edge(START, "select")
         workflow.add_edge("select", "filter")
-        workflow.add_edge("filter", "respond")
+        workflow.add_edge("filter", "generate_analysis_guide")
+        workflow.add_edge("generate_analysis_guide", "respond")
         workflow.add_edge("respond", END)
 
         return workflow.compile(checkpointer=MemorySaver())

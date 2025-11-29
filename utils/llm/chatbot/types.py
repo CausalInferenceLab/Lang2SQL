@@ -35,3 +35,4 @@ class ChatBotState(TypedDict):
     table_schema_outputs: List[Optional[Dict[str, Any]]]
     glossary_outputs: List[Optional[Dict[str, Any]]]
     query_example_outputs: List[Optional[Dict[str, Any]]]
+    analysis_guide: Optional[str]
