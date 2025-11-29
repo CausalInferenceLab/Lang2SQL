@@ -10,6 +10,8 @@ from utils.llm.tools.chatbot_tool import (
     get_query_examples,
 )
 
+from utils.llm.tools.chatbot_node import filter_relevant_outputs
+
 __all__ = [
     "set_gms_server",
     "get_table_schema",
@@ -17,4 +19,5 @@ __all__ = [
     "search_database_tables",
     "get_glossary_terms",
     "get_query_examples",
+    "filter_relevant_outputs",
 ]

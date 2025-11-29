@@ -10,6 +10,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, START, StateGraph
 from openai import OpenAI
 
+from utils.llm.tools import filter_relevant_outputs
 from utils.llm.chatbot.guidelines import GUIDELINES
 from utils.llm.chatbot.matcher import LLMGuidelineMatcher
 from utils.llm.chatbot.types import ChatBotState, Guideline
@@ -84,11 +85,11 @@ class ChatBot:
             # search_database_tables_tool을 위해 query 키도 설정
             ctx["query"] = user_text
 
-            # 결과 저장을 위한 임시 딕셔너리
+            # 결과 저장을 위한 임시 딕셔너리 (기존 상태 유지 + 추가)
             updates = {
-                "table_schema_outputs": [],
-                "glossary_outputs": [],
-                "query_example_outputs": [],
+                "table_schema_outputs": list(state.get("table_schema_outputs") or []),
+                "glossary_outputs": list(state.get("glossary_outputs") or []),
+                "query_example_outputs": list(state.get("query_example_outputs") or []),
             }
 
             for g in matched:
@@ -120,6 +121,37 @@ class ChatBot:
                 "selected_ids": [g.id for g in matched],
                 "context": ctx,
                 **final_updates,
+            }
+
+        def filter_context(state: ChatBotState):
+            """
+            수집된 컨텍스트를 LLM을 통해 필터링하는 노드
+            """
+            # HumanMessage만 필터링
+            human_messages = [
+                msg
+                for msg in state["messages"]
+                if isinstance(msg, HumanMessage)
+                or (hasattr(msg, "type") and msg.type == "human")
+            ]
+
+            table_outs = state.get("table_schema_outputs", [])
+            glossary_outs = state.get("glossary_outputs", [])
+            query_outs = state.get("query_example_outputs", [])
+
+            # 필터링 수행
+            filtered = filter_relevant_outputs(
+                messages=human_messages,
+                table_outputs=table_outs,
+                glossary_outputs=glossary_outs,
+                query_outputs=query_outs,
+                llm=self.llm,
+            )
+
+            return {
+                "table_schema_outputs": filtered.get("table_schema_outputs", []),
+                "glossary_outputs": filtered.get("glossary_outputs", []),
+                "query_example_outputs": filtered.get("query_example_outputs", []),
             }
 
         def call_model(state: ChatBotState):
@@ -178,10 +210,12 @@ class ChatBot:
             return {"messages": response}
 
         workflow.add_node("select", select_guidelines)
+        workflow.add_node("filter", filter_context)
         workflow.add_node("respond", call_model)
 
         workflow.add_edge(START, "select")
-        workflow.add_edge("select", "respond")
+        workflow.add_edge("select", "filter")
+        workflow.add_edge("filter", "respond")
         workflow.add_edge("respond", END)
 
         return workflow.compile(checkpointer=MemorySaver())
@@ -200,14 +234,10 @@ class ChatBot:
         config = {"configurable": {"thread_id": thread_id}}
 
         # 초기 상태 설정
-        # add_messages 리듀서가 있으므로 messages에는 새 메시지만 넣으면 됨
         input_state = {
             "messages": [HumanMessage(content=message)],
             "context": {"gms_server": self.gms_server},
             "selected_ids": [],
-            "table_schema_outputs": [],
-            "glossary_outputs": [],
-            "query_example_outputs": [],
         }
 
         return self.app.invoke(input_state, config)

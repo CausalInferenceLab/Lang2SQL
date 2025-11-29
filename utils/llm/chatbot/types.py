@@ -32,6 +32,6 @@ class ChatBotState(TypedDict):
     context: Dict[str, Any]
     selected_ids: List[str]
 
-    table_schema_outputs: Annotated[List[Optional[Dict[str, Any]]], operator.add]
-    glossary_outputs: Annotated[List[Optional[Dict[str, Any]]], operator.add]
-    query_example_outputs: Annotated[List[Optional[Dict[str, Any]]], operator.add]
+    table_schema_outputs: List[Optional[Dict[str, Any]]]
+    glossary_outputs: List[Optional[Dict[str, Any]]]
+    query_example_outputs: List[Optional[Dict[str, Any]]]
