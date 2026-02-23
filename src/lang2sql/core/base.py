@@ -3,8 +3,6 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Optional
 
-from .exceptions import ContractError
-from .context import RunContext
 from .exceptions import ComponentError, Lang2SQLError
 from .hooks import Event, NullHook, TraceHook, ms, now, summarize
 
@@ -39,16 +37,6 @@ class BaseComponent(ABC):
 
         try:
             out = self.run(*args, **kwargs)
-
-            if (
-                args
-                and isinstance(args[0], RunContext)
-                and not isinstance(out, RunContext)
-            ):
-                got = "None" if out is None else type(out).__name__
-                raise ContractError(
-                    f"{self.name} must return RunContext (got {got}). Did you forget `return run`?"
-                )
 
             t1 = now()
             self.hook.on_event(
@@ -169,23 +157,3 @@ class BaseFlow(ABC):
     def run(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 
-    def run_query(self, query: str) -> RunContext:
-        """
-        Convenience entrypoint.
-
-        Creates a RunContext(query=...) and runs the flow.
-        Intended for demos / quickstart.
-
-        Args:
-            query: Natural language question.
-
-        Returns:
-            RunContext after running this flow.
-        """
-        out = self.run(RunContext(query=query))
-        if not isinstance(out, RunContext):
-            got = "None" if out is None else type(out).__name__
-            raise TypeError(
-                f"{self.name}.run(run: RunContext) must return RunContext, got {got}"
-            )
-        return out
