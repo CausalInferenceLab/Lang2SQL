@@ -1,256 +1,128 @@
 import pytest
 
-from lang2sql.core.context import RunContext
 from lang2sql.core.base import BaseFlow
-from lang2sql.core.exceptions import ContractError
-from lang2sql.flows.baseline import BaselineFlow
+from lang2sql.flows.baseline import BaselineFlow, SequentialFlow
 
 
 def test_requires_at_least_one_step():
     with pytest.raises(ValueError):
-        BaselineFlow(steps=[])
+        SequentialFlow(steps=[])
 
 
-def test_run_query_sets_inputs_query():
-    def step(run: RunContext) -> RunContext:
-        run.sql = "SELECT 1;"
-        return run
-
-    flow = BaselineFlow(steps=[step])
-    out = flow.run_query("지난달 매출")
-
-    assert out.inputs["query"] == "지난달 매출"
-    assert out.query == "지난달 매출"
-    assert out.sql == "SELECT 1;"
+def test_baseline_flow_emits_deprecation_warning():
+    with pytest.warns(DeprecationWarning, match="BaselineFlow is deprecated"):
+        flow = BaselineFlow(steps=[lambda x: x])
+    assert isinstance(flow, SequentialFlow)
 
 
-def test_ctx_mutate_style_step_mutates_and_returns_same_context():
-    def step(run: RunContext) -> RunContext:
-        run.metadata["x"] = 1
-        return run
-
-    flow = BaselineFlow(steps=[step])
-    run = RunContext(query="q")
-    out = flow.run(run)
-
-    assert out is run
-    assert out.metadata["x"] == 1
+def test_run_passes_value_through_single_step():
+    flow = SequentialFlow(steps=[lambda x: x + 1])
+    assert flow.run(1) == 2
 
 
-def test_functional_style_step_can_return_new_context():
-    def step(run: RunContext) -> RunContext:
-        new = RunContext(query=run.query)
-        new.sql = "SELECT 2;"
-        return new
-
-    flow = BaselineFlow(steps=[step])
-    run = RunContext(query="q")
-    out = flow.run(run)
-
-    assert out is not run
-    assert out.query == "q"
-    assert out.sql == "SELECT 2;"
-
-
-def test_invalid_step_return_type_raises_contract_error():
-    def bad_step(run: RunContext):
-        return 123  # invalid
-
-    flow = BaselineFlow(steps=[bad_step])
-    with pytest.raises(ContractError):
-        flow.run(RunContext(query="q"))
+def test_run_chains_multiple_steps():
+    flow = SequentialFlow(steps=[lambda x: x * 2, lambda x: x + 10])
+    assert flow.run(5) == 20  # 5 * 2 = 10, 10 + 10 = 20
 
 
 def test_step_order_is_preserved():
-    def s1(run: RunContext) -> RunContext:
-        run.push_meta("order", "s1")
-        return run
+    trace = []
 
-    def s2(run: RunContext) -> RunContext:
-        run.push_meta("order", "s2")
-        return run
+    def s1(x):
+        trace.append("s1")
+        return x
 
-    def s3(run: RunContext) -> RunContext:
-        run.push_meta("order", "s3")
-        return run
+    def s2(x):
+        trace.append("s2")
+        return x
 
-    flow = BaselineFlow(steps=[s1, s2, s3])
-    out = flow.run(RunContext(query="q"))
+    def s3(x):
+        trace.append("s3")
+        return x
 
-    assert out.get_meta_list("order") == ["s1", "s2", "s3"]
+    SequentialFlow(steps=[s1, s2, s3]).run("input")
+    assert trace == ["s1", "s2", "s3"]
 
 
-def test_user_can_override_pipeline_by_composing_flows_without_private_api():
-    def default_step(run: RunContext) -> RunContext:
-        run.push_meta("order", "default")
-        return run
+def test_user_can_compose_flows_with_python_control_flow():
+    default_flow = SequentialFlow(steps=[lambda x: x + "_default"])
+    override_flow = SequentialFlow(steps=[lambda x: x + "_override"])
 
-    def override_step(run: RunContext) -> RunContext:
-        run.push_meta("order", "override")
-        return run
-
-    flow_default = BaselineFlow(steps=[default_step])
-    flow_override = BaselineFlow(steps=[override_step])
-
-    out_default = flow_default(RunContext(query="q"))
-    assert out_default.get_meta_list("order") == ["default"]
+    assert default_flow("q") == "q_default"
 
     class CustomFlow(BaseFlow):
-        def run(self, run: RunContext) -> RunContext:
-            # Explicitly choose override pipeline
-            return flow_override(run)
+        def run(self, value):
+            return override_flow(value)
 
-    out = CustomFlow().run(RunContext(query="q"))
-    assert out.get_meta_list("order") == ["override"]
+    assert CustomFlow().run("q") == "q_override"
 
 
 # -------------------------
-# 1) Advanced: retry patterns (NO private API)
+# Advanced: retry patterns
 # -------------------------
 
 
-def test_custom_flow_fallback_then_revalidate_makes_validation_ok():
-    def gen_bad(run: RunContext) -> RunContext:
-        run.sql = "DROP TABLE users;"
-        return run
+def test_custom_flow_fallback_then_revalidate():
+    def gen_bad(_query):
+        return "DROP TABLE users;"
 
-    class _V:
-        def __init__(self, ok: bool):
-            self.ok = ok
-
-    def validate(run: RunContext) -> RunContext:
-        ok = "drop " not in run.sql.lower()
-        run.validation = _V(ok)
-        return run
-
-    pipeline = BaselineFlow(steps=[gen_bad, validate])  # gen -> validate
+    def validate(sql):
+        return "drop " not in sql.lower()
 
     class FixThenRevalidateFlow(BaseFlow):
-        def run(self, run: RunContext) -> RunContext:
-            pipeline(run)
-            if run.validation.ok:
-                return run
+        def run(self, query):
+            sql = gen_bad(query)
+            if not validate(sql):
+                sql = "SELECT 1;"
+            return sql
 
-            run.sql = "SELECT 1;"
-            validate(run)  # explicit re-validate
-            return run
-
-    out = FixThenRevalidateFlow().run(RunContext(query="q"))
-    assert out.sql == "SELECT 1;"
-    assert out.validation.ok is True
+    assert FixThenRevalidateFlow().run("q") == "SELECT 1;"
 
 
-def test_custom_flow_retry_regenerates_sql_until_valid():
-    def gen_with_attempt(run: RunContext) -> RunContext:
-        attempt = int(run.metadata.get("attempt", 0))
-        run.metadata["attempt"] = attempt + 1
+def test_custom_flow_retry_until_valid():
+    attempts = {"count": 0}
 
-        if attempt == 0:
-            run.sql = "DROP TABLE users;"
-        else:
-            run.sql = "SELECT 1;"
-        return run
+    def generate(_query):
+        attempts["count"] += 1
+        return "DROP TABLE users;" if attempts["count"] == 1 else "SELECT 1;"
 
-    class _V:
-        def __init__(self, ok: bool):
-            self.ok = ok
+    def validate(sql):
+        return "drop " not in sql.lower()
 
-    def validate(run: RunContext) -> RunContext:
-        ok = "drop " not in run.sql.lower()
-        run.validation = _V(ok)
-        return run
-
-    class RegenerateRetryFlow(BaseFlow):
-        def run(self, run: RunContext) -> RunContext:
+    class RetryFlow(BaseFlow):
+        def run(self, query):
             for _ in range(3):
-                gen_with_attempt(run)
-                validate(run)
-                if run.validation.ok:
-                    return run
-            return run
+                sql = generate(query)
+                if validate(sql):
+                    return sql
+            return sql
 
-    out = RegenerateRetryFlow().run(RunContext(query="q"))
-    assert out.sql == "SELECT 1;"
-    assert out.validation.ok is True
-    assert out.metadata["attempt"] >= 2
+    result = RetryFlow().run("q")
+    assert result == "SELECT 1;"
+    assert attempts["count"] >= 2
 
 
 # -------------------------
-# 2) Composition: flow as a step (subflow)
+# Composition: flow as step
 # -------------------------
 
 
-def test_subflow_can_be_used_as_a_step_and_mutates_same_context():
-    def a1(run: RunContext) -> RunContext:
-        run.push_meta("trace", "a1")
-        return run
+def test_subflow_can_be_used_as_a_step():
+    inner = SequentialFlow(steps=[lambda x: x + 1])
+    outer = SequentialFlow(steps=[lambda x: x * 2, inner])
 
-    def a2(run: RunContext) -> RunContext:
-        run.sql = "SELECT 42;"
-        run.push_meta("trace", "a2")
-        return run
-
-    flow_a = BaselineFlow(steps=[a1, a2])
-
-    def b1(run: RunContext) -> RunContext:
-        run.push_meta("trace", "b1")
-        return run
-
-    def b2(run: RunContext) -> RunContext:
-        run.push_meta("trace", "b2")
-        return run
-
-    flow_b = BaselineFlow(steps=[b1, flow_a, b2])
-
-    run = RunContext(query="q")
-    out = flow_b.run(run)
-
-    assert out is run
-    assert out.get_meta_list("trace") == ["b1", "a1", "a2", "b2"]
-    assert out.sql == "SELECT 42;"
+    # 3 * 2 = 6, 6 + 1 = 7
+    assert outer.run(3) == 7
 
 
 def test_subflow_can_be_conditionally_invoked_in_custom_flow():
-    def a1(run: RunContext) -> RunContext:
-        run.push_meta("trace", "a1")
-        return run
-
-    def a2(run: RunContext) -> RunContext:
-        run.push_meta("trace", "a2")
-        return run
-
-    flow_a = BaselineFlow(steps=[a1, a2])
-
-    def b1(run: RunContext) -> RunContext:
-        run.push_meta("trace", "b1")
-        return run
-
-    def b2(run: RunContext) -> RunContext:
-        run.push_meta("trace", "b2")
-        return run
+    flow_a = SequentialFlow(steps=[lambda x: x + "_a"])
 
     class ConditionalFlow(BaseFlow):
-        def run(self, run: RunContext) -> RunContext:
-            b1(run)
-            if "use_a" in run.query:
-                flow_a(run)
-            b2(run)
-            return run
+        def run(self, value):
+            if "use_a" in value:
+                return flow_a(value)
+            return value
 
-    out1 = ConditionalFlow().run(RunContext(query="nope"))
-    assert out1.get_meta_list("trace") == ["b1", "b2"]
-
-    out2 = ConditionalFlow().run(RunContext(query="please use_a"))
-    assert out2.get_meta_list("trace") == ["b1", "a1", "a2", "b2"]
-
-
-def test_none_return_raises_contract_error():
-    def bad_none(run: RunContext):
-        run.sql = "SELECT 1;"
-        return None  # forgot return run
-
-    flow = BaselineFlow(steps=[bad_none])
-    with pytest.raises(ContractError) as ei:
-        flow.run(RunContext(query="q"))
-
-    assert "Did you forget" in str(ei.value) or "return run" in str(ei.value)
+    assert ConditionalFlow().run("nope") == "nope"
+    assert ConditionalFlow().run("please use_a") == "please use_a_a"

@@ -8,7 +8,6 @@ Pattern follows test_core_base.py:
 import pytest
 
 from lang2sql.components.retrieval import KeywordRetriever
-from lang2sql.core.context import RunContext
 from lang2sql.core.hooks import MemoryHook
 from lang2sql.flows.baseline import SequentialFlow
 
@@ -47,59 +46,51 @@ CATALOG = [ORDER_TABLE, USER_TABLE, PRODUCT_TABLE]
 def test_basic_search_returns_relevant_table():
     """'주문' 질문 → order_table이 top 위치."""
     retriever = KeywordRetriever(catalog=CATALOG)
-    run = retriever(RunContext(query="주문 정보 조회"))
+    results = retriever("주문 정보 조회")
 
-    assert run.schema_selected
-    assert run.schema_selected[0]["name"] == "order_table"
+    assert results
+    assert results[0]["name"] == "order_table"
 
 
 def test_top_n_limits_results():
     """top_n=2 → 최대 2개 반환."""
     retriever = KeywordRetriever(catalog=CATALOG, top_n=2)
-    run = retriever(RunContext(query="테이블"))
+    results = retriever("테이블")
 
-    assert len(run.schema_selected) <= 2
+    assert len(results) <= 2
 
 
 def test_top_n_larger_than_catalog():
     """top_n=10, catalog 3개 → 최대 3개 반환."""
     retriever = KeywordRetriever(catalog=CATALOG, top_n=10)
-    run = retriever(RunContext(query="테이블"))
+    results = retriever("테이블")
 
-    assert len(run.schema_selected) <= len(CATALOG)
+    assert len(results) <= len(CATALOG)
 
 
 def test_zero_results_returns_empty_list():
-    """완전히 무관한 query → schema_selected == []."""
+    """완전히 무관한 query → []."""
     retriever = KeywordRetriever(catalog=CATALOG)
-    run = retriever(RunContext(query="xyzzy_no_match_token_12345"))
+    results = retriever("xyzzy_no_match_token_12345")
 
-    assert run.schema_selected == []
+    assert results == []
 
 
-def test_schema_selected_is_list_of_dict():
+def test_returns_list_of_dict():
     """결과가 list[dict]인지 확인."""
     retriever = KeywordRetriever(catalog=CATALOG)
-    run = retriever(RunContext(query="주문"))
+    results = retriever("주문")
 
-    assert isinstance(run.schema_selected, list)
-    assert len(run.schema_selected) > 0
-    assert isinstance(run.schema_selected[0], dict)
-
-
-def test_returns_runcontext():
-    """run 메서드가 RunContext를 반환하는지 확인."""
-    retriever = KeywordRetriever(catalog=CATALOG)
-    result = retriever(RunContext(query="주문"))
-
-    assert isinstance(result, RunContext)
+    assert isinstance(results, list)
+    assert len(results) > 0
+    assert isinstance(results[0], dict)
 
 
 def test_hook_start_end_events():
     """MemoryHook으로 start/end 이벤트 확인."""
     hook = MemoryHook()
     retriever = KeywordRetriever(catalog=CATALOG, hook=hook)
-    retriever(RunContext(query="주문"))
+    retriever("주문")
 
     assert len(hook.events) == 2
     assert hook.events[0].name == "component.run"
@@ -111,21 +102,20 @@ def test_hook_start_end_events():
 
 
 def test_empty_catalog():
-    """catalog=[] → schema_selected == []."""
+    """catalog=[] → []."""
     retriever = KeywordRetriever(catalog=[])
-    run = retriever(RunContext(query="주문"))
+    results = retriever("주문")
 
-    assert run.schema_selected == []
+    assert results == []
 
 
 def test_meta_preserved_in_results():
     """meta 필드가 결과 dict에 그대로 포함되는지 확인."""
     retriever = KeywordRetriever(catalog=CATALOG)
-    run = retriever(RunContext(query="주문"))
+    results = retriever("주문")
 
-    result = run.schema_selected[0]
-    assert "meta" in result
-    assert result["meta"]["primary_key"] == "order_id"
+    assert "meta" in results[0]
+    assert results[0]["meta"]["primary_key"] == "order_id"
 
 
 def test_index_fields_meta():
@@ -148,10 +138,10 @@ def test_index_fields_meta():
         catalog=catalog,
         index_fields=["description", "meta"],
     )
-    run = retriever(RunContext(query="finance"))
+    results = retriever("finance")
 
-    assert len(run.schema_selected) > 0
-    assert run.schema_selected[0]["name"] == "alpha"
+    assert len(results) > 0
+    assert results[0]["name"] == "alpha"
 
 
 def test_result_order_by_relevance():
@@ -168,10 +158,10 @@ def test_result_order_by_relevance():
     ]
 
     retriever = KeywordRetriever(catalog=catalog)
-    run = retriever(RunContext(query="주문"))
+    results = retriever("주문")
 
-    assert len(run.schema_selected) >= 2
-    assert run.schema_selected[0]["name"] == "order_summary"
+    assert len(results) >= 2
+    assert results[0]["name"] == "order_summary"
 
 
 def test_columns_text_indexed():
@@ -190,10 +180,10 @@ def test_columns_text_indexed():
     ]
 
     retriever = KeywordRetriever(catalog=catalog)
-    run = retriever(RunContext(query="매출액"))
+    results = retriever("매출액")
 
-    assert len(run.schema_selected) > 0
-    assert run.schema_selected[0]["name"] == "sales"
+    assert len(results) > 0
+    assert results[0]["name"] == "sales"
 
 
 def test_missing_optional_fields_no_error():
@@ -209,19 +199,17 @@ def test_missing_optional_fields_no_error():
     ]
 
     retriever = KeywordRetriever(catalog=catalog)
-    # 예외가 발생하지 않으면 테스트 통과
-    run = retriever(RunContext(query="테이블"))
-    assert isinstance(run.schema_selected, list)
+    results = retriever("테이블")
+    assert isinstance(results, list)
 
 
 def test_end_to_end_in_sequential_flow():
-    """SequentialFlow(steps=[retriever]).run_query('...') 가 동작하는지 확인."""
+    """SequentialFlow(steps=[retriever]).run('...') 가 동작하는지 확인."""
     retriever = KeywordRetriever(catalog=CATALOG)
     flow = SequentialFlow(steps=[retriever])
 
-    run = flow.run_query("주문 내역 확인")
+    results = flow.run("주문 내역 확인")
 
-    assert isinstance(run, RunContext)
-    assert isinstance(run.schema_selected, list)
-    assert len(run.schema_selected) > 0
-    assert run.schema_selected[0]["name"] == "order_table"
+    assert isinstance(results, list)
+    assert len(results) > 0
+    assert results[0]["name"] == "order_table"
