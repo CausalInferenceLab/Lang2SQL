@@ -1,7 +1,11 @@
+> **레거시 유틸리티**: `RunContext`는 현재 레거시 유틸리티로 유지됩니다.
+> 새 코드에서는 명시적 Python 인자를 사용하는 것을 권장합니다.
+> 컴포넌트 I/O는 `RunContext` 대신 구체적인 타입(str, list 등)으로 표현하세요.
+
 ## RunContext
 
-`RunContext`는 define-by-run 파이프라인에서 **상태(state)를 운반하는 최소 State Carrier**입니다.
-컴포넌트는 기본적으로 `RunContext -> RunContext` 계약을 따르며, 필요한 값을 읽고/쓰면서 파이프라인을 구성합니다.
+`RunContext`는 define-by-run 파이프라인에서 **상태(state)를 운반하는 State Carrier**입니다.
+레거시 파이프라인이나 직접 상태를 조합할 때 유용합니다.
 
 ### 설계 원칙
 
@@ -13,7 +17,7 @@
 
 ## 데이터 구조 트리
 
-아래는 `RunContext`가 담는 데이터 구조를 “트리 형태”로 나타낸 것입니다.
+아래는 `RunContext`가 담는 데이터 구조를 "트리 형태"로 나타낸 것입니다.
 
 ```
 RunContext
@@ -93,21 +97,36 @@ RunContext
 
 ---
 
-## 파이프라인 예시 (Text2SQL)
+## 파이프라인 예시 (Text2SQL) — 새 API
 
-개념:
+새 API에서는 각 컴포넌트가 명시적 인자를 주고받습니다.
 
-* retriever: `(query, catalog) -> selected`
-* builder: `(query, selected) -> context`
-* generator: `(query, context) -> sql`
-* validator: `(sql) -> validation`
+```python
+query = "지난달 매출"
 
-RunContext에서의 읽기/쓰기:
+schemas = retriever(query)                  # str → list[CatalogEntry]
+context = builder(query, schemas)           # str, list → str
+sql     = generator(query, context)         # str, str → str
+result  = validator(sql)                    # str → ValidationResult
+```
 
-* retriever: `run.query`, `run.schema_catalog` 읽고 → `run.schema_selected` 작성
-* builder: `run.query`, `run.schema_selected` 읽고 → `run.schema_context` 작성
-* generator: `run.query`, `run.schema_context` 읽고 → `run.sql` 작성
-* validator: `run.sql` 읽고 → `run.validation` 작성
+또는 `SequentialFlow`로 조합:
+
+```python
+flow = SequentialFlow(steps=[retriever, builder, generator, validator])
+result = flow.run(query)
+```
 
 ---
 
+## RunContext 직접 사용 (레거시)
+
+기존 코드나 직접 상태를 조합할 때만 사용합니다.
+
+```python
+from lang2sql.core.context import RunContext
+
+run = RunContext(query="지난달 매출")
+# run을 직접 조작하거나 레거시 컴포넌트에 전달
+run.metadata["session_id"] = "abc123"
+```
