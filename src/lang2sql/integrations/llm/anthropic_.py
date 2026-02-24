@@ -20,9 +20,7 @@ class AnthropicLLM:
         self._model = model
 
     def invoke(self, messages: list[dict[str, str]]) -> str:
-        system = next(
-            (m["content"] for m in messages if m["role"] == "system"), None
-        )
+        system = next((m["content"] for m in messages if m["role"] == "system"), None)
         user_msgs = [m for m in messages if m["role"] != "system"]
         resp = self._client.messages.create(
             model=self._model,
