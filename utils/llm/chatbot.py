@@ -104,8 +104,7 @@ class ChatBot:
                 dict: LLM 응답이 포함된 상태 업데이트
             """
             # 질문 구체화 전문 어시스턴트 시스템 메시지
-            sys_msg = SystemMessage(
-                content="""# 역할
+            sys_msg = SystemMessage(content="""# 역할
 당신은 사용자의 모호한 질문을 명확하고 구체적인 질문으로 만드는 전문 AI 어시스턴트입니다.
 
 # 주요 임무
@@ -141,8 +140,7 @@ class ChatBot:
 - 불확실한 정보가 있다면 추측하지 말고 도구를 사용하여 확인한 후 답변하세요
 
 ---
-다음은 사용자와의 대화입니다:"""
-            )
+다음은 사용자와의 대화입니다:""")
             # 시스템 메시지를 대화의 맨 앞에 추가
             messages = [sys_msg] + state["messages"]
             response = self.llm.invoke(messages)

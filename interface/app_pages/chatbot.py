@@ -82,15 +82,13 @@ initialize_session_state()
 # 페이지 제목
 st.title("🤖 AI ChatBot")
 
-st.markdown(
-    """
+st.markdown("""
     LangGraph 기반 AI ChatBot과 대화를 나눌 수 있습니다.
     - 데이터베이스 테이블 정보 검색
     - 용어집 조회
     - 쿼리 예제 조회
     - 대화를 통해 질문 구체화
-    """
-)
+    """)
 
 # 설정 로드
 config = load_config()

@@ -28,7 +28,6 @@ from interface.app_pages.sidebar_components import (
     render_sidebar_db_selector,
 )
 
-
 TITLE = "Lang2SQL"
 DEFAULT_QUERY = "고객 데이터를 기반으로 유니크한 유저 수를 카운트하는 쿼리"
 SIDEBAR_OPTIONS = {

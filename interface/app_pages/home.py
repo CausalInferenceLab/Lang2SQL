@@ -8,8 +8,7 @@ import streamlit as st
 
 st.title("🏠 홈")
 
-st.markdown(
-    """
+st.markdown("""
     ### Lang2SQL 데이터 분석 도구에 오신 것을 환영합니다 🎉  
 
     이 도구는 자연어로 작성한 질문을 SQL 쿼리로 변환하고,  
@@ -21,7 +20,6 @@ st.markdown(
     2. **🔍 Lang2SQL**: 자연어 → SQL 변환 및 결과 분석
     3. **📊 그래프 빌더**: LangGraph 실행 순서를 프리셋/커스텀으로 구성하고 세션에 적용
     4. **⚙️ 설정**: 데이터 소스, LLM, DB 연결 등 환경 설정
-    """
-)
+    """)
 
 st.info("왼쪽 메뉴에서 기능 페이지를 선택해 시작하세요 🚀")

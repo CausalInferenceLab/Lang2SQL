@@ -11,6 +11,7 @@ python scripts/setup_sample_db.py
 # PostgreSQL (Docker 컨테이너가 먼저 실행 중이어야 함)
 python scripts/setup_sample_db.py --db postgres
 """
+
 from __future__ import annotations
 
 import argparse
@@ -18,13 +19,19 @@ from datetime import datetime, timedelta
 import random
 
 from sqlalchemy import (
-    Column, DateTime, ForeignKey, Integer, Numeric, String,
-    create_engine, text,
+    Column,
+    DateTime,
+    ForeignKey,
+    Integer,
+    Numeric,
+    String,
+    create_engine,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Session
 
-
 # ── 모델 정의 ────────────────────────────────────────────────────────────────
+
 
 class Base(DeclarativeBase):
     pass
@@ -33,68 +40,71 @@ class Base(DeclarativeBase):
 class Customer(Base):
     __tablename__ = "customers"
     customer_id = Column(Integer, primary_key=True)
-    name        = Column(String(100), nullable=False)
-    email       = Column(String(200), nullable=False, unique=True)
-    joined_at   = Column(DateTime, nullable=False)
-    grade       = Column(String(20), nullable=False)  # bronze / silver / gold
+    name = Column(String(100), nullable=False)
+    email = Column(String(200), nullable=False, unique=True)
+    joined_at = Column(DateTime, nullable=False)
+    grade = Column(String(20), nullable=False)  # bronze / silver / gold
 
 
 class Product(Base):
     __tablename__ = "products"
     product_id = Column(Integer, primary_key=True)
-    name       = Column(String(200), nullable=False)
-    category   = Column(String(100), nullable=False)  # electronics / clothing / food
-    price      = Column(Numeric(10, 2), nullable=False)
-    stock      = Column(Integer, nullable=False)
+    name = Column(String(200), nullable=False)
+    category = Column(String(100), nullable=False)  # electronics / clothing / food
+    price = Column(Numeric(10, 2), nullable=False)
+    stock = Column(Integer, nullable=False)
 
 
 class Order(Base):
     __tablename__ = "orders"
-    order_id    = Column(Integer, primary_key=True)
+    order_id = Column(Integer, primary_key=True)
     customer_id = Column(Integer, ForeignKey("customers.customer_id"), nullable=False)
-    order_date  = Column(DateTime, nullable=False)
-    amount      = Column(Numeric(10, 2), nullable=False)
-    status      = Column(String(20), nullable=False)  # pending / confirmed / shipped / cancelled
+    order_date = Column(DateTime, nullable=False)
+    amount = Column(Numeric(10, 2), nullable=False)
+    status = Column(
+        String(20), nullable=False
+    )  # pending / confirmed / shipped / cancelled
 
 
 class OrderItem(Base):
     __tablename__ = "order_items"
-    item_id    = Column(Integer, primary_key=True)
-    order_id   = Column(Integer, ForeignKey("orders.order_id"), nullable=False)
+    item_id = Column(Integer, primary_key=True)
+    order_id = Column(Integer, ForeignKey("orders.order_id"), nullable=False)
     product_id = Column(Integer, ForeignKey("products.product_id"), nullable=False)
-    quantity   = Column(Integer, nullable=False)
+    quantity = Column(Integer, nullable=False)
     unit_price = Column(Numeric(10, 2), nullable=False)
 
 
 # ── 샘플 데이터 ──────────────────────────────────────────────────────────────
 
 CUSTOMERS = [
-    (1,  "김철수", "chulsoo.kim@example.com",   "2022-03-15", "gold"),
-    (2,  "박영희", "younghee.park@example.com",  "2022-07-22", "gold"),
-    (3,  "이민준", "minjun.lee@example.com",     "2023-01-10", "gold"),
-    (4,  "최수연", "sooyeon.choi@example.com",   "2023-04-05", "silver"),
-    (5,  "정우진", "woojin.jung@example.com",    "2023-06-18", "silver"),
-    (6,  "강지훈", "jihoon.kang@example.com",    "2023-08-30", "silver"),
-    (7,  "윤서현", "seohyun.yoon@example.com",   "2023-10-12", "bronze"),
-    (8,  "임도현", "dohyun.lim@example.com",     "2024-01-25", "bronze"),
-    (9,  "한소희", "sohee.han@example.com",      "2024-03-08", "bronze"),
-    (10, "오준혁", "junhyuk.oh@example.com",     "2024-05-17", "bronze"),
+    (1, "김철수", "chulsoo.kim@example.com", "2022-03-15", "gold"),
+    (2, "박영희", "younghee.park@example.com", "2022-07-22", "gold"),
+    (3, "이민준", "minjun.lee@example.com", "2023-01-10", "gold"),
+    (4, "최수연", "sooyeon.choi@example.com", "2023-04-05", "silver"),
+    (5, "정우진", "woojin.jung@example.com", "2023-06-18", "silver"),
+    (6, "강지훈", "jihoon.kang@example.com", "2023-08-30", "silver"),
+    (7, "윤서현", "seohyun.yoon@example.com", "2023-10-12", "bronze"),
+    (8, "임도현", "dohyun.lim@example.com", "2024-01-25", "bronze"),
+    (9, "한소희", "sohee.han@example.com", "2024-03-08", "bronze"),
+    (10, "오준혁", "junhyuk.oh@example.com", "2024-05-17", "bronze"),
 ]
 
 PRODUCTS = [
-    (1,  "무선 마우스",     "electronics", 29900,  3),
-    (2,  "기계식 키보드",   "electronics", 89000,  15),
-    (3,  "27인치 모니터",   "electronics", 320000, 8),
-    (4,  "USB-C 허브",      "electronics", 45000,  7),
-    (5,  "노이즈캔슬링 이어폰", "electronics", 159000, 22),
-    (6,  "면 반팔 티셔츠",  "clothing",    19900,  50),
-    (7,  "청바지",          "clothing",    59900,  30),
-    (8,  "운동화",          "clothing",    89000,  9),
-    (9,  "후드 집업",       "clothing",    69900,  4),
-    (10, "유기농 아몬드",   "food",        18900,  100),
-    (11, "그래놀라",        "food",        12500,  60),
-    (12, "프로틴 바 (12개)", "food",       24900,  45),
+    (1, "무선 마우스", "electronics", 29900, 3),
+    (2, "기계식 키보드", "electronics", 89000, 15),
+    (3, "27인치 모니터", "electronics", 320000, 8),
+    (4, "USB-C 허브", "electronics", 45000, 7),
+    (5, "노이즈캔슬링 이어폰", "electronics", 159000, 22),
+    (6, "면 반팔 티셔츠", "clothing", 19900, 50),
+    (7, "청바지", "clothing", 59900, 30),
+    (8, "운동화", "clothing", 89000, 9),
+    (9, "후드 집업", "clothing", 69900, 4),
+    (10, "유기농 아몬드", "food", 18900, 100),
+    (11, "그래놀라", "food", 12500, 60),
+    (12, "프로틴 바 (12개)", "food", 24900, 45),
 ]
+
 
 def _make_orders_and_items():
     """지난 3개월간 주문 데이터를 생성합니다."""
@@ -112,7 +122,9 @@ def _make_orders_and_items():
         for _ in range(n_orders):
             days_ago = random.randint(1, 90)
             order_date = today - timedelta(days=days_ago)
-            status = random.choice(["confirmed", "confirmed", "shipped", "pending", "cancelled"])
+            status = random.choice(
+                ["confirmed", "confirmed", "shipped", "pending", "cancelled"]
+            )
 
             # 주문에 1~3개 상품
             n_items = random.randint(1, 3)
@@ -134,6 +146,7 @@ def _make_orders_and_items():
 
 # ── 세팅 함수 ────────────────────────────────────────────────────────────────
 
+
 def setup(db_url: str) -> None:
     print(f"연결 중: {db_url}")
     engine = create_engine(db_url, echo=False)
@@ -147,31 +160,56 @@ def setup(db_url: str) -> None:
 
     with Session(engine) as session:
         # customers
-        session.add_all([
-            Customer(
-                customer_id=cid, name=name, email=email,
-                joined_at=datetime.fromisoformat(joined_at), grade=grade,
-            )
-            for cid, name, email, joined_at, grade in CUSTOMERS
-        ])
+        session.add_all(
+            [
+                Customer(
+                    customer_id=cid,
+                    name=name,
+                    email=email,
+                    joined_at=datetime.fromisoformat(joined_at),
+                    grade=grade,
+                )
+                for cid, name, email, joined_at, grade in CUSTOMERS
+            ]
+        )
 
         # products
-        session.add_all([
-            Product(product_id=pid, name=name, category=cat, price=price, stock=stock)
-            for pid, name, cat, price, stock in PRODUCTS
-        ])
+        session.add_all(
+            [
+                Product(
+                    product_id=pid, name=name, category=cat, price=price, stock=stock
+                )
+                for pid, name, cat, price, stock in PRODUCTS
+            ]
+        )
 
         # orders
-        session.add_all([
-            Order(order_id=oid, customer_id=cid, order_date=odate, amount=amount, status=status)
-            for oid, cid, odate, amount, status in orders
-        ])
+        session.add_all(
+            [
+                Order(
+                    order_id=oid,
+                    customer_id=cid,
+                    order_date=odate,
+                    amount=amount,
+                    status=status,
+                )
+                for oid, cid, odate, amount, status in orders
+            ]
+        )
 
         # order_items
-        session.add_all([
-            OrderItem(item_id=iid, order_id=oid, product_id=pid, quantity=qty, unit_price=up)
-            for iid, oid, pid, qty, up in items
-        ])
+        session.add_all(
+            [
+                OrderItem(
+                    item_id=iid,
+                    order_id=oid,
+                    product_id=pid,
+                    quantity=qty,
+                    unit_price=up,
+                )
+                for iid, oid, pid, qty, up in items
+            ]
+        )
 
         session.commit()
 
@@ -206,7 +244,7 @@ def setup(db_url: str) -> None:
 # ── CLI ──────────────────────────────────────────────────────────────────────
 
 DB_URLS = {
-    "sqlite":   "sqlite:///sample.db",
+    "sqlite": "sqlite:///sample.db",
     "postgres": "postgresql://postgres:postgres@localhost:5432/postgres",
 }
 

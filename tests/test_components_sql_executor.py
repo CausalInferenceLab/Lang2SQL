@@ -1,4 +1,5 @@
 """Tests for SQLExecutor."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,10 +8,10 @@ from lang2sql.components.execution.sql_executor import SQLExecutor
 from lang2sql.core.exceptions import ComponentError
 from lang2sql.core.hooks import MemoryHook
 
-
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------
+
 
 class FakeDB:
     def __init__(self, rows: list[dict] | None = None):
@@ -23,6 +24,7 @@ class FakeDB:
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_sql_executor_returns_rows():
     rows = [{"order_id": 1, "amount": 100}]

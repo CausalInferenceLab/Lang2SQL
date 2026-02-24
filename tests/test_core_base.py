@@ -8,7 +8,6 @@ from lang2sql.core.exceptions import (
     IntegrationMissingError,
 )
 
-
 # -------------------------
 # Fixtures: tiny components/flows
 # -------------------------

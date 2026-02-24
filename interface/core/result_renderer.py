@@ -76,13 +76,11 @@ def display_result(res: dict) -> None:
         st.markdown("---")
         token_summary = TokenUtils.get_token_usage_summary(data=res["messages"])
         st.write("**토큰 사용량:**")
-        st.markdown(
-            f"""
+        st.markdown(f"""
             - Input tokens: `{token_summary['input_tokens']}`
             - Output tokens: `{token_summary['output_tokens']}`
             - Total tokens: `{token_summary['total_tokens']}`
-            """
-        )
+            """)
 
     if show_sql_section:
         st.markdown("---")

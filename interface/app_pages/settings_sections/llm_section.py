@@ -12,7 +12,6 @@ from interface.core.config import (
     get_embedding_registry,
 )
 
-
 LLM_PROVIDERS = [
     "openai",
     "azure",

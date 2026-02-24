@@ -1,4 +1,5 @@
 """End-to-end tests for BaselineNL2SQL."""
+
 from __future__ import annotations
 
 import pytest
@@ -7,10 +8,10 @@ from lang2sql.core.exceptions import ComponentError
 from lang2sql.core.hooks import MemoryHook
 from lang2sql.flows.nl2sql import BaselineNL2SQL
 
-
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------
+
 
 class FakeLLM:
     def __init__(self, response: str = "```sql\nSELECT COUNT(*) FROM orders\n```"):
@@ -50,6 +51,7 @@ CATALOG = [
 # Tests
 # ---------------------------------------------------------------------------
 
+
 def test_pipeline_e2e_returns_rows():
     pipeline = BaselineNL2SQL(
         catalog=CATALOG,
@@ -71,8 +73,7 @@ def test_pipeline_emits_3_component_start_events():
     pipeline.run("주문 건수")
 
     component_starts = [
-        e for e in hook.snapshot()
-        if e.name == "component.run" and e.phase == "start"
+        e for e in hook.snapshot() if e.name == "component.run" and e.phase == "start"
     ]
     assert len(component_starts) == 3
 
@@ -102,7 +103,7 @@ def test_pipeline_hook_records_all_phases():
     flow_events = [e for e in events if e.name == "flow.run"]
 
     assert len(component_events) == 6  # 3 components × (start + end)
-    assert len(flow_events) == 2       # flow start + flow end
+    assert len(flow_events) == 2  # flow start + flow end
 
 
 def test_pipeline_advanced_usage_manual_composition():

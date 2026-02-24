@@ -11,7 +11,6 @@ from interface.app_pages.settings_sections.data_source_section import (
 from interface.app_pages.settings_sections.llm_section import render_llm_section
 from interface.app_pages.settings_sections.db_section import render_db_section
 
-
 st.title("⚙️ 설정")
 
 config = load_config()

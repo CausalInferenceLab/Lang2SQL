@@ -4,6 +4,6 @@ from typing import TypedDict
 
 
 class CatalogEntry(TypedDict, total=False):
-    name: str                
+    name: str
     description: str
-    columns: dict[str, str]  
+    columns: dict[str, str]

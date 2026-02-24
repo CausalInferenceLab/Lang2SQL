@@ -1,4 +1,5 @@
 """Tests for SQLGenerator."""
+
 from __future__ import annotations
 
 import pytest
@@ -8,10 +9,10 @@ from lang2sql.core.catalog import CatalogEntry
 from lang2sql.core.exceptions import ComponentError
 from lang2sql.core.hooks import MemoryHook
 
-
 # ---------------------------------------------------------------------------
 # Fakes
 # ---------------------------------------------------------------------------
+
 
 class FakeLLM:
     def __init__(self, response: str = "```sql\nSELECT 1\n```"):
@@ -24,6 +25,7 @@ class FakeLLM:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
 
 def _catalog() -> list[CatalogEntry]:
     return [
@@ -38,6 +40,7 @@ def _catalog() -> list[CatalogEntry]:
 # ---------------------------------------------------------------------------
 # Tests
 # ---------------------------------------------------------------------------
+
 
 def test_sql_generator_returns_sql_string():
     gen = SQLGenerator(llm=FakeLLM("```sql\nSELECT COUNT(*) FROM orders\n```"))
@@ -111,6 +114,7 @@ def test_sql_generator_empty_schemas():
 # ---------------------------------------------------------------------------
 # db_dialect tests
 # ---------------------------------------------------------------------------
+
 
 def test_sql_generator_db_dialect_loads_sqlite_prompt():
     received: list[list[dict]] = []
