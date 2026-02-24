@@ -1,6 +1,18 @@
 from __future__ import annotations
 
-from typing import Protocol
+from typing import Any, Protocol
+
+
+class LLMPort(Protocol):
+    """Abstracts LLM backends (Anthropic, OpenAI, etc.)."""
+
+    def invoke(self, messages: list[dict[str, str]]) -> str: ...
+
+
+class DBPort(Protocol):
+    """Abstracts database backends (SQLAlchemy, etc.)."""
+
+    def execute(self, sql: str) -> list[dict[str, Any]]: ...
 
 
 class EmbeddingPort(Protocol):
