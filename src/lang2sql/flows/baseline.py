@@ -45,7 +45,7 @@ class SequentialFlow(BaseFlow):
             raise ValueError("SequentialFlow requires at least one step.")
         self.steps: list[Callable[..., Any]] = list(steps)
 
-    def run(self, value: Any) -> Any:
+    def _run(self, value: Any) -> Any:
         """
         Execute the flow by passing `value` through each step in order.
 

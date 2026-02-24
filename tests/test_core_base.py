@@ -15,37 +15,37 @@ from lang2sql.core.exceptions import (
 
 
 class AddOne(BaseComponent):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         return x + 1
 
 
 class BoomValueError(BaseComponent):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         raise ValueError("boom")
 
 
 class BoomDomainError(BaseComponent):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         raise ValidationError("bad sql")
 
 
 class BoomIntegrationMissing(BaseComponent):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         raise IntegrationMissingError("faiss", extra="faiss")
 
 
 class FlowOk(BaseFlow):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         return x * 2
 
 
 class FlowBoomDomain(BaseFlow):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         raise ValidationError("flow bad")
 
 
 class FlowBoomUnknown(BaseFlow):
-    def run(self, x: int) -> int:
+    def _run(self, x: int) -> int:
         raise RuntimeError("flow boom")
 
 

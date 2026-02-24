@@ -15,6 +15,10 @@ class BaseComponent(ABC):
     - Components are plain callables (define-by-run friendly).
     - No enforced global state schema.
     - Hooks provide observability without requiring a graph engine.
+
+    Public entry point is ``run()``.  ``__call__`` is a convenience alias so
+    components can be used as plain callables (e.g. in SequentialFlow steps).
+    Subclasses implement ``_run()``.
     """
 
     def __init__(
@@ -24,6 +28,9 @@ class BaseComponent(ABC):
         self.hook: TraceHook = hook or NullHook()
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.run(*args, **kwargs)
+
+    def run(self, *args: Any, **kwargs: Any) -> Any:
         t0 = now()
         self.hook.on_event(
             Event(
@@ -36,7 +43,7 @@ class BaseComponent(ABC):
         )
 
         try:
-            out = self.run(*args, **kwargs)
+            out = self._run(*args, **kwargs)
 
             t1 = now()
             self.hook.on_event(
@@ -86,7 +93,7 @@ class BaseComponent(ABC):
             ) from e
 
     @abstractmethod
-    def run(self, *args: Any, **kwargs: Any) -> Any:
+    def _run(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
 
 
@@ -97,6 +104,9 @@ class BaseFlow(ABC):
     Define-by-run:
     - Users write control-flow in pure Python (if/for/while).
     - We provide parts + presets, not a graph engine.
+
+    Public entry point is ``run()``.  ``__call__`` is a convenience alias.
+    Subclasses implement ``_run()``.
     """
 
     def __init__(
@@ -106,13 +116,16 @@ class BaseFlow(ABC):
         self.hook: TraceHook = hook or NullHook()
 
     def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        return self.run(*args, **kwargs)
+
+    def run(self, *args: Any, **kwargs: Any) -> Any:
         t0 = now()
         self.hook.on_event(
             Event(name="flow.run", component=self.name, phase="start", ts=t0)
         )
 
         try:
-            out = self.run(*args, **kwargs)
+            out = self._run(*args, **kwargs)
             t1 = now()
             self.hook.on_event(
                 Event(
@@ -154,6 +167,5 @@ class BaseFlow(ABC):
             raise
 
     @abstractmethod
-    def run(self, *args: Any, **kwargs: Any) -> Any:
+    def _run(self, *args: Any, **kwargs: Any) -> Any:
         raise NotImplementedError
-

@@ -54,7 +54,7 @@ class KeywordRetriever(BaseComponent):
         )
         self._index = _BM25Index(catalog, self._index_fields)
 
-    def run(self, query: str) -> list[CatalogEntry]:
+    def _run(self, query: str) -> list[CatalogEntry]:
         """
         Search the catalog with BM25 and return top-N matching entries.
 

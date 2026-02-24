@@ -51,7 +51,7 @@ def test_user_can_compose_flows_with_python_control_flow():
     assert default_flow("q") == "q_default"
 
     class CustomFlow(BaseFlow):
-        def run(self, value):
+        def _run(self, value):
             return override_flow(value)
 
     assert CustomFlow().run("q") == "q_override"
@@ -70,7 +70,7 @@ def test_custom_flow_fallback_then_revalidate():
         return "drop " not in sql.lower()
 
     class FixThenRevalidateFlow(BaseFlow):
-        def run(self, query):
+        def _run(self, query):
             sql = gen_bad(query)
             if not validate(sql):
                 sql = "SELECT 1;"
@@ -90,7 +90,7 @@ def test_custom_flow_retry_until_valid():
         return "drop " not in sql.lower()
 
     class RetryFlow(BaseFlow):
-        def run(self, query):
+        def _run(self, query):
             for _ in range(3):
                 sql = generate(query)
                 if validate(sql):
@@ -119,7 +119,7 @@ def test_subflow_can_be_conditionally_invoked_in_custom_flow():
     flow_a = SequentialFlow(steps=[lambda x: x + "_a"])
 
     class ConditionalFlow(BaseFlow):
-        def run(self, value):
+        def _run(self, value):
             if "use_a" in value:
                 return flow_a(value)
             return value
