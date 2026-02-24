@@ -11,12 +11,12 @@ except ImportError:
 class AnthropicLLM:
     """LLMPort implementation backed by the Anthropic Messages API."""
 
-    def __init__(self, *, model: str) -> None:
+    def __init__(self, *, model: str, api_key: str | None = None) -> None:
         if _anthropic is None:
             raise IntegrationMissingError(
-                "anthropic", extra="anthropic", hint="pip install anthropic"
+                "anthropic", hint="pip install anthropic  # or: uv sync"
             )
-        self._client = _anthropic.Anthropic()
+        self._client = _anthropic.Anthropic(api_key=api_key)
         self._model = model
 
     def invoke(self, messages: list[dict[str, str]]) -> str:
