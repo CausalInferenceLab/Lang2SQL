@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 from typing import Optional
 
 from ...core.base import BaseComponent
@@ -9,28 +10,48 @@ from ...core.exceptions import ComponentError
 from ...core.hooks import TraceHook
 from ...core.ports import LLMPort
 
-_DEFAULT_SYSTEM_PROMPT = (
-    "You are a SQL expert. Given a natural language question and relevant table schemas, "
-    "write a single SQL query that answers the question. "
-    "Return ONLY the SQL query inside a ```sql ... ``` code block. "
-    "Do not include any explanation."
-)
+_PROMPT_DIR = Path(__file__).parent / "prompts"
+
+_SUPPORTED_DIALECTS = {"default", "sqlite", "postgresql", "mysql", "bigquery", "duckdb"}
+
+
+def _load_prompt(dialect: str) -> str:
+    path = _PROMPT_DIR / f"{dialect}.md"
+    if not path.exists():
+        raise ValueError(
+            f"Unsupported dialect: {dialect!r}. "
+            f"Available: {sorted(_SUPPORTED_DIALECTS)}"
+        )
+    return path.read_text(encoding="utf-8").strip()
 
 
 class SQLGenerator(BaseComponent):
-    """Generates a SQL string from a natural language query and schema context."""
+    """Generates a SQL string from a natural language query and schema context.
+
+    System prompt priority (highest to lowest):
+    1. ``system_prompt`` — explicit string passed by the caller
+    2. ``db_dialect``    — loads the matching ``prompts/{dialect}.md``
+    3. default           — loads ``prompts/default.md``
+    """
 
     def __init__(
         self,
         *,
         llm: LLMPort,
-        system_prompt: str = _DEFAULT_SYSTEM_PROMPT,
+        db_dialect: Optional[str] = None,
+        system_prompt: Optional[str] = None,
         name: Optional[str] = None,
         hook: Optional[TraceHook] = None,
     ) -> None:
         super().__init__(name=name or "SQLGenerator", hook=hook)
         self._llm = llm
-        self._system_prompt = system_prompt
+
+        if system_prompt is not None:
+            self._system_prompt = system_prompt
+        elif db_dialect is not None:
+            self._system_prompt = _load_prompt(db_dialect)
+        else:
+            self._system_prompt = _load_prompt("default")
 
     def _run(self, query: str, schemas: list[CatalogEntry]) -> str:
         context = self._build_context(schemas)

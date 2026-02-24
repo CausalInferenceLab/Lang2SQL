@@ -21,9 +21,13 @@ class BaselineNL2SQL(BaseFlow):
         pipeline = BaselineNL2SQL(
             catalog=[{"name": "orders", "description": "...", "columns": {...}}],
             llm=AnthropicLLM(model="claude-sonnet-4-6"),
-            db=SQLAlchemyDB("postgresql://..."),
+            db=SQLAlchemyDB("sqlite:///sample.db"),
+            db_dialect="sqlite",
         )
         rows = pipeline.run("지난달 주문 건수")
+
+    Supported ``db_dialect`` values: ``"sqlite"``, ``"postgresql"``, ``"mysql"``,
+    ``"bigquery"``, ``"duckdb"``, ``"default"`` (or ``None`` for default).
     """
 
     def __init__(
@@ -32,11 +36,12 @@ class BaselineNL2SQL(BaseFlow):
         catalog: list[dict],
         llm: LLMPort,
         db: DBPort,
+        db_dialect: Optional[str] = None,
         hook: Optional[TraceHook] = None,
     ) -> None:
         super().__init__(name="BaselineNL2SQL", hook=hook)
         self._retriever = KeywordRetriever(catalog=catalog, hook=hook)
-        self._generator = SQLGenerator(llm=llm, hook=hook)
+        self._generator = SQLGenerator(llm=llm, db_dialect=db_dialect, hook=hook)
         self._executor = SQLExecutor(db=db, hook=hook)
 
     def _run(self, query: str) -> list[dict[str, Any]]:
