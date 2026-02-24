@@ -106,3 +106,60 @@ def test_sql_generator_empty_schemas():
     gen = SQLGenerator(llm=FakeLLM("```sql\nSELECT 1\n```"))
     result = gen.run("test", [])
     assert result == "SELECT 1"
+
+
+# ---------------------------------------------------------------------------
+# db_dialect tests
+# ---------------------------------------------------------------------------
+
+def test_sql_generator_db_dialect_loads_sqlite_prompt():
+    received: list[list[dict]] = []
+
+    class CaptureLLM:
+        def invoke(self, messages):
+            received.append(messages)
+            return "```sql\nSELECT 1\n```"
+
+    gen = SQLGenerator(llm=CaptureLLM(), db_dialect="sqlite")
+    gen.run("test", _catalog())
+
+    system_content = next(m["content"] for m in received[0] if m["role"] == "system")
+    assert "SQLite" in system_content
+    assert "strftime" in system_content
+
+
+def test_sql_generator_db_dialect_loads_postgresql_prompt():
+    received: list[list[dict]] = []
+
+    class CaptureLLM:
+        def invoke(self, messages):
+            received.append(messages)
+            return "```sql\nSELECT 1\n```"
+
+    gen = SQLGenerator(llm=CaptureLLM(), db_dialect="postgresql")
+    gen.run("test", _catalog())
+
+    system_content = next(m["content"] for m in received[0] if m["role"] == "system")
+    assert "PostgreSQL" in system_content
+    assert "DATE_TRUNC" in system_content
+
+
+def test_sql_generator_unsupported_dialect_raises_value_error():
+    with pytest.raises(ValueError, match="Unsupported dialect"):
+        SQLGenerator(llm=FakeLLM(), db_dialect="oracle")
+
+
+def test_sql_generator_system_prompt_overrides_db_dialect():
+    received: list[list[dict]] = []
+
+    class CaptureLLM:
+        def invoke(self, messages):
+            received.append(messages)
+            return "```sql\nSELECT 1\n```"
+
+    custom = "You are a Snowflake expert."
+    gen = SQLGenerator(llm=CaptureLLM(), db_dialect="sqlite", system_prompt=custom)
+    gen.run("test", _catalog())
+
+    system_content = next(m["content"] for m in received[0] if m["role"] == "system")
+    assert system_content == custom
