@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import os
 
-from .core.ports import DBPort, EmbeddingPort, LLMPort
+from .core.ports import DBExplorerPort, DBPort, EmbeddingPort, LLMPort, ToolCallLLMPort
 
 
 def build_llm_from_env() -> LLMPort:
@@ -79,6 +79,32 @@ def build_llm_from_env() -> LLMPort:
     raise ValueError(
         f"Unknown LLM_PROVIDER: {provider!r}. "
         "Valid values: openai, anthropic, azure, gemini, bedrock, ollama, huggingface"
+    )
+
+
+def build_tool_call_llm_from_env() -> ToolCallLLMPort:
+    """환경변수 LLM_PROVIDER에 따라 적절한 ToolCallLLMPort 인스턴스를 생성한다."""
+    provider = os.getenv("LLM_PROVIDER", "openai").lower()
+
+    if provider == "openai":
+        from .integrations.llm.openai_ import OpenAIToolCallLLM
+
+        return OpenAIToolCallLLM(
+            model=os.getenv("OPEN_AI_LLM_MODEL", "gpt-4o"),
+            api_key=os.getenv("OPEN_AI_KEY"),
+        )
+
+    if provider == "anthropic":
+        from .integrations.llm.anthropic_ import AnthropicToolCallLLM
+
+        return AnthropicToolCallLLM(
+            model=os.getenv("ANTHROPIC_LLM_MODEL", "claude-sonnet-4-6"),
+            api_key=os.getenv("ANTHROPIC_API_KEY"),
+        )
+
+    raise ValueError(
+        f"Unsupported LLM_PROVIDER for tool calling: {provider!r}. "
+        "Valid values: openai, anthropic"
     )
 
 

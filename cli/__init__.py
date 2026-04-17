@@ -7,8 +7,10 @@ DataHub 설정은 UI의 설정 > 데이터 소스 탭에서 관리하세요.
 
 import click
 
+from cli.commands.agent import agent_command
 from cli.commands.quary import query_command
 from cli.commands.run_streamlit import run_streamlit_cli_command
+from cli.commands.tui import tui_command
 from cli.core.environment import initialize_environment
 from cli.core.streamlit_runner import run_streamlit_command
 from cli.utils.logger import configure_logging
@@ -115,3 +117,5 @@ def cli(
 
 cli.add_command(run_streamlit_cli_command)
 cli.add_command(query_command)
+cli.add_command(agent_command)
+cli.add_command(tui_command)

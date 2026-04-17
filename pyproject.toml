@@ -65,6 +65,7 @@ include = [
   "version.py",
   "prompt/*.md",
   "src/lang2sql/**",
+  "src/lang2sql/harness/prompts/*.md",
 ]
 
 [tool.hatch.build.targets.wheel]
@@ -78,8 +79,26 @@ packages = [
   "src/lang2sql"
 ]
 
+[project.optional-dependencies]
+# Harness core — no extra deps needed (uses stdlib + core)
+harness = []
+# Tool-calling LLM providers
+openai = ["openai>=1.0"]
+anthropic = ["anthropic>=0.20"]
+# Terminal UI
+tui = ["textual>=0.80", "rich>=13.0"]
+# Terminal charts
+viz = ["plotext>=5.0"]
+# HTML chart export
+viz-export = ["plotly>=5.0"]
+# All harness + TUI + viz
+agent = [
+  "lang2sql[openai,anthropic,tui,viz,viz-export]",
+]
+
 [tool.uv]
 dev-dependencies = [
   "pre_commit==4.1.0",
   "pytest>=8.3.5",
+  "pytest-asyncio>=0.23",
 ]
