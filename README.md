@@ -143,6 +143,8 @@ for the full architecture write-up.
 
 ## 🤝 기여하기
 
+**처음 보시는 분은 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — 디렉토리·레이어 책임, 한 메시지의 lifecycle, *어디를 수정하면 좋을지* 가 한곳에 정리돼 있습니다.
+
 ```bash
 git clone https://github.com/CausalInferenceLab/lang2sql.git
 cd lang2sql
