@@ -20,19 +20,21 @@ from ..adapters.llm.fake import FakeLLM
 from ..adapters.llm.openai_ import OpenAILLM
 from ..adapters.storage.sqlite_semantic import SqliteSemanticStore
 from ..adapters.storage.sqlite_store import SqliteStore
-from ..core.identity import Identity
+from ..core.identity import Identity, Scope, ScopeLevel
 from ..core.ports.audit import AuditPort
 from ..core.ports.explorer import ExplorerPort
 from ..core.ports.llm import LLMPort
 from ..core.ports.safety import SafetyPipelinePort
 from ..core.ports.secrets import SecretsPort
 from ..core.ports.semantic_scope import ScopeResolverPort
+from ..core.types import Message, Role
 from ..harness.context import HarnessContext
 from ..harness.session import Session
 from ..harness.tool_registry import ToolRegistry
 from ..ingestion import FileSource, IngestionPipeline, LLMExtractor
 from ..memory import InjectAllRecall, InMemoryStore, ManualExtractor, MemoryService
 from ..safety.pipeline import SafetyPipeline
+from ..semantic.types import SemanticEntry, SemanticKind
 from ..tools import build_default_tools
 from .encrypted_secrets import EncryptedSecrets
 from .scope_resolver import ScopeResolver
@@ -90,6 +92,12 @@ class ContextConcierge:
         # it on demand and reuses it across turns (lazy + cached).
         self._scope_explorers: dict[str, ExplorerPort] = {}
 
+        # Scopes that have already been pre-warmed against this concierge
+        # instance — avoids re-running the (LLM-paid) schema scan every turn.
+        self._prewarmed_scopes: set[str] = set()
+        self.prewarm_enabled: bool = True
+        self.prewarm_table_limit: int = 8
+
     @property
     def store(self) -> SqliteStore:
         return self._store
@@ -137,6 +145,14 @@ class ContextConcierge:
         if session is None:
             session = Session(identity=identity)
 
+        explorer = await self._explorer_for(identity)
+
+        # ★ β — first-time, scope-level pre-warm. Walk the schema once and
+        # write SemanticEntry rows into the scope_resolver via its existing
+        # define(). The system_prompt path then naturally surfaces these as
+        # "Semantic layer" to every future turn — no new wiring, just data.
+        await self._prewarm_semantic_layer(identity, explorer)
+
         tools = ToolRegistry(
             build_default_tools(
                 memory=self._memory,
@@ -151,12 +167,109 @@ class ContextConcierge:
             llm=self._llm,
             tools=tools,
             session=session,
-            explorer=await self._explorer_for(identity),
+            explorer=explorer,
             safety=self._safety,
             audit=self._audit,
             scope_resolver=self._scope_resolver,
             max_turns=self._max_turns,
         )
+
+    async def _prewarm_semantic_layer(
+        self, identity: Identity, explorer: ExplorerPort
+    ) -> None:
+        """One-shot LLM-driven schema → SemanticEntry pre-fill at guild scope.
+
+        Stays inside the V1 harness: it only writes through the existing
+        ``ScopeResolverPort.define``. The system prompt's "Semantic layer"
+        section then surfaces these entries on every subsequent turn, exactly
+        as if a human had typed them via ``/define_metric``. Skipped when:
+
+        - prewarm is disabled
+        - the guild scope already has any SemanticEntry (don't overwrite humans)
+        - this scope was already pre-warmed in this process
+        - explorer has no tables to describe
+        """
+        if not self.prewarm_enabled:
+            return
+        scope = _guild_scope(identity)
+        if scope.key in self._prewarmed_scopes:
+            return
+        existing = await self._scope_resolver.entries_at(scope)
+        if existing:
+            self._prewarmed_scopes.add(scope.key)
+            return
+        try:
+            tables = await explorer.list_tables()
+        except Exception:
+            return
+        tables = tables[: self.prewarm_table_limit]
+        if not tables:
+            return
+
+        # Describe each table once and ask the LLM for a short DIMENSION
+        # definition for every column. One LLM call total (cheap on context).
+        try:
+            described = []
+            for t in tables:
+                described.append(await explorer.describe_table(t.name))
+            schema_dump = "\n".join(
+                f"{t.qualified or t.name}: "
+                + ", ".join(f"{c.name} ({c.type})" for c in t.columns)
+                for t in described
+            )
+            prompt = (
+                "For the database schema below, write a one-sentence description "
+                "(≤120 chars) for EACH column, explaining what it likely means. "
+                "Return STRICT JSON: an object mapping `\"<table>.<column>\"` to a "
+                "description string. No markdown, no commentary.\n\n"
+                f"{schema_dump}"
+            )
+            comp = await self._llm.complete(
+                [Message(role=Role.USER, content=prompt)], tools=()
+            )
+        except Exception:
+            self._prewarmed_scopes.add(scope.key)
+            return
+
+        text = (comp.content or "").strip()
+        if text.startswith("```"):
+            text = text.strip("`").lstrip("json").strip()
+        import json as _json
+        try:
+            mapping = _json.loads(text)
+            if not isinstance(mapping, dict):
+                mapping = {}
+        except _json.JSONDecodeError:
+            mapping = {}
+
+        actor = f"prewarm:{identity.user_id}"
+        for key, desc in mapping.items():
+            if not isinstance(key, str) or not isinstance(desc, str):
+                continue
+            if "." in key:
+                table_name, col = key.split(".", 1)
+            else:
+                table_name, col = "", key
+            await self._scope_resolver.define(
+                scope,
+                SemanticEntry(
+                    kind=SemanticKind.DIMENSION,
+                    name=col,
+                    definition=desc[:200],
+                    applies_to=table_name,
+                    source_id="prewarm",
+                    created_by=actor,
+                ),
+            )
+        self._prewarmed_scopes.add(scope.key)
+
+
+def _guild_scope(identity: Identity) -> Scope:
+    """Pre-warm targets the guild (so all channels in the guild share). DMs use
+    a per-user pseudo-guild so personal connections don't leak."""
+    if identity.guild_id:
+        return Scope(ScopeLevel.GUILD, identity.guild_id)
+    return Scope(ScopeLevel.GUILD, f"dm:{identity.user_id}")
 
 
 def _default_llm() -> LLMPort:
