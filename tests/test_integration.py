@@ -26,7 +26,7 @@ def _ctx():
 def test_v1_tools_registered():
     _, ctx = _ctx()
     names = {s.name for s in ctx.tools.specs()}
-    assert names == {"run_sql", "explore_schema", "enrich_schema", "define_metric", "ask_user", "remember", "ingest_doc"}
+    assert names == {"run_sql", "explore_schema", "enrich_schema", "define_metric", "term_custom", "org_setup", "ask_user", "remember", "ingest_doc"}
 
 
 def test_run_sql_passes_gate_and_returns_rows():

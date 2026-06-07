@@ -130,14 +130,26 @@ class SqliteStore:
         )
         self._conn.commit()
 
+    @staticmethod
+    def _escape_like(s: str) -> str:
+        return s.replace("!", "!!").replace("%", "!%").replace("_", "!_")
+
     def kv_delete_prefix(self, scope: str, prefix: str) -> int:
         """Delete all keys under scope that start with prefix. Returns count deleted."""
         cur = self._conn.execute(
-            "DELETE FROM kv WHERE scope = ? AND key LIKE ?",
-            (scope, prefix + "%"),
+            "DELETE FROM kv WHERE scope = ? AND key LIKE ? ESCAPE '!'",
+            (scope, self._escape_like(prefix) + "%"),
         )
         self._conn.commit()
         return cur.rowcount
+
+    def kv_list_prefix(self, scope: str, prefix: str) -> list[tuple[str, str]]:
+        """Return (key, value) pairs for all keys under scope that start with prefix."""
+        rows = self._conn.execute(
+            "SELECT key, value FROM kv WHERE scope = ? AND key LIKE ? ESCAPE '!' ORDER BY key",
+            (scope, self._escape_like(prefix) + "%"),
+        ).fetchall()
+        return [(r["key"], r["value"]) for r in rows]
 
 
 # -- Session (de)serialization ------------------------------------------
