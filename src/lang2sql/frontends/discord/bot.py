@@ -148,6 +148,33 @@ class Lang2SQLBot(discord.Client):
                 handlers.enrich(to_identity(_interaction_context(interaction)), table=table, clear=clear),
             )
 
+        @tree.command(name="term_custom", description="비즈니스 용어 등록·조회·삭제 (조직/팀/개인 범위)")
+        async def term_custom(
+            interaction: discord.Interaction,
+            remove: str = "",
+            list_all: bool = False,
+        ) -> None:
+            if list_all:
+                await self._run(
+                    interaction,
+                    handlers.term_custom(to_identity(_interaction_context(interaction)), list_all=True),
+                )
+            elif remove:
+                await self._run(
+                    interaction,
+                    handlers.term_custom(to_identity(_interaction_context(interaction)), term=remove, remove=True),
+                )
+            else:
+                from .term_wizard import start_term_add_flow
+                await start_term_add_flow(interaction, handlers, _interaction_context)
+
+        @tree.command(name="org_setup", description="조직 등록 + DB 스캔으로 팀별 용어 자동 추출")
+        async def org_setup(interaction: discord.Interaction, org: str, clear: bool = False) -> None:
+            await self._run(
+                interaction,
+                handlers.org_setup(to_identity(_interaction_context(interaction)), org=org, clear=clear),
+            )
+
         @tree.command(name="semantic_show", description="Show definitions in effect here")
         async def semantic_show(interaction: discord.Interaction) -> None:
             await self._run(interaction, handlers.semantic_show(to_identity(_interaction_context(interaction))))

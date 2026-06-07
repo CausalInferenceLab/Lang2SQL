@@ -72,4 +72,11 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
             except (ValueError, TypeError):
                 pass
 
+        from ..tools.semantic_federation import build_prompt_section
+        user_id = ctx.identity.user_id or "unknown"
+        channel_id = ctx.identity.thread_id or ctx.identity.channel_id or ""
+        semfed_section = build_prompt_section(ctx.store, scope, channel_id, user_id)
+        if semfed_section:
+            parts.append(semfed_section)
+
     return "\n\n".join(parts)

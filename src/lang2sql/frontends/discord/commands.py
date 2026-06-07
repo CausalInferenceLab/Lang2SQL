@@ -188,6 +188,40 @@ class CommandHandlers:
         )
         return OutboundMessage(text=result.content)
 
+    async def org_setup(self, identity: Identity, org: str, clear: bool = False) -> OutboundMessage:
+        """조직 등록 + DB 스캔으로 팀별 용어 자동 추출."""
+        ctx = await self._concierge.build_context(identity)
+        result = await ctx.tools.dispatch(
+            "org_setup", {"org": org, "clear": clear}, ctx, "cmd:org_setup"
+        )
+        return OutboundMessage(text=result.content)
+
+    async def term_custom(
+        self,
+        identity: Identity,
+        term: str = "",
+        definition: str = "",
+        layer: str = "member",
+        synonyms: str = "",
+        inferred: bool = False,
+        scan: bool = False,
+        remove: bool = False,
+        list_all: bool = False,
+    ) -> OutboundMessage:
+        """채널(팀)/전사/개인 계층 비즈니스 용어 사전 관리."""
+        ctx = await self._concierge.build_context(identity)
+        result = await ctx.tools.dispatch(
+            "term_custom",
+            {
+                "term": term, "definition": definition, "layer": layer,
+                "synonyms": synonyms, "inferred": inferred, "scan": scan,
+                "remove": remove, "list": list_all,
+            },
+            ctx,
+            "cmd:term_custom",
+        )
+        return OutboundMessage(text=result.content)
+
     async def connect(self, identity: Identity, dsn: str) -> OutboundMessage:
         """V1 stub: stash a DB DSN keyed by guild/DM in the concierge kv store.
 
