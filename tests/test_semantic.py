@@ -34,8 +34,9 @@ def test_channel_overrides_guild() -> None:
     store.kv_set(scope, _kv_key("active_user", "channel", "c1"), FedEntry("active_user", "channel", "c1", "7d core action").to_json())
 
     rendered = _render_effective(store, scope, "c1", "u1")
-    assert "7d core action" in rendered
-    assert "30d login" not in rendered
+    assert "7d core action" in rendered          # channel wins (effective)
+    # guild base shown for transparency (override does NOT hide the guild def)
+    assert "전사 기본: 30d login" in rendered
 
 
 def test_guild_fills_gap_when_channel_missing() -> None:
@@ -55,9 +56,10 @@ def test_member_overrides_channel_and_guild() -> None:
     store.kv_set(scope, _kv_key("active_user", "member", "u1"), FedEntry("active_user", "member", "u1", "member def").to_json())
 
     rendered = _render_effective(store, scope, "c1", "u1")
-    assert "member def" in rendered
-    assert "channel def" not in rendered
-    assert "guild def" not in rendered
+    assert "member def" in rendered          # member wins (effective)
+    assert "channel def" not in rendered      # channel is overridden by member
+    # guild base is shown for transparency (override does NOT hide the guild def)
+    assert "전사 기본: guild def" in rendered
 
 
 def test_two_channels_isolated() -> None:
@@ -84,3 +86,26 @@ def test_build_prompt_section_includes_ambiguous_term_policy() -> None:
     store = SqliteStore()
     section = build_prompt_section(store, "g1", "c1", "u1")
     assert "Ambiguous Term Policy" in section
+
+
+def test_channel_override_keeps_guild_visible() -> None:
+    """채널 override가 전사 정의를 데이터·표시 양쪽에서 가리지 않는다 (federation 회귀)."""
+    from lang2sql.tools.semantic_federation import _render_layers, _kv_key as _k
+    store = SqliteStore()
+    scope = "g1"
+    store.kv_set(scope, _k("invoice", "guild", ""),
+                 FedEntry("Invoice", "guild", "", "판매 거래 식별자").to_json())
+    store.kv_set(scope, _k("invoice", "channel", "mkt"),
+                 FedEntry("Invoice", "channel", "mkt", "영수증").to_json())
+
+    # 마케팅 채널: override가 이기되 전사 기본이 함께 보인다
+    eff_mkt = _render_effective(store, scope, "mkt", "u1")
+    assert "영수증" in eff_mkt and "전사 기본: 판매 거래 식별자" in eff_mkt
+
+    # 다른 채널: override 없으니 전사 정의 그대로
+    eff_other = _render_effective(store, scope, "fin", "u1")
+    assert "판매 거래 식별자" in eff_other and "영수증" not in eff_other
+
+    # 레이어별 보기: 전사 Invoice와 채널 Invoice가 둘 다 노출
+    layers = _render_layers(store, scope, "mkt", "u1")
+    assert "판매 거래 식별자" in layers and "영수증" in layers and "재정의됨" in layers

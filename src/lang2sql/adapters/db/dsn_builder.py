@@ -71,7 +71,18 @@ def build_bigquery(*, project: str, dataset: str) -> ConnectionSpec:
 
 
 def build_duckdb(*, path: str) -> ConnectionSpec:
-    return ConnectionSpec(dsn=f"duckdb:///{path}", extras={})
+    # Accept either a bare filesystem path *or* a full ``duckdb:`` DSN pasted
+    # into the field (don't double-wrap the latter into ``duckdb:///duckdb:…``).
+    path = path.strip()
+    if path.startswith("duckdb:"):
+        dsn = path
+    elif path == ":memory:":
+        dsn = "duckdb:///:memory:"
+    else:
+        # Absolute paths already start with "/", so this yields the required
+        # four-slash form (duckdb:////abs); relative paths get three.
+        dsn = f"duckdb:///{path}"
+    return ConnectionSpec(dsn=dsn, extras={})
 
 
 def build_d1(*, account_id: str, database_id: str, api_token: str) -> ConnectionSpec:

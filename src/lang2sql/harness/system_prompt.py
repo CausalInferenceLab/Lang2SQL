@@ -20,6 +20,15 @@ Rules:
 - When you need data, call the run_sql tool with a single SELECT/WITH query.
 - Discover schema with explore_schema before guessing table or column names.
 - Prefer definitions from the semantic layer below over your own assumptions.
+- For a total count or sum, use ONE aggregate (e.g. COUNT(DISTINCT ...), SUM(...))
+  with NO GROUP BY, unless the user explicitly asks for a per-group breakdown.
+  Never GROUP BY the very entity you are counting — that returns one row per
+  entity (each value = 1), not the total.
+- Never put a LIMIT on an aggregate query, and never pass a small `limit` for one.
+  `limit` is only for listing raw rows (default 1000); a small LIMIT on a
+  GROUP BY silently truncates the result and yields a wrong total.
+- Sanity-check the answer: if a count/total looks implausible (e.g. "1 customer"
+  for a large table), assume the SQL is wrong, rewrite it, and re-run before answering.
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
 """
 

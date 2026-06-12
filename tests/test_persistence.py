@@ -46,8 +46,9 @@ def test_kv_channel_overrides_guild_persisted(tmp_path) -> None:
 
     reader = SqliteStore(db)
     rendered = _render_effective(reader, scope, "c1", "u1")
-    assert "channel def" in rendered
-    assert "guild def" not in rendered
+    assert "channel def" in rendered             # channel wins (effective)
+    # guild base shown for transparency (override does NOT hide the guild def)
+    assert "전사 기본: guild def" in rendered
     reader.close()
 
 

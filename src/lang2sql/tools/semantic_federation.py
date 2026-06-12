@@ -146,7 +146,12 @@ class SemanticFederationTool(ToolPort):
         channel_id = ctx.identity.effective_channel_id
 
         if args.get("list"):
-            return ToolResult(call_id="", content=_render_effective(ctx.store, scope, channel_id, user_id))
+            eff = _render_effective(ctx.store, scope, channel_id, user_id)
+            layers = _render_layers(ctx.store, scope, channel_id, user_id)
+            return ToolResult(
+                call_id="",
+                content=eff + "\n\n---\n## 레이어별 저장 현황 (덮어쓰기 아님 — 계층)\n" + layers,
+            )
 
         if args.get("scan"):
             return ToolResult(call_id="", content=_scan_schema(ctx.store, scope))
@@ -352,7 +357,13 @@ _AMBIGUOUS_TERM_POLICY = """\
 2. 쿼리 후 사용한 해석을 명시하고, term_custom 등록 여부와 범위(guild/channel/member)를 사용자에게 묻는다.
    예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. 이 정의를 어느 범위로 등록할까요?"
 3. 사용자가 범위를 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
-4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.\
+4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.
+
+사용자가 용어의 정의를 직접 알려주면(예: "활성 고객은 2010·2011년에 한 번이라도 구매한 고객이야"):
+5. 되묻지 말고 그 정의대로 term_custom 툴을 **반드시 호출해 즉시 등록**한다
+   (범위는 현재 채널=channel 기본, inferred=false). 등록한 뒤 그 정의로 SQL을 만든다.
+6. 한 번 등록한 용어는 매 턴 새로 해석하지 말고, 저장된 정의를 그대로 사용해 일관되게 답한다.
+   (등록을 건너뛰고 답만 하면 다음 질문에서 답이 달라지므로 반드시 먼저 등록할 것.)\
 """
 
 
@@ -364,22 +375,30 @@ def _fmt_entry(e: FedEntry, tag: str) -> str:
 
 
 def _resolve_term(entries: list[FedEntry], channel_id: str, user_id: str) -> str:
-    """narrow→wide lookup: member > channel > guild."""
+    """narrow→wide lookup: member > channel > guild.
+
+    채널/개인 정의가 전사 정의를 *덮을* 때, 전사 기본 정의를 함께 표기한다.
+    (override는 전사 정의를 삭제·은폐하는 게 아니라 그 위에 얹히는 것이므로.)
+    """
+    guild_e = next((e for e in entries if e.layer == "guild"), None)
+
+    def _line(e: FedEntry, tag: str) -> str:
+        line = _fmt_entry(e, tag)
+        if guild_e is not None and e is not guild_e:
+            line += f"  (전사 기본: {guild_e.definition})"
+        return line
+
     # 1. 개인 오버라이드
     for e in entries:
         if e.layer == "member" and e.entity == user_id:
-            return _fmt_entry(e, f"개인:{user_id}")
-
+            return _line(e, f"개인:{user_id}")
     # 2. 이 채널 정의
     for e in entries:
         if e.layer == "channel" and e.entity == channel_id:
-            return _fmt_entry(e, "채널")
-
+            return _line(e, "채널")
     # 3. 전사 공통
-    for e in entries:
-        if e.layer == "guild":
-            return _fmt_entry(e, "전사")
-
+    if guild_e is not None:
+        return _fmt_entry(guild_e, "전사")
     return ""
 
 
@@ -398,3 +417,44 @@ def _render_effective(store: Any, scope: str, channel_id: str, user_id: str) -> 
     if len(lines) == 1:
         lines.append("(이 채널에 적용되는 용어 정의가 없습니다)")
     return "\n".join(lines)
+
+
+def _render_layers(store: Any, scope: str, channel_id: str, user_id: str) -> str:
+    """레이어별(전사/채널/개인) 전체 정의를 보여준다.
+
+    ``_render_effective``가 용어당 *유효 정의 하나*만 보여주는 탓에 채널 override가
+    전사 정의를 화면에서 가리는 문제를 보완 — 각 레이어를 따로 나열해 전사 정의가
+    그대로 살아있음을 드러낸다.
+    """
+    by_term = _load_all(store, scope)
+    if not by_term:
+        return "등록된 용어가 없습니다."
+
+    guild: list[FedEntry] = []
+    channel: list[FedEntry] = []
+    member: list[FedEntry] = []
+    for entries in by_term.values():
+        for e in entries:
+            if e.layer == "guild":
+                guild.append(e)
+            elif e.layer == "channel" and e.entity == channel_id:
+                channel.append(e)
+            elif e.layer == "member" and e.entity == user_id:
+                member.append(e)
+
+    redefined = {e.term.lower() for e in channel} | {e.term.lower() for e in member}
+    out: list[str] = []
+    if guild:
+        out.append("### 전사(guild) 공통")
+        for e in sorted(guild, key=lambda x: x.term.lower()):
+            note = "  ⤷ 이 채널/개인에서 재정의됨 (전사 정의는 유지)" if e.term.lower() in redefined else ""
+            out.append(_fmt_entry(e, "전사") + note)
+    if channel:
+        out.append("\n### 이 채널(팀) 정의 — 전사 위에 덮어씀")
+        for e in sorted(channel, key=lambda x: x.term.lower()):
+            out.append(_fmt_entry(e, "채널"))
+    if member:
+        out.append("\n### 개인 정의")
+        for e in sorted(member, key=lambda x: x.term.lower()):
+            out.append(_fmt_entry(e, "개인"))
+    return "\n".join(out) if out else "등록된 정의가 없습니다."
