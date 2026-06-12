@@ -16,130 +16,156 @@
 
 ---
 
-> **A document-learning, read-only SQL analytics agent.**
-> Feed it your company's docs → it learns your business context → it keeps a
-> *separate* set of definitions per team → it answers questions over an
-> incomplete database → it remembers every definition and conversation.
+> **An open-source data agent that turns natural language into SQL.**
+> Not on a clean, well-documented database — on the **messy real world**, where
+> columns have no descriptions and every team means something different by the
+> same word.
 
-👉 **프로젝트 전체 그림(단일 SSOT)**: [`docs/PROJECT.md`](docs/PROJECT.md) · **컨트리뷰터 한눈 가이드**: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
-
-This is the **v4.1 rebuild** (배경/설계 의도: [`docs/discord_first_redesign_v4_1.md`](docs/discord_first_redesign_v4_1.md)).
-Where most text-to-SQL projects compete on *"generate better SQL,"* Lang2SQL
-competes on everything *around* the query: business-context learning, per-team
-semantics, robustness to messy databases, and memory. **Discord is the Phase 1
-interface, not the identity** — Slack/Web are adapters on the same core.
+📄 한국어: [`README.ko.md`](README.ko.md) · 🧭 Full picture: [`docs/PROJECT.md`](docs/PROJECT.md) · 🏗️ Architecture: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
 ---
 
-## The four pillars
+## In one minute
 
-| Pillar | What it is |
-|---|---|
-| **① Business-context learning** | Documents are the source of truth. Drop in a doc → the agent extracts metric/dimension/rule candidates → you confirm → they land in the semantic layer. |
-| **② Two-axis robustness** | **(2a) DB robustness** — works even when columns lack descriptions (auto-enrichment, v1.5). **(2b) Semantic robustness** — teams hold *different* definitions of the same term without conflict. This axis is the product/research identity. |
-| **③ Hermes memory** | Conversations, facts, and preferences persist instead of resetting each session. |
-| **④ Multi-interface** | Phase 1 Discord today; Slack/Web are future adapters. No platform lock-in. |
+Ask the bot a question in Discord → it writes SQL, runs it, and answers.
+What's different from other text-to-SQL tools isn't "question → SQL" itself —
+it's everything *around* it:
 
-## Extensibility — outlets and appliances (콘센트/가전)
+- **🧩 Fill empty metadata (enrich)** — even with no column descriptions, the
+  agent reads the *actual values* to infer what each column means and how tables
+  join, and writes that into the semantic layer.
+- **🗂️ Per-team definitions (federation)** — the same "active customer" can mean
+  different things to Marketing and Finance, with no conflict. A company-wide
+  default sits underneath, and the **closest definition wins (member > team > company)**.
+- **🛡️ Safety** — every query is checked before it runs; only reads (SELECT) are allowed.
 
-V1 ships the **simplest single implementation** of each extension point, but the
-**abstraction (port) is already in place**, so v1.5/v2 add a new implementation
-*without touching existing code*. Like a wall outlet: the V1 socket has one LED
-bulb plugged in, but because the socket is standard, you later plug in a fan or a
-smart light without rewiring the wall.
-
-Four ★ extension patterns sit behind `core/ports/`:
-
-| ★ | Pattern | Port | Grows by |
-|---|---|---|---|
-| ① | **Safety pipeline** | `ports/safety.py` | adding one layer class to the line (zero `run_sql` changes) |
-| ② | **Memory service** | `ports/memory.py` | swapping any of 3 axes — Store / Recall / Extractor — independently |
-| ③ | **Ingestion pipeline** | `ports/ingestion.py` | a Source × Extractor matrix |
-| ④ | **Semantic federation** | `ports/semantic_scope.py` | git-like per-team scope branches |
-
-Everything outside `tenancy/concierge.py` depends only on these Protocols, so the
-concrete classes (OpenAI, Postgres, SQLite) are swappable at the seams.
+> Discord is the Phase 1 interface, not the identity. Slack/Web are adapters on the same core.
 
 ---
 
-## Quickstart
+## Quickstart 1 — offline demo (no token, no database)
 
-Requires Python ≥ 3.10 and [uv](https://docs.astral.sh/uv/).
-
-```bash
-uv sync                       # create .venv and install deps
-```
-
-### 1. Run the offline demo (no token, no database)
+The fastest way to see the core. No Discord token, no real DB.
 
 ```bash
-.venv/bin/python bench/ecommerce_demo.py
+uv sync                                   # create .venv + install deps
+.venv/bin/python bench/ecommerce_demo.py  # federation + safety demo
 ```
 
-Shows the federation money-shot (one term, two team definitions, no conflict) and
-the safety gate (DROP/INSERT blocked, SELECT passes). See [`bench/README.md`](bench/README.md).
+Shows one term resolving to two team definitions with zero conflict, and the
+safety gate (DROP/INSERT blocked, SELECT passes). See [`bench/README.md`](bench/README.md).
 
-### 2. Run the CLI (developer driver)
+## Quickstart 2 — CLI (for developers)
 
 ```bash
 .venv/bin/lang2sql "list the tables"
 ```
 
-The CLI assembles a real `HarnessContext` and runs one turn through the agent
-loop. With `OPENAI_API_KEY` set it calls `gpt-4.1-mini`; otherwise it uses the
-offline `FakeLLM`.
+With `OPENAI_API_KEY` set it uses `gpt-4.1-mini`; otherwise the offline `FakeLLM`
+(canned behavior, no real reasoning).
 
-### 3. Run the Discord bot
+---
 
+## Discord bot setup (step by step)
+
+### 0. Prerequisites
+- Python **3.10+**, [uv](https://docs.astral.sh/uv/)
+- A Discord account and a server to invite the bot to
+
+### 1. Install
 ```bash
-export DISCORD_BOT_TOKEN=...        # required
-export OPENAI_API_KEY=...           # optional; offline FakeLLM if unset
-export LANG2SQL_SECRET_KEY=...      # optional; Fernet key for secret encryption
-.venv/bin/lang2sql-bot
+git clone https://github.com/CausalInferenceLab/lang2sql.git
+cd lang2sql
+uv sync
 ```
 
-The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
-[`docs/DEPLOY.md`](docs/DEPLOY.md). Copy [`.env.example`](.env.example) to start.
+### 2. Create the Discord bot
+1. [Discord Developer Portal](https://discord.com/developers/applications) → **New Application**
+2. **Bot** tab → **Reset Token** → copy it (this is `DISCORD_BOT_TOKEN`)
+3. Same screen → enable **Privileged Gateway Intents → MESSAGE CONTENT INTENT** (needed to read mentions)
+4. **OAuth2 → URL Generator** → scopes `bot` + `applications.commands` → pick permissions → open the generated URL to **invite the bot** to your test server
+
+### 3. Configure environment
+```bash
+cp .env.example .env
+```
+```ini
+DISCORD_BOT_TOKEN=your_bot_token       # required
+OPENAI_API_KEY=sk-...                  # for real answers (else FakeLLM)
+LANG2SQL_SECRET_KEY=                   # optional — Fernet key to encrypt secrets
+LANG2SQL_DATA_PATH=lang2sql_data.db    # optional — persistence file
+LANG2SQL_SYNC_COMMANDS=true            # register slash commands (/setup, ...)
+LANG2SQL_DB_URL=                       # optional — a default DB for all channels
+```
+Generate a Fernet key if you want one:
+```bash
+.venv/bin/python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+> ⚠️ The app does not auto-load `.env`. Load it into your shell first:
+> `set -a; source .env; set +a`
+
+### 4. Run the bot
+```bash
+set -a; source .env; set +a   # load .env into the environment
+.venv/bin/lang2sql-bot
+```
+It exits with a clear error if `DISCORD_BOT_TOKEN` is unset; otherwise it connects
+to the gateway and serves. Full hosting guide: [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
+### 5. Connect a database
+Two ways:
+
+**(A) `/setup` in Discord** — a guided form for non-developers (no DSN typing).
+Pick the DB type, fill the form; it tests the connection and stores credentials
+encrypted. Supports **PostgreSQL · MySQL · BigQuery · Snowflake · DuckDB · Cloudflare D1**.
+(DuckDB: put `/absolute/path/file.duckdb` in the path field.)
+
+**(B) `LANG2SQL_DB_URL`** — set before launch to point every channel at one DB:
+```ini
+LANG2SQL_DB_URL=postgresql://user:pw@host:5432/db
+LANG2SQL_DB_URL=duckdb:////absolute/path/file.duckdb   # 4 slashes = absolute path
+```
+> `/connect` is a V1 stub (stores the string but does not actually connect) — use `/setup`.
+
+### 6. Use it
+- **Ask in natural language** — mention the bot or DM it: `@Lang2SQL revenue by country`
+- **`/enrich`** — auto-fill column meanings & relationships (big quality boost)
+- **`/term_custom`, `/org_setup`** — define team-specific business terms
 
 ---
 
-## What V1 does / does NOT do yet (honesty section)
+## Slash commands
 
-**Does:**
-- 3-scope semantic federation (guild / channel / member) with most-specific-wins
-  resolution; `term_custom` registers definitions per scope (KV-backed).
-- Safety pipeline with the V1 layers (whitelist + timeout), gating every query.
-- Agent loop with eight tools: `run_sql`, `explore_schema`, `enrich_schema`,
-  `term_custom`, `org_setup`, `ingest_doc`, `remember`, `ask_user`.
-- Memory service (in-memory store + inject-all recall + manual `/remember`).
-- Discord frontend (bot, commands, session router, render).
-- Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
+| Command | What it does |
+|---|---|
+| `/setup` | Connect a DB via a guided form (no DSN) — **the real connection path** |
+| `/enrich` | Auto-enrich column metadata (`clear:true` resets) |
+| `/term_custom` | Register / show (`action:show`) / remove (`action:remove`) business terms |
+| `/org_setup` | Register org (`org:`) / team (`team:`) + auto-extract terms by scanning the DB |
+| `/remember` | Remember a fact for later |
+| `/ingest` | Propose definitions from a document |
+| `/audit_me` | Show your recent activity |
+| `/connect` | (V1 stub — stores only, don't use) |
 
-**Does NOT yet:**
-- **Execute against a real database.** `PostgresExplorer` is a **V1 stub** with
-  canned `orders`/`users` schema and sample rows; real psycopg execution is v1.5.
-- **Reason without a key.** Without `OPENAI_API_KEY`, the `FakeLLM` returns
-  deterministic canned tool cycles — useful for wiring tests, not for answers.
-- DB metadata auto-enrichment, AST-precise SQL validation, function blocklists,
-  cost gating, `/semantic diff` / `/semantic promote`, keyword/vector recall,
-  automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.
-- Persist across restarts by default: the V1 `SqliteStore` defaults to in-memory;
-  point it at a file for durability.
+Natural-language questions go through **mentions/DM**, not slash commands — the
+agent calls the tools above itself when needed.
 
 ---
 
-## Roadmap at a glance
+## What works / what's next (honest)
 
-| Area | V1 | V1.5 | V2 | V2.5 |
-|---|---|---|---|---|
-| **Safety** | whitelist + timeout | + AST validation, function blocklist, auto LIMIT, **metadata enrichment**, rate limit | + cost gate (EXPLAIN), per-engine pipelines | — |
-| **Memory** | in-memory + inject-all + manual | SQLite store + keyword recall + auto-extract | + vector recall + conflict resolution | PostgreSQL + hybrid recall + confidence |
-| **Ingestion** | file upload + LLM extract | + URL fetch + DDL parsing | + Notion/Confluence + hybrid | + GitHub/Drive + chunked RAG |
-| **Federation** | 3-scope resolution, `/semantic show` | `/semantic diff`, `/semantic promote`, conflict alerts | git sync (semantic-as-code) | branch fork/merge UI, per-scope audit |
-| **Interface** | Discord | (Anthropic/NIM eval) | Slack | Web |
+**Works**
+- 3-layer federation (company / team / personal), closest-definition-wins, plus
+  registering definitions through conversation.
+- Real external DB connections (PostgreSQL / MySQL / DuckDB / BigQuery / Snowflake / D1, via SQLAlchemy).
+- `enrich` — infers column meanings & relationships from sampled real values.
+- Safety pipeline (read-only, blocks risky SQL), eight tools, encrypted secrets, SQLite persistence.
 
-See [`docs/discord_first_redesign_v4_1.md`](docs/discord_first_redesign_v4_1.md)
-for the full architecture write-up.
+**Not yet**
+- Large-scale validation on a real production DB (tracked via our dirty-data benchmark).
+- Deeper auto-enrichment, vector recall, URL/Notion ingestion, cost gating — scoped to v1.5+.
+
+See [`docs/discord_first_redesign_v4_1.md`](docs/discord_first_redesign_v4_1.md) for the full architecture write-up.
 
 ---
 
