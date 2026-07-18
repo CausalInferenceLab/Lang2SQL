@@ -61,17 +61,23 @@ class FedEntry:
     definition: str
     synonyms: list[str] = field(default_factory=list)
     inferred: bool = False
+    kind: str = ""          # metric | table | rule | dimension
+    applies_to: str = ""    # 관련 테이블/컬럼 (예: users, orders.amount)
+    tags: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if not isinstance(self.synonyms, list):
             self.synonyms = _parse_synonyms(self.synonyms)
+        if not isinstance(self.tags, list):
+            self.tags = [t.strip() for t in str(self.tags).split(",") if t.strip()]
 
     def to_json(self) -> str:
         return json.dumps(
             {
                 "term": self.term, "layer": self.layer, "entity": self.entity,
                 "definition": self.definition, "synonyms": self.synonyms,
-                "inferred": self.inferred,
+                "inferred": self.inferred, "kind": self.kind,
+                "applies_to": self.applies_to, "tags": self.tags,
             },
             ensure_ascii=False,
         )
@@ -82,7 +88,8 @@ class FedEntry:
         return FedEntry(
             term=d["term"], layer=d["layer"], entity=d.get("entity", ""),
             definition=d["definition"], synonyms=d.get("synonyms", []),
-            inferred=d.get("inferred", False),
+            inferred=d.get("inferred", False), kind=d.get("kind", ""),
+            applies_to=d.get("applies_to", ""), tags=d.get("tags", []),
         )
 
 
@@ -116,6 +123,19 @@ class SemanticFederationTool(ToolPort):
                     "synonyms": {
                         "type": "string",
                         "description": "쉼표 구분 동의어 (예: active_user,활성화고객)",
+                    },
+                    "kind": {
+                        "type": "string",
+                        "enum": ["metric", "table", "rule", "dimension"],
+                        "description": "용어 종류. metric=지표, table=테이블/엔티티, rule=비즈니스 규칙, dimension=분류 기준.",
+                    },
+                    "applies_to": {
+                        "type": "string",
+                        "description": "관련 테이블 또는 컬럼 (예: users, orders.amount).",
+                    },
+                    "tags": {
+                        "type": "string",
+                        "description": "쉼표 구분 태그 (예: growth,retention).",
                     },
                     "inferred": {
                         "type": "boolean",
@@ -215,9 +235,13 @@ class SemanticFederationTool(ToolPort):
 
         synonyms = _parse_synonyms(args.get("synonyms"))
         inferred = bool(args.get("inferred", False))
+        kind = str(args.get("kind", "")).strip().lower()
+        applies_to = str(args.get("applies_to", "")).strip()
+        tags = [t.strip() for t in str(args.get("tags", "")).split(",") if t.strip()]
 
         entry = FedEntry(term=term, layer=layer, entity=entity,
-                         definition=definition, synonyms=synonyms, inferred=inferred)
+                         definition=definition, synonyms=synonyms, inferred=inferred,
+                         kind=kind, applies_to=applies_to, tags=tags)
         ctx.store.kv_set(scope, key, entry.to_json())
         if ctx.audit is not None:
             await ctx.audit.record(
@@ -360,7 +384,8 @@ def _fmt_entry(e: FedEntry, tag: str) -> str:
     syns = ", ".join(e.synonyms)
     syn_str = f" (= {syns})" if syns else ""
     inferred_badge = " 🤖" if e.inferred else ""
-    return f"- **{e.term}** [{tag}]{syn_str}{inferred_badge}: {e.definition}"
+    kind_badge = f" `{e.kind}`" if e.kind else ""
+    return f"- **{e.term}**{kind_badge} [{tag}]{syn_str}{inferred_badge}: {e.definition}"
 
 
 def _resolve_term(entries: list[FedEntry], channel_id: str, user_id: str) -> str:

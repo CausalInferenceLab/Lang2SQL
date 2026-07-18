@@ -84,3 +84,38 @@ def test_build_prompt_section_includes_ambiguous_term_policy() -> None:
     store = SqliteStore()
     section = build_prompt_section(store, "g1", "c1", "u1")
     assert "Ambiguous Term Policy" in section
+
+
+def test_fed_entry_kind_applies_to_tags_roundtrip() -> None:
+    entry = FedEntry(
+        term="활성고객", layer="guild", entity="",
+        definition="30일 내 로그인한 users",
+        kind="metric", applies_to="users", tags=["growth", "retention"],
+    )
+    restored = FedEntry.from_json(entry.to_json())
+    assert restored.kind == "metric"
+    assert restored.applies_to == "users"
+    assert restored.tags == ["growth", "retention"]
+
+
+def test_fed_entry_backward_compat_missing_new_fields() -> None:
+    # kind/applies_to/tags 없는 기존 JSON도 파싱 가능해야 함
+    import json
+    old_json = json.dumps({
+        "term": "revenue", "layer": "guild", "entity": "",
+        "definition": "net revenue", "synonyms": [], "inferred": False,
+    })
+    entry = FedEntry.from_json(old_json)
+    assert entry.kind == ""
+    assert entry.applies_to == ""
+    assert entry.tags == []
+
+
+def test_fmt_entry_shows_kind_badge() -> None:
+    from lang2sql.tools.semantic_federation import _fmt_entry
+    entry = FedEntry(
+        term="활성고객", layer="guild", entity="",
+        definition="30일 내 로그인", kind="metric",
+    )
+    rendered = _fmt_entry(entry, "전사")
+    assert "`metric`" in rendered
