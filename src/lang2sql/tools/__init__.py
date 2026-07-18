@@ -13,6 +13,7 @@ from ..core.ports.tool import ToolPort
 from ..ingestion.pipeline import IngestionPipeline
 from ..memory.service import MemoryService
 from .ask_user import AskUser
+from .confirm_ingest import ConfirmIngest
 from .enrich_schema import EnrichSchema
 from .explore_schema import ExploreSchema
 from .ingest_doc import IngestDoc
@@ -31,6 +32,7 @@ __all__ = [
     "Remember",
     "AskUser",
     "IngestDoc",
+    "ConfirmIngest",
 ]
 
 
@@ -51,4 +53,5 @@ def build_default_tools(
         AskUser(),
         Remember(memory),
         IngestDoc(ingestion, source, extractor),
+        ConfirmIngest(),
     ]

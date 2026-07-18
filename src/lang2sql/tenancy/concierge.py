@@ -138,6 +138,7 @@ class ContextConcierge:
             safety=self._safety,
             audit=self._audit,
             store=self._store,
+            okf_bundle_dir=os.getenv("OKF_BUNDLE_DIR"),
             max_turns=self._max_turns,
         )
 
