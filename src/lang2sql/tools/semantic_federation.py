@@ -28,7 +28,10 @@ if TYPE_CHECKING:
 _KV_PREFIX = "cterm"
 _LAYERS = ("guild", "channel", "member")
 
-from ..tools.enrich_schema import _KV_PREFIX as _ENRICH_PREFIX, _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS
+from ..tools.enrich_schema import (
+    _KV_PREFIX as _ENRICH_PREFIX,
+    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
+)
 
 _AMBIGUITY_SIGNALS: dict[str, str] = {
     r"(^|_)(created|registered|joined|signup)(_at|_date)?$": "신규/최초 가입 기준 용어",
@@ -56,13 +59,13 @@ def _parse_synonyms(raw: Any) -> list[str]:
 @dataclass
 class FedEntry:
     term: str
-    layer: str   # guild | channel | member
+    layer: str  # guild | channel | member
     entity: str  # channel_id (channel layer), user_id (member layer), "" (guild layer)
     definition: str
     synonyms: list[str] = field(default_factory=list)
     inferred: bool = False
-    kind: str = ""          # metric | table | rule | dimension
-    applies_to: str = ""    # 관련 테이블/컬럼 (예: users, orders.amount)
+    kind: str = ""  # metric | table | rule | dimension
+    applies_to: str = ""  # 관련 테이블/컬럼 (예: users, orders.amount)
     tags: list[str] = field(default_factory=list)
 
     def __post_init__(self) -> None:
@@ -74,10 +77,15 @@ class FedEntry:
     def to_json(self) -> str:
         return json.dumps(
             {
-                "term": self.term, "layer": self.layer, "entity": self.entity,
-                "definition": self.definition, "synonyms": self.synonyms,
-                "inferred": self.inferred, "kind": self.kind,
-                "applies_to": self.applies_to, "tags": self.tags,
+                "term": self.term,
+                "layer": self.layer,
+                "entity": self.entity,
+                "definition": self.definition,
+                "synonyms": self.synonyms,
+                "inferred": self.inferred,
+                "kind": self.kind,
+                "applies_to": self.applies_to,
+                "tags": self.tags,
             },
             ensure_ascii=False,
         )
@@ -86,10 +94,15 @@ class FedEntry:
     def from_json(raw: str) -> "FedEntry":
         d = json.loads(raw)
         return FedEntry(
-            term=d["term"], layer=d["layer"], entity=d.get("entity", ""),
-            definition=d["definition"], synonyms=d.get("synonyms", []),
-            inferred=d.get("inferred", False), kind=d.get("kind", ""),
-            applies_to=d.get("applies_to", ""), tags=d.get("tags", []),
+            term=d["term"],
+            layer=d["layer"],
+            entity=d.get("entity", ""),
+            definition=d["definition"],
+            synonyms=d.get("synonyms", []),
+            inferred=d.get("inferred", False),
+            kind=d.get("kind", ""),
+            applies_to=d.get("applies_to", ""),
+            tags=d.get("tags", []),
         )
 
 
@@ -166,21 +179,32 @@ class SemanticFederationTool(ToolPort):
         channel_id = ctx.identity.effective_channel_id
 
         if args.get("list"):
-            return ToolResult(call_id="", content=_render_effective(ctx.store, scope, channel_id, user_id))
+            return ToolResult(
+                call_id="",
+                content=_render_effective(ctx.store, scope, channel_id, user_id),
+            )
 
         if args.get("scan"):
             return ToolResult(call_id="", content=_scan_schema(ctx.store, scope))
 
         term = str(args.get("term", "")).strip()
         if not term:
-            return ToolResult(call_id="", content="❌ term 파라미터가 필요합니다.", is_error=True)
+            return ToolResult(
+                call_id="", content="❌ term 파라미터가 필요합니다.", is_error=True
+            )
         if ":" in term:
-            return ToolResult(call_id="", content="❌ term에 ':'를 사용할 수 없습니다.", is_error=True)
+            return ToolResult(
+                call_id="", content="❌ term에 ':'를 사용할 수 없습니다.", is_error=True
+            )
 
         if args.get("remove"):
             # 존재하는 항목 모두 삭제 — guild layer는 admin만 삭제 가능
             deleted_tags: list[str] = []
-            for lyr, ent in [("guild", ""), ("channel", channel_id), ("member", user_id)]:
+            for lyr, ent in [
+                ("guild", ""),
+                ("channel", channel_id),
+                ("member", user_id),
+            ]:
                 if lyr == "guild" and not ctx.identity.is_admin:
                     continue
                 k = _kv_key(term, lyr, ent)
@@ -196,13 +220,21 @@ class SemanticFederationTool(ToolPort):
                             content=f"⚠️ **{term}** — 전사(guild) 항목이 존재하지만 관리자만 삭제할 수 있습니다.",
                             is_error=True,
                         )
-                return ToolResult(call_id="", content=f"⚠️ **{term}** — 등록된 정의가 없습니다.")
+                return ToolResult(
+                    call_id="", content=f"⚠️ **{term}** — 등록된 정의가 없습니다."
+                )
             if ctx.audit is not None:
                 await ctx.audit.record(
-                    AuditEvent(actor=user_id, action="term_custom_remove",
-                               scope=scope, detail={"term": term, "layers": deleted_tags})
+                    AuditEvent(
+                        actor=user_id,
+                        action="term_custom_remove",
+                        scope=scope,
+                        detail={"term": term, "layers": deleted_tags},
+                    )
                 )
-            return ToolResult(call_id="", content=f"🗑️ **{term}** [{', '.join(deleted_tags)}] 삭제")
+            return ToolResult(
+                call_id="", content=f"🗑️ **{term}** [{', '.join(deleted_tags)}] 삭제"
+            )
 
         layer = str(args.get("layer", "member")).strip().lower()
         if layer not in _LAYERS:
@@ -226,12 +258,18 @@ class SemanticFederationTool(ToolPort):
                 is_error=True,
             )
 
-        entity = "" if layer == "guild" else (user_id if layer == "member" else channel_id)
+        entity = (
+            "" if layer == "guild" else (user_id if layer == "member" else channel_id)
+        )
         key = _kv_key(term, layer, entity)
 
         definition = str(args.get("definition", "")).strip()
         if not definition:
-            return ToolResult(call_id="", content="❌ definition 파라미터가 필요합니다.", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="❌ definition 파라미터가 필요합니다.",
+                is_error=True,
+            )
 
         synonyms = _parse_synonyms(args.get("synonyms"))
         inferred = bool(args.get("inferred", False))
@@ -239,14 +277,26 @@ class SemanticFederationTool(ToolPort):
         applies_to = str(args.get("applies_to", "")).strip()
         tags = [t.strip() for t in str(args.get("tags", "")).split(",") if t.strip()]
 
-        entry = FedEntry(term=term, layer=layer, entity=entity,
-                         definition=definition, synonyms=synonyms, inferred=inferred,
-                         kind=kind, applies_to=applies_to, tags=tags)
+        entry = FedEntry(
+            term=term,
+            layer=layer,
+            entity=entity,
+            definition=definition,
+            synonyms=synonyms,
+            inferred=inferred,
+            kind=kind,
+            applies_to=applies_to,
+            tags=tags,
+        )
         ctx.store.kv_set(scope, key, entry.to_json())
         if ctx.audit is not None:
             await ctx.audit.record(
-                AuditEvent(actor=user_id, action="term_custom",
-                           scope=scope, detail={"term": term, "layer": layer})
+                AuditEvent(
+                    actor=user_id,
+                    action="term_custom",
+                    scope=scope,
+                    detail={"term": term, "layer": layer},
+                )
             )
 
         tag = _layer_tag(layer, entity, user_id, channel_id)
@@ -262,6 +312,7 @@ class SemanticFederationTool(ToolPort):
 # Helpers
 # ---------------------------------------------------------------------------
 
+
 def _layer_tag(layer: str, entity: str, user_id: str, channel_id: str) -> str:
     if layer == "guild":
         return "전사"
@@ -273,6 +324,7 @@ def _layer_tag(layer: str, entity: str, user_id: str, channel_id: str) -> str:
 # ---------------------------------------------------------------------------
 # Schema scan
 # ---------------------------------------------------------------------------
+
 
 def _scan_schema(store: Any, scope: str) -> str:
     col_entries = store.kv_list_prefix(scope, _ENRICH_PREFIX + ":")
@@ -328,6 +380,7 @@ def _scan_schema(store: Any, scope: str) -> str:
 # System-prompt helpers
 # ---------------------------------------------------------------------------
 
+
 def _load_all(store: Any, scope: str) -> dict[str, list[FedEntry]]:
     """KV에서 모든 cterm 엔트리를 {term_lower: [FedEntry]} 로 반환."""
     raw = store.kv_list_prefix(scope, _KV_PREFIX + ":")
@@ -361,10 +414,7 @@ def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) 
         if line:
             lines.append(line)
 
-    header = (
-        "## Business Terminology\n"
-        "(lookup 우선순위: 개인 > 채널(팀) > 전사)\n"
-    )
+    header = "## Business Terminology\n" "(lookup 우선순위: 개인 > 채널(팀) > 전사)\n"
     body = "\n".join(lines) if lines else "(없음)"
     return header + body + "\n\n" + _AMBIGUOUS_TERM_POLICY
 
@@ -385,7 +435,9 @@ def _fmt_entry(e: FedEntry, tag: str) -> str:
     syn_str = f" (= {syns})" if syns else ""
     inferred_badge = " 🤖" if e.inferred else ""
     kind_badge = f" `{e.kind}`" if e.kind else ""
-    return f"- **{e.term}**{kind_badge} [{tag}]{syn_str}{inferred_badge}: {e.definition}"
+    return (
+        f"- **{e.term}**{kind_badge} [{tag}]{syn_str}{inferred_badge}: {e.definition}"
+    )
 
 
 def _resolve_term(entries: list[FedEntry], channel_id: str, user_id: str) -> str:
