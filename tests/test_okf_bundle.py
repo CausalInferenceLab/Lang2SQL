@@ -19,11 +19,16 @@ def _populate(store: SqliteStore, scope: str, entries: list[FedEntry]) -> None:
 # 직렬화 단위 테스트
 # ------------------------------------------------------------------
 
+
 def test_entry_to_md_contains_required_okf_fields() -> None:
     entry = FedEntry(
-        term="활성고객", layer="guild", entity="",
+        term="활성고객",
+        layer="guild",
+        entity="",
         definition="30일 내 로그인한 users",
-        kind="metric", applies_to="users", tags=["growth"],
+        kind="metric",
+        applies_to="users",
+        tags=["growth"],
     )
     md = _entry_to_md(entry)
     assert "type: Metric" in md
@@ -34,11 +39,19 @@ def test_entry_to_md_contains_required_okf_fields() -> None:
 
 def test_md_to_entry_roundtrip() -> None:
     entry = FedEntry(
-        term="순매출", layer="channel", entity="mkt-123",
-        definition="환불 제외 매출", synonyms=["net revenue"],
-        kind="metric", applies_to="orders", tags=["finance"], inferred=True,
+        term="순매출",
+        layer="channel",
+        entity="mkt-123",
+        definition="환불 제외 매출",
+        synonyms=["net revenue"],
+        kind="metric",
+        applies_to="orders",
+        tags=["finance"],
+        inferred=True,
     )
-    with tempfile.NamedTemporaryFile(suffix=".md", mode="w", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        suffix=".md", mode="w", delete=False, encoding="utf-8"
+    ) as f:
         f.write(_entry_to_md(entry))
         tmp = Path(f.name)
 
@@ -56,7 +69,9 @@ def test_md_to_entry_roundtrip() -> None:
 
 def test_md_to_entry_unknown_type_becomes_empty_kind() -> None:
     md = "---\ntype: Playbook\ntitle: foo\ndescription: bar\nlayer: guild\nentity: ''\ninferred: false\n---\n\nbar\n"
-    with tempfile.NamedTemporaryFile(suffix=".md", mode="w", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        suffix=".md", mode="w", delete=False, encoding="utf-8"
+    ) as f:
         f.write(md)
         tmp = Path(f.name)
     entry = _md_to_entry(tmp)
@@ -66,7 +81,9 @@ def test_md_to_entry_unknown_type_becomes_empty_kind() -> None:
 
 
 def test_md_to_entry_no_frontmatter_returns_none() -> None:
-    with tempfile.NamedTemporaryFile(suffix=".md", mode="w", delete=False, encoding="utf-8") as f:
+    with tempfile.NamedTemporaryFile(
+        suffix=".md", mode="w", delete=False, encoding="utf-8"
+    ) as f:
         f.write("no frontmatter here")
         tmp = Path(f.name)
     assert _md_to_entry(tmp) is None
@@ -76,6 +93,7 @@ def test_md_to_entry_no_frontmatter_returns_none() -> None:
 # ------------------------------------------------------------------
 # export / import 통합 테스트
 # ------------------------------------------------------------------
+
 
 def test_export_creates_kind_based_folders() -> None:
     store = SqliteStore()
@@ -104,10 +122,14 @@ def test_export_creates_kind_based_folders() -> None:
 def test_export_separates_scopes() -> None:
     store = SqliteStore()
     scope = "g1"
-    _populate(store, scope, [
-        FedEntry("활성고객", "guild", "", "30일 로그인", kind="metric"),
-        FedEntry("활성고객", "channel", "mkt", "7일 구매", kind="metric"),
-    ])
+    _populate(
+        store,
+        scope,
+        [
+            FedEntry("활성고객", "guild", "", "30일 로그인", kind="metric"),
+            FedEntry("활성고객", "channel", "mkt", "7일 구매", kind="metric"),
+        ],
+    )
 
     with tempfile.TemporaryDirectory() as tmp:
         bundle = OkfBundle(tmp)
@@ -121,8 +143,13 @@ def test_import_restores_kv_from_files() -> None:
     store = SqliteStore()
     scope = "g1"
     original = FedEntry(
-        "순매출", "guild", "", "환불 제외 매출",
-        kind="metric", applies_to="orders", tags=["finance"],
+        "순매출",
+        "guild",
+        "",
+        "환불 제외 매출",
+        kind="metric",
+        applies_to="orders",
+        tags=["finance"],
     )
     _populate(store, scope, [original])
 
@@ -161,10 +188,15 @@ def test_full_roundtrip_preserves_all_fields() -> None:
     store = SqliteStore()
     scope = "g1"
     original = FedEntry(
-        term="월매출", layer="member", entity="user-99",
+        term="월매출",
+        layer="member",
+        entity="user-99",
         definition="당월 발생 매출 합계",
-        synonyms=["monthly revenue"], inferred=False,
-        kind="metric", applies_to="orders.amount", tags=["finance", "monthly"],
+        synonyms=["monthly revenue"],
+        inferred=False,
+        kind="metric",
+        applies_to="orders.amount",
+        tags=["finance", "monthly"],
     )
     _populate(store, scope, [original])
 

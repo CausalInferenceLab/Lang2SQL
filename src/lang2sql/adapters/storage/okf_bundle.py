@@ -117,6 +117,7 @@ class OkfBundle:
 # Serialization helpers (module-level for testability)
 # ------------------------------------------------------------------
 
+
 def _entry_to_md(entry: FedEntry) -> str:
     """FedEntry → OKF .md 문자열 (SPEC §4.1)."""
     fm: dict = {
@@ -135,7 +136,9 @@ def _entry_to_md(entry: FedEntry) -> str:
     fm["inferred"] = entry.inferred
     fm["timestamp"] = datetime.now(timezone.utc).isoformat()
 
-    yaml_block = yaml.dump(fm, allow_unicode=True, default_flow_style=False, sort_keys=False)
+    yaml_block = yaml.dump(
+        fm, allow_unicode=True, default_flow_style=False, sort_keys=False
+    )
     return f"---\n{yaml_block}---\n\n{entry.definition}\n"
 
 
