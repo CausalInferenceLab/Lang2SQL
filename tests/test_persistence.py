@@ -24,7 +24,9 @@ def test_kv_federation_survives_new_instance(tmp_path) -> None:
     scope = "g1"
 
     writer = SqliteStore(db)
-    entry = FedEntry(term="revenue", layer="guild", entity="", definition="sum of order totals")
+    entry = FedEntry(
+        term="revenue", layer="guild", entity="", definition="sum of order totals"
+    )
     writer.kv_set(scope, _kv_key("revenue", "guild", ""), entry.to_json())
     writer.close()
 
@@ -40,8 +42,16 @@ def test_kv_channel_overrides_guild_persisted(tmp_path) -> None:
     scope = "g1"
 
     store = SqliteStore(db)
-    store.kv_set(scope, _kv_key("active_user", "guild", ""), FedEntry("active_user", "guild", "", "guild def").to_json())
-    store.kv_set(scope, _kv_key("active_user", "channel", "c1"), FedEntry("active_user", "channel", "c1", "channel def").to_json())
+    store.kv_set(
+        scope,
+        _kv_key("active_user", "guild", ""),
+        FedEntry("active_user", "guild", "", "guild def").to_json(),
+    )
+    store.kv_set(
+        scope,
+        _kv_key("active_user", "channel", "c1"),
+        FedEntry("active_user", "channel", "c1", "channel def").to_json(),
+    )
     store.close()
 
     reader = SqliteStore(db)
@@ -64,7 +74,9 @@ def test_encrypted_secrets_round_trip_and_ciphertext(tmp_path) -> None:
     assert blob is not None
     assert "postgresql" not in blob
     assert blob != "postgresql://u:p@host/db"
-    assert Fernet(key).decrypt(blob.encode("ascii")).decode() == "postgresql://u:p@host/db"
+    assert (
+        Fernet(key).decrypt(blob.encode("ascii")).decode() == "postgresql://u:p@host/db"
+    )
 
     asyncio.run(secrets.delete("guild:1", "dsn"))
     assert asyncio.run(secrets.get("guild:1", "dsn")) is None

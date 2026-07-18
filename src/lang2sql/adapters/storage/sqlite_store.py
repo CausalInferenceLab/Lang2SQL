@@ -35,8 +35,7 @@ class SqliteStore:
         self._create_tables()
 
     def _create_tables(self) -> None:
-        self._conn.executescript(
-            """
+        self._conn.executescript("""
             CREATE TABLE IF NOT EXISTS audit (
                 id     INTEGER PRIMARY KEY AUTOINCREMENT,
                 actor  TEXT NOT NULL,
@@ -55,8 +54,7 @@ class SqliteStore:
                 value TEXT NOT NULL,
                 PRIMARY KEY (scope, key)
             );
-            """
-        )
+            """)
         self._conn.commit()
 
     def close(self) -> None:
@@ -125,9 +123,7 @@ class SqliteStore:
         self._conn.commit()
 
     def kv_delete(self, scope: str, key: str) -> None:
-        self._conn.execute(
-            "DELETE FROM kv WHERE scope = ? AND key = ?", (scope, key)
-        )
+        self._conn.execute("DELETE FROM kv WHERE scope = ? AND key = ?", (scope, key))
         self._conn.commit()
 
     @staticmethod

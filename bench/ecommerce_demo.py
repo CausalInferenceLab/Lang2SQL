@@ -28,7 +28,13 @@ from lang2sql.core.ports.safety import SafetyContext, Verdict
 from lang2sql.harness.loop import agent_loop
 from lang2sql.safety.pipeline import SafetyPipeline
 from lang2sql.tenancy.concierge import ContextConcierge
-from lang2sql.tools.semantic_federation import FedEntry, _kv_key, _render_effective, _load_all, _resolve_term
+from lang2sql.tools.semantic_federation import (
+    FedEntry,
+    _kv_key,
+    _render_effective,
+    _load_all,
+    _resolve_term,
+)
 
 # Stable IDs for the demo guild and its two channels.
 GUILD = "acme-shop"
@@ -50,7 +56,9 @@ def _finance_identity() -> Identity:
     return Identity(user_id="evan", guild_id=GUILD, channel_id=CH_FINANCE)
 
 
-def _define_term(store: SqliteStore, scope: str, term: str, layer: str, entity: str, definition: str) -> None:
+def _define_term(
+    store: SqliteStore, scope: str, term: str, layer: str, entity: str, definition: str
+) -> None:
     entry = FedEntry(term=term, layer=layer, entity=entity, definition=definition)
     store.kv_set(scope, _kv_key(term, layer, entity), entry.to_json())
 
@@ -93,7 +101,9 @@ async def section_1_define_metrics(store: SqliteStore) -> None:
 
     rendered = _render_effective(store, scope, channel_id, ident.user_id)
     lines = [l for l in rendered.splitlines() if l.startswith("-")]
-    print(f"\nEffective layer for #{CH_MARKETING} now holds {len(lines)} definition(s):")
+    print(
+        f"\nEffective layer for #{CH_MARKETING} now holds {len(lines)} definition(s):"
+    )
     print(rendered)
 
 
@@ -104,10 +114,22 @@ async def section_2_federation(store: SqliteStore) -> None:
     mkt = _marketing_identity()
     fin = _finance_identity()
 
-    _define_term(store, GUILD, "active_user", "channel", CH_MARKETING,
-                 "user with a login event in the last 30 days")
-    _define_term(store, GUILD, "active_user", "channel", CH_FINANCE,
-                 "user with an active paid subscription")
+    _define_term(
+        store,
+        GUILD,
+        "active_user",
+        "channel",
+        CH_MARKETING,
+        "user with a login event in the last 30 days",
+    )
+    _define_term(
+        store,
+        GUILD,
+        "active_user",
+        "channel",
+        CH_FINANCE,
+        "user with an active paid subscription",
+    )
 
     print("Defined 'active_user' independently in two channels.\n")
     print("Now resolving the *effective* definition each channel sees")
@@ -127,9 +149,9 @@ async def section_2_federation(store: SqliteStore) -> None:
     print(f"  #{CH_MARKETING:<10} active_user → {mkt_def}")
     print(f"  #{CH_FINANCE:<10} active_user → {fin_def}")
 
-    assert mkt_def and fin_def and mkt_def != fin_def, (
-        f"Federation failed: mkt_def={mkt_def!r}, fin_def={fin_def!r}"
-    )
+    assert (
+        mkt_def and fin_def and mkt_def != fin_def
+    ), f"Federation failed: mkt_def={mkt_def!r}, fin_def={fin_def!r}"
     print("\n  ✅ Same term, two live definitions, zero conflict.")
     print("     Each channel is its own branch in the federation tree;")
     print("     neither overwrote the other. (Wren's single MDL cannot do this.)")

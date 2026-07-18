@@ -22,7 +22,12 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.ports.tool import ToolPort
 from ..core.types import Message, Role, ToolResult, ToolSpec
-from .semantic_federation import FedEntry, _KV_PREFIX as _SEMFED_PREFIX, _kv_key as _semfed_kv_key, _parse_synonyms
+from .semantic_federation import (
+    FedEntry,
+    _KV_PREFIX as _SEMFED_PREFIX,
+    _kv_key as _semfed_kv_key,
+    _parse_synonyms,
+)
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -104,7 +109,11 @@ class OrgSetupTool(ToolPort):
         team_name = str(args.get("team", "")).strip()
 
         if not org_name and not team_name:
-            return ToolResult(call_id="", content="❌ org 또는 team 파라미터가 필요합니다.", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="❌ org 또는 team 파라미터가 필요합니다.",
+                is_error=True,
+            )
 
         scope = ctx.identity.kv_scope
         channel_id = ctx.identity.effective_channel_id
@@ -159,11 +168,17 @@ class OrgSetupTool(ToolPort):
             )
 
         if ctx.explorer is None:
-            return ToolResult(call_id="", content="❌ DB가 연결되지 않았습니다 (/setup 먼저).", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="❌ DB가 연결되지 않았습니다 (/setup 먼저).",
+                is_error=True,
+            )
 
         all_tables = await ctx.explorer.list_tables()
         if not all_tables:
-            return ToolResult(call_id="", content="❌ 접근 가능한 테이블이 없습니다.", is_error=True)
+            return ToolResult(
+                call_id="", content="❌ 접근 가능한 테이블이 없습니다.", is_error=True
+            )
 
         schema_lines: list[str] = []
         for tbl in all_tables:
@@ -179,7 +194,9 @@ class OrgSetupTool(ToolPort):
                         f"WHERE {col.name} IS NOT NULL LIMIT {_SAMPLE_LIMIT}"
                     )
                     rows = await ctx.explorer.execute(sample_sql, _SAMPLE_LIMIT)
-                    samples = [str(r.get(col.name, r.get(list(r.keys())[0], ""))) for r in rows]
+                    samples = [
+                        str(r.get(col.name, r.get(list(r.keys())[0], ""))) for r in rows
+                    ]
                 except Exception:
                     samples = []
                 sample_str = f" 샘플: {samples}" if samples else ""
@@ -202,7 +219,10 @@ class OrgSetupTool(ToolPort):
         ctx.store.kv_set(
             scope,
             meta_key,
-            json.dumps({"name": display_name, "domain": domain, "registered_at": time.time()}, ensure_ascii=False),
+            json.dumps(
+                {"name": display_name, "domain": domain, "registered_at": time.time()},
+                ensure_ascii=False,
+            ),
         )
 
         saved_terms: list[str] = []
@@ -215,8 +235,12 @@ class OrgSetupTool(ToolPort):
             if ":" in term:
                 continue  # `:` 포함 term은 KV 키 파싱을 깨트리므로 건너뜀
             entry = FedEntry(
-                term=term, layer=layer, entity=entity,
-                definition=definition, synonyms=synonyms, inferred=True,
+                term=term,
+                layer=layer,
+                entity=entity,
+                definition=definition,
+                synonyms=synonyms,
+                inferred=True,
             )
             kv_key = _semfed_kv_key(term, layer, entity)
             ctx.store.kv_set(scope, kv_key, entry.to_json())

@@ -61,7 +61,9 @@ class SqlAlchemyExplorer:
         default = insp.default_schema_name
         effective = self._schema or default
         # Omit schema when it's the connection default so SQL stays unqualified.
-        display_schema = "" if (not self._schema or self._schema == default) else effective
+        display_schema = (
+            "" if (not self._schema or self._schema == default) else effective
+        )
         return [
             Table(name=t, schema=display_schema)
             for t in insp.get_table_names(schema=self._schema)

@@ -41,7 +41,9 @@ def test_build_context_populates_llm_and_session() -> None:
     try:
         concierge = ContextConcierge()
         identity = Identity(user_id="u1", guild_id="g", channel_id="c")
-        ctx = asyncio.run(concierge.build_context(identity, user_text="how many orders?"))
+        ctx = asyncio.run(
+            concierge.build_context(identity, user_text="how many orders?")
+        )
 
         assert isinstance(ctx, HarnessContext)
         assert isinstance(ctx.llm, FakeLLM)  # no key → fallback

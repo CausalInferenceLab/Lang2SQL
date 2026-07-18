@@ -18,7 +18,9 @@ _TABLES: dict[str, Table] = {
         columns=[
             Column("id", "integer", nullable=False, description="Primary key."),
             Column("amount", "numeric", nullable=False, description="Order total."),
-            Column("status", "text", description="pending | paid | shipped | cancelled."),
+            Column(
+                "status", "text", description="pending | paid | shipped | cancelled."
+            ),
             Column("created_at", "timestamptz", nullable=False),
         ],
     ),
@@ -36,8 +38,18 @@ _TABLES: dict[str, Table] = {
 
 _SAMPLES: dict[str, list[dict]] = {
     "public.orders": [
-        {"id": 1, "amount": 49.90, "status": "paid", "created_at": "2026-05-01T10:00:00Z"},
-        {"id": 2, "amount": 12.00, "status": "pending", "created_at": "2026-05-02T14:30:00Z"},
+        {
+            "id": 1,
+            "amount": 49.90,
+            "status": "paid",
+            "created_at": "2026-05-01T10:00:00Z",
+        },
+        {
+            "id": 2,
+            "amount": 12.00,
+            "status": "pending",
+            "created_at": "2026-05-02T14:30:00Z",
+        },
     ],
     "public.users": [
         {"id": 1, "email": "alice@example.com", "created_at": "2026-04-20T08:00:00Z"},

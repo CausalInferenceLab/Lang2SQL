@@ -28,10 +28,14 @@ class ToolRegistry:
     ) -> ToolResult:
         tool = self._tools.get(name)
         if tool is None:
-            return ToolResult(call_id=call_id, content=f"unknown tool: {name}", is_error=True)
+            return ToolResult(
+                call_id=call_id, content=f"unknown tool: {name}", is_error=True
+            )
         try:
             result = await tool.run(args, ctx)
             result.call_id = call_id  # tools don't know their call id; stamp it here
             return result
         except Exception as exc:  # tools must never crash the loop
-            return ToolResult(call_id=call_id, content=f"{type(exc).__name__}: {exc}", is_error=True)
+            return ToolResult(
+                call_id=call_id, content=f"{type(exc).__name__}: {exc}", is_error=True
+            )

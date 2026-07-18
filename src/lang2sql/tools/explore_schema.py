@@ -42,14 +42,19 @@ class ExploreSchema:
             parameters={
                 "type": "object",
                 "properties": {
-                    "table": {"type": "string", "description": "table name to describe; omit to list all tables"},
+                    "table": {
+                        "type": "string",
+                        "description": "table name to describe; omit to list all tables",
+                    },
                 },
             },
         )
 
     async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
         if ctx.explorer is None:
-            return ToolResult(call_id="", content="no DB connected (use /connect)", is_error=True)
+            return ToolResult(
+                call_id="", content="no DB connected (use /connect)", is_error=True
+            )
 
         table = (args.get("table") or "").strip()
         if not table:
@@ -59,9 +64,12 @@ class ExploreSchema:
 
         t = await ctx.explorer.describe_table(table)
         t = _apply_enrichment_cache(t, ctx)
-        cols = "\n".join(
-            f"- {c.name}: {c.type}{'' if c.nullable else ' NOT NULL'}"
-            f"{(' — ' + c.description) if c.description else ''}"
-            for c in t.columns
-        ) or "(no columns)"
+        cols = (
+            "\n".join(
+                f"- {c.name}: {c.type}{'' if c.nullable else ' NOT NULL'}"
+                f"{(' — ' + c.description) if c.description else ''}"
+                for c in t.columns
+            )
+            or "(no columns)"
+        )
         return ToolResult(call_id="", content=f"{t.qualified}\n{cols}")

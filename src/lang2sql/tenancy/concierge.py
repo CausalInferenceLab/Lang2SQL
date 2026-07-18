@@ -55,7 +55,9 @@ class ContextConcierge:
     ) -> None:
         self._store = store if store is not None else SqliteStore(path)
         self._llm = llm if llm is not None else _default_llm()
-        self._explorer = explorer or explorer_from_env() or PostgresExplorer(_DEFAULT_DSN)
+        self._explorer = (
+            explorer or explorer_from_env() or PostgresExplorer(_DEFAULT_DSN)
+        )
         self._safety = safety if safety is not None else SafetyPipeline()
         self._secrets = (
             secrets if secrets is not None else EncryptedSecrets(self._store)
@@ -64,7 +66,9 @@ class ContextConcierge:
         self._max_turns = max_turns
 
         # V1 memory (in-memory + inject-all + manual) and ingestion (file × LLM).
-        self._memory = MemoryService(InMemoryStore(), InjectAllRecall(), ManualExtractor())
+        self._memory = MemoryService(
+            InMemoryStore(), InjectAllRecall(), ManualExtractor()
+        )
         self._ingestion = IngestionPipeline()
         self._source = FileSource()
         self._extractor = LLMExtractor(self._llm)

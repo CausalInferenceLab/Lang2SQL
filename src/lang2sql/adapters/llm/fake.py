@@ -50,7 +50,9 @@ class FakeLLM:
             )
 
         # No tools at all → just answer.
-        return Completion(content="(no tools available) Hello from FakeLLM.", finish_reason="stop")
+        return Completion(
+            content="(no tools available) Hello from FakeLLM.", finish_reason="stop"
+        )
 
 
 def _demo_args(spec: ToolSpec) -> str:

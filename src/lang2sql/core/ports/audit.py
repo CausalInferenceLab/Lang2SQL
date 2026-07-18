@@ -12,17 +12,16 @@ from typing import Any, Protocol, runtime_checkable
 
 @dataclass
 class AuditEvent:
-    actor: str            # user_id
-    action: str           # "run_sql" | "define_metric" | "ingest" | ...
-    scope: str            # session/scope key
+    actor: str  # user_id
+    action: str  # "run_sql" | "define_metric" | "ingest" | ...
+    scope: str  # session/scope key
     detail: dict[str, Any] = field(default_factory=dict)
-    ts: float = 0.0       # epoch seconds; filled by the store if 0
+    ts: float = 0.0  # epoch seconds; filled by the store if 0
 
 
 @runtime_checkable
 class AuditPort(Protocol):
-    async def record(self, event: AuditEvent) -> None:
-        ...
+    async def record(self, event: AuditEvent) -> None: ...
 
     async def query(self, actor: str, limit: int = 20) -> list[AuditEvent]:
         """Recent events for one actor, newest first."""

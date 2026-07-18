@@ -43,7 +43,9 @@ class D1Explorer:
     ) -> None:
         self.account_id = account_id
         self.database_id = database_id
-        self._token = token if token is not None else os.environ.get("CLOUDFLARE_API_TOKEN")
+        self._token = (
+            token if token is not None else os.environ.get("CLOUDFLARE_API_TOKEN")
+        )
         self._timeout = timeout
         self._transport = transport or self._http_transport
 
@@ -59,7 +61,9 @@ class D1Explorer:
     async def describe_table(self, name: str) -> Table:
         rows = await self._query(f"PRAGMA table_info({_ident(name)})")
         cols = [
-            Column(name=r["name"], type=r["type"] or "", nullable=not bool(r["notnull"]))
+            Column(
+                name=r["name"], type=r["type"] or "", nullable=not bool(r["notnull"])
+            )
             for r in rows
         ]
         return Table(name=name, schema="", columns=cols)
@@ -86,7 +90,9 @@ class D1Explorer:
 
     def _http_transport(self, sql: str, params: list) -> dict:
         if not self._token:
-            raise RuntimeError("CLOUDFLARE_API_TOKEN not set (D1 requires an API token)")
+            raise RuntimeError(
+                "CLOUDFLARE_API_TOKEN not set (D1 requires an API token)"
+            )
         url = (
             f"{_API_ROOT}/accounts/{self.account_id}"
             f"/d1/database/{self.database_id}/query"

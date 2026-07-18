@@ -132,31 +132,60 @@ class Lang2SQLBot(discord.Client):
         tree = self.tree
         handlers = self._handlers
 
-        @tree.command(name="setup", description="Connect a database with a guided form (no DSN needed)")
+        @tree.command(
+            name="setup",
+            description="Connect a database with a guided form (no DSN needed)",
+        )
         async def setup(interaction: discord.Interaction) -> None:
-            from .setup_wizard import start_setup_flow  # local import — discord-only path
+            from .setup_wizard import (
+                start_setup_flow,
+            )  # local import — discord-only path
+
             await start_setup_flow(interaction, handlers, _interaction_context)
 
         @tree.command(name="connect", description="Store a database connection string")
         async def connect(interaction: discord.Interaction, dsn: str) -> None:
-            await self._run(interaction, handlers.connect(to_identity(_interaction_context(interaction)), dsn))
+            await self._run(
+                interaction,
+                handlers.connect(to_identity(_interaction_context(interaction)), dsn),
+            )
 
         @tree.command(name="ingest", description="Propose definitions from a document")
         async def ingest(interaction: discord.Interaction, ref: str) -> None:
-            await self._run(interaction, handlers.ingest(to_identity(_interaction_context(interaction)), ref=ref))
+            await self._run(
+                interaction,
+                handlers.ingest(
+                    to_identity(_interaction_context(interaction)), ref=ref
+                ),
+            )
 
         @tree.command(name="remember", description="Remember a fact for future turns")
         async def remember(interaction: discord.Interaction, text: str) -> None:
-            await self._run(interaction, handlers.remember(to_identity(_interaction_context(interaction)), text))
-
-        @tree.command(name="enrich", description="LLM으로 DB 컬럼 메타데이터 자동 보강 (clear=True로 초기화)")
-        async def enrich(interaction: discord.Interaction, table: str = "", clear: bool = False) -> None:
             await self._run(
                 interaction,
-                handlers.enrich(to_identity(_interaction_context(interaction)), table=table, clear=clear),
+                handlers.remember(to_identity(_interaction_context(interaction)), text),
             )
 
-        @tree.command(name="term_custom", description="비즈니스 용어 등록·조회·삭제 (action: show / remove, term: 용어명)")
+        @tree.command(
+            name="enrich",
+            description="LLM으로 DB 컬럼 메타데이터 자동 보강 (clear=True로 초기화)",
+        )
+        async def enrich(
+            interaction: discord.Interaction, table: str = "", clear: bool = False
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.enrich(
+                    to_identity(_interaction_context(interaction)),
+                    table=table,
+                    clear=clear,
+                ),
+            )
+
+        @tree.command(
+            name="term_custom",
+            description="비즈니스 용어 등록·조회·삭제 (action: show / remove, term: 용어명)",
+        )
         async def term_custom(
             interaction: discord.Interaction,
             action: str = "",
@@ -167,12 +196,19 @@ class Lang2SQLBot(discord.Client):
             if action == "show":
                 await self._run(interaction, handlers.term_custom(ident, list_all=True))
             elif action == "remove":
-                await self._run(interaction, handlers.term_custom(ident, term=term, layer=layer, remove=True))
+                await self._run(
+                    interaction,
+                    handlers.term_custom(ident, term=term, layer=layer, remove=True),
+                )
             else:
                 from .term_wizard import start_term_add_flow
+
                 await start_term_add_flow(interaction, handlers, _interaction_context)
 
-        @tree.command(name="org_setup", description="조직(전사) 또는 팀(채널) 등록 + DB 스캔으로 비즈니스 용어 자동 추출")
+        @tree.command(
+            name="org_setup",
+            description="조직(전사) 또는 팀(채널) 등록 + DB 스캔으로 비즈니스 용어 자동 추출",
+        )
         async def org_setup(
             interaction: discord.Interaction,
             org: str = "",
@@ -181,12 +217,20 @@ class Lang2SQLBot(discord.Client):
         ) -> None:
             await self._run(
                 interaction,
-                handlers.org_setup(to_identity(_interaction_context(interaction)), org=org, team=team, clear=clear),
+                handlers.org_setup(
+                    to_identity(_interaction_context(interaction)),
+                    org=org,
+                    team=team,
+                    clear=clear,
+                ),
             )
 
         @tree.command(name="audit_me", description="Show your recent activity")
         async def audit_me(interaction: discord.Interaction) -> None:
-            await self._run(interaction, handlers.audit_me(to_identity(_interaction_context(interaction))))
+            await self._run(
+                interaction,
+                handlers.audit_me(to_identity(_interaction_context(interaction))),
+            )
 
     async def _run(self, interaction: discord.Interaction, coro) -> None:
         """Await a handler coroutine and reply with its OutboundMessage."""
@@ -197,9 +241,12 @@ class Lang2SQLBot(discord.Client):
             await interaction.followup.send(**kwargs)
         except Exception as exc:
             import traceback
+
             traceback.print_exc()
             try:
-                await interaction.followup.send(content=f"❌ Error: {type(exc).__name__}: {exc}")
+                await interaction.followup.send(
+                    content=f"❌ Error: {type(exc).__name__}: {exc}"
+                )
             except Exception:
                 pass
 
@@ -225,6 +272,7 @@ class Lang2SQLBot(discord.Client):
             await message.channel.send(**kwargs)
         except Exception as exc:
             import traceback
+
             traceback.print_exc()
             await message.channel.send(content=f"❌ Error: {type(exc).__name__}: {exc}")
 

@@ -110,7 +110,9 @@ class WhitelistLayer:
             else:
                 # Consume leading bare option words (ANALYZE, VERBOSE, ...).
                 while True:
-                    m = re.match(r"(?i)^(ANALYZE|VERBOSE|COSTS|BUFFERS)\b\s*(.*)$", body)
+                    m = re.match(
+                        r"(?i)^(ANALYZE|VERBOSE|COSTS|BUFFERS)\b\s*(.*)$", body
+                    )
                     if m is None:
                         break
                     body = m.group(2).strip()

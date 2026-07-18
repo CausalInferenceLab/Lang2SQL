@@ -32,8 +32,7 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
         if tables:
             scope = ctx.identity.kv_scope if ctx.store else None
             has_enrichment = bool(
-                scope and ctx.store and
-                ctx.store.kv_get(scope, "schema_relationships")
+                scope and ctx.store and ctx.store.kv_get(scope, "schema_relationships")
             )
 
             if has_enrichment and scope and ctx.store:
@@ -46,10 +45,19 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
                         continue
                     col_lines = []
                     for col in described.columns:
-                        desc = col.description or ctx.store.kv_get(scope, f"enriched_desc:{tbl.name}:{col.name}") or ""
+                        desc = (
+                            col.description
+                            or ctx.store.kv_get(
+                                scope, f"enriched_desc:{tbl.name}:{col.name}"
+                            )
+                            or ""
+                        )
                         col_lines.append(f"  - {col.name}{': ' + desc if desc else ''}")
                     schema_lines.append(f"- {tbl.qualified}\n" + "\n".join(col_lines))
-                parts.append("## Known tables (with column descriptions)\n" + "\n".join(schema_lines))
+                parts.append(
+                    "## Known tables (with column descriptions)\n"
+                    + "\n".join(schema_lines)
+                )
             else:
                 names = ", ".join(t.qualified for t in tables)
                 parts.append("## Known tables\n" + names)
@@ -62,11 +70,14 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
                 rels = json.loads(raw)
                 if rels:
                     rel_text = "\n".join(f"- {r}" for r in rels)
-                    parts.append("## Table relationships (use these for JOINs)\n" + rel_text)
+                    parts.append(
+                        "## Table relationships (use these for JOINs)\n" + rel_text
+                    )
             except (ValueError, TypeError):
                 pass
 
         from ..tools.semantic_federation import build_prompt_section
+
         user_id = ctx.identity.user_id or "unknown"
         channel_id = ctx.identity.effective_channel_id
         semfed_section = build_prompt_section(ctx.store, scope, channel_id, user_id)

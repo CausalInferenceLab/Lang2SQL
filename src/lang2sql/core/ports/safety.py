@@ -16,17 +16,17 @@ from typing import Protocol, Sequence, runtime_checkable
 class Verdict(str, Enum):
     PASS = "pass"
     BLOCK = "block"
-    CONFIRM = "confirm"   # ask the user before proceeding
-    REWRITE = "rewrite"   # layer rewrote the SQL (e.g. attach LIMIT)
+    CONFIRM = "confirm"  # ask the user before proceeding
+    REWRITE = "rewrite"  # layer rewrote the SQL (e.g. attach LIMIT)
 
 
 @dataclass
 class SafetyDecision:
     verdict: Verdict
-    sql: str                       # possibly rewritten
+    sql: str  # possibly rewritten
     reason: str = ""
-    layer: str = ""                # which layer decided
-    confirm_prompt: str = ""       # populated when verdict is CONFIRM
+    layer: str = ""  # which layer decided
+    confirm_prompt: str = ""  # populated when verdict is CONFIRM
 
 
 @dataclass
@@ -45,16 +45,14 @@ class SafetyLayerPort(Protocol):
     @property
     def name(self) -> str: ...
 
-    def check(self, sql: str, ctx: SafetyContext) -> SafetyDecision:
-        ...
+    def check(self, sql: str, ctx: SafetyContext) -> SafetyDecision: ...
 
 
 @runtime_checkable
 class SafetyPipelinePort(Protocol):
     """Runs layers in order; first non-PASS short-circuits."""
 
-    def evaluate(self, sql: str, ctx: SafetyContext) -> SafetyDecision:
-        ...
+    def evaluate(self, sql: str, ctx: SafetyContext) -> SafetyDecision: ...
 
     @property
     def layers(self) -> Sequence[SafetyLayerPort]: ...

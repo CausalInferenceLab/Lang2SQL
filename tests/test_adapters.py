@@ -21,8 +21,18 @@ from lang2sql.harness.session import Session
 
 def test_audit_record_then_query() -> None:
     store = SqliteStore()
-    asyncio.run(store.record(AuditEvent(actor="u1", action="run_sql", scope="s", detail={"q": "SELECT 1"})))
-    asyncio.run(store.record(AuditEvent(actor="u1", action="define_metric", scope="s", detail={})))
+    asyncio.run(
+        store.record(
+            AuditEvent(
+                actor="u1", action="run_sql", scope="s", detail={"q": "SELECT 1"}
+            )
+        )
+    )
+    asyncio.run(
+        store.record(
+            AuditEvent(actor="u1", action="define_metric", scope="s", detail={})
+        )
+    )
     asyncio.run(store.record(AuditEvent(actor="other", action="run_sql", scope="s")))
 
     events = asyncio.run(store.query("u1"))
@@ -36,17 +46,23 @@ def test_audit_record_then_query() -> None:
 
 def test_session_save_then_load_reconstructs_transcript() -> None:
     store = SqliteStore()
-    identity = Identity(user_id="u1", guild_id="g", channel_id="c", thread_id="t", is_admin=True)
+    identity = Identity(
+        user_id="u1", guild_id="g", channel_id="c", thread_id="t", is_admin=True
+    )
     session = Session(identity=identity)
     session.add(Message(role=Role.USER, content="hi"))
     session.add(
         Message(
             role=Role.ASSISTANT,
             content="",
-            tool_calls=[ToolCall(id="call_1", name="run_sql", arguments={"q": "SELECT 1"})],
+            tool_calls=[
+                ToolCall(id="call_1", name="run_sql", arguments={"q": "SELECT 1"})
+            ],
         )
     )
-    session.add(Message(role=Role.TOOL, content="ok", tool_call_id="call_1", name="run_sql"))
+    session.add(
+        Message(role=Role.TOOL, content="ok", tool_call_id="call_1", name="run_sql")
+    )
 
     key = identity.session_key()
     asyncio.run(store.save(key, session))
@@ -102,7 +118,9 @@ def test_postgres_explorer_satisfies_protocol() -> None:
 
 def test_postgres_explorer_execute() -> None:
     explorer = PostgresExplorer("postgresql://ignored")
-    order_rows = asyncio.run(explorer.execute("SELECT * FROM orders WHERE status='paid'"))
+    order_rows = asyncio.run(
+        explorer.execute("SELECT * FROM orders WHERE status='paid'")
+    )
     assert order_rows and "amount" in order_rows[0]
 
     capped = asyncio.run(explorer.execute("select * from orders", limit=1))

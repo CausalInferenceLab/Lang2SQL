@@ -30,8 +30,14 @@ class RunSQL:
             parameters={
                 "type": "object",
                 "properties": {
-                    "sql": {"type": "string", "description": "a single SELECT or WITH query"},
-                    "limit": {"type": "integer", "description": "max rows (default 1000)"},
+                    "sql": {
+                        "type": "string",
+                        "description": "a single SELECT or WITH query",
+                    },
+                    "limit": {
+                        "type": "integer",
+                        "description": "max rows (default 1000)",
+                    },
                 },
                 "required": ["sql"],
             },
@@ -45,22 +51,40 @@ class RunSQL:
             limit = 1000  # tolerate a malformed limit from the model
 
         if ctx.safety is None:
-            return ToolResult(call_id="", content="run_sql unavailable: no safety pipeline wired", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="run_sql unavailable: no safety pipeline wired",
+                is_error=True,
+            )
         if ctx.explorer is None:
-            return ToolResult(call_id="", content="run_sql unavailable: no DB connected (use /connect)", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="run_sql unavailable: no DB connected (use /connect)",
+                is_error=True,
+            )
 
         decision = ctx.safety.evaluate(sql, SafetyContext(row_limit=limit))
         if decision.verdict == Verdict.BLOCK:
-            return ToolResult(call_id="", content=f"BLOCKED by {decision.layer}: {decision.reason}", is_error=True)
+            return ToolResult(
+                call_id="",
+                content=f"BLOCKED by {decision.layer}: {decision.reason}",
+                is_error=True,
+            )
         if decision.verdict == Verdict.CONFIRM:
-            return ToolResult(call_id="", content=f"NEEDS CONFIRMATION: {decision.confirm_prompt}")
+            return ToolResult(
+                call_id="", content=f"NEEDS CONFIRMATION: {decision.confirm_prompt}"
+            )
 
         rows = await ctx.explorer.execute(decision.sql, limit)
 
         if ctx.audit is not None:
             await ctx.audit.record(
-                AuditEvent(actor=ctx.identity.user_id, action="run_sql",
-                           scope=ctx.identity.session_key(), detail={"sql": decision.sql})
+                AuditEvent(
+                    actor=ctx.identity.user_id,
+                    action="run_sql",
+                    scope=ctx.identity.session_key(),
+                    detail={"sql": decision.sql},
+                )
             )
 
         return ToolResult(call_id="", content=_render_rows(decision.sql, rows))

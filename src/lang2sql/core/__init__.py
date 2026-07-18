@@ -11,6 +11,13 @@ from .types import (
 )
 
 __all__ = [
-    "Identity", "Scope", "ScopeLevel",
-    "Completion", "Message", "Role", "ToolCall", "ToolResult", "ToolSpec",
+    "Identity",
+    "Scope",
+    "ScopeLevel",
+    "Completion",
+    "Message",
+    "Role",
+    "ToolCall",
+    "ToolResult",
+    "ToolSpec",
 ]

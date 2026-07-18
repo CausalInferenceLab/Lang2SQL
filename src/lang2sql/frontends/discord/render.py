@@ -67,9 +67,7 @@ def render_answer(
     return OutboundMessage(text=text)
 
 
-def _rows_to_csv(
-    rows: Sequence[Sequence[Any]], header: Sequence[str] | None
-) -> str:
+def _rows_to_csv(rows: Sequence[Sequence[Any]], header: Sequence[str] | None) -> str:
     """Serialise ``rows`` (optionally with a ``header``) to a CSV string."""
     buf = io.StringIO()
     writer = csv.writer(buf)

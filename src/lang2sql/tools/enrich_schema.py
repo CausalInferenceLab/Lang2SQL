@@ -85,23 +85,37 @@ class EnrichSchema:
 
     async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
         if ctx.explorer is None:
-            return ToolResult(call_id="", content="DB가 연결되지 않았습니다 (/connect 먼저).", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="DB가 연결되지 않았습니다 (/connect 먼저).",
+                is_error=True,
+            )
         if ctx.store is None:
-            return ToolResult(call_id="", content="KV store를 사용할 수 없습니다.", is_error=True)
+            return ToolResult(
+                call_id="", content="KV store를 사용할 수 없습니다.", is_error=True
+            )
 
         scope = ctx.identity.kv_scope
 
         if args.get("clear"):
             count = ctx.store.kv_delete_prefix(scope, _KV_PREFIX + ":")
             ctx.store.kv_delete(scope, _KV_RELATIONSHIPS)
-            return ToolResult(call_id="", content=f"🗑️ 보강 캐시 초기화 완료 ({count}개 삭제)")
+            return ToolResult(
+                call_id="", content=f"🗑️ 보강 캐시 초기화 완료 ({count}개 삭제)"
+            )
 
         target = (args.get("table") or "").strip()
         all_tables = await ctx.explorer.list_tables()
         if target:
-            tables = [t for t in all_tables if t.name == target or t.qualified == target]
+            tables = [
+                t for t in all_tables if t.name == target or t.qualified == target
+            ]
             if not tables:
-                return ToolResult(call_id="", content=f"테이블 '{target}'을 찾을 수 없습니다.", is_error=True)
+                return ToolResult(
+                    call_id="",
+                    content=f"테이블 '{target}'을 찾을 수 없습니다.",
+                    is_error=True,
+                )
         else:
             tables = all_tables
 
@@ -117,7 +131,9 @@ class EnrichSchema:
                         f"WHERE {col.name} IS NOT NULL LIMIT {_SAMPLE_LIMIT}"
                     )
                     rows = await ctx.explorer.execute(sample_sql, _SAMPLE_LIMIT)
-                    samples = [str(r.get(col.name, r.get(list(r.keys())[0], ""))) for r in rows]
+                    samples = [
+                        str(r.get(col.name, r.get(list(r.keys())[0], ""))) for r in rows
+                    ]
                 except Exception:
                     samples = []
                 sample_str = f" 샘플: {samples}" if samples else ""
@@ -128,9 +144,7 @@ class EnrichSchema:
         prompt = _build_prompt(schema_block)
 
         # Single LLM call for all tables at once.
-        completion = await ctx.llm.complete(
-            [Message(role=Role.USER, content=prompt)]
-        )
+        completion = await ctx.llm.complete([Message(role=Role.USER, content=prompt)])
         columns, relationships = _extract_result(completion.content)
 
         if not columns and not relationships:
@@ -153,7 +167,9 @@ class EnrichSchema:
 
         rel_lines: list[str] = []
         if relationships:
-            ctx.store.kv_set(scope, _KV_RELATIONSHIPS, json.dumps(relationships, ensure_ascii=False))
+            ctx.store.kv_set(
+                scope, _KV_RELATIONSHIPS, json.dumps(relationships, ensure_ascii=False)
+            )
             rel_lines = [f"- {r}" for r in relationships]
 
         result_parts = []
@@ -162,4 +178,6 @@ class EnrichSchema:
         if rel_lines:
             result_parts.append("🔗 테이블 관계 추론:\n" + "\n".join(rel_lines))
 
-        return ToolResult(call_id="", content="\n\n".join(result_parts) or "보강된 내용이 없습니다.")
+        return ToolResult(
+            call_id="", content="\n\n".join(result_parts) or "보강된 내용이 없습니다."
+        )

@@ -9,16 +9,21 @@ from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.frontends.discord.render import OutboundMessage
 from lang2sql.tools.semantic_federation import FedEntry, _kv_key, _render_effective
 
-
 # -- FedEntry synonyms: string stored in KV (pre-fix data or JSON null) -------
 
 
 def test_fed_entry_from_json_coerces_string_synonyms() -> None:
     """If old KV data has synonyms as a JSON string, from_json must produce a list."""
-    raw_json = json.dumps({
-        "term": "active_user", "layer": "guild", "entity": "",
-        "definition": "30d login", "synonyms": "활성유저, active", "inferred": False,
-    })
+    raw_json = json.dumps(
+        {
+            "term": "active_user",
+            "layer": "guild",
+            "entity": "",
+            "definition": "30d login",
+            "synonyms": "활성유저, active",
+            "inferred": False,
+        }
+    )
     entry = FedEntry.from_json(raw_json)
     assert isinstance(entry.synonyms, list), "synonyms must be a list after from_json"
     assert "활성유저" in entry.synonyms
@@ -27,10 +32,16 @@ def test_fed_entry_from_json_coerces_string_synonyms() -> None:
 
 def test_fed_entry_from_json_handles_null_synonyms() -> None:
     """If KV data has synonyms=null, from_json must produce an empty list."""
-    raw_json = json.dumps({
-        "term": "revenue", "layer": "guild", "entity": "",
-        "definition": "gross revenue", "synonyms": None, "inferred": False,
-    })
+    raw_json = json.dumps(
+        {
+            "term": "revenue",
+            "layer": "guild",
+            "entity": "",
+            "definition": "gross revenue",
+            "synonyms": None,
+            "inferred": False,
+        }
+    )
     entry = FedEntry.from_json(raw_json)
     assert entry.synonyms == []
 
@@ -40,10 +51,16 @@ def test_render_effective_string_synonyms_in_kv_does_not_character_join() -> Non
     store = SqliteStore()
     scope = "g1"
     # Simulate a KV entry written by old code (synonyms as JSON string)
-    bad_json = json.dumps({
-        "term": "active_user", "layer": "guild", "entity": "",
-        "definition": "30d login", "synonyms": "활성유저, active", "inferred": False,
-    })
+    bad_json = json.dumps(
+        {
+            "term": "active_user",
+            "layer": "guild",
+            "entity": "",
+            "definition": "30d login",
+            "synonyms": "활성유저, active",
+            "inferred": False,
+        }
+    )
     store.kv_set(scope, _kv_key("active_user", "guild", ""), bad_json)
     rendered = _render_effective(store, scope, "", "u1")
     assert "active_user" in rendered
@@ -88,16 +105,20 @@ def test_term_custom_remove_emits_audit_event() -> None:
     ctx = asyncio.run(concierge.build_context(ident))
 
     # Write then remove
-    asyncio.run(SemanticFederationTool().run(
-        {"term": "active_user", "definition": "30d login", "layer": "guild"}, ctx
-    ))
-    asyncio.run(SemanticFederationTool().run(
-        {"term": "active_user", "remove": True}, ctx
-    ))
+    asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "active_user", "definition": "30d login", "layer": "guild"}, ctx
+        )
+    )
+    asyncio.run(
+        SemanticFederationTool().run({"term": "active_user", "remove": True}, ctx)
+    )
 
     events = asyncio.run(ctx.audit.query(ident.user_id))
-    assert any(e.action == "term_custom_remove" and e.detail.get("term") == "active_user"
-               for e in events)
+    assert any(
+        e.action == "term_custom_remove" and e.detail.get("term") == "active_user"
+        for e in events
+    )
 
 
 # -- guild layer admin guard ---------------------------------------------------
@@ -113,9 +134,11 @@ def test_guild_write_requires_admin() -> None:
     ident = Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=False)
     ctx = asyncio.run(concierge.build_context(ident))
 
-    result = asyncio.run(SemanticFederationTool().run(
-        {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, ctx
-    ))
+    result = asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, ctx
+        )
+    )
     assert result.is_error
     assert "관리자" in result.content
 
@@ -129,23 +152,35 @@ def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
     concierge = ContextConcierge()
 
     # Admin registers the guild-layer term
-    admin_ctx = asyncio.run(concierge.build_context(
-        Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
-    ))
-    asyncio.run(SemanticFederationTool().run(
-        {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, admin_ctx
-    ))
+    admin_ctx = asyncio.run(
+        concierge.build_context(
+            Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
+        )
+    )
+    asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "revenue", "definition": "gross revenue", "layer": "guild"},
+            admin_ctx,
+        )
+    )
 
     # Non-admin adds their own member-layer override
-    member_ctx = asyncio.run(concierge.build_context(
-        Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=False)
-    ))
-    asyncio.run(SemanticFederationTool().run(
-        {"term": "revenue", "definition": "my override", "layer": "member"}, member_ctx
-    ))
+    member_ctx = asyncio.run(
+        concierge.build_context(
+            Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=False)
+        )
+    )
+    asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "revenue", "definition": "my override", "layer": "member"},
+            member_ctx,
+        )
+    )
 
     # Non-admin removes — must keep guild entry, delete own member entry
-    asyncio.run(SemanticFederationTool().run({"term": "revenue", "remove": True}, member_ctx))
+    asyncio.run(
+        SemanticFederationTool().run({"term": "revenue", "remove": True}, member_ctx)
+    )
 
     scope = "g1"
     assert member_ctx.store.kv_get(scope, _kv_key("revenue", "guild", "")) is not None
@@ -168,18 +203,30 @@ def test_channel_layer_term_visible_from_thread_context() -> None:
     from lang2sql.core.identity import Identity
 
     channel_ident = Identity(user_id="u1", guild_id="g1", channel_id="c1")
-    thread_ident = Identity(user_id="u2", guild_id="g1", channel_id="c1", thread_id="t1")
+    thread_ident = Identity(
+        user_id="u2", guild_id="g1", channel_id="c1", thread_id="t1"
+    )
 
     # Both identities must resolve to the same channel entity
-    assert channel_ident.effective_channel_id == thread_ident.effective_channel_id == "c1"
+    assert (
+        channel_ident.effective_channel_id == thread_ident.effective_channel_id == "c1"
+    )
 
     store = SqliteStore()
     scope = "g1"
-    store.kv_set(scope, _kv_key("active_user", "channel", "c1"),
-                 FedEntry(term="active_user", layer="channel", entity="c1",
-                          definition="30d login").to_json())
+    store.kv_set(
+        scope,
+        _kv_key("active_user", "channel", "c1"),
+        FedEntry(
+            term="active_user", layer="channel", entity="c1", definition="30d login"
+        ).to_json(),
+    )
 
     # Term visible from channel context
-    assert "active_user" in _render_effective(store, scope, channel_ident.effective_channel_id, "u1")
+    assert "active_user" in _render_effective(
+        store, scope, channel_ident.effective_channel_id, "u1"
+    )
     # Term also visible from thread context (inherits parent channel)
-    assert "active_user" in _render_effective(store, scope, thread_ident.effective_channel_id, "u2")
+    assert "active_user" in _render_effective(
+        store, scope, thread_ident.effective_channel_id, "u2"
+    )

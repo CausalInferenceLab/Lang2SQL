@@ -40,8 +40,14 @@ class IngestDoc:
             parameters={
                 "type": "object",
                 "properties": {
-                    "ref": {"type": "string", "description": "document path or identifier"},
-                    "content": {"type": "string", "description": "inline document text (alternative to ref)"},
+                    "ref": {
+                        "type": "string",
+                        "description": "document path or identifier",
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "inline document text (alternative to ref)",
+                    },
                 },
             },
         )
@@ -51,11 +57,19 @@ class IngestDoc:
         content = args.get("content")
         blob = content.encode("utf-8") if isinstance(content, str) else None
         if not content and ref == "inline":
-            return ToolResult(call_id="", content="provide a document 'ref' or inline 'content'", is_error=True)
+            return ToolResult(
+                call_id="",
+                content="provide a document 'ref' or inline 'content'",
+                is_error=True,
+            )
 
-        candidates = await self._pipeline.ingest(self._source, self._extractor, ref, blob)
+        candidates = await self._pipeline.ingest(
+            self._source, self._extractor, ref, blob
+        )
         if not candidates:
-            return ToolResult(call_id="", content="No definitions found in the document.")
+            return ToolResult(
+                call_id="", content="No definitions found in the document."
+            )
 
         lines = ["Proposed definitions (confirm to register):"]
         for c in candidates:
