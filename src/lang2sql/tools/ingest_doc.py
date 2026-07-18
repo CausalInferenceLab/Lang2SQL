@@ -67,15 +67,19 @@ class IngestDoc:
         )
 
     async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
-        ref = (args.get("ref") or "inline").strip()
+        ref = (args.get("ref") or "").strip()
         content = args.get("content")
         blob = content.encode("utf-8") if isinstance(content, str) else None
-        if not content and ref == "inline":
+        if not content and not ref:
             return ToolResult(
                 call_id="",
                 content="provide a document 'ref' or inline 'content'",
                 is_error=True,
             )
+        if not ref:
+            import hashlib
+
+            ref = "inline:" + hashlib.md5(blob or b"").hexdigest()[:8]
 
         candidates = await self._pipeline.ingest(
             self._source, self._extractor, ref, blob

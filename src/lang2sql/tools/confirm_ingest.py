@@ -125,6 +125,8 @@ class ConfirmIngest:
             )
             registered.append(entry.term)
 
+        ctx.store.kv_delete(kv_scope, pending_key)
+
         if ctx.okf_bundle_dir and registered:
             from ..adapters.storage.okf_bundle import OkfBundle
 

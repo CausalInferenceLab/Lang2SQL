@@ -195,6 +195,19 @@ def test_confirm_member_layer_uses_user_id() -> None:
     assert raw is not None
 
 
+def test_confirm_clears_pending_key_after_success() -> None:
+    store = SqliteStore()
+    ctx = _make_ctx(store)
+    scope = ctx.identity.kv_scope
+    _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
+
+    asyncio.run(
+        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "guild"}, ctx)
+    )
+
+    assert store.kv_get(scope, f"{PENDING_PREFIX}:defs.md") is None
+
+
 def test_confirm_missing_ref_returns_error() -> None:
     store = SqliteStore()
     ctx = _make_ctx(store)
