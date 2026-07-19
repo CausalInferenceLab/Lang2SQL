@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from ..core.ports.ingestion import CandidateKind, SemanticCandidate
 from ..core.types import ToolResult, ToolSpec
 from ..tools.ingest_doc import PENDING_PREFIX
-from ..tools.semantic_federation import FedEntry, _kv_key
+from ..tools.semantic_federation import FedEntry, _kv_key, _validate_layer
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -70,12 +70,17 @@ class ConfirmIngest:
     async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
         ref = (args.get("ref") or "").strip()
         accept = (args.get("accept") or "all").strip()
-        layer = (args.get("layer") or "channel").strip()
+        layer_raw = (args.get("layer") or "channel").strip()
 
         if not ref:
             return ToolResult(call_id="", content="'ref' is required.", is_error=True)
         if ctx.store is None:
             return ToolResult(call_id="", content="No store available.", is_error=True)
+
+        channel_id = ctx.identity.effective_channel_id
+        layer, err = _validate_layer(layer_raw, channel_id, ctx.identity.is_admin)
+        if err:
+            return ToolResult(call_id="", content=err, is_error=True)
 
         kv_scope = ctx.identity.kv_scope
         pending_key = f"{PENDING_PREFIX}:{ref}"
@@ -106,7 +111,9 @@ class ConfirmIngest:
         if not selected:
             return ToolResult(call_id="", content="No candidates selected.")
 
-        entity = _entity_for(ctx, layer)
+        entity = (
+            "" if layer == "guild" else (channel_id if layer == "channel" else ctx.identity.user_id)
+        )
         registered: list[str] = []
         for cand in selected:
             entry = FedEntry(
@@ -156,9 +163,3 @@ def _select(
     return result
 
 
-def _entity_for(ctx: "HarnessContext", layer: str) -> str:
-    if layer == "channel":
-        return ctx.identity.effective_channel_id
-    if layer == "member":
-        return ctx.identity.user_id
-    return ""

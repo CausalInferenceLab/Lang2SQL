@@ -28,6 +28,20 @@ if TYPE_CHECKING:
 _KV_PREFIX = "cterm"
 _LAYERS = ("guild", "channel", "member")
 
+
+def _validate_layer(
+    layer_raw: str, channel_id: str, is_admin: bool
+) -> tuple[str, str | None]:
+    """layer 정규화·권한 검증. (normalized_layer, error_msg_or_None) 반환."""
+    layer = layer_raw.strip().lower()
+    if layer not in _LAYERS:
+        return layer, f"❌ layer는 {list(_LAYERS)} 중 하나여야 합니다."
+    if layer == "guild" and not is_admin:
+        return layer, "❌ guild 용어 등록·수정은 관리자만 가능합니다."
+    if layer == "channel" and not channel_id:
+        return layer, "❌ 채널 컨텍스트 없이 channel 레이어에 등록할 수 없습니다."
+    return layer, None
+
 from ..tools.enrich_schema import (
     _KV_PREFIX as _ENRICH_PREFIX,
     _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
@@ -236,27 +250,11 @@ class SemanticFederationTool(ToolPort):
                 call_id="", content=f"🗑️ **{term}** [{', '.join(deleted_tags)}] 삭제"
             )
 
-        layer = str(args.get("layer", "member")).strip().lower()
-        if layer not in _LAYERS:
-            return ToolResult(
-                call_id="",
-                content=f"❌ layer는 {list(_LAYERS)} 중 하나여야 합니다.",
-                is_error=True,
-            )
-
-        if layer == "guild" and not ctx.identity.is_admin:
-            return ToolResult(
-                call_id="",
-                content="❌ guild 용어 등록·수정은 관리자만 가능합니다.",
-                is_error=True,
-            )
-
-        if layer == "channel" and not channel_id:
-            return ToolResult(
-                call_id="",
-                content="❌ 채널 컨텍스트 없이 channel 레이어에 등록할 수 없습니다.",
-                is_error=True,
-            )
+        layer, err = _validate_layer(
+            str(args.get("layer", "member")), channel_id, ctx.identity.is_admin
+        )
+        if err:
+            return ToolResult(call_id="", content=err, is_error=True)
 
         entity = (
             "" if layer == "guild" else (user_id if layer == "member" else channel_id)

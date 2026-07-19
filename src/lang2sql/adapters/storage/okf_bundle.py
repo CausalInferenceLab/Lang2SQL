@@ -36,6 +36,7 @@ KV 캐시(SqliteStore)와 양방향 sync:
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -109,8 +110,11 @@ class OkfBundle:
 
     def _concept_path(self, entry: FedEntry) -> Path:
         folder = _KIND_FOLDER.get(entry.kind, "misc")
-        slug = entry.term.strip().lower().replace(" ", "_").replace(":", "-")
-        return self._scope_dir(entry) / folder / f"{slug}.md"
+        slug = re.sub(r'[/\\]', '-', entry.term.strip()).replace(" ", "_").replace(":", "-")
+        path = self._scope_dir(entry) / folder / f"{slug}.md"
+        if not path.resolve().is_relative_to(self.base_dir.resolve()):
+            raise ValueError(f"unsafe path derived from term: {entry.term!r}")
+        return path
 
 
 # ------------------------------------------------------------------
@@ -145,14 +149,14 @@ def _entry_to_md(entry: FedEntry) -> str:
 def _md_to_entry(path: Path) -> FedEntry | None:
     """OKF .md 파일 → FedEntry. 파싱 실패 시 None 반환."""
     text = path.read_text(encoding="utf-8")
-    if not text.startswith("---"):
+    if not text.startswith("---\n"):
+        return None
+    rest = text[4:]  # skip opening "---\n"
+    parts = rest.split("\n---\n", 1)
+    if len(parts) < 2:
         return None
     try:
-        end = text.index("---", 3)
-    except ValueError:
-        return None
-    try:
-        fm = yaml.safe_load(text[3:end])
+        fm = yaml.safe_load(parts[0])
     except yaml.YAMLError:
         return None
     if not isinstance(fm, dict):

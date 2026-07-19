@@ -35,8 +35,13 @@ class _FakeLLM:
         return Completion(content=self._content, finish_reason="stop")
 
 
-def _make_ctx(store: SqliteStore, okf_bundle_dir: str | None = None) -> HarnessContext:
-    identity = Identity(user_id="u1", guild_id="g1", channel_id="c1")
+def _make_ctx(
+    store: SqliteStore,
+    okf_bundle_dir: str | None = None,
+    is_admin: bool = False,
+    channel_id: str = "c1",
+) -> HarnessContext:
+    identity = Identity(user_id="u1", guild_id="g1", channel_id=channel_id, is_admin=is_admin)
     from lang2sql.ingestion import FileSource, IngestionPipeline, LLMExtractor
     from lang2sql.memory import (
         InjectAllRecall,
@@ -122,7 +127,7 @@ def test_select_invalid_string_returns_none() -> None:
 
 def test_confirm_all_saves_fed_entries() -> None:
     store = SqliteStore()
-    ctx = _make_ctx(store)
+    ctx = _make_ctx(store, is_admin=True)
     scope = ctx.identity.kv_scope
     _seed_pending(store, scope, "defs.md", _SAMPLE)
 
@@ -145,7 +150,7 @@ def test_confirm_all_saves_fed_entries() -> None:
 
 def test_confirm_by_index_saves_selected_only() -> None:
     store = SqliteStore()
-    ctx = _make_ctx(store)
+    ctx = _make_ctx(store, is_admin=True)
     scope = ctx.identity.kv_scope
     _seed_pending(store, scope, "defs.md", _SAMPLE)
 
@@ -197,7 +202,7 @@ def test_confirm_member_layer_uses_user_id() -> None:
 
 def test_confirm_clears_pending_key_after_success() -> None:
     store = SqliteStore()
-    ctx = _make_ctx(store)
+    ctx = _make_ctx(store, is_admin=True)
     scope = ctx.identity.kv_scope
     _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
 
@@ -206,6 +211,45 @@ def test_confirm_clears_pending_key_after_success() -> None:
     )
 
     assert store.kv_get(scope, f"{PENDING_PREFIX}:defs.md") is None
+
+
+def test_confirm_guild_layer_blocked_for_non_admin() -> None:
+    store = SqliteStore()
+    ctx = _make_ctx(store, is_admin=False)
+    scope = ctx.identity.kv_scope
+    _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
+
+    result = asyncio.run(
+        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "guild"}, ctx)
+    )
+    assert result.is_error
+    assert "관리자" in result.content
+
+
+def test_confirm_channel_layer_blocked_without_channel_id() -> None:
+    store = SqliteStore()
+    ctx = _make_ctx(store, channel_id="")
+    scope = ctx.identity.kv_scope
+    _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
+
+    result = asyncio.run(
+        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "channel"}, ctx)
+    )
+    assert result.is_error
+    assert "channel" in result.content
+
+
+def test_confirm_invalid_layer_returns_error() -> None:
+    store = SqliteStore()
+    ctx = _make_ctx(store)
+    scope = ctx.identity.kv_scope
+    _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
+
+    result = asyncio.run(
+        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "team"}, ctx)
+    )
+    assert result.is_error
+    assert "layer" in result.content
 
 
 def test_confirm_missing_ref_returns_error() -> None:
@@ -245,7 +289,7 @@ def test_ingest_doc_saves_pending_key() -> None:
 def test_confirm_with_okf_bundle_exports_files() -> None:
     store = SqliteStore()
     with tempfile.TemporaryDirectory() as bundle_dir:
-        ctx = _make_ctx(store, okf_bundle_dir=bundle_dir)
+        ctx = _make_ctx(store, okf_bundle_dir=bundle_dir, is_admin=True)
         scope = ctx.identity.kv_scope
         _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
 
