@@ -58,9 +58,9 @@ class ConfirmIngest:
                     },
                     "layer": {
                         "type": "string",
-                        "enum": ["guild", "channel", "member"],
+                        "enum": ["org", "team", "user"],
                         "description": "scope to register under (default: channel)",
-                        "default": "channel",
+                        "default": "team",
                     },
                 },
                 "required": ["ref"],
@@ -70,7 +70,7 @@ class ConfirmIngest:
     async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
         ref = (args.get("ref") or "").strip()
         accept = (args.get("accept") or "all").strip()
-        layer_raw = (args.get("layer") or "channel").strip()
+        layer_raw = (args.get("layer") or "team").strip()
 
         if not ref:
             return ToolResult(call_id="", content="'ref' is required.", is_error=True)
@@ -113,8 +113,8 @@ class ConfirmIngest:
 
         entity = (
             ""
-            if layer == "guild"
-            else (channel_id if layer == "channel" else ctx.identity.user_id)
+            if layer == "org"
+            else (channel_id if layer == "team" else ctx.identity.user_id)
         )
         registered: list[str] = []
         for cand in selected:

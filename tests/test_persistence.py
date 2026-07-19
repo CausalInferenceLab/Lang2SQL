@@ -25,9 +25,9 @@ def test_kv_federation_survives_new_instance(tmp_path) -> None:
 
     writer = SqliteStore(db)
     entry = FedEntry(
-        term="revenue", layer="guild", entity="", definition="sum of order totals"
+        term="revenue", layer="org", entity="", definition="sum of order totals"
     )
-    writer.kv_set(scope, _kv_key("revenue", "guild", ""), entry.to_json())
+    writer.kv_set(scope, _kv_key("revenue", "org", ""), entry.to_json())
     writer.close()
 
     reader = SqliteStore(db)
@@ -44,13 +44,13 @@ def test_kv_channel_overrides_guild_persisted(tmp_path) -> None:
     store = SqliteStore(db)
     store.kv_set(
         scope,
-        _kv_key("active_user", "guild", ""),
-        FedEntry("active_user", "guild", "", "guild def").to_json(),
+        _kv_key("active_user", "org", ""),
+        FedEntry("active_user", "org", "", "guild def").to_json(),
     )
     store.kv_set(
         scope,
-        _kv_key("active_user", "channel", "c1"),
-        FedEntry("active_user", "channel", "c1", "channel def").to_json(),
+        _kv_key("active_user", "team", "c1"),
+        FedEntry("active_user", "team", "c1", "channel def").to_json(),
     )
     store.close()
 

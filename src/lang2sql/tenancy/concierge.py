@@ -150,12 +150,13 @@ def _default_llm() -> LLMPort:
         model = os.environ.get("LANG2SQL_LLM_MODEL", "default")
         # Local servers (vLLM, Ollama) speak OpenAI-compatible API; dummy key satisfies the header.
         api_key = os.environ.get("OPENAI_API_KEY") or "local"
+        timeout = float(os.environ.get("LANG2SQL_LLM_TIMEOUT", "120"))
         url = base_url.rstrip("/")
         if not url.endswith("/chat/completions"):
             if not url.endswith("/v1"):
                 url = url + "/v1"
             url = url + "/chat/completions"
-        return OpenAILLM(model=model, api_key=api_key, base_url=url)
+        return OpenAILLM(model=model, api_key=api_key, base_url=url, timeout=timeout)
     if os.environ.get("OPENAI_API_KEY"):
         return OpenAILLM()
     return FakeLLM()

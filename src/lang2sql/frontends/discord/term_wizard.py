@@ -1,6 +1,6 @@
 """term_wizard.py — /term_custom 등록 폼 (2단계 UI).
 
-Step 1: Select — 전사(guild) / 채널·팀(channel) / 개인(member) 선택
+Step 1: Select — 전사(org) / 채널·팀(channel) / 개인(member) 선택
 Step 2: Modal — 용어명·정의·동의어 입력
 
 채널이 팀 경계 역할을 하므로 entity 직접 입력 불필요.
@@ -23,17 +23,17 @@ if TYPE_CHECKING:
 _LAYER_OPTIONS = [
     discord.SelectOption(
         label="전사 (Guild) — 회사 공통 정의",
-        value="guild",
+        value="org",
         description="모든 채널에서 기본값으로 사용",
     ),
     discord.SelectOption(
         label="채널 (팀) — 이 채널 전용 정의",
-        value="channel",
+        value="team",
         description="다른 채널과 충돌 없이 이 채널에서만 유효",
     ),
     discord.SelectOption(
         label="개인 — 나만 사용하는 정의",
-        value="member",
+        value="user",
         description="전사·채널 정의를 조용히 덮어씀",
     ),
 ]

@@ -53,4 +53,4 @@ def test_tool_call_id_is_stamped():
 def test_scope_chain_orders_narrow_to_wide():
     ident = Identity(user_id="u", guild_id="g", channel_id="c", thread_id="t")
     levels = [s.level.value for s in ident.scope_chain()]
-    assert levels == ["thread", "channel", "guild", "builtin"]
+    assert levels == ["thread", "team", "org", "builtin"]
