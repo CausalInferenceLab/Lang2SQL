@@ -19,8 +19,8 @@ from lang2sql.adapters.db import (
     explorer_from_env,
 )
 
-
 # --- factory routing -------------------------------------------------------
+
 
 def test_factory_routes_d1():
     exp = build_explorer("d1://acct123/db456")
@@ -61,13 +61,18 @@ def test_explorer_from_env(monkeypatch):
 
 # --- SQLAlchemy explorer against real SQLite -------------------------------
 
+
 def _seed_sqlite(path: str) -> None:
     from sqlalchemy import create_engine, text
 
     eng = create_engine(f"sqlite:///{path}")
     with eng.begin() as conn:
-        conn.execute(text("CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)"))
-        conn.execute(text("INSERT INTO users (id, email) VALUES (1, 'a@x.com'), (2, 'b@x.com')"))
+        conn.execute(
+            text("CREATE TABLE users (id INTEGER PRIMARY KEY, email TEXT NOT NULL)")
+        )
+        conn.execute(
+            text("INSERT INTO users (id, email) VALUES (1, 'a@x.com'), (2, 'b@x.com')")
+        )
 
 
 def test_sqlalchemy_explorer_introspect_and_execute(tmp_path):
@@ -92,6 +97,7 @@ def test_sqlalchemy_explorer_introspect_and_execute(tmp_path):
 
 # --- D1 explorer with mocked HTTP transport --------------------------------
 
+
 def _d1_transport(sql, params):
     """Fake the D1 HTTP API: shape responses by the SQL it receives."""
     s = sql.lower()
@@ -99,12 +105,30 @@ def _d1_transport(sql, params):
         results = [{"name": "orders"}, {"name": "users"}]
     elif "pragma table_info" in s:
         results = [
-            {"cid": 0, "name": "id", "type": "INTEGER", "notnull": 1, "dflt_value": None, "pk": 1},
-            {"cid": 1, "name": "amount", "type": "REAL", "notnull": 0, "dflt_value": None, "pk": 0},
+            {
+                "cid": 0,
+                "name": "id",
+                "type": "INTEGER",
+                "notnull": 1,
+                "dflt_value": None,
+                "pk": 1,
+            },
+            {
+                "cid": 1,
+                "name": "amount",
+                "type": "REAL",
+                "notnull": 0,
+                "dflt_value": None,
+                "pk": 0,
+            },
         ]
     else:
         results = [{"id": 1, "amount": 9.5}]
-    return {"success": True, "result": [{"results": results, "success": True}], "errors": []}
+    return {
+        "success": True,
+        "result": [{"results": results, "success": True}],
+        "errors": [],
+    }
 
 
 def test_d1_list_describe_execute():

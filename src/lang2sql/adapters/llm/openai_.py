@@ -83,7 +83,9 @@ class OpenAILLM:
         try:
             return json.loads(text)
         except (ValueError, TypeError) as exc:
-            raise RuntimeError(f"OpenAI returned non-JSON response: {text[:200]!r}") from exc
+            raise RuntimeError(
+                f"OpenAI returned non-JSON response: {text[:200]!r}"
+            ) from exc
 
 
 def _strip_thinking(text: str) -> str:

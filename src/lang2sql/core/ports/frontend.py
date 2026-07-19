@@ -28,7 +28,7 @@ class OutboundMessage:
     """Normalised agent output a frontend renders natively."""
 
     text: str
-    file_bytes: bytes | None = None   # e.g. CSV when result > 50 rows
+    file_bytes: bytes | None = None  # e.g. CSV when result > 50 rows
     file_name: str | None = None
 
 

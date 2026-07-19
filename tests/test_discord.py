@@ -26,7 +26,6 @@ from lang2sql.frontends.discord import (
 from lang2sql.frontends.discord.render import MAX_INLINE_ROWS
 from lang2sql.tenancy.concierge import ContextConcierge
 
-
 # -- session_router -------------------------------------------------------
 
 
@@ -112,7 +111,12 @@ def test_term_custom_then_list() -> None:
     )
 
     async def scenario() -> tuple[str, str]:
-        defined = await handlers.term_custom(ident, term="active_user", definition="logged in within 30 days", layer="channel")
+        defined = await handlers.term_custom(
+            ident,
+            term="active_user",
+            definition="logged in within 30 days",
+            layer="channel",
+        )
         shown = await handlers.term_custom(ident, list_all=True)
         return defined.text, shown.text
 
@@ -124,7 +128,9 @@ def test_term_custom_then_list() -> None:
 
 def test_term_custom_list_empty_scope() -> None:
     handlers = CommandHandlers(ContextConcierge())
-    ident = to_identity(InteractionContext(user_id="solo", guild_id="g9", channel_id="c9"))
+    ident = to_identity(
+        InteractionContext(user_id="solo", guild_id="g9", channel_id="c9")
+    )
     shown = asyncio.run(handlers.term_custom(ident, list_all=True))
     assert shown.text  # empty scope returns some message
 
@@ -132,11 +138,17 @@ def test_term_custom_list_empty_scope() -> None:
 def test_term_custom_is_scope_isolated() -> None:
     """A channel definition must not leak into a different channel (federation)."""
     handlers = CommandHandlers(ContextConcierge())
-    marketing = to_identity(InteractionContext(user_id="u1", guild_id="g1", channel_id="mkt"))
-    product = to_identity(InteractionContext(user_id="u1", guild_id="g1", channel_id="prd"))
+    marketing = to_identity(
+        InteractionContext(user_id="u1", guild_id="g1", channel_id="mkt")
+    )
+    product = to_identity(
+        InteractionContext(user_id="u1", guild_id="g1", channel_id="prd")
+    )
 
     async def scenario() -> str:
-        await handlers.term_custom(marketing, term="active_user", definition="30d login", layer="channel")
+        await handlers.term_custom(
+            marketing, term="active_user", definition="30d login", layer="channel"
+        )
         return (await handlers.term_custom(product, list_all=True)).text
 
     assert "active_user" not in asyncio.run(scenario())
@@ -144,7 +156,9 @@ def test_term_custom_is_scope_isolated() -> None:
 
 def test_remember_and_audit_me() -> None:
     handlers = CommandHandlers(ContextConcierge())
-    ident = to_identity(InteractionContext(user_id="u2", guild_id="g1", channel_id="c1"))
+    ident = to_identity(
+        InteractionContext(user_id="u2", guild_id="g1", channel_id="c1")
+    )
 
     async def scenario() -> tuple[str, str]:
         remembered = await handlers.remember(ident, "prefers ISO dates")
@@ -158,7 +172,9 @@ def test_remember_and_audit_me() -> None:
 
 def test_audit_me_empty() -> None:
     handlers = CommandHandlers(ContextConcierge())
-    ident = to_identity(InteractionContext(user_id="never-acted", guild_id="g1", channel_id="c1"))
+    ident = to_identity(
+        InteractionContext(user_id="never-acted", guild_id="g1", channel_id="c1")
+    )
     audit = asyncio.run(handlers.audit_me(ident))
     assert "No audited activity" in audit.text
 
@@ -166,7 +182,9 @@ def test_audit_me_empty() -> None:
 def test_query_returns_outbound_message() -> None:
     """With the default FakeLLM (no OPENAI key), a query still returns text."""
     handlers = CommandHandlers(ContextConcierge())
-    ident = to_identity(InteractionContext(user_id="u3", guild_id="g1", channel_id="c1"))
+    ident = to_identity(
+        InteractionContext(user_id="u3", guild_id="g1", channel_id="c1")
+    )
     out = asyncio.run(handlers.query(ident, "how many users signed up?"))
     assert isinstance(out.text, str)
     assert out.text  # non-empty
@@ -175,7 +193,9 @@ def test_query_returns_outbound_message() -> None:
 def test_query_persists_session() -> None:
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    ident = to_identity(InteractionContext(user_id="u4", guild_id="g1", channel_id="c1"))
+    ident = to_identity(
+        InteractionContext(user_id="u4", guild_id="g1", channel_id="c1")
+    )
 
     async def scenario():
         await handlers.query(ident, "first question")
@@ -189,7 +209,9 @@ def test_query_persists_session() -> None:
 def test_connect_stub_acknowledges() -> None:
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    ident = to_identity(InteractionContext(user_id="u5", guild_id="g1", channel_id="c1"))
+    ident = to_identity(
+        InteractionContext(user_id="u5", guild_id="g1", channel_id="c1")
+    )
     out = asyncio.run(handlers.connect(ident, "postgresql://localhost/db"))
     assert "saved" in out.text.lower()
     assert concierge.store.kv_get("g1", "dsn") == "postgresql://localhost/db"
@@ -197,7 +219,9 @@ def test_connect_stub_acknowledges() -> None:
 
 def test_ingest_lists_or_reports() -> None:
     handlers = CommandHandlers(ContextConcierge())
-    ident = to_identity(InteractionContext(user_id="u6", guild_id="g1", channel_id="c1"))
+    ident = to_identity(
+        InteractionContext(user_id="u6", guild_id="g1", channel_id="c1")
+    )
     out = asyncio.run(
         handlers.ingest(ident, content="total_revenue is the sum of order amounts")
     )

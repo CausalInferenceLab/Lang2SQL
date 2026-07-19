@@ -26,7 +26,16 @@ def _ctx():
 def test_v1_tools_registered():
     _, ctx = _ctx()
     names = {s.name for s in ctx.tools.specs()}
-    assert names == {"run_sql", "explore_schema", "enrich_schema", "term_custom", "org_setup", "ask_user", "remember", "ingest_doc"}
+    assert names == {
+        "run_sql",
+        "explore_schema",
+        "enrich_schema",
+        "term_custom",
+        "org_setup",
+        "ask_user",
+        "remember",
+        "ingest_doc",
+    }
 
 
 def test_run_sql_passes_gate_and_returns_rows():
@@ -50,11 +59,16 @@ def test_run_sql_tolerates_bad_limit():
 
 def test_term_custom_is_scope_local():
     from lang2sql.tools.semantic_federation import _render_effective
+
     ident, ctx = _ctx()
-    asyncio.run(SemanticFederationTool().run(
-        {"term": "active_user", "definition": "30d login", "layer": "channel"}, ctx
-    ))
-    rendered = _render_effective(ctx.store, ident.kv_scope, ident.effective_channel_id, ident.user_id)
+    asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "active_user", "definition": "30d login", "layer": "channel"}, ctx
+        )
+    )
+    rendered = _render_effective(
+        ctx.store, ident.kv_scope, ident.effective_channel_id, ident.user_id
+    )
     assert "active_user" in rendered
     # a different channel does not see this channel-level definition
     other_rendered = _render_effective(ctx.store, ident.kv_scope, "c-fin", "u1")
@@ -65,11 +79,15 @@ def test_term_custom_emits_audit_event():
     concierge = ContextConcierge()
     ident = Identity(user_id="u1", guild_id="g1", channel_id="c-mkt", is_admin=True)
     ctx = asyncio.run(concierge.build_context(ident))
-    asyncio.run(SemanticFederationTool().run(
-        {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, ctx
-    ))
+    asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, ctx
+        )
+    )
     events = asyncio.run(ctx.audit.query(ident.user_id))
-    assert any(e.action == "term_custom" and e.detail.get("term") == "revenue" for e in events)
+    assert any(
+        e.action == "term_custom" and e.detail.get("term") == "revenue" for e in events
+    )
 
 
 def test_safety_pipeline_on_context():

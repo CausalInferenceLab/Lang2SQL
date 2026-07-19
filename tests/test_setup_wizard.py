@@ -18,37 +18,61 @@ from lang2sql.core.identity import Identity
 from lang2sql.frontends.discord.commands import CommandHandlers
 from lang2sql.tenancy.concierge import ContextConcierge
 
-
 # --- dsn_builder ---------------------------------------------------------
 
+
 def test_assemble_postgres_url():
-    spec = assemble("postgresql", {
-        "host": "db.example.com", "port": "5432", "database": "analytics",
-        "user": "u", "password": "p",
-    })
+    spec = assemble(
+        "postgresql",
+        {
+            "host": "db.example.com",
+            "port": "5432",
+            "database": "analytics",
+            "user": "u",
+            "password": "p",
+        },
+    )
     assert spec.dsn == "postgresql+psycopg://u:p@db.example.com:5432/analytics"
     assert spec.extras == {}
 
 
 def test_assemble_url_encodes_special_chars_in_password():
-    spec = assemble("postgresql", {
-        "host": "h", "port": "5432", "database": "d", "user": "u", "password": "p@ss/w:rd",
-    })
+    spec = assemble(
+        "postgresql",
+        {
+            "host": "h",
+            "port": "5432",
+            "database": "d",
+            "user": "u",
+            "password": "p@ss/w:rd",
+        },
+    )
     assert "p%40ss%2Fw%3Ard" in spec.dsn  # @, /, : all encoded
 
 
 def test_assemble_snowflake_attaches_warehouse():
-    spec = assemble("snowflake", {
-        "account": "ab12345.us-east-1", "user": "u", "password": "p",
-        "database": "DB", "warehouse": "WH",
-    })
+    spec = assemble(
+        "snowflake",
+        {
+            "account": "ab12345.us-east-1",
+            "user": "u",
+            "password": "p",
+            "database": "DB",
+            "warehouse": "WH",
+        },
+    )
     assert "warehouse=WH" in spec.dsn and "@ab12345.us-east-1/DB" in spec.dsn
 
 
 def test_assemble_d1_returns_token_in_extras():
-    spec = assemble("d1", {
-        "account_id": "acct", "database_id": "db", "api_token": "secret",
-    })
+    spec = assemble(
+        "d1",
+        {
+            "account_id": "acct",
+            "database_id": "db",
+            "api_token": "secret",
+        },
+    )
     assert spec.dsn == "d1://acct/db"
     assert spec.extras == {"d1_token": "secret"}
 
@@ -65,8 +89,10 @@ def test_assemble_unknown_db_type_raises():
 
 # --- register_db_for_guild end-to-end (real sqlite) ----------------------
 
+
 def _seed_sqlite(path: str) -> None:
     from sqlalchemy import create_engine, text
+
     eng = create_engine(f"sqlite:///{path}")
     with eng.begin() as conn:
         conn.execute(text("CREATE TABLE products (id INTEGER PRIMARY KEY, name TEXT)"))
@@ -109,10 +135,19 @@ def test_register_db_for_guild_unknown_driver_gives_friendly_error():
     identity = Identity(user_id="u", guild_id="g-x", channel_id="c")
     # Snowflake driver isn't installed in this env; the handler should catch
     # ModuleNotFoundError and produce a clear, non-technical message.
-    res = asyncio.run(handlers.register_db_for_guild(
-        identity, "snowflake",
-        {"account": "a", "user": "u", "password": "p", "database": "d", "warehouse": "w"},
-    ))
+    res = asyncio.run(
+        handlers.register_db_for_guild(
+            identity,
+            "snowflake",
+            {
+                "account": "a",
+                "user": "u",
+                "password": "p",
+                "database": "d",
+                "warehouse": "w",
+            },
+        )
+    )
     assert "uv sync --extra snowflake" in res.text or "Couldn't connect" in res.text
 
 
@@ -120,13 +155,18 @@ def test_register_db_for_guild_missing_field_reports_setup_error():
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
     identity = Identity(user_id="u", guild_id="g", channel_id="c")
-    res = asyncio.run(handlers.register_db_for_guild(
-        identity, "postgresql", {"host": "h"},  # missing user/password/db
-    ))
+    res = asyncio.run(
+        handlers.register_db_for_guild(
+            identity,
+            "postgresql",
+            {"host": "h"},  # missing user/password/db
+        )
+    )
     assert "Setup error" in res.text and "missing required" in res.text
 
 
 # --- concierge per-scope explorer routing --------------------------------
+
 
 def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
     db = tmp_path / "scoped.db"
@@ -179,6 +219,7 @@ def test_forget_explorer_busts_the_cache(tmp_path):
 
 
 # --- UI module import smoke ----------------------------------------------
+
 
 def test_setup_wizard_module_imports_without_discord_runtime():
     # The wizard imports discord.ui at module level. Make sure that succeeds in

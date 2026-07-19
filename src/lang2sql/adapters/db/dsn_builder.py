@@ -36,7 +36,9 @@ def _quote(s: str) -> str:
     return quote_plus(s, safe="")
 
 
-def build_postgresql(*, host: str, port: str, database: str, user: str, password: str) -> ConnectionSpec:
+def build_postgresql(
+    *, host: str, port: str, database: str, user: str, password: str
+) -> ConnectionSpec:
     # User may paste a full URL (e.g. "host/db?sslmode=require") into the host field.
     # Extract just the hostname to avoid corrupting the assembled DSN.
     parsed = urlsplit("//" + host)
@@ -47,7 +49,9 @@ def build_postgresql(*, host: str, port: str, database: str, user: str, password
     return ConnectionSpec(dsn=dsn, extras={})
 
 
-def build_mysql(*, host: str, port: str, database: str, user: str, password: str) -> ConnectionSpec:
+def build_mysql(
+    *, host: str, port: str, database: str, user: str, password: str
+) -> ConnectionSpec:
     p = int(port) if port else 3306
     dsn = f"mysql+pymysql://{_quote(user)}:{_quote(password)}@{host}:{p}/{database}"
     return ConnectionSpec(dsn=dsn, extras={})
@@ -143,7 +147,9 @@ def assemble(db_type: str, fields: dict[str, str]) -> ConnectionSpec:
     # Filter to the expected kwargs (modal can hand stray keys safely).
     expected = {name for name, *_ in FIELD_SCHEMA[db_type]}
     cleaned = {k: (v or "").strip() for k, v in fields.items() if k in expected}
-    missing = [n for n, _, req, _ in FIELD_SCHEMA[db_type] if req and not cleaned.get(n)]
+    missing = [
+        n for n, _, req, _ in FIELD_SCHEMA[db_type] if req and not cleaned.get(n)
+    ]
     if missing:
         raise ValueError(f"missing required fields: {', '.join(missing)}")
     return builder(**cleaned)

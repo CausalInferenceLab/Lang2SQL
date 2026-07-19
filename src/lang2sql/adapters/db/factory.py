@@ -57,7 +57,7 @@ def build_explorer(
 
     # Normalize bare postgresql:// → postgresql+psycopg:// (psycopg3 is installed).
     if scheme == "postgresql":
-        connection = "postgresql+psycopg" + connection[len("postgresql"):]
+        connection = "postgresql+psycopg" + connection[len("postgresql") :]
 
     # Anything else is assumed to be a SQLAlchemy URL (driver loaded lazily).
     return SqlAlchemyExplorer(connection, schema=schema)

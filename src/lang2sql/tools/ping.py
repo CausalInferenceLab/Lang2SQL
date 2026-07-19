@@ -31,4 +31,6 @@ class Ping:
 
     async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
         msg = args.get("message", "")
-        return ToolResult(call_id="", content=f"pong: {msg!r} (user={ctx.identity.user_id})")
+        return ToolResult(
+            call_id="", content=f"pong: {msg!r} (user={ctx.identity.user_id})"
+        )

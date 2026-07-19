@@ -18,7 +18,7 @@ class Fact:
     """A remembered statement, scoped to a user/conversation."""
 
     id: str
-    owner: str            # user_id or scope key
+    owner: str  # user_id or scope key
     text: str
     source: str = "manual"  # "manual" (/remember) | "auto" (v1.5 extractor)
     ts: float = 0.0
@@ -40,8 +40,7 @@ class RecallPort(Protocol):
     V1 returns everything; v1.5 filters by keyword, v2 by vector similarity.
     """
 
-    async def recall(self, owner: str, query: str, store: StorePort) -> list[Fact]:
-        ...
+    async def recall(self, owner: str, query: str, store: StorePort) -> list[Fact]: ...
 
 
 @runtime_checkable
@@ -52,5 +51,6 @@ class ExtractorPort(Protocol):
     yields nothing); v1.5 mines the transcript with an LLM.
     """
 
-    async def extract(self, owner: str, transcript: Sequence[Message]) -> list[Fact]:
-        ...
+    async def extract(
+        self, owner: str, transcript: Sequence[Message]
+    ) -> list[Fact]: ...

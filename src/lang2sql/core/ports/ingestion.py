@@ -19,7 +19,7 @@ class Document:
 
     name: str
     text: str
-    source_id: str = ""   # preserved on resulting semantic entries
+    source_id: str = ""  # preserved on resulting semantic entries
 
 
 class CandidateKind(str, Enum):
@@ -43,13 +43,11 @@ class SemanticCandidate:
 class SourcePort(Protocol):
     """Where a document comes from (file/URL/Notion/…). Axis 1."""
 
-    async def fetch(self, ref: str, blob: bytes | None = None) -> Document:
-        ...
+    async def fetch(self, ref: str, blob: bytes | None = None) -> Document: ...
 
 
 @runtime_checkable
 class DocExtractorPort(Protocol):
     """How definitions are pulled from a document (LLM/DDL/…). Axis 2."""
 
-    async def extract(self, doc: Document) -> list[SemanticCandidate]:
-        ...
+    async def extract(self, doc: Document) -> list[SemanticCandidate]: ...

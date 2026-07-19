@@ -79,7 +79,9 @@ class CommandHandlers:
     async def remember(self, identity: Identity, text: str) -> OutboundMessage:
         """Persist a user fact via the memory service (manual ``/remember``)."""
         ctx = await self._concierge.build_context(identity)
-        result = await ctx.tools.dispatch("remember", {"text": text}, ctx, "cmd:remember")
+        result = await ctx.tools.dispatch(
+            "remember", {"text": text}, ctx, "cmd:remember"
+        )
         return OutboundMessage(text=result.content)
 
     async def audit_me(self, identity: Identity) -> OutboundMessage:
@@ -149,7 +151,9 @@ class CommandHandlers:
             )
         )
 
-    async def enrich(self, identity: Identity, table: str = "", clear: bool = False) -> OutboundMessage:
+    async def enrich(
+        self, identity: Identity, table: str = "", clear: bool = False
+    ) -> OutboundMessage:
         """Run EnrichSchema tool: sample DB columns and LLM-infer descriptions."""
         ctx = await self._concierge.build_context(identity)
         result = await ctx.tools.dispatch(
@@ -163,7 +167,10 @@ class CommandHandlers:
         """조직(전사) 또는 팀(채널) 등록 + DB 스캔으로 비즈니스 용어 자동 추출."""
         ctx = await self._concierge.build_context(identity)
         result = await ctx.tools.dispatch(
-            "org_setup", {"org": org, "team": team, "clear": clear}, ctx, "cmd:org_setup"
+            "org_setup",
+            {"org": org, "team": team, "clear": clear},
+            ctx,
+            "cmd:org_setup",
         )
         return OutboundMessage(text=result.content)
 
@@ -184,9 +191,14 @@ class CommandHandlers:
         result = await ctx.tools.dispatch(
             "term_custom",
             {
-                "term": term, "definition": definition, "layer": layer,
-                "synonyms": synonyms, "inferred": inferred, "scan": scan,
-                "remove": remove, "list": list_all,
+                "term": term,
+                "definition": definition,
+                "layer": layer,
+                "synonyms": synonyms,
+                "inferred": inferred,
+                "scan": scan,
+                "remove": remove,
+                "list": list_all,
             },
             ctx,
             "cmd:term_custom",
