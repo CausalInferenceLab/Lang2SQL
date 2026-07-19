@@ -261,6 +261,10 @@ class Lang2SQLBot(discord.Client):
                 handlers.audit_me(to_identity(_interaction_context(interaction))),
             )
 
+        @tree.command(name="help", description="Lang2SQL 사용 방법 안내")
+        async def help(interaction: discord.Interaction) -> None:
+            await self._run(interaction, handlers.help())
+
     async def _run(self, interaction: discord.Interaction, coro) -> None:
         """Await a handler coroutine and reply with its OutboundMessage."""
         await interaction.response.defer(thinking=True)
