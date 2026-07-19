@@ -31,9 +31,8 @@ from lang2sql.tenancy.concierge import ContextConcierge
 from lang2sql.tools.semantic_federation import (
     FedEntry,
     _kv_key,
-    _render_effective,
     _load_all,
-    _resolve_term,
+    _render_effective,
 )
 
 # Stable IDs for the demo guild and its two channels.

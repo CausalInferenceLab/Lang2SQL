@@ -400,33 +400,47 @@ def _load_all(store: Any, scope: str) -> dict[str, list[FedEntry]]:
     return by_term
 
 
-def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) -> str:
-    """현재 채널 기준 narrow→wide lookup 용어 섹션 + 모호 용어 지침 반환."""
-    by_term = _load_all(store, scope)
-
-    if not by_term:
-        return _AMBIGUOUS_TERM_POLICY
-
-    lines: list[str] = []
-    for term_lower in sorted(by_term):
-        line = _resolve_term(by_term[term_lower], channel_id, user_id)
-        if line:
-            lines.append(line)
-
-    header = "## Business Terminology\n" "(lookup 우선순위: 개인 > 채널(팀) > 전사)\n"
-    body = "\n".join(lines) if lines else "(없음)"
-    return header + body + "\n\n" + _AMBIGUOUS_TERM_POLICY
-
+_KIND_SQL_HINT: dict[str, str] = {
+    "metric": "집계 지표 — SELECT/HAVING 절의 집계식으로 사용",
+    "rule": "비즈니스 규칙 — WHERE 절에 AND 조건으로 추가",
+    "dimension": "분류 기준 — GROUP BY 또는 SELECT 컬럼으로 활용",
+    "table": "테이블/엔티티 — FROM/JOIN 대상 선택 시 참고",
+}
+_KIND_ORDER = ["metric", "dimension", "rule", "table"]
 
 _AMBIGUOUS_TERM_POLICY = """\
 ## Ambiguous Term Policy
-사전에 없는 주관적/모호한 표현(예: 활성화고객, 신규고객, 우량고객)을 발견하면:
-1. 현재 DB 스키마 컨텍스트에서 가장 합리적인 해석으로 SQL을 작성하고 실행한다.
-2. 쿼리 후 사용한 해석을 명시하고, term_custom 등록 여부와 범위(guild/channel/member)를 사용자에게 묻는다.
-   예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. 이 정의를 어느 범위로 등록할까요?"
-3. 사용자가 범위를 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
+사전에 없는 주관적/모호한 표현을 발견하면:
+1. DB 스키마 기준으로 가장 합리적인 해석으로 SQL을 실행한다.
+2. 실행 후 사용한 해석을 명시하고, kind(metric/rule/dimension/table)와 범위(guild/channel/member)를 사용자에게 묻는다.
+   예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. metric/rule/dimension/table 중 어느 종류이며, 어느 범위로 등록할까요?"
+3. 사용자가 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
 4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.\
 """
+
+
+def _resolve_entry(
+    entries: list[FedEntry], channel_id: str, user_id: str
+) -> FedEntry | None:
+    """narrow→wide lookup: member > channel > guild. 승리 FedEntry 반환."""
+    for e in entries:
+        if e.layer == "member" and e.entity == user_id:
+            return e
+    for e in entries:
+        if e.layer == "channel" and e.entity == channel_id:
+            return e
+    for e in entries:
+        if e.layer == "guild":
+            return e
+    return None
+
+
+def _tag_for(e: FedEntry) -> str:
+    if e.layer == "member":
+        return f"개인:{e.entity}"
+    if e.layer == "channel":
+        return "채널"
+    return "전사"
 
 
 def _fmt_entry(e: FedEntry, tag: str) -> str:
@@ -439,24 +453,38 @@ def _fmt_entry(e: FedEntry, tag: str) -> str:
     )
 
 
-def _resolve_term(entries: list[FedEntry], channel_id: str, user_id: str) -> str:
-    """narrow→wide lookup: member > channel > guild."""
-    # 1. 개인 오버라이드
-    for e in entries:
-        if e.layer == "member" and e.entity == user_id:
-            return _fmt_entry(e, f"개인:{user_id}")
+def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) -> str:
+    """kind별로 그룹화된 시멘틱 용어 섹션 + 모호 용어 지침 반환."""
+    by_term = _load_all(store, scope)
 
-    # 2. 이 채널 정의
-    for e in entries:
-        if e.layer == "channel" and e.entity == channel_id:
-            return _fmt_entry(e, "채널")
+    if not by_term:
+        return _AMBIGUOUS_TERM_POLICY
 
-    # 3. 전사 공통
-    for e in entries:
-        if e.layer == "guild":
-            return _fmt_entry(e, "전사")
+    groups: dict[str, list[str]] = {}
+    for term_lower in sorted(by_term):
+        e = _resolve_entry(by_term[term_lower], channel_id, user_id)
+        if e is None:
+            continue
+        k = e.kind if e.kind in _KIND_SQL_HINT else ""
+        groups.setdefault(k, []).append(_fmt_entry(e, _tag_for(e)))
 
-    return ""
+    if not groups:
+        return _AMBIGUOUS_TERM_POLICY
+
+    parts: list[str] = [
+        "## Business Terminology\n(lookup 우선순위: 개인 > 채널(팀) > 전사)\n"
+    ]
+    for kind in _KIND_ORDER + [""]:
+        lines = groups.get(kind, [])
+        if not lines:
+            continue
+        if kind:
+            parts.append(f"### {kind.capitalize()}s — {_KIND_SQL_HINT[kind]}")
+        else:
+            parts.append("### 기타")
+        parts.extend(lines)
+
+    return "\n".join(parts) + "\n\n" + _AMBIGUOUS_TERM_POLICY
 
 
 def _render_effective(store: Any, scope: str, channel_id: str, user_id: str) -> str:
@@ -467,9 +495,9 @@ def _render_effective(store: Any, scope: str, channel_id: str, user_id: str) -> 
 
     lines = ["**Business Terminology — 현재 채널 기준 유효 정의**\n"]
     for term_lower in sorted(by_term):
-        line = _resolve_term(by_term[term_lower], channel_id, user_id)
-        if line:
-            lines.append(line)
+        e = _resolve_entry(by_term[term_lower], channel_id, user_id)
+        if e:
+            lines.append(_fmt_entry(e, _tag_for(e)))
 
     if len(lines) == 1:
         lines.append("(이 채널에 적용되는 용어 정의가 없습니다)")

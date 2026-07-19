@@ -166,3 +166,107 @@ def test_fmt_entry_shows_kind_badge() -> None:
     )
     rendered = _fmt_entry(entry, "전사")
     assert "`metric`" in rendered
+
+
+# ---------------------------------------------------------------------------
+# PR4: kind-grouped prompt section + disambiguation policy
+# ---------------------------------------------------------------------------
+
+
+def _seed(store: SqliteStore, scope: str, entries: list[FedEntry]) -> None:
+    for e in entries:
+        store.kv_set(scope, _kv_key(e.term, e.layer, e.entity), e.to_json())
+
+
+def test_prompt_section_groups_by_kind() -> None:
+    store = SqliteStore()
+    _seed(
+        store,
+        "g1",
+        [
+            FedEntry("월매출", "guild", "", "SUM(orders.amount)", kind="metric"),
+            FedEntry("환불제외", "guild", "", "status != refunded", kind="rule"),
+            FedEntry("고객등급", "guild", "", "users.tier", kind="dimension"),
+        ],
+    )
+    section = build_prompt_section(store, "g1", "c1", "u1")
+
+    assert "### Metrics" in section
+    assert "### Rules" in section
+    assert "### Dimensions" in section
+    assert "월매출" in section
+    assert "환불제외" in section
+    assert "고객등급" in section
+
+
+def test_prompt_section_kind_headers_contain_sql_hint() -> None:
+    store = SqliteStore()
+    _seed(
+        store,
+        "g1",
+        [FedEntry("월매출", "guild", "", "SUM(orders.amount)", kind="metric")],
+    )
+    section = build_prompt_section(store, "g1", "c1", "u1")
+
+    assert "SELECT/HAVING" in section
+    assert "### Metrics" in section
+
+
+def test_prompt_section_unknown_kind_goes_to_기타() -> None:
+    store = SqliteStore()
+    _seed(store, "g1", [FedEntry("알수없음", "guild", "", "정의 없음", kind="")])
+    section = build_prompt_section(store, "g1", "c1", "u1")
+
+    assert "### 기타" in section
+    assert "알수없음" in section
+
+
+def test_prompt_section_skips_empty_kind_groups() -> None:
+    store = SqliteStore()
+    _seed(
+        store,
+        "g1",
+        [FedEntry("월매출", "guild", "", "SUM(orders.amount)", kind="metric")],
+    )
+    section = build_prompt_section(store, "g1", "c1", "u1")
+
+    assert "### Rules" not in section
+    assert "### Dimensions" not in section
+
+
+def test_ambiguous_policy_mentions_kind() -> None:
+    store = SqliteStore()
+    section = build_prompt_section(store, "g1", "c1", "u1")
+    assert "metric/rule/dimension/table" in section
+
+
+def test_resolve_entry_member_wins_over_channel() -> None:
+    from lang2sql.tools.semantic_federation import _resolve_entry
+
+    entries = [
+        FedEntry("t", "guild", "", "guild-def"),
+        FedEntry("t", "channel", "c1", "channel-def"),
+        FedEntry("t", "member", "u1", "member-def"),
+    ]
+    result = _resolve_entry(entries, "c1", "u1")
+    assert result is not None
+    assert result.definition == "member-def"
+
+
+def test_resolve_entry_channel_wins_over_guild() -> None:
+    from lang2sql.tools.semantic_federation import _resolve_entry
+
+    entries = [
+        FedEntry("t", "guild", "", "guild-def"),
+        FedEntry("t", "channel", "c1", "channel-def"),
+    ]
+    result = _resolve_entry(entries, "c1", "u1")
+    assert result is not None
+    assert result.definition == "channel-def"
+
+
+def test_resolve_entry_returns_none_when_no_match() -> None:
+    from lang2sql.tools.semantic_federation import _resolve_entry
+
+    entries = [FedEntry("t", "channel", "other-channel", "def")]
+    assert _resolve_entry(entries, "c1", "u1") is None
