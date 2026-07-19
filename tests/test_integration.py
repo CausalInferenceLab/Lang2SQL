@@ -35,6 +35,7 @@ def test_v1_tools_registered():
         "ask_user",
         "remember",
         "ingest_doc",
+        "confirm_ingest",
     }
 
 

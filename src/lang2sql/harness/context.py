@@ -33,4 +33,5 @@ class HarnessContext:
     safety: SafetyPipelinePort | None = None
     audit: AuditPort | None = None
     store: SqliteStore | None = None
+    okf_bundle_dir: str | None = None
     max_turns: int = 8
