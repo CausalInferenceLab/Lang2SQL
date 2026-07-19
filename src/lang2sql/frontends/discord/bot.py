@@ -150,12 +150,41 @@ class Lang2SQLBot(discord.Client):
                 handlers.connect(to_identity(_interaction_context(interaction)), dsn),
             )
 
-        @tree.command(name="ingest", description="Propose definitions from a document")
-        async def ingest(interaction: discord.Interaction, ref: str) -> None:
+        @tree.command(
+            name="ingest",
+            description="문서에서 비즈니스 용어 후보 추출 (ref: 파일명, content: 텍스트 직접 입력)",
+        )
+        async def ingest(
+            interaction: discord.Interaction,
+            ref: str = "",
+            content: str = "",
+        ) -> None:
             await self._run(
                 interaction,
                 handlers.ingest(
-                    to_identity(_interaction_context(interaction)), ref=ref
+                    to_identity(_interaction_context(interaction)),
+                    ref=ref or None,
+                    content=content or None,
+                ),
+            )
+
+        @tree.command(
+            name="confirm_ingest",
+            description="ingest로 추출한 후보를 시멘틱 레이어에 등록",
+        )
+        async def confirm_ingest(
+            interaction: discord.Interaction,
+            ref: str,
+            accept: str = "all",
+            layer: str = "channel",
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.confirm_ingest(
+                    to_identity(_interaction_context(interaction)),
+                    ref=ref,
+                    accept=accept,
+                    layer=layer,
                 ),
             )
 
