@@ -112,7 +112,9 @@ class ConfirmIngest:
             return ToolResult(call_id="", content="No candidates selected.")
 
         entity = (
-            "" if layer == "guild" else (channel_id if layer == "channel" else ctx.identity.user_id)
+            ""
+            if layer == "guild"
+            else (channel_id if layer == "channel" else ctx.identity.user_id)
         )
         registered: list[str] = []
         for cand in selected:
@@ -161,5 +163,3 @@ def _select(
             return None
         result.append(candidates[idx])
     return result
-
-

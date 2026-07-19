@@ -41,7 +41,9 @@ def _make_ctx(
     is_admin: bool = False,
     channel_id: str = "c1",
 ) -> HarnessContext:
-    identity = Identity(user_id="u1", guild_id="g1", channel_id=channel_id, is_admin=is_admin)
+    identity = Identity(
+        user_id="u1", guild_id="g1", channel_id=channel_id, is_admin=is_admin
+    )
     from lang2sql.ingestion import FileSource, IngestionPipeline, LLMExtractor
     from lang2sql.memory import (
         InjectAllRecall,
@@ -233,7 +235,9 @@ def test_confirm_channel_layer_blocked_without_channel_id() -> None:
     _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
 
     result = asyncio.run(
-        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "channel"}, ctx)
+        ConfirmIngest().run(
+            {"ref": "defs.md", "accept": "all", "layer": "channel"}, ctx
+        )
     )
     assert result.is_error
     assert "channel" in result.content

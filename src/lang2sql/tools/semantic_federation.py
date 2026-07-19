@@ -42,6 +42,7 @@ def _validate_layer(
         return layer, "❌ 채널 컨텍스트 없이 channel 레이어에 등록할 수 없습니다."
     return layer, None
 
+
 from ..tools.enrich_schema import (
     _KV_PREFIX as _ENRICH_PREFIX,
     _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,

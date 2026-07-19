@@ -110,7 +110,12 @@ class OkfBundle:
 
     def _concept_path(self, entry: FedEntry) -> Path:
         folder = _KIND_FOLDER.get(entry.kind, "misc")
-        slug = re.sub(r'[/\\]', '-', entry.term.strip()).lower().replace(" ", "_").replace(":", "-")
+        slug = (
+            re.sub(r"[/\\]", "-", entry.term.strip())
+            .lower()
+            .replace(" ", "_")
+            .replace(":", "-")
+        )
         path = self._scope_dir(entry) / folder / f"{slug}.md"
         if not path.resolve().is_relative_to(self.base_dir.resolve()):
             raise ValueError(f"unsafe path derived from term: {entry.term!r}")
