@@ -78,9 +78,9 @@ class OkfBundle:
         for _key, val in raw:
             try:
                 entry = FedEntry.from_json(val)
+                path = self._concept_path(entry)
             except (ValueError, KeyError):
                 continue
-            path = self._concept_path(entry)
             path.parent.mkdir(parents=True, exist_ok=True)
             path.write_text(_entry_to_md(entry), encoding="utf-8")
             count += 1
