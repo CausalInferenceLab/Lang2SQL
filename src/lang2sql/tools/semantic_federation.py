@@ -257,9 +257,7 @@ class SemanticFederationTool(ToolPort):
         if err:
             return ToolResult(call_id="", content=err, is_error=True)
 
-        entity = (
-            "" if layer == "org" else (user_id if layer == "user" else channel_id)
-        )
+        entity = "" if layer == "org" else (user_id if layer == "user" else channel_id)
         key = _kv_key(term, layer, entity)
 
         definition = str(args.get("definition", "")).strip()

@@ -174,9 +174,7 @@ def test_confirm_channel_layer_uses_channel_entity() -> None:
     _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
 
     asyncio.run(
-        ConfirmIngest().run(
-            {"ref": "defs.md", "accept": "all", "layer": "team"}, ctx
-        )
+        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "team"}, ctx)
     )
 
     ch_id = ctx.identity.effective_channel_id
@@ -196,9 +194,7 @@ def test_confirm_member_layer_uses_user_id() -> None:
         ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "user"}, ctx)
     )
 
-    raw = store.kv_get(
-        scope, _kv_key("monthly_revenue", "user", ctx.identity.user_id)
-    )
+    raw = store.kv_get(scope, _kv_key("monthly_revenue", "user", ctx.identity.user_id))
     assert raw is not None
 
 
@@ -235,9 +231,7 @@ def test_confirm_channel_layer_blocked_without_channel_id() -> None:
     _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
 
     result = asyncio.run(
-        ConfirmIngest().run(
-            {"ref": "defs.md", "accept": "all", "layer": "team"}, ctx
-        )
+        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "team"}, ctx)
     )
     assert result.is_error
     assert "team" in result.content
@@ -250,7 +244,9 @@ def test_confirm_invalid_layer_returns_error() -> None:
     _seed_pending(store, scope, "defs.md", [_SAMPLE[0]])
 
     result = asyncio.run(
-        ConfirmIngest().run({"ref": "defs.md", "accept": "all", "layer": "department"}, ctx)
+        ConfirmIngest().run(
+            {"ref": "defs.md", "accept": "all", "layer": "department"}, ctx
+        )
     )
     assert result.is_error
     assert "layer" in result.content
