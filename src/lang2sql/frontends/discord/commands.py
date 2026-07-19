@@ -247,6 +247,23 @@ class CommandHandlers:
         result = await ctx.tools.dispatch("ingest_doc", args, ctx, "cmd:ingest")
         return OutboundMessage(text=result.content)
 
+    async def confirm_ingest(
+        self,
+        identity: Identity,
+        ref: str,
+        accept: str = "all",
+        layer: str = "channel",
+    ) -> OutboundMessage:
+        """ingest_doc로 추출한 후보를 검토 후 시멘틱 레이어에 등록."""
+        ctx = await self._concierge.build_context(identity)
+        result = await ctx.tools.dispatch(
+            "confirm_ingest",
+            {"ref": ref, "accept": accept, "layer": layer},
+            ctx,
+            "cmd:confirm_ingest",
+        )
+        return OutboundMessage(text=result.content)
+
 
 def _fmt_ts(ts: float) -> str:
     """Format an epoch timestamp as a short UTC string for audit listings."""
