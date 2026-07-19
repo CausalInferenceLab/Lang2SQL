@@ -21,8 +21,8 @@ class ScopeLevel(str, Enum):
     """
 
     THREAD = "thread"
-    CHANNEL = "channel"
-    GUILD = "guild"
+    CHANNEL = "team"
+    GUILD = "org"
     BUILTIN = "builtin"
 
 

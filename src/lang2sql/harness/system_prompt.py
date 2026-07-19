@@ -21,6 +21,10 @@ Rules:
 - Discover schema with explore_schema before guessing table or column names.
 - Prefer definitions from the semantic layer below over your own assumptions.
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
+
+Clarification rule:
+- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.
+- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: "이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다."
 """
 
 

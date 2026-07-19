@@ -105,7 +105,7 @@ class OkfBundle:
     # ------------------------------------------------------------------
 
     def _scope_dir(self, entry: FedEntry) -> Path:
-        label = "guild" if entry.layer == "guild" else f"{entry.layer}:{entry.entity}"
+        label = "org" if entry.layer == "org" else f"{entry.layer}:{entry.entity}"
         return self.base_dir / label
 
     def _concept_path(self, entry: FedEntry) -> Path:
@@ -172,7 +172,7 @@ def _md_to_entry(path: Path) -> FedEntry | None:
 
     return FedEntry(
         term=str(fm.get("title", path.stem)),
-        layer=str(fm.get("layer", "guild")),
+        layer=str(fm.get("layer", "org")),
         entity=str(fm.get("entity", "")),
         definition=str(fm.get("description", "")),
         synonyms=fm.get("synonyms") or [],

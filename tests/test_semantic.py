@@ -32,13 +32,13 @@ def test_channel_overrides_guild() -> None:
     scope = "g1"
     store.kv_set(
         scope,
-        _kv_key("active_user", "guild", ""),
-        FedEntry("active_user", "guild", "", "30d login").to_json(),
+        _kv_key("active_user", "org", ""),
+        FedEntry("active_user", "org", "", "30d login").to_json(),
     )
     store.kv_set(
         scope,
-        _kv_key("active_user", "channel", "c1"),
-        FedEntry("active_user", "channel", "c1", "7d core action").to_json(),
+        _kv_key("active_user", "team", "c1"),
+        FedEntry("active_user", "team", "c1", "7d core action").to_json(),
     )
 
     rendered = _render_effective(store, scope, "c1", "u1")
@@ -51,8 +51,8 @@ def test_guild_fills_gap_when_channel_missing() -> None:
     scope = "g1"
     store.kv_set(
         scope,
-        _kv_key("revenue", "guild", ""),
-        FedEntry("revenue", "guild", "", "net revenue").to_json(),
+        _kv_key("revenue", "org", ""),
+        FedEntry("revenue", "org", "", "net revenue").to_json(),
     )
 
     rendered = _render_effective(store, scope, "c1", "u1")
@@ -64,18 +64,18 @@ def test_member_overrides_channel_and_guild() -> None:
     scope = "g1"
     store.kv_set(
         scope,
-        _kv_key("active_user", "guild", ""),
-        FedEntry("active_user", "guild", "", "guild def").to_json(),
+        _kv_key("active_user", "org", ""),
+        FedEntry("active_user", "org", "", "guild def").to_json(),
     )
     store.kv_set(
         scope,
-        _kv_key("active_user", "channel", "c1"),
-        FedEntry("active_user", "channel", "c1", "channel def").to_json(),
+        _kv_key("active_user", "team", "c1"),
+        FedEntry("active_user", "team", "c1", "channel def").to_json(),
     )
     store.kv_set(
         scope,
-        _kv_key("active_user", "member", "u1"),
-        FedEntry("active_user", "member", "u1", "member def").to_json(),
+        _kv_key("active_user", "user", "u1"),
+        FedEntry("active_user", "user", "u1", "member def").to_json(),
     )
 
     rendered = _render_effective(store, scope, "c1", "u1")
@@ -89,13 +89,13 @@ def test_two_channels_isolated() -> None:
     scope = "g1"
     store.kv_set(
         scope,
-        _kv_key("active_user", "channel", "mkt"),
-        FedEntry("active_user", "channel", "mkt", "30d login").to_json(),
+        _kv_key("active_user", "team", "mkt"),
+        FedEntry("active_user", "team", "mkt", "30d login").to_json(),
     )
     store.kv_set(
         scope,
-        _kv_key("active_user", "channel", "fin"),
-        FedEntry("active_user", "channel", "fin", "paid subscriber").to_json(),
+        _kv_key("active_user", "team", "fin"),
+        FedEntry("active_user", "team", "fin", "paid subscriber").to_json(),
     )
 
     mkt = _render_effective(store, scope, "mkt", "u1")
@@ -121,7 +121,7 @@ def test_build_prompt_section_includes_ambiguous_term_policy() -> None:
 def test_fed_entry_kind_applies_to_tags_roundtrip() -> None:
     entry = FedEntry(
         term="활성고객",
-        layer="guild",
+        layer="org",
         entity="",
         definition="30일 내 로그인한 users",
         kind="metric",
@@ -141,7 +141,7 @@ def test_fed_entry_backward_compat_missing_new_fields() -> None:
     old_json = json.dumps(
         {
             "term": "revenue",
-            "layer": "guild",
+            "layer": "org",
             "entity": "",
             "definition": "net revenue",
             "synonyms": [],
@@ -159,7 +159,7 @@ def test_fmt_entry_shows_kind_badge() -> None:
 
     entry = FedEntry(
         term="활성고객",
-        layer="guild",
+        layer="org",
         entity="",
         definition="30일 내 로그인",
         kind="metric",
@@ -184,9 +184,9 @@ def test_prompt_section_groups_by_kind() -> None:
         store,
         "g1",
         [
-            FedEntry("월매출", "guild", "", "SUM(orders.amount)", kind="metric"),
-            FedEntry("환불제외", "guild", "", "status != refunded", kind="rule"),
-            FedEntry("고객등급", "guild", "", "users.tier", kind="dimension"),
+            FedEntry("월매출", "org", "", "SUM(orders.amount)", kind="metric"),
+            FedEntry("환불제외", "org", "", "status != refunded", kind="rule"),
+            FedEntry("고객등급", "org", "", "users.tier", kind="dimension"),
         ],
     )
     section = build_prompt_section(store, "g1", "c1", "u1")
@@ -204,7 +204,7 @@ def test_prompt_section_kind_headers_contain_sql_hint() -> None:
     _seed(
         store,
         "g1",
-        [FedEntry("월매출", "guild", "", "SUM(orders.amount)", kind="metric")],
+        [FedEntry("월매출", "org", "", "SUM(orders.amount)", kind="metric")],
     )
     section = build_prompt_section(store, "g1", "c1", "u1")
 
@@ -214,7 +214,7 @@ def test_prompt_section_kind_headers_contain_sql_hint() -> None:
 
 def test_prompt_section_unknown_kind_goes_to_기타() -> None:
     store = SqliteStore()
-    _seed(store, "g1", [FedEntry("알수없음", "guild", "", "정의 없음", kind="")])
+    _seed(store, "g1", [FedEntry("알수없음", "org", "", "정의 없음", kind="")])
     section = build_prompt_section(store, "g1", "c1", "u1")
 
     assert "### 기타" in section
@@ -226,7 +226,7 @@ def test_prompt_section_skips_empty_kind_groups() -> None:
     _seed(
         store,
         "g1",
-        [FedEntry("월매출", "guild", "", "SUM(orders.amount)", kind="metric")],
+        [FedEntry("월매출", "org", "", "SUM(orders.amount)", kind="metric")],
     )
     section = build_prompt_section(store, "g1", "c1", "u1")
 
@@ -244,9 +244,9 @@ def test_resolve_entry_member_wins_over_channel() -> None:
     from lang2sql.tools.semantic_federation import _resolve_entry
 
     entries = [
-        FedEntry("t", "guild", "", "guild-def"),
-        FedEntry("t", "channel", "c1", "channel-def"),
-        FedEntry("t", "member", "u1", "member-def"),
+        FedEntry("t", "org", "", "guild-def"),
+        FedEntry("t", "team", "c1", "channel-def"),
+        FedEntry("t", "user", "u1", "member-def"),
     ]
     result = _resolve_entry(entries, "c1", "u1")
     assert result is not None
@@ -257,8 +257,8 @@ def test_resolve_entry_channel_wins_over_guild() -> None:
     from lang2sql.tools.semantic_federation import _resolve_entry
 
     entries = [
-        FedEntry("t", "guild", "", "guild-def"),
-        FedEntry("t", "channel", "c1", "channel-def"),
+        FedEntry("t", "org", "", "guild-def"),
+        FedEntry("t", "team", "c1", "channel-def"),
     ]
     result = _resolve_entry(entries, "c1", "u1")
     assert result is not None
@@ -268,5 +268,5 @@ def test_resolve_entry_channel_wins_over_guild() -> None:
 def test_resolve_entry_returns_none_when_no_match() -> None:
     from lang2sql.tools.semantic_federation import _resolve_entry
 
-    entries = [FedEntry("t", "channel", "other-channel", "def")]
+    entries = [FedEntry("t", "team", "other-channel", "def")]
     assert _resolve_entry(entries, "c1", "u1") is None

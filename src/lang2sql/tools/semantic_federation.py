@@ -1,14 +1,14 @@
-"""SemanticFederation — 채널(팀)/전사(guild)/개인(member) 계층 비즈니스 용어 사전.
+"""SemanticFederation — 채널(팀)/전사(org)/개인(member) 계층 비즈니스 용어 사전.
 
-계층 우선순위 (narrow → wide): member > channel > guild
-- guild  : 전사 공통 정의 (회사 전체, /org_setup이 자동 채움)
-- channel: 이 채널/팀 전용 정의 (다른 채널과 충돌 없음 — 채널이 격리 경계)
-- member : 개인 오버라이드 (조용히 상위 정의를 덮어씀)
+계층 우선순위 (narrow → wide): user > team > org
+- org    : 전사 공통 정의 (회사 전체, /org_setup이 자동 채움)
+- team   : 이 채널/팀 전용 정의 (다른 채널과 충돌 없음 — 채널이 격리 경계)
+- user   : 개인 오버라이드 (조용히 상위 정의를 덮어씀)
 
 KV 키 구조 (모두 guild scope에 저장):
-  cterm:{term_lower}:guild              → 전사 공통
-  cterm:{term_lower}:channel:{ch_id}   → 채널(팀) 전용
-  cterm:{term_lower}:member:{user_id}  → 개인
+  cterm:{term_lower}:org              → 전사 공통
+  cterm:{term_lower}:team:{ch_id}   → 채널(팀) 전용
+  cterm:{term_lower}:user:{user_id}  → 개인
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from ..harness.context import HarnessContext
 
 _KV_PREFIX = "cterm"
-_LAYERS = ("guild", "channel", "member")
+_LAYERS = ("org", "team", "user")
 
 
 def _validate_layer(
@@ -36,10 +36,10 @@ def _validate_layer(
     layer = layer_raw.strip().lower()
     if layer not in _LAYERS:
         return layer, f"❌ layer는 {list(_LAYERS)} 중 하나여야 합니다."
-    if layer == "guild" and not is_admin:
-        return layer, "❌ guild 용어 등록·수정은 관리자만 가능합니다."
-    if layer == "channel" and not channel_id:
-        return layer, "❌ 채널 컨텍스트 없이 channel 레이어에 등록할 수 없습니다."
+    if layer == "org" and not is_admin:
+        return layer, "❌ org 용어 등록·수정은 관리자만 가능합니다."
+    if layer == "team" and not channel_id:
+        return layer, "❌ 채널 컨텍스트 없이 team 레이어에 등록할 수 없습니다."
     return layer, None
 
 
@@ -60,7 +60,7 @@ _AMBIGUITY_SIGNALS: dict[str, str] = {
 
 def _kv_key(term: str, layer: str, entity: str) -> str:
     base = f"{_KV_PREFIX}:{term.strip().lower()}:{layer}"
-    if layer == "guild":
+    if layer == "org":
         return base
     return f"{base}:{entity.strip().lower()}"
 
@@ -128,8 +128,8 @@ class SemanticFederationTool(ToolPort):
             name="term_custom",
             description=(
                 "비즈니스 용어 사전 관리. "
-                "layer=guild(전사)/channel(이 채널·팀)/member(개인). "
-                "lookup은 narrow→wide: member > channel > guild. "
+                "layer=org(전사)/team(이 채널·팀)/user(개인). "
+                "lookup은 narrow→wide: user > team > org. "
                 "list=true로 전체 조회. remove=true로 삭제."
             ),
             parameters={
@@ -145,8 +145,8 @@ class SemanticFederationTool(ToolPort):
                     },
                     "layer": {
                         "type": "string",
-                        "enum": ["guild", "channel", "member"],
-                        "description": "등록 범위. guild=전사 공통, channel=이 채널(팀), member=개인(기본값)",
+                        "enum": ["org", "team", "user"],
+                        "description": "등록 범위. org=전사 공통, channel=이 채널(팀), member=개인(기본값)",
                     },
                     "synonyms": {
                         "type": "string",
@@ -216,11 +216,11 @@ class SemanticFederationTool(ToolPort):
             # 존재하는 항목 모두 삭제 — guild layer는 admin만 삭제 가능
             deleted_tags: list[str] = []
             for lyr, ent in [
-                ("guild", ""),
-                ("channel", channel_id),
-                ("member", user_id),
+                ("org", ""),
+                ("team", channel_id),
+                ("user", user_id),
             ]:
-                if lyr == "guild" and not ctx.identity.is_admin:
+                if lyr == "org" and not ctx.identity.is_admin:
                     continue
                 k = _kv_key(term, lyr, ent)
                 if ctx.store.kv_get(scope, k) is not None:
@@ -228,11 +228,11 @@ class SemanticFederationTool(ToolPort):
                     deleted_tags.append(_layer_tag(lyr, ent, user_id, channel_id))
             if not deleted_tags:
                 if not ctx.identity.is_admin:
-                    guild_k = _kv_key(term, "guild", "")
+                    guild_k = _kv_key(term, "org", "")
                     if ctx.store.kv_get(scope, guild_k) is not None:
                         return ToolResult(
                             call_id="",
-                            content=f"⚠️ **{term}** — 전사(guild) 항목이 존재하지만 관리자만 삭제할 수 있습니다.",
+                            content=f"⚠️ **{term}** — 전사(org) 항목이 존재하지만 관리자만 삭제할 수 있습니다.",
                             is_error=True,
                         )
                 return ToolResult(
@@ -252,14 +252,12 @@ class SemanticFederationTool(ToolPort):
             )
 
         layer, err = _validate_layer(
-            str(args.get("layer", "member")), channel_id, ctx.identity.is_admin
+            str(args.get("layer", "team")), channel_id, ctx.identity.is_admin
         )
         if err:
             return ToolResult(call_id="", content=err, is_error=True)
 
-        entity = (
-            "" if layer == "guild" else (user_id if layer == "member" else channel_id)
-        )
+        entity = "" if layer == "org" else (user_id if layer == "user" else channel_id)
         key = _kv_key(term, layer, entity)
 
         definition = str(args.get("definition", "")).strip()
@@ -313,9 +311,9 @@ class SemanticFederationTool(ToolPort):
 
 
 def _layer_tag(layer: str, entity: str, user_id: str, channel_id: str) -> str:
-    if layer == "guild":
+    if layer == "org":
         return "전사"
-    if layer == "channel":
+    if layer == "team":
         return f"채널:{channel_id}"
     return f"개인:{user_id}"
 
@@ -370,7 +368,7 @@ def _scan_schema(store: Any, scope: str) -> str:
 
     lines.append(
         "---\n위 컬럼을 바탕으로 모호 용어 정의를 추론하고 `term_custom` 툴로 `inferred=true` 등록하거나, "
-        "사용자에게 어느 범위(guild/channel/member)로 등록할지 확인하세요."
+        "사용자에게 어느 범위(org/team/user)로 등록할지 확인하세요."
     )
     return "\n".join(lines)
 
@@ -412,7 +410,7 @@ _AMBIGUOUS_TERM_POLICY = """\
 ## Ambiguous Term Policy
 사전에 없는 주관적/모호한 표현을 발견하면:
 1. DB 스키마 기준으로 가장 합리적인 해석으로 SQL을 실행한다.
-2. 실행 후 사용한 해석을 명시하고, kind(metric/rule/dimension/table)와 범위(guild/channel/member)를 사용자에게 묻는다.
+2. 실행 후 사용한 해석을 명시하고, kind(metric/rule/dimension/table)와 범위(org/team/user)를 사용자에게 묻는다.
    예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. metric/rule/dimension/table 중 어느 종류이며, 어느 범위로 등록할까요?"
 3. 사용자가 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
 4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.\
@@ -422,23 +420,23 @@ _AMBIGUOUS_TERM_POLICY = """\
 def _resolve_entry(
     entries: list[FedEntry], channel_id: str, user_id: str
 ) -> FedEntry | None:
-    """narrow→wide lookup: member > channel > guild. 승리 FedEntry 반환."""
+    """narrow→wide lookup: user > team > org. 승리 FedEntry 반환."""
     for e in entries:
-        if e.layer == "member" and e.entity == user_id:
+        if e.layer == "user" and e.entity == user_id:
             return e
     for e in entries:
-        if e.layer == "channel" and e.entity == channel_id:
+        if e.layer == "team" and e.entity == channel_id:
             return e
     for e in entries:
-        if e.layer == "guild":
+        if e.layer == "org":
             return e
     return None
 
 
 def _tag_for(e: FedEntry) -> str:
-    if e.layer == "member":
+    if e.layer == "user":
         return f"개인:{e.entity}"
-    if e.layer == "channel":
+    if e.layer == "team":
         return "채널"
     return "전사"
 

@@ -179,7 +179,7 @@ class CommandHandlers:
         identity: Identity,
         term: str = "",
         definition: str = "",
-        layer: str = "member",
+        layer: str = "team",
         synonyms: str = "",
         inferred: bool = False,
         scan: bool = False,
@@ -252,7 +252,7 @@ class CommandHandlers:
         identity: Identity,
         ref: str,
         accept: str = "all",
-        layer: str = "channel",
+        layer: str = "team",
     ) -> OutboundMessage:
         """ingest_doc로 추출한 후보를 검토 후 시멘틱 레이어에 등록."""
         ctx = await self._concierge.build_context(identity)
@@ -270,24 +270,24 @@ class CommandHandlers:
 **Lang2SQL 사용 가이드**
 
 **📊 질문하기**
-봇을 멘션하거나 채널에서 자연어로 질문하세요.
+봇을 멘션하거나 스레드에서 자연어로 질문하세요.
 > @Lang2SQL 이번 달 매출 상위 고객 10명 알려줘
 
-**🗄️ DB 연결** (관리자)
+**🗄️ DB 연결**
 `/setup` — 안내에 따라 DB 접속 정보 입력
 `/connect dsn:...` — DSN 직접 입력
 
 **📖 비즈니스 용어 등록**
 `/ingest content:월매출은 SUM(orders.amount), 활성고객은 30일 내 로그인`
 → 후보 추출 후 아래 커맨드로 확정
-`/confirm_ingest ref:inline:xxxx accept:all layer:channel`
+`/confirm_ingest ref:inline:xxxx accept:all layer:team`
 
 `/term_custom` — 용어 직접 등록 (위저드)
 `/term_custom action:show` — 등록된 용어 조회
 `/org_setup org:회사명` — DB 스캔으로 용어 자동 추출
 
 **🏷️ 용어 우선순위**
-개인(member) > 채널(channel) > 전사(guild)
+개인(user) > 팀(team) > 전사(org)
 같은 채널 안에서 등록한 정의가 전사 정의보다 우선 적용됩니다.
 
 **🔧 기타**

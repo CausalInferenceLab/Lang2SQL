@@ -23,7 +23,7 @@ def _populate(store: SqliteStore, scope: str, entries: list[FedEntry]) -> None:
 def test_entry_to_md_contains_required_okf_fields() -> None:
     entry = FedEntry(
         term="활성고객",
-        layer="guild",
+        layer="org",
         entity="",
         definition="30일 내 로그인한 users",
         kind="metric",
@@ -34,13 +34,13 @@ def test_entry_to_md_contains_required_okf_fields() -> None:
     assert "type: Metric" in md
     assert "title: 활성고객" in md
     assert "description:" in md
-    assert "layer: guild" in md
+    assert "layer: org" in md
 
 
 def test_md_to_entry_roundtrip() -> None:
     entry = FedEntry(
         term="순매출",
-        layer="channel",
+        layer="team",
         entity="mkt-123",
         definition="환불 제외 매출",
         synonyms=["net revenue"],
@@ -59,7 +59,7 @@ def test_md_to_entry_roundtrip() -> None:
     assert restored is not None
     assert restored.term == "순매출"
     assert restored.kind == "metric"
-    assert restored.layer == "channel"
+    assert restored.layer == "team"
     assert restored.entity == "mkt-123"
     assert restored.applies_to == "orders"
     assert restored.tags == ["finance"]
@@ -68,7 +68,7 @@ def test_md_to_entry_roundtrip() -> None:
 
 
 def test_md_to_entry_unknown_type_becomes_empty_kind() -> None:
-    md = "---\ntype: Playbook\ntitle: foo\ndescription: bar\nlayer: guild\nentity: ''\ninferred: false\n---\n\nbar\n"
+    md = "---\ntype: Playbook\ntitle: foo\ndescription: bar\nlayer: org\nentity: ''\ninferred: false\n---\n\nbar\n"
     with tempfile.NamedTemporaryFile(
         suffix=".md", mode="w", delete=False, encoding="utf-8"
     ) as f:
@@ -99,11 +99,11 @@ def test_export_creates_kind_based_folders() -> None:
     store = SqliteStore()
     scope = "g1"
     entries = [
-        FedEntry("활성고객", "guild", "", "30일 로그인", kind="metric"),
-        FedEntry("orders", "guild", "", "주문 테이블", kind="table"),
-        FedEntry("환불제외", "guild", "", "status != refunded", kind="rule"),
-        FedEntry("고객등급", "guild", "", "users.tier", kind="dimension"),
-        FedEntry("기타용어", "guild", "", "정의 없음", kind=""),
+        FedEntry("활성고객", "org", "", "30일 로그인", kind="metric"),
+        FedEntry("orders", "org", "", "주문 테이블", kind="table"),
+        FedEntry("환불제외", "org", "", "status != refunded", kind="rule"),
+        FedEntry("고객등급", "org", "", "users.tier", kind="dimension"),
+        FedEntry("기타용어", "org", "", "정의 없음", kind=""),
     ]
     _populate(store, scope, entries)
 
@@ -112,11 +112,11 @@ def test_export_creates_kind_based_folders() -> None:
         count = bundle.export(store, scope)
 
         assert count == 5
-        assert (Path(tmp) / "guild" / "metrics" / "활성고객.md").exists()
-        assert (Path(tmp) / "guild" / "tables" / "orders.md").exists()
-        assert (Path(tmp) / "guild" / "rules" / "환불제외.md").exists()
-        assert (Path(tmp) / "guild" / "dimensions" / "고객등급.md").exists()
-        assert (Path(tmp) / "guild" / "misc" / "기타용어.md").exists()
+        assert (Path(tmp) / "org" / "metrics" / "활성고객.md").exists()
+        assert (Path(tmp) / "org" / "tables" / "orders.md").exists()
+        assert (Path(tmp) / "org" / "rules" / "환불제외.md").exists()
+        assert (Path(tmp) / "org" / "dimensions" / "고객등급.md").exists()
+        assert (Path(tmp) / "org" / "misc" / "기타용어.md").exists()
 
 
 def test_export_separates_scopes() -> None:
@@ -126,8 +126,8 @@ def test_export_separates_scopes() -> None:
         store,
         scope,
         [
-            FedEntry("활성고객", "guild", "", "30일 로그인", kind="metric"),
-            FedEntry("활성고객", "channel", "mkt", "7일 구매", kind="metric"),
+            FedEntry("활성고객", "org", "", "30일 로그인", kind="metric"),
+            FedEntry("활성고객", "team", "mkt", "7일 구매", kind="metric"),
         ],
     )
 
@@ -135,8 +135,8 @@ def test_export_separates_scopes() -> None:
         bundle = OkfBundle(tmp)
         bundle.export(store, scope)
 
-        assert (Path(tmp) / "guild" / "metrics" / "활성고객.md").exists()
-        assert (Path(tmp) / "channel:mkt" / "metrics" / "활성고객.md").exists()
+        assert (Path(tmp) / "org" / "metrics" / "활성고객.md").exists()
+        assert (Path(tmp) / "team:mkt" / "metrics" / "활성고객.md").exists()
 
 
 def test_import_restores_kv_from_files() -> None:
@@ -144,7 +144,7 @@ def test_import_restores_kv_from_files() -> None:
     scope = "g1"
     original = FedEntry(
         "순매출",
-        "guild",
+        "org",
         "",
         "환불 제외 매출",
         kind="metric",
@@ -162,7 +162,7 @@ def test_import_restores_kv_from_files() -> None:
         count = bundle.import_(empty_store, scope)
 
         assert count == 1
-        key = _kv_key("순매출", "guild", "")
+        key = _kv_key("순매출", "org", "")
         raw = empty_store.kv_get(scope, key)
         assert raw is not None
         restored = FedEntry.from_json(raw)
@@ -173,7 +173,7 @@ def test_import_restores_kv_from_files() -> None:
 
 def test_import_skips_reserved_files() -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        guild_dir = Path(tmp) / "guild"
+        guild_dir = Path(tmp) / "org"
         guild_dir.mkdir()
         (guild_dir / "index.md").write_text("# index", encoding="utf-8")
         (guild_dir / "log.md").write_text("# log", encoding="utf-8")
@@ -189,7 +189,7 @@ def test_full_roundtrip_preserves_all_fields() -> None:
     scope = "g1"
     original = FedEntry(
         term="월매출",
-        layer="member",
+        layer="user",
         entity="user-99",
         definition="당월 발생 매출 합계",
         synonyms=["monthly revenue"],
@@ -206,13 +206,13 @@ def test_full_roundtrip_preserves_all_fields() -> None:
         restored_store = SqliteStore()
         bundle.import_(restored_store, scope)
 
-    key = _kv_key("월매출", "member", "user-99")
+    key = _kv_key("월매출", "user", "user-99")
     raw = restored_store.kv_get(scope, key)
     assert raw is not None
     restored = FedEntry.from_json(raw)
 
     assert restored.term == "월매출"
-    assert restored.layer == "member"
+    assert restored.layer == "user"
     assert restored.entity == "user-99"
     assert restored.kind == "metric"
     assert restored.applies_to == "orders.amount"

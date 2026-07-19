@@ -17,7 +17,7 @@ def test_fed_entry_from_json_coerces_string_synonyms() -> None:
     raw_json = json.dumps(
         {
             "term": "active_user",
-            "layer": "guild",
+            "layer": "org",
             "entity": "",
             "definition": "30d login",
             "synonyms": "활성유저, active",
@@ -35,7 +35,7 @@ def test_fed_entry_from_json_handles_null_synonyms() -> None:
     raw_json = json.dumps(
         {
             "term": "revenue",
-            "layer": "guild",
+            "layer": "org",
             "entity": "",
             "definition": "gross revenue",
             "synonyms": None,
@@ -54,14 +54,14 @@ def test_render_effective_string_synonyms_in_kv_does_not_character_join() -> Non
     bad_json = json.dumps(
         {
             "term": "active_user",
-            "layer": "guild",
+            "layer": "org",
             "entity": "",
             "definition": "30d login",
             "synonyms": "활성유저, active",
             "inferred": False,
         }
     )
-    store.kv_set(scope, _kv_key("active_user", "guild", ""), bad_json)
+    store.kv_set(scope, _kv_key("active_user", "org", ""), bad_json)
     rendered = _render_effective(store, scope, "", "u1")
     assert "active_user" in rendered
     assert "활, 성" not in rendered  # character-join would produce this
@@ -107,7 +107,7 @@ def test_term_custom_remove_emits_audit_event() -> None:
     # Write then remove
     asyncio.run(
         SemanticFederationTool().run(
-            {"term": "active_user", "definition": "30d login", "layer": "guild"}, ctx
+            {"term": "active_user", "definition": "30d login", "layer": "org"}, ctx
         )
     )
     asyncio.run(
@@ -136,7 +136,7 @@ def test_guild_write_requires_admin() -> None:
 
     result = asyncio.run(
         SemanticFederationTool().run(
-            {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, ctx
+            {"term": "revenue", "definition": "gross revenue", "layer": "org"}, ctx
         )
     )
     assert result.is_error
@@ -159,7 +159,7 @@ def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
     )
     asyncio.run(
         SemanticFederationTool().run(
-            {"term": "revenue", "definition": "gross revenue", "layer": "guild"},
+            {"term": "revenue", "definition": "gross revenue", "layer": "org"},
             admin_ctx,
         )
     )
@@ -172,7 +172,7 @@ def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
     )
     asyncio.run(
         SemanticFederationTool().run(
-            {"term": "revenue", "definition": "my override", "layer": "member"},
+            {"term": "revenue", "definition": "my override", "layer": "user"},
             member_ctx,
         )
     )
@@ -183,8 +183,8 @@ def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
     )
 
     scope = "g1"
-    assert member_ctx.store.kv_get(scope, _kv_key("revenue", "guild", "")) is not None
-    assert member_ctx.store.kv_get(scope, _kv_key("revenue", "member", "u1")) is None
+    assert member_ctx.store.kv_get(scope, _kv_key("revenue", "org", "")) is not None
+    assert member_ctx.store.kv_get(scope, _kv_key("revenue", "user", "u1")) is None
 
 
 def test_parse_synonyms_strips_list_items() -> None:
@@ -216,9 +216,9 @@ def test_channel_layer_term_visible_from_thread_context() -> None:
     scope = "g1"
     store.kv_set(
         scope,
-        _kv_key("active_user", "channel", "c1"),
+        _kv_key("active_user", "team", "c1"),
         FedEntry(
-            term="active_user", layer="channel", entity="c1", definition="30d login"
+            term="active_user", layer="team", entity="c1", definition="30d login"
         ).to_json(),
     )
 
