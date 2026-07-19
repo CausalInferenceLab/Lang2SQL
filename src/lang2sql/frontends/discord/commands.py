@@ -179,7 +179,7 @@ class CommandHandlers:
         identity: Identity,
         term: str = "",
         definition: str = "",
-        layer: str = "user",
+        layer: str = "team",
         synonyms: str = "",
         inferred: bool = False,
         scan: bool = False,

@@ -219,7 +219,7 @@ class Lang2SQLBot(discord.Client):
             interaction: discord.Interaction,
             action: str = "",
             term: str = "",
-            layer: str = "user",
+            layer: str = "team",
         ) -> None:
             ident = to_identity(_interaction_context(interaction))
             if action == "show":

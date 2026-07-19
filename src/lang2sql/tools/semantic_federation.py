@@ -252,7 +252,7 @@ class SemanticFederationTool(ToolPort):
             )
 
         layer, err = _validate_layer(
-            str(args.get("layer", "user")), channel_id, ctx.identity.is_admin
+            str(args.get("layer", "team")), channel_id, ctx.identity.is_admin
         )
         if err:
             return ToolResult(call_id="", content=err, is_error=True)
