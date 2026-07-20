@@ -99,7 +99,7 @@
 - [`run_sql.py`](../src/lang2sql/tools/run_sql.py) — safety 통과 후 explorer로 실행
 - [`explore_schema.py`](../src/lang2sql/tools/explore_schema.py) — 테이블/컬럼 introspection
 - [`enrich_schema.py`](../src/lang2sql/tools/enrich_schema.py) — LLM으로 컬럼 메타데이터 자동 보강
-- [`semantic_federation.py`](../src/lang2sql/tools/semantic_federation.py) — `term_custom`: guild/channel/member 계층 용어 사전 (KV 기반, narrow→wide lookup)
+- [`semantic_federation.py`](../src/lang2sql/tools/semantic_federation.py) — `term_custom`: org/team/user 계층 용어 사전 (KV 기반, narrow→wide lookup)
 - [`org_setup.py`](../src/lang2sql/tools/org_setup.py) — 전사/팀 단위 용어 일괄 등록
 - [`remember.py`](../src/lang2sql/tools/remember.py) — fact 저장
 - [`ask_user.py`](../src/lang2sql/tools/ask_user.py) — 모호하면 사용자에게 질문

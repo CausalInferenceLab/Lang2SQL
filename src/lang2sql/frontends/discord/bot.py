@@ -176,7 +176,7 @@ class Lang2SQLBot(discord.Client):
             interaction: discord.Interaction,
             ref: str,
             accept: str = "all",
-            layer: str = "channel",
+            layer: str = "team",
         ) -> None:
             await self._run(
                 interaction,
@@ -219,7 +219,7 @@ class Lang2SQLBot(discord.Client):
             interaction: discord.Interaction,
             action: str = "",
             term: str = "",
-            layer: str = "member",
+            layer: str = "team",
         ) -> None:
             ident = to_identity(_interaction_context(interaction))
             if action == "show":

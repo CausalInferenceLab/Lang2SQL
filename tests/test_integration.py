@@ -64,7 +64,7 @@ def test_term_custom_is_scope_local():
     ident, ctx = _ctx()
     asyncio.run(
         SemanticFederationTool().run(
-            {"term": "active_user", "definition": "30d login", "layer": "channel"}, ctx
+            {"term": "active_user", "definition": "30d login", "layer": "team"}, ctx
         )
     )
     rendered = _render_effective(
@@ -82,7 +82,7 @@ def test_term_custom_emits_audit_event():
     ctx = asyncio.run(concierge.build_context(ident))
     asyncio.run(
         SemanticFederationTool().run(
-            {"term": "revenue", "definition": "gross revenue", "layer": "guild"}, ctx
+            {"term": "revenue", "definition": "gross revenue", "layer": "org"}, ctx
         )
     )
     events = asyncio.run(ctx.audit.query(ident.user_id))

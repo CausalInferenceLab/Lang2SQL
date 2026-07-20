@@ -9,8 +9,8 @@
 KV 저장:
   org:{org_lower}                              → {"name", "domain", "registered_at"}
   team:{team_lower}:{channel_id}               → {"name", "domain", "registered_at"}  (팀 등록 시)
-  cterm:{term_lower}:guild                     → FedEntry JSON (org 전용, guild 레이어)
-  cterm:{term_lower}:channel:{channel_id}      → FedEntry JSON (team 등록 시, channel 레이어)
+  cterm:{term_lower}:org                     → FedEntry JSON (org 전용, guild 레이어)
+  cterm:{term_lower}:channel:{channel_id}      → FedEntry JSON (team 등록 시, team 레이어)
 """
 
 from __future__ import annotations
@@ -79,7 +79,7 @@ class OrgSetupTool(ToolPort):
             name="org_setup",
             description=(
                 "조직(전사) 또는 팀(채널) 등록 및 DB 테이블 스캔으로 비즈니스 용어를 자동 추출한다. "
-                "org만 지정 시 guild 레이어(전사 공통), team 지정 시 channel 레이어(팀 전용)에 저장. "
+                "org만 지정 시 guild 레이어(전사 공통), team 지정 시 team 레이어(팀 전용)에 저장. "
                 "DB 연결(/setup) 후 실행."
             ),
             parameters={
@@ -91,7 +91,7 @@ class OrgSetupTool(ToolPort):
                     },
                     "team": {
                         "type": "string",
-                        "description": "팀 이름 (예: 마케팅팀). 현재 채널에 팀 전용 용어를 channel 레이어에 저장. org 없이 단독 사용 가능.",
+                        "description": "팀 이름 (예: 마케팅팀). 현재 채널에 팀 전용 용어를 team 레이어에 저장. org 없이 단독 사용 가능.",
                     },
                     "clear": {
                         "type": "boolean",
@@ -118,18 +118,18 @@ class OrgSetupTool(ToolPort):
         scope = ctx.identity.kv_scope
         channel_id = ctx.identity.effective_channel_id
 
-        # team이 있으면 channel 레이어, org만 있으면 guild 레이어
+        # team이 있으면 team 레이어, org만 있으면 guild 레이어
         use_team = bool(team_name)
-        layer = "channel" if use_team else "guild"
+        layer = "team" if use_team else "org"
 
-        if layer == "guild" and not ctx.identity.is_admin:
+        if layer == "org" and not ctx.identity.is_admin:
             return ToolResult(
                 call_id="",
-                content="❌ 전사(guild) 용어 등록·초기화는 관리자만 가능합니다.",
+                content="❌ 전사(org) 용어 등록·초기화는 관리자만 가능합니다.",
                 is_error=True,
             )
 
-        if layer == "channel" and not channel_id:
+        if layer == "team" and not channel_id:
             return ToolResult(
                 call_id="",
                 content="❌ 채널 컨텍스트 없이 팀(channel) 레이어에 등록할 수 없습니다.",
@@ -161,7 +161,7 @@ class OrgSetupTool(ToolPort):
                     ctx.store.kv_delete(scope, key)
                     deleted += 1
             ctx.store.kv_delete(scope, meta_key)
-            layer_label = "팀(채널)" if use_team else "전사(guild)"
+            layer_label = "팀(채널)" if use_team else "전사(org)"
             return ToolResult(
                 call_id="",
                 content=f"🗑️ **{display_name}** [{layer_label}] 자동 추출 용어 {deleted}개 초기화 완료 (수동 등록 용어 보존)",
@@ -247,7 +247,7 @@ class OrgSetupTool(ToolPort):
             syn_str = f" (= {', '.join(synonyms)})" if synonyms else ""
             saved_terms.append(f"- **{term}**{syn_str}: {definition} 🤖")
 
-        layer_label = "팀(채널)" if use_team else "전사(guild)"
+        layer_label = "팀(채널)" if use_team else "전사(org)"
         domain_line = f"📌 도메인: {domain}\n\n" if domain else ""
         term_block = "\n".join(saved_terms)
         return ToolResult(

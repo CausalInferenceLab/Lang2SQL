@@ -115,7 +115,7 @@ def test_term_custom_then_list() -> None:
             ident,
             term="active_user",
             definition="logged in within 30 days",
-            layer="channel",
+            layer="team",
         )
         shown = await handlers.term_custom(ident, list_all=True)
         return defined.text, shown.text
@@ -147,7 +147,7 @@ def test_term_custom_is_scope_isolated() -> None:
 
     async def scenario() -> str:
         await handlers.term_custom(
-            marketing, term="active_user", definition="30d login", layer="channel"
+            marketing, term="active_user", definition="30d login", layer="team"
         )
         return (await handlers.term_custom(product, list_all=True)).text
 

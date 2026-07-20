@@ -49,10 +49,10 @@ def test_demo_federation_resolves_distinct_definitions():
     fin = demo._finance_identity()
 
     demo._define_term(
-        store, demo.GUILD, "active_user", "channel", demo.CH_MARKETING, "30d login"
+        store, demo.GUILD, "active_user", "team", demo.CH_MARKETING, "30d login"
     )
     demo._define_term(
-        store, demo.GUILD, "active_user", "channel", demo.CH_FINANCE, "paid sub"
+        store, demo.GUILD, "active_user", "team", demo.CH_FINANCE, "paid sub"
     )
 
     mkt_rendered = _render_effective(store, demo.GUILD, demo.CH_MARKETING, mkt.user_id)
