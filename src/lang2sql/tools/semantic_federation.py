@@ -437,8 +437,17 @@ def _tag_for(e: FedEntry) -> str:
     if e.layer == "user":
         return f"개인:{e.entity}"
     if e.layer == "team":
-        return "채널"
-    return "전사"
+        return "이 채널"
+    return "전사 공통"
+
+
+def _tag_for_full(e: FedEntry, current_channel_id: str) -> str:
+    """다른 레이어/채널 정의에 출처 레이블 반환."""
+    if e.layer == "user":
+        return f"개인:{e.entity}"
+    if e.layer == "team":
+        return "이 채널" if e.entity == current_channel_id else "다른 채널"
+    return "전사 공통"
 
 
 def _fmt_entry(e: FedEntry, tag: str) -> str:
@@ -452,7 +461,11 @@ def _fmt_entry(e: FedEntry, tag: str) -> str:
 
 
 def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) -> str:
-    """kind별로 그룹화된 시멘틱 용어 섹션 + 모호 용어 지침 반환."""
+    """kind별로 그룹화된 시멘틱 용어 섹션 + 모호 용어 지침 반환.
+
+    정의가 하나뿐인 용어는 그대로 주입. 여러 레이어에 정의가 있는 용어는
+    전부 레이블 붙여 주입 — LLM이 채널 컨텍스트를 보고 선택·질의 여부를 판단.
+    """
     by_term = _load_all(store, scope)
 
     if not by_term:
@@ -460,17 +473,31 @@ def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) 
 
     groups: dict[str, list[str]] = {}
     for term_lower in sorted(by_term):
-        e = _resolve_entry(by_term[term_lower], channel_id, user_id)
-        if e is None:
+        entries = by_term[term_lower]
+        winner = _resolve_entry(entries, channel_id, user_id)
+        if winner is None:
             continue
-        k = e.kind if e.kind in _KIND_SQL_HINT else ""
-        groups.setdefault(k, []).append(_fmt_entry(e, _tag_for(e)))
+
+        others = [e for e in entries if e is not winner]
+        k = winner.kind if winner.kind in _KIND_SQL_HINT else ""
+
+        if not others:
+            groups.setdefault(k, []).append(_fmt_entry(winner, _tag_for(winner)))
+        else:
+            # 여러 정의 존재 → 전부 주입, 이 채널 것을 ★로 표시
+            lines = [f"- **{winner.term}** — 정의 여러 개 (채널 컨텍스트에 따라 판단):"]
+            lines.append(f"  ★ {_tag_for(winner)}: {winner.definition}")
+            for e in others:
+                lines.append(f"  · {_tag_for_full(e, channel_id)}: {e.definition}")
+            groups.setdefault(k, []).append("\n".join(lines))
 
     if not groups:
         return _AMBIGUOUS_TERM_POLICY
 
     parts: list[str] = [
-        "## Business Terminology\n(lookup 우선순위: 개인 > 채널(팀) > 전사)\n"
+        "## Business Terminology\n"
+        "(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용,"
+        " 애매하면 사용자에게 선택 요청)\n"
     ]
     for kind in _KIND_ORDER + [""]:
         lines = groups.get(kind, [])
