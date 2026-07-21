@@ -94,3 +94,26 @@ class PostgresExplorer:
             if table in lowered:
                 return list(rows)[:limit]
         return [{"result": 1}][:limit]
+
+    async def catalog_metadata(self) -> dict:
+        """Declared facts for the canned fixture; no sample inference."""
+
+        return {
+            "tables": {
+                "orders": {
+                    "primary_key": ["id"],
+                    "foreign_keys": [],
+                    "unique": [],
+                },
+                "users": {
+                    "primary_key": ["id"],
+                    "foreign_keys": [],
+                    "unique": [],
+                },
+            }
+        }
+
+    def quote_identifier(self, name: str) -> str:
+        if not name.replace("_", "").isalnum():
+            raise ValueError(f"unsafe identifier: {name!r}")
+        return f'"{name}"'

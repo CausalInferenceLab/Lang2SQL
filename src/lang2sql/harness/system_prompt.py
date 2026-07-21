@@ -12,7 +12,7 @@ import json
 
 from .context import HarnessContext
 
-_BASE = """\
+_RAW_BASE = """\
 You are Lang2SQL, a read-only data analytics agent.
 
 Rules:
@@ -23,9 +23,28 @@ Rules:
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
 """
 
+_GOVERNED_BASE = """\
+You are Lang2SQL, a read-only data analytics agent using a governed semantic catalog.
+
+Rules:
+- Never write or return SQL yourself. Call semantic_query with catalog IDs only.
+- Never call or imitate run_sql; it is intentionally unavailable in governed mode.
+- Every data request must call semantic_query or ask_user; never answer from memory.
+- Policy-blocked columns cannot be registered or exposed through another tool.
+- Copy metric and dimension phrases exactly from the user's question.
+- Select the requested aggregate explicitly; do not reuse another phrase's aggregate.
+- List every condition the typed tool cannot represent in unresolved_obligations.
+- Preserve every requested grouping, time basis, filter, business modifier, and unit.
+- If the catalog or tool cannot represent one of those obligations, ask for clarification.
+- Unknown IDs, blocked columns, and unsafe joins must stay blocked. Never invent a fallback.
+- Answer concisely and explain any one-time semantic confirmation in plain language.
+"""
+
 
 async def build_system_prompt(ctx: HarnessContext) -> str:
-    parts: list[str] = [_BASE]
+    tool_names = {item.name for item in ctx.tools.specs()}
+    base = _GOVERNED_BASE if "semantic_query" in tool_names else _RAW_BASE
+    parts: list[str] = [base]
 
     if ctx.explorer is not None:
         tables = await ctx.explorer.list_tables()

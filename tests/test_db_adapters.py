@@ -94,6 +94,9 @@ def test_sqlalchemy_explorer_introspect_and_execute(tmp_path):
     sample = asyncio.run(exp.sample_rows("users", limit=1))
     assert len(sample) == 1
 
+    metadata = asyncio.run(exp.catalog_metadata())
+    assert metadata["tables"]["users"]["primary_key"] == ["id"]
+
 
 # --- D1 explorer with mocked HTTP transport --------------------------------
 
@@ -122,6 +125,8 @@ def _d1_transport(sql, params):
                 "pk": 0,
             },
         ]
+    elif "pragma foreign_key_list" in s:
+        results = []
     else:
         results = [{"id": 1, "amount": 9.5}]
     return {
@@ -143,6 +148,9 @@ def test_d1_list_describe_execute():
 
     rows = asyncio.run(exp.execute("SELECT * FROM orders"))
     assert rows == [{"id": 1, "amount": 9.5}]
+
+    metadata = asyncio.run(exp.catalog_metadata())
+    assert metadata["tables"]["orders"]["primary_key"] == ["id"]
 
 
 def test_d1_raises_on_api_error():

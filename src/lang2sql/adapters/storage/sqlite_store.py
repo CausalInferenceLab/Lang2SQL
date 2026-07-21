@@ -122,6 +122,28 @@ class SqliteStore:
         )
         self._conn.commit()
 
+    def kv_apply_atomic(
+        self,
+        scope: str,
+        *,
+        upserts: dict[str, str],
+        delete_keys: set[str] | None = None,
+    ) -> None:
+        """Commit a related KV bundle in one crash-safe SQLite transaction."""
+
+        deletes = set(delete_keys or ()) - set(upserts)
+        with self._conn:
+            self._conn.executemany(
+                "INSERT INTO kv (scope, key, value) VALUES (?, ?, ?) "
+                "ON CONFLICT(scope, key) DO UPDATE SET value = excluded.value",
+                [(scope, key, value) for key, value in upserts.items()],
+            )
+            if deletes:
+                self._conn.executemany(
+                    "DELETE FROM kv WHERE scope = ? AND key = ?",
+                    [(scope, key) for key in deletes],
+                )
+
     def kv_delete(self, scope: str, key: str) -> None:
         self._conn.execute("DELETE FROM kv WHERE scope = ? AND key = ?", (scope, key))
         self._conn.commit()

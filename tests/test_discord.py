@@ -206,15 +206,15 @@ def test_query_persists_session() -> None:
     assert any(m.content == "first question" for m in saved.transcript)
 
 
-def test_connect_stub_acknowledges() -> None:
+def test_connect_requires_admin_for_guild() -> None:
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
     ident = to_identity(
         InteractionContext(user_id="u5", guild_id="g1", channel_id="c1")
     )
     out = asyncio.run(handlers.connect(ident, "postgresql://localhost/db"))
-    assert "saved" in out.text.lower()
-    assert concierge.store.kv_get("g1", "dsn") == "postgresql://localhost/db"
+    assert "관리자만" in out.text
+    assert concierge.store.kv_get("g1", "dsn") is None
 
 
 def test_ingest_lists_or_reports() -> None:
@@ -238,3 +238,18 @@ def test_bot_imports_without_token() -> None:
     import lang2sql.frontends.discord.bot as bot  # noqa: F401
 
     assert hasattr(bot, "run")
+
+
+def test_message_gate_requires_the_bot_user_id_not_mention_everyone() -> None:
+    from types import SimpleNamespace
+
+    from lang2sql.frontends.discord.bot import _is_direct_user_mention
+
+    everyone_only = SimpleNamespace(raw_mentions=[], mention_everyone=True)
+    direct = SimpleNamespace(raw_mentions=[42], mention_everyone=False)
+    nickname_direct = SimpleNamespace(raw_mentions=[42], mention_everyone=False)
+
+    assert not _is_direct_user_mention(everyone_only, 42)
+    assert _is_direct_user_mention(direct, 42)
+    assert _is_direct_user_mention(nickname_direct, 42)
+    assert not _is_direct_user_mention(direct, None)

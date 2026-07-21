@@ -31,7 +31,10 @@ from ..harness.tool_registry import ToolRegistry
 from ..ingestion import FileSource, IngestionPipeline, LLMExtractor
 from ..memory import InjectAllRecall, InMemoryStore, ManualExtractor, MemoryService
 from ..safety.pipeline import SafetyPipeline
+from ..semantic.catalog import CATALOG_KEY, SemanticCatalog
+from ..semantic.service import SemanticService
 from ..tools import build_default_tools
+from ..tools.semantic_query import SemanticQuery
 from .encrypted_secrets import EncryptedSecrets
 
 # DSN used for the V1 explorer stub when a scope has registered none yet.
@@ -64,6 +67,7 @@ class ContextConcierge:
         )
         self._audit = audit if audit is not None else self._store
         self._max_turns = max_turns
+        self._semantic = SemanticService(self._store)
 
         # V1 memory (in-memory + inject-all + manual) and ingestion (file × LLM).
         self._memory = MemoryService(
@@ -84,12 +88,53 @@ class ContextConcierge:
 
     @property
     def secrets(self) -> SecretsPort:
-        """Per-scope encrypted credential store (DSNs/API keys via ``/connect``)."""
+        """Per-scope encrypted credential store used by the setup workflow."""
         return self._secrets
+
+    @property
+    def semantic(self) -> SemanticService:
+        """Concrete first-connect semantic service shared by all frontends."""
+
+        return self._semantic
 
     def forget_explorer(self, scope: str) -> None:
         """Bust the cached explorer for ``scope`` (call after /setup updates a DSN)."""
         self._scope_explorers.pop(scope, None)
+
+    def activate_connection(
+        self,
+        *,
+        scope: str,
+        dsn: str,
+        extras: dict[str, str],
+        catalog: SemanticCatalog,
+    ) -> None:
+        """Atomically activate credentials and their matching semantic catalog.
+
+        A custom SecretsPort cannot guarantee the same SQLite transaction, so
+        first-connect fails explicitly instead of silently using compensating
+        writes that can split the DSN/catalog pair on process death.
+        """
+
+        if not isinstance(self._secrets, EncryptedSecrets):
+            raise RuntimeError("atomic connection activation requires EncryptedSecrets")
+        managed_extra_keys = {"d1_token", *extras.keys()}
+        upserts = {
+            "db_dsn": self._secrets.encode_for_storage(dsn),
+            CATALOG_KEY: catalog.to_json(),
+            **{
+                f"db_extras.{key}": self._secrets.encode_for_storage(value)
+                for key, value in extras.items()
+            },
+        }
+        self._store.kv_apply_atomic(
+            scope,
+            upserts=upserts,
+            delete_keys={
+                f"db_extras.{key}" for key in managed_extra_keys if key not in extras
+            },
+        )
+        self.forget_explorer(scope)
 
     async def _explorer_for(self, identity: Identity) -> ExplorerPort:
         """Pick the right explorer for this identity's guild scope.
@@ -120,12 +165,26 @@ class ContextConcierge:
         if session is None:
             session = Session(identity=identity)
 
+        explorer = await self._explorer_for(identity)
+        catalog = self._semantic.load(identity.kv_scope)
+        raw_catalog_exists = (
+            self._store.kv_get(identity.kv_scope, CATALOG_KEY) is not None
+        )
+        if raw_catalog_exists and catalog is None:
+            # A corrupt governed catalog must fail closed.  An empty semantic
+            # tool advertises no selectable IDs and blocks at service lookup;
+            # it never falls back to the legacy raw-SQL tool.
+            catalog = SemanticCatalog(fingerprint="invalid")
+        semantic_query = (
+            SemanticQuery(self._semantic, catalog) if catalog is not None else None
+        )
         tools = ToolRegistry(
             build_default_tools(
                 memory=self._memory,
                 ingestion=self._ingestion,
                 source=self._source,
                 extractor=self._extractor,
+                semantic_query=semantic_query,
             )
         )
 
@@ -134,7 +193,7 @@ class ContextConcierge:
             llm=self._llm,
             tools=tools,
             session=session,
-            explorer=await self._explorer_for(identity),
+            explorer=explorer,
             safety=self._safety,
             audit=self._audit,
             store=self._store,

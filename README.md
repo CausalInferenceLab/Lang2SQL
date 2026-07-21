@@ -93,13 +93,39 @@ offline `FakeLLM`.
 
 ```bash
 export DISCORD_BOT_TOKEN=...        # required
-export OPENAI_API_KEY=...           # optional; offline FakeLLM if unset
+export OPENAI_API_KEY=...           # required for real answers, unless using local model below
 export LANG2SQL_SECRET_KEY=...      # optional; Fernet key for secret encryption
 .venv/bin/lang2sql-bot
 ```
 
+Local OpenAI-compatible alternative:
+
+```bash
+export LANG2SQL_LLM_BASE_URL=http://127.0.0.1:11434
+export LANG2SQL_LLM_MODEL=gemma4:26b
+```
+
+With neither provider configured, `FakeLLM` is only an installation smoke and
+does not provide a meaningful semantic-query experience.
+
 The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 [`docs/DEPLOY.md`](docs/DEPLOY.md). Copy [`.env.example`](.env.example) to start.
+
+### Semantic first-connect (experimental branch)
+
+`/setup` now performs a PII-safe catalog scan immediately after connecting.
+Physical PK/FK facts are accepted automatically, while numeric business metrics
+are reviewed only when a real question needs them. In governed mode the model
+cannot call `run_sql`; it selects allowlisted IDs, copies the relevant question
+phrases, declares the requested aggregate and unresolved obligations, then a
+deterministic compiler builds SQL. Phrase-to-column-to-aggregate bindings are
+persisted after review, so SUM and AVG over one physical column do not overwrite
+each other.
+
+Discord flow: `/setup` → ask a question → one `/semantic_review` choice when
+needed → the original question resumes automatically. See
+[`docs/SEMANTIC_FIRST_CONNECT.md`](docs/SEMANTIC_FIRST_CONNECT.md) for the exact
+supported scope and fail-closed boundaries.
 
 ---
 
@@ -109,22 +135,31 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 - 3-scope semantic federation (guild / channel / member) with most-specific-wins
   resolution; `term_custom` registers definitions per scope (KV-backed).
 - Safety pipeline with the V1 layers (whitelist + timeout), gating every query.
-- Agent loop with eight tools: `run_sql`, `explore_schema`, `enrich_schema`,
-  `term_custom`, `org_setup`, `ingest_doc`, `remember`, `ask_user`.
+- Legacy raw mode includes `run_sql`, schema exploration/enrichment, semantic
+  term, ingestion, memory, and clarification tools.
+- Governed mode replaces the raw query/exploration surface with
+  `semantic_query`, blocks sample-based enrichment, and keeps SQL in audit only.
 - Memory service (in-memory store + inject-all recall + manual `/remember`).
 - Discord frontend (bot, commands, session router, render).
 - Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
+- PII-safe first-connect catalog, lazy metric review, and a typed semantic query
+  path for aggregate/group-by queries over declared many-to-one FK paths.
 
 **Does NOT yet:**
-- **Execute against a real database.** `PostgresExplorer` is a **V1 stub** with
-  canned `orders`/`users` schema and sample rows; real psycopg execution is v1.5.
-- **Reason without a key.** Without `OPENAI_API_KEY`, the `FakeLLM` returns
-  deterministic canned tool cycles — useful for wiring tests, not for answers.
+- **Replace the no-DB default fixture.** If neither `LANG2SQL_DB_URL` nor
+  Discord `/setup` supplies a connection, the canned `PostgresExplorer` remains
+  the offline demo. Setup connections themselves execute through SQLAlchemy or
+  D1 when their drivers and network are available.
+- **Reason without a configured model.** Without `OPENAI_API_KEY` or the local
+  model variables, `FakeLLM` returns deterministic canned tool cycles — useful
+  for wiring tests, not for answers.
 - DB metadata auto-enrichment, AST-precise SQL validation, function blocklists,
   cost gating, `/semantic diff` / `/semantic promote`, keyword/vector recall,
   automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.
 - Persist across restarts by default: the V1 `SqliteStore` defaults to in-memory;
   point it at a file for durability.
+- Silently guess time/cohort semantics, unit conversions, free-form filters,
+  composite joins, or fan-out joins in the governed query path.
 
 ---
 

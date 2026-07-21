@@ -50,6 +50,21 @@ class SqlAlchemyExplorer:
     async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
         return await asyncio.to_thread(self._execute_sync, sql, int(limit))
 
+    async def catalog_metadata(self) -> dict[str, Any]:
+        """Return declared PK/FK/unique facts for semantic onboarding.
+
+        This is an optional concrete capability rather than a new core port:
+        older/custom explorers remain valid and simply produce a catalog with
+        no automatically trusted relationships.
+        """
+
+        return await asyncio.to_thread(self._catalog_metadata_sync)
+
+    def quote_identifier(self, name: str) -> str:
+        """Quote one DB-provided identifier using the active SQL dialect."""
+
+        return self._get_engine().dialect.identifier_preparer.quote(name)
+
     # --- sync workers ----------------------------------------------------
 
     def _list_tables_sync(self) -> list[Table]:
@@ -83,6 +98,37 @@ class SqlAlchemyExplorer:
             for c in insp.get_columns(name, schema=self._schema)
         ]
         return Table(name=name, schema=self._schema or "", columns=cols)
+
+    def _catalog_metadata_sync(self) -> dict[str, Any]:
+        from sqlalchemy import inspect
+
+        insp = inspect(self._get_engine())
+        tables: dict[str, Any] = {}
+        for name in insp.get_table_names(schema=self._schema):
+            pk = insp.get_pk_constraint(name, schema=self._schema) or {}
+            foreign_keys = insp.get_foreign_keys(name, schema=self._schema) or []
+            try:
+                unique_constraints = (
+                    insp.get_unique_constraints(name, schema=self._schema) or []
+                )
+            except NotImplementedError:
+                unique_constraints = []
+            tables[name] = {
+                "primary_key": list(pk.get("constrained_columns") or []),
+                "foreign_keys": [
+                    {
+                        "columns": list(item.get("constrained_columns") or []),
+                        "referred_schema": item.get("referred_schema") or "",
+                        "referred_table": item.get("referred_table") or "",
+                        "referred_columns": list(item.get("referred_columns") or []),
+                    }
+                    for item in foreign_keys
+                ],
+                "unique": [
+                    list(item.get("column_names") or []) for item in unique_constraints
+                ],
+            }
+        return {"tables": tables}
 
     def _execute_sync(self, sql: str, limit: int) -> list[dict]:
         from sqlalchemy import text

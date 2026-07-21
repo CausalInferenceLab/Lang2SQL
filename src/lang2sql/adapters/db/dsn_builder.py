@@ -10,6 +10,7 @@ test the assembly without a Discord runtime.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from typing import Callable
 from urllib.parse import quote_plus, urlsplit
 
 
@@ -23,6 +24,7 @@ class ConnectionSpec:
 
 # Supported DB types in the wizard. Order matters — surfaces in the dropdown.
 SUPPORTED_DB_TYPES: tuple[str, ...] = (
+    "sqlite",
     "postgresql",
     "mysql",
     "snowflake",
@@ -47,6 +49,10 @@ def build_postgresql(
     suffix = "?sslmode=require" if clean_host.endswith(".neon.tech") else ""
     dsn = f"postgresql+psycopg://{_quote(user)}:{_quote(password)}@{clean_host}:{p}/{database}{suffix}"
     return ConnectionSpec(dsn=dsn, extras={})
+
+
+def build_sqlite(*, path: str) -> ConnectionSpec:
+    return ConnectionSpec(dsn=f"sqlite:///{path}", extras={})
 
 
 def build_mysql(
@@ -89,6 +95,9 @@ def build_d1(*, account_id: str, database_id: str, api_token: str) -> Connection
 # Field schemas surfaced by the Discord Modal layer. Each entry is
 # (label, placeholder, required, masked).
 FIELD_SCHEMA: dict[str, list[tuple[str, str, bool, bool]]] = {
+    "sqlite": [
+        ("path", "/data/demo.db", True, False),
+    ],
     "postgresql": [
         ("host", "db.example.com", True, False),
         ("port", "5432", False, False),
@@ -125,7 +134,8 @@ FIELD_SCHEMA: dict[str, list[tuple[str, str, bool, bool]]] = {
 }
 
 
-_BUILDERS = {
+_BUILDERS: dict[str, Callable[..., ConnectionSpec]] = {
+    "sqlite": build_sqlite,
     "postgresql": build_postgresql,
     "mysql": build_mysql,
     "snowflake": build_snowflake,

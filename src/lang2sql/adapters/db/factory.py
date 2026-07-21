@@ -1,6 +1,6 @@
 """build_explorer — turn a connection string into the right ExplorerPort.
 
-This is what makes ``/connect`` trivial: the user (or env) gives one URL and the
+The setup workflow (or an environment variable) supplies one URL and this
 factory routes it. Cloudflare D1 has its own HTTP adapter; everything else with
 a normal SQLAlchemy URL goes through the generic SQLAlchemy explorer.
 

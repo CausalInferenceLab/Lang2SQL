@@ -17,7 +17,7 @@ from lang2sql.harness.session import Session
 from lang2sql.harness.tool_registry import ToolRegistry
 from lang2sql.tools import build_default_tools
 from lang2sql.tools.confirm_ingest import ConfirmIngest, _dict_to_candidate, _select
-from lang2sql.tools.ingest_doc import PENDING_PREFIX, IngestDoc, _candidate_to_dict
+from lang2sql.tools.ingest_doc import PENDING_PREFIX, _candidate_to_dict
 from lang2sql.tools.semantic_federation import FedEntry, _kv_key
 
 # ---------------------------------------------------------------------------

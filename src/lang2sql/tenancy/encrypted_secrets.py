@@ -60,8 +60,13 @@ class EncryptedSecrets:
         return self._fernet.decrypt(blob.encode("ascii")).decode("utf-8")
 
     async def set(self, scope: str, key: str, value: str) -> None:
-        token = self._fernet.encrypt(value.encode("utf-8")).decode("ascii")
+        token = self.encode_for_storage(value)
         self._store.kv_set(scope, key, token)
 
     async def delete(self, scope: str, key: str) -> None:
         self._store.kv_delete(scope, key)
+
+    def encode_for_storage(self, value: str) -> str:
+        """Seal a value for an atomic bundle written by the concierge."""
+
+        return self._fernet.encrypt(value.encode("utf-8")).decode("ascii")

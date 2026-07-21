@@ -75,6 +75,33 @@ class D1Explorer:
         rows = await self._query(sql)
         return rows[: int(limit)]
 
+    async def catalog_metadata(self) -> dict[str, Any]:
+        """Return declared SQLite PK/FK facts without sampling user data."""
+
+        tables: dict[str, Any] = {}
+        for table in await self.list_tables():
+            info = await self._query(f"PRAGMA table_info({_ident(table.name)})")
+            foreign_keys = await self._query(
+                f"PRAGMA foreign_key_list({_ident(table.name)})"
+            )
+            tables[table.name] = {
+                "primary_key": [row["name"] for row in info if row.get("pk")],
+                "foreign_keys": [
+                    {
+                        "columns": [row["from"]],
+                        "referred_schema": "",
+                        "referred_table": row["table"],
+                        "referred_columns": [row["to"]],
+                    }
+                    for row in foreign_keys
+                ],
+                "unique": [],
+            }
+        return {"tables": tables}
+
+    def quote_identifier(self, name: str) -> str:
+        return _ident(name)
+
     # --- internals -------------------------------------------------------
 
     async def _query(self, sql: str, params: list | None = None) -> list[dict]:

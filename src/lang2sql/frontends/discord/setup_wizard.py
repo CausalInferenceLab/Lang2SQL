@@ -22,11 +22,11 @@ from .session_router import to_identity
 
 if TYPE_CHECKING:
     from .commands import CommandHandlers
-    from .bot import InteractionContext
 
 
 # Per-DB human labels surfaced in the dropdown.
 _LABELS: dict[str, str] = {
+    "sqlite": "SQLite (file)",
     "postgresql": "PostgreSQL",
     "mysql": "MySQL",
     "snowflake": "Snowflake",
@@ -57,7 +57,7 @@ class _ConnectionFormModal(ui.Modal):
         self._ctx_factory = ctx_factory  # () -> InteractionContext
         self._inputs: dict[str, ui.TextInput] = {}
         for name, placeholder, required, _masked in FIELD_SCHEMA[db_type]:
-            inp = ui.TextInput(
+            inp: ui.TextInput = ui.TextInput(
                 label=name,
                 placeholder=placeholder,
                 required=required,
@@ -117,8 +117,8 @@ async def start_setup_flow(
 ) -> None:
     """Entry point bot.py wires to ``/setup`` — surfaces the picker ephemerally."""
     await interaction.response.send_message(
-        "Let's connect your database. Pick its type, then fill the form. "
-        "Your credentials are stored encrypted; nobody else sees what you type.",
+        "연결할 DB 종류를 고른 뒤 접속 정보를 입력해 주세요. "
+        "입력 내용은 비공개로 처리되고 암호화해 저장합니다.",
         view=_SetupView(handlers, ctx_factory),
         ephemeral=True,
     )

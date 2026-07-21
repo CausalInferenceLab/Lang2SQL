@@ -16,6 +16,7 @@ memory writes identical to what the agent itself does.
 
 from __future__ import annotations
 
+import re
 from datetime import datetime, timezone
 
 from ...adapters.db import build_explorer
@@ -24,6 +25,7 @@ from ...core.identity import Identity
 from ...core.ports.frontend import OutboundMessage
 from ...core.types import Role
 from ...harness.loop import agent_loop
+from ...semantic.service import review_scope_key
 from ...tenancy.concierge import ContextConcierge
 from .render import render_answer
 
@@ -42,6 +44,18 @@ class CommandHandlers:
         thread/DM continues the conversation (tiebreaker #4).
         """
         ctx = await self._concierge.build_context(identity, user_text=text)
+        blocked_column = self._concierge.semantic.blocked_column_in_question(
+            identity.kv_scope, text
+        )
+        if blocked_column:
+            return OutboundMessage(
+                text=(
+                    "BLOCKED (policy_blocked_column): 질문에 기본 차단 컬럼 "
+                    f"`{blocked_column}`이 포함되어 있습니다. 이 경로에서는 "
+                    "등록이나 실행으로 우회하지 않습니다."
+                )
+            )
+        governed_mode = "semantic_query" in {item.name for item in ctx.tools.specs()}
         pre_loop_len = len(ctx.session.history())
         answer = await agent_loop(ctx, text)
 
@@ -58,8 +72,18 @@ class CommandHandlers:
 
         sql_queries: list[str] = []
         sql_results: list[str] = []
+        semantic_results: list[str] = []
+        clarification_results: list[str] = []
         for msg in current_turn:
-            if msg.role != Role.TOOL or msg.name != "run_sql" or not msg.content:
+            if msg.role != Role.TOOL or not msg.content:
+                continue
+            if msg.name == "semantic_query":
+                semantic_results.append(msg.content)
+                continue
+            if msg.name == "ask_user":
+                clarification_results.append(msg.content)
+                continue
+            if msg.name != "run_sql":
                 continue
             sql = call_id_to_sql.get(msg.tool_call_id or "")
             if sql and ("row(s):" in msg.content or "(0 rows)" in msg.content):
@@ -68,6 +92,21 @@ class CommandHandlers:
 
         ctx.session.compress()
         await self._concierge.store.save(identity.session_key(), ctx.session)
+
+        # In governed mode the tool output is the authoritative result.  Using
+        # it directly prevents the final prose model from changing readiness,
+        # dropping a clarification, or rewriting the compiled SQL.
+        if semantic_results:
+            return render_answer(semantic_results[-1])
+        if governed_mode and clarification_results:
+            return render_answer(_safe_clarification(clarification_results[-1]))
+        if governed_mode:
+            return OutboundMessage(
+                text=(
+                    "BLOCKED (semantic_tool_not_called): 검토 가능한 query slots가 "
+                    "생성되지 않았습니다. 지표와 분류 기준을 더 구체적으로 말해 주세요."
+                )
+            )
 
         suffix = ""
         if sql_queries:
@@ -111,9 +150,15 @@ class CommandHandlers:
         :class:`EncryptedSecrets`. The next ``build_context`` for this guild
         will use this DB transparently.
         """
+        if identity.guild_id and not identity.is_admin:
+            return OutboundMessage(
+                text="❌ 서버 DB 연결은 관리자만 설정할 수 있습니다."
+            )
         try:
             spec = assemble(db_type, fields)
         except ValueError as exc:
+            # assemble() errors contain only field names or a DB type, never
+            # submitted credential values, so this detail is safe and useful.
             return OutboundMessage(text=f"⚠️ Setup error: {exc}")
 
         try:
@@ -124,37 +169,40 @@ class CommandHandlers:
                 text=(
                     f"⚠️ Connection driver not installed for {db_type}. "
                     f"Ask an admin to run `uv sync --extra {db_type}`.\n"
-                    f"(details: {exc})"
+                    f"(오류 유형: {type(exc).__name__})"
                 )
             )
         except Exception as exc:  # surface what the DB said, but stay user-friendly
             return OutboundMessage(
                 text=(
-                    f"❌ Couldn't connect to {db_type}: {type(exc).__name__}: {exc}.\n"
+                    f"❌ Couldn't connect to {db_type}. "
+                    f"(오류 유형: {type(exc).__name__})\n"
                     "Common causes: wrong host/port, network/firewall, "
                     "wrong credentials, or read permission missing."
                 )
             )
 
-        scope = identity.kv_scope
-        await self._concierge.secrets.set(scope, "db_dsn", spec.dsn)
-        for k, v in spec.extras.items():
-            await self._concierge.secrets.set(scope, f"db_extras.{k}", v)
-        # Bust any cached explorer for this scope so the next turn picks it up.
-        self._concierge.forget_explorer(scope)
-
-        return OutboundMessage(
-            text=(
-                f"✅ Connected to **{db_type}** — found **{len(tables)} table(s)**. "
-                "Your credentials are stored encrypted; you can `/term_custom action:show` "
-                "or just ask a question now."
-            )
+        return await self._store_connection_and_onboard(
+            identity=identity,
+            db_type=db_type,
+            dsn=spec.dsn,
+            extras=spec.extras,
+            explorer=explorer,
+            table_count=len(tables),
         )
 
     async def enrich(
         self, identity: Identity, table: str = "", clear: bool = False
     ) -> OutboundMessage:
         """Run EnrichSchema tool: sample DB columns and LLM-infer descriptions."""
+        if self._concierge.semantic.load(identity.kv_scope) is not None:
+            return OutboundMessage(
+                text=(
+                    "`/enrich`의 원시 값 샘플링은 semantic first-connect 모드에서 "
+                    "비활성화됩니다. 구조 메타데이터만 사용하는 자동 준비 결과를 "
+                    "`/semantic_status`에서 확인해 주세요."
+                )
+            )
         ctx = await self._concierge.build_context(identity)
         result = await ctx.tools.dispatch(
             "enrich_schema", {"table": table, "clear": clear}, ctx, "cmd:enrich"
@@ -165,6 +213,14 @@ class CommandHandlers:
         self, identity: Identity, org: str = "", team: str = "", clear: bool = False
     ) -> OutboundMessage:
         """조직(전사) 또는 팀(채널) 등록 + DB 스캔으로 비즈니스 용어 자동 추출."""
+        if self._concierge.semantic.load(identity.kv_scope) is not None:
+            return OutboundMessage(
+                text=(
+                    "`/org_setup`의 자동 샘플 추론은 semantic first-connect 모드에서 "
+                    "비활성화됩니다. 필요한 업무 의미는 실제 질문에서 한 번씩 "
+                    "확인합니다."
+                )
+            )
         ctx = await self._concierge.build_context(identity)
         result = await ctx.tools.dispatch(
             "org_setup",
@@ -206,23 +262,132 @@ class CommandHandlers:
         return OutboundMessage(text=result.content)
 
     async def connect(self, identity: Identity, dsn: str) -> OutboundMessage:
-        """V1 stub: stash a DB DSN keyed by guild/DM in the concierge kv store.
+        """Connect a DSN through the same encrypted first-connect path as /setup."""
 
-        There is no secrets *port* on :class:`HarnessContext` in V1, so this
-        does not yet encrypt or wire the DSN into the explorer — it simply
-        records it (so a later run can pick it up) and acknowledges. The real
-        encrypted-secrets path lands in the tenancy work (task #2); this keeps
-        the command present and documented without overreaching.
-        """
+        if identity.guild_id and not identity.is_admin:
+            return OutboundMessage(
+                text="❌ 서버 DB 연결은 관리자만 설정할 수 있습니다."
+            )
         dsn = dsn.strip()
         if not dsn:
             return OutboundMessage(text="Provide a database connection string.")
+        try:
+            explorer = build_explorer(dsn)
+            tables = await explorer.list_tables()
+        except Exception as exc:
+            return OutboundMessage(
+                text=(f"❌ DB에 연결할 수 없습니다. (오류 유형: {type(exc).__name__})")
+            )
+        return await self._store_connection_and_onboard(
+            identity=identity,
+            db_type="database",
+            dsn=dsn,
+            extras={},
+            explorer=explorer,
+            table_count=len(tables),
+        )
+
+    async def semantic_status(self, identity: Identity) -> OutboundMessage:
+        return OutboundMessage(
+            text=self._concierge.semantic.status_text(
+                identity.kv_scope,
+                review_scope_key(identity.session_key(), identity.user_id),
+            )
+        )
+
+    async def semantic_reset(
+        self, identity: Identity, confirm: bool = False
+    ) -> OutboundMessage:
+        if identity.guild_id and not identity.is_admin:
+            return OutboundMessage(
+                text="❌ 의미 검토 초기화는 관리자만 할 수 있습니다."
+            )
+        if not confirm:
+            return OutboundMessage(
+                text=(
+                    "⚠️ 사람이 확인한 모든 표현·집계 연결을 초기화합니다. "
+                    "실행하려면 `confirm:true`로 다시 호출해 주세요."
+                )
+            )
+        outcome = self._concierge.semantic.reset_reviews(identity.kv_scope)
+        return OutboundMessage(text=outcome.message)
+
+    async def semantic_review(
+        self, identity: Identity, aggregate: str
+    ) -> OutboundMessage:
+        """Apply the one pending metric decision and resume its original question."""
+
+        normalized = aggregate.strip().lower()
+        outcome = self._concierge.semantic.confirm_pending(
+            identity.kv_scope,
+            review_scope_key(identity.session_key(), identity.user_id),
+            normalized,
+            reviewer_id=identity.user_id,
+        )
+        if (
+            outcome.status != "confirmed"
+            or not outcome.question
+            or normalized == "reject"
+        ):
+            return OutboundMessage(text=outcome.message)
+        # Resume the exact reviewed draft directly. Re-running the LLM here
+        # would let it pick a different metric after the user approved one.
+        ctx = await self._concierge.build_context(identity)
+        result = await ctx.tools.dispatch(
+            "semantic_query",
+            outcome.tool_args,
+            ctx,
+            "cmd:semantic_review:resume",
+        )
+        return OutboundMessage(text=f"✅ {outcome.message}\n\n{result.content}")
+
+    async def _store_connection_and_onboard(
+        self,
+        *,
+        identity: Identity,
+        db_type: str,
+        dsn: str,
+        extras: dict[str, str],
+        explorer,
+        table_count: int,
+    ) -> OutboundMessage:
         scope = identity.kv_scope
-        self._concierge.store.kv_set(scope, "dsn", dsn)
+        try:
+            # Build the complete candidate before changing the active DSN or
+            # catalog. A failed scan leaves the working connection untouched.
+            summary = await self._concierge.semantic.inspect(scope, explorer)
+        except Exception as exc:
+            return OutboundMessage(
+                text=(
+                    f"⚠️ **{db_type}** 연결 확인 후 의미 준비에 실패했습니다. "
+                    "기존 연결은 변경하지 않았습니다. `/setup`을 다시 실행해 주세요. "
+                    f"(오류 유형: {type(exc).__name__})"
+                )
+            )
+
+        try:
+            self._concierge.activate_connection(
+                scope=scope,
+                dsn=dsn,
+                extras=extras,
+                catalog=summary.catalog,
+            )
+        except Exception as exc:
+            return OutboundMessage(
+                text=(
+                    "⚠️ 새 연결을 원자적으로 활성화하지 못했습니다. 기존 연결은 "
+                    f"변경되지 않았습니다. (오류 유형: {type(exc).__name__})"
+                )
+            )
+
         return OutboundMessage(
             text=(
-                "Connection string saved for this workspace (V1 stub — not yet "
-                "encrypted or live; queries still run against the configured DB)."
+                f"✅ **{db_type}** 연결 완료 — 테이블 {table_count}개를 읽었습니다.\n"
+                f"- 선언된 안전 조인 {summary.declared_join_count}개 자동 등록\n"
+                f"- 개인정보 의심 컬럼 {summary.blocked_column_count}개 기본 차단\n"
+                f"- 물리 구조 검토 질문 0개\n"
+                "업무 지표는 지금 전부 묻지 않습니다. 바로 질문하면 필요한 의미만 "
+                "한 번 확인하고 이후 재사용합니다. `/semantic_status`에서 상태를 볼 수 있습니다."
             )
         )
 
@@ -270,12 +435,18 @@ class CommandHandlers:
 **Lang2SQL 사용 가이드**
 
 **📊 질문하기**
-봇을 멘션하거나 채널에서 자연어로 질문하세요.
+모든 채널, thread, DM에서 봇을 명시적으로 멘션해 질문하세요.
 > @Lang2SQL 이번 달 매출 상위 고객 10명 알려줘
 
 **🗄️ DB 연결** (관리자)
 `/setup` — 안내에 따라 DB 접속 정보 입력
-`/connect dsn:...` — DSN 직접 입력
+
+Discord에는 credential-bearing DSN을 직접 받는 `/connect`를 노출하지 않습니다.
+
+연결 직후 PK/FK·컬럼 타입·개인정보 의심 컬럼은 자동 정리됩니다.
+업무 지표는 실제 질문에 등장할 때만 `/semantic_review`로 한 번 확인합니다.
+`/semantic_status` — 현재 준비 상태 확인
+`/semantic_reset confirm:true` — 사람이 확인한 의미 연결 초기화 (관리자)
 
 **📖 비즈니스 용어 등록**
 `/ingest content:월매출은 SUM(orders.amount), 활성고객은 30일 내 로그인`
@@ -286,16 +457,34 @@ class CommandHandlers:
 `/term_custom action:show` — 등록된 용어 조회
 `/org_setup org:회사명` — DB 스캔으로 용어 자동 추출
 
+semantic first-connect 활성화 후에는 raw-value sampling을 쓰는 `/org_setup`과
+`/enrich`가 안전상 비활성화됩니다.
+
 **🏷️ 용어 우선순위**
 개인(member) > 채널(channel) > 전사(guild)
 같은 채널 안에서 등록한 정의가 전사 정의보다 우선 적용됩니다.
 
 **🔧 기타**
-`/enrich` — DB 컬럼 설명 자동 보강
+`/enrich` — legacy raw 모드에서만 DB 컬럼 설명 자동 보강
 `/remember text:...` — 사실 저장
 `/audit_me` — 내 활동 이력 조회
 `/help` — 이 도움말"""
         return OutboundMessage(text=text)
+
+
+def _safe_clarification(content: str) -> str:
+    """Never echo model-generated SQL through the clarification channel."""
+
+    if re.search(
+        r"```|;|\b(select|with|from|join|where|insert|update|delete|drop)\b",
+        content,
+        re.IGNORECASE,
+    ):
+        return (
+            "NEEDS CLARIFICATION: 요청을 검토 가능한 지표·분류 슬롯으로 "
+            "확정하지 못했습니다. SQL 형태가 아닌 업무 의미로 다시 말해 주세요."
+        )
+    return content
 
 
 def _fmt_ts(ts: float) -> str:

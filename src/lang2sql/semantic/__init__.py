@@ -1,4 +1,4 @@
-"""Semantic federation layer (★④) — type definitions."""
+"""Semantic federation plus the small first-connect query kernel."""
 
 from __future__ import annotations
 
@@ -10,6 +10,8 @@ from .types import (
     SemanticEntry,
     SemanticKind,
 )
+from .catalog import Aggregate, SemanticCatalog
+from .service import QueryOutcome, SemanticService
 
 __all__ = [
     "SemanticEntry",
@@ -18,4 +20,8 @@ __all__ = [
     "Dimension",
     "Relationship",
     "Rule",
+    "Aggregate",
+    "SemanticCatalog",
+    "SemanticService",
+    "QueryOutcome",
 ]

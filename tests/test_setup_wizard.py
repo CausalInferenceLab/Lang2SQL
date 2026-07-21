@@ -77,6 +77,12 @@ def test_assemble_d1_returns_token_in_extras():
     assert spec.extras == {"d1_token": "secret"}
 
 
+def test_assemble_sqlite_path():
+    spec = assemble("sqlite", {"path": "/tmp/demo.db"})
+    assert spec.dsn == "sqlite:////tmp/demo.db"
+    assert spec.extras == {}
+
+
 def test_assemble_missing_required_field_raises():
     with pytest.raises(ValueError, match="missing required"):
         assemble("postgresql", {"host": "h"})  # no user/password/db
@@ -105,23 +111,13 @@ def test_register_db_for_guild_success_stores_encrypted(tmp_path):
 
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    identity = Identity(user_id="alice", guild_id="g1", channel_id="c")
+    identity = Identity(user_id="alice", guild_id="g1", channel_id="c", is_admin=True)
 
-    # Reuse the DuckDB-style path through the generic assembler bypass: we
-    # don't have a "sqlite" form, but we can drive register_db_for_guild
-    # directly via the DuckDB form which speaks SQLAlchemy via its own engine.
-    # For this test we want a guaranteed sqlite driver, so call the lower-
-    # level path: synthesise the spec ourselves and store via the handler's
-    # connection-test code path by piggy-backing on the DuckDB schema.
-    # Simpler: call register_db_for_guild with db_type="duckdb" so the assembly
-    # produces a sqlalchemy URL we can satisfy with a sqlite file extension.
-    # (DuckDB engine is not installed in this env, so we directly use the API
-    # below — see test_register_db_for_guild_unknown_driver_friendly_error.)
-
-    # Build the spec by hand via assemble + register via a tiny shim: store
-    # the DSN through secrets, then assert the next build_context wires it.
-    asyncio.run(concierge.secrets.set("g1", "db_dsn", f"sqlite:///{db}"))
-    concierge.forget_explorer("g1")
+    result = asyncio.run(
+        handlers.register_db_for_guild(identity, "sqlite", {"path": str(db)})
+    )
+    assert "연결 완료" in result.text
+    assert asyncio.run(concierge.secrets.get("g1", "db_dsn")) == f"sqlite:///{db}"
 
     ctx = asyncio.run(concierge.build_context(identity))
     assert isinstance(ctx.explorer, SqlAlchemyExplorer)
@@ -132,7 +128,7 @@ def test_register_db_for_guild_success_stores_encrypted(tmp_path):
 def test_register_db_for_guild_unknown_driver_gives_friendly_error():
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    identity = Identity(user_id="u", guild_id="g-x", channel_id="c")
+    identity = Identity(user_id="u", guild_id="g-x", channel_id="c", is_admin=True)
     # Snowflake driver isn't installed in this env; the handler should catch
     # ModuleNotFoundError and produce a clear, non-technical message.
     res = asyncio.run(
@@ -154,7 +150,7 @@ def test_register_db_for_guild_unknown_driver_gives_friendly_error():
 def test_register_db_for_guild_missing_field_reports_setup_error():
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    identity = Identity(user_id="u", guild_id="g", channel_id="c")
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
     res = asyncio.run(
         handlers.register_db_for_guild(
             identity,
@@ -225,3 +221,10 @@ def test_setup_wizard_module_imports_without_discord_runtime():
     # The wizard imports discord.ui at module level. Make sure that succeeds in
     # a no-gateway environment — the same contract as bot.py's import-safety.
     import lang2sql.frontends.discord.setup_wizard  # noqa: F401
+
+
+def test_setup_picker_has_a_label_for_every_supported_database():
+    from lang2sql.adapters.db.dsn_builder import SUPPORTED_DB_TYPES
+    from lang2sql.frontends.discord.setup_wizard import _LABELS
+
+    assert set(SUPPORTED_DB_TYPES) <= set(_LABELS)

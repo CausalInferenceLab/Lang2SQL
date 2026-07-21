@@ -1,126 +1,89 @@
-# Lang2SQL 사용 가이드
+# Lang2SQL Discord 사용 가이드
 
-Discord에서 자연어로 질문하면 SQL을 생성하고 결과를 돌려주는 분석 에이전트입니다.
+이 실험 브랜치는 LLM이 SQL을 직접 쓰지 않는다. LLM은 질문을 검토 가능한
+값으로 조립하고, 서버가 확인된 값만으로 read-only SQL을 만든다.
 
----
+## 준비
 
-## 빠른 시작
+실제 질문에는 tool calling이 가능한 모델이 필요하다. `OPENAI_API_KEY`를
+설정하거나 Ollama 같은 OpenAI-compatible 서버를 연결한다.
 
-봇이 서버에 있다면 바로 질문할 수 있습니다.
-
-```
-@Lang2SQL 이번 달 매출 상위 고객 10명 알려줘
-```
-
-처음 사용한다면 아래 순서대로 세팅합니다.
-
----
-
-## 1단계: DB 연결
-
-DB가 연결되지 않으면 SQL을 실행할 수 없습니다.
-
-```
-/setup
+```bash
+export LANG2SQL_LLM_BASE_URL=http://127.0.0.1:11434
+export LANG2SQL_LLM_MODEL=gemma4:26b
+export DISCORD_BOT_TOKEN=...
+.venv/bin/lang2sql-bot
 ```
 
-DB 종류(PostgreSQL, MySQL, SQLite 등)를 선택하는 안내가 나타납니다. 접속 정보를 입력하면 연결됩니다. DSN을 직접 알고 있다면 `/connect dsn:...`으로 바로 입력할 수도 있습니다.
+모델 설정이 없으면 `FakeLLM`이 사용된다. 이는 설치 확인용일 뿐 의미 있는
+자연어 질의 검증용이 아니다.
 
-> 관리자 권한이 필요합니다.
+## 1. `/setup`으로 DB 연결
 
----
+Discord 서버 관리자가 `/setup`을 실행하고 DB 종류와 접속 정보를 입력한다.
+지원 선택지는 SQLite, PostgreSQL, MySQL, Snowflake, BigQuery, DuckDB, D1이다.
+credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출하지 않는다.
 
-## 2단계: 비즈니스 용어 등록
+처음 로컬 검증은 SQLite가 가장 단순하다.
 
-"월매출", "활성고객"처럼 회사 내부 용어를 등록해두면 LLM이 SQL을 훨씬 정확하게 만듭니다.
+1. `/setup`
+2. `SQLite` 선택
+3. 봇 프로세스에서 접근 가능한 DB 파일의 절대 경로 입력
 
-### 방법 A — 텍스트에서 자동 추출
+연결 성공 메시지는 테이블 수, 선언 FK 수, 민감/자유 텍스트 차단 수를 보여준다.
+연결 단계에서는 업무 지표를 전부 묻지 않는다.
 
-문서나 정의집 내용을 붙여넣으면 후보를 자동으로 뽑아줍니다.
+## 2. 봇을 멘션해 질문
 
-```
-/ingest content:월매출은 SUM(orders.amount)이고, 활성고객은 30일 내 로그인한 users, 환불제외는 status != 'cancelled'
-```
-
-후보 목록이 표시되면 확인 후 등록합니다.
-
-```
-/confirm_ingest ref:inline:xxxx accept:all layer:channel
-```
-
-- `accept`: `all`이면 전체, `1,3`처럼 번호를 지정하면 선택 등록
-- `layer`: `channel`(이 채널 전용), `guild`(전사 공통, 관리자 전용), `member`(개인)
-
-### 방법 B — 직접 등록
-
-```
-/term_custom
+```text
+@Lang2SQL Amount by region name
 ```
 
-안내에 따라 용어명, 정의, 종류(metric/rule/dimension/table)를 입력합니다.
+모든 채널, thread, DM에서 명시적 `@Lang2SQL` 멘션이 필요하다. 봇은 일반 대화,
+`@everyone`, `@here`를 질의로 가로채지 않는다.
 
-### 방법 C — DB 스캔으로 자동 추출
+처음 보는 표현이면 봇이 다음처럼 실제 연결을 보여준다.
 
-```
-/org_setup org:회사명
-```
-
-DB 스키마를 분석해 비즈니스 용어 후보를 자동으로 뽑습니다.
-
----
-
-## 3단계: 질문하기
-
-용어를 등록한 뒤 자연어로 질문합니다.
-
-```
-@Lang2SQL 월매출 기준 이번 달 상위 고객 10명 보여줘
-@Lang2SQL 환불제외 기준으로 채널별 주문 수 알려줘
+```text
+amount → orders.amount
+선택: SUM / AVG / MIN / MAX / COUNT / reject
 ```
 
-봇이 SQL을 생성해 실행하고 결과를 표시합니다.
+`/semantic_review`에서 선택하면 승인 당시의 metric, aggregate, dimensions,
+질문을 그대로 사용해 실행한다. LLM이 원 질문을 다시 해석하지 않는다. 같은
+표현·집계 조합은 이후 재확인하지 않는다.
 
----
+## 3. 상태와 복구
 
-## 용어 우선순위 (Federation)
+- `/semantic_status`: 자동 구조와 확인된 표현·집계 연결 수 확인
+- `/semantic_review`: 현재 질문의 연결 확인 또는 거절
+- `/semantic_reset confirm:true`: 사람이 확인한 연결 전체 초기화(관리자)
 
-같은 용어가 여러 레이어에 등록된 경우 **좁은 범위가 우선** 적용됩니다.
+초기 실험에서는 전용 guild/channel과 신뢰된 reviewer 한 명을 권장한다. 현재
+확인 결과는 guild catalog에 공유되며, 역할별 semantic 승인 정책은 후속 범위다.
 
-```
-개인(member) > 채널(channel) > 전사(guild)
-```
+## 현재 질의 범위
 
-예를 들어 "활성고객"을 전사에서는 "30일 내 로그인"으로 정의했더라도, 마케팅 채널에서 "14일 내 로그인"으로 따로 등록하면 마케팅 채널 안에서만 그 정의가 우선 적용됩니다. 다른 채널에는 영향이 없습니다.
+지원:
 
----
+- numeric metric의 SUM/AVG/MIN/MAX
+- PK 기반 source-record COUNT
+- categorical group-by
+- 선언 FK의 유일한 child-to-parent join
 
-## 전체 커맨드 목록
+차단 또는 추가 확인:
 
-| 커맨드 | 설명 |
-|---|---|
-| `/setup` | DB 연결 마법사 (관리자) |
-| `/connect dsn:...` | DSN으로 직접 DB 연결 |
-| `/ingest content:...` | 텍스트에서 용어 후보 추출 |
-| `/ingest ref:파일명` | 서버 파일에서 용어 후보 추출 |
-| `/confirm_ingest ref:... accept:... layer:...` | 추출된 후보 검토 후 등록 |
-| `/term_custom` | 용어 직접 등록 (위저드) |
-| `/term_custom action:show` | 등록된 용어 전체 조회 |
-| `/term_custom action:remove term:용어명` | 용어 삭제 |
-| `/org_setup org:...` | 전사 조직 등록 + DB 스캔 |
-| `/org_setup team:...` | 팀(채널) 등록 |
-| `/enrich` | DB 컬럼 메타데이터 자동 보강 |
-| `/remember text:...` | 사실 기억 저장 |
-| `/audit_me` | 내 활동 이력 조회 |
+- 자유로운 filter와 계산식
+- 기간/cohort 기준
+- 단위 변환
+- composite FK, fan-out, 동률 join path
+- PII, credential-like 컬럼, 검토되지 않은 free-text
 
----
+미지원 조건을 버린 채 결과를 내지 않는다. 조건이 남으면 `NEEDS
+CLARIFICATION` 또는 `BLOCKED`로 끝난다.
 
-## 자주 묻는 질문
+## 기타 기존 명령
 
-**Q. 질문했는데 엉뚱한 SQL이 나와요.**
-등록된 용어가 없거나 DB 메타데이터가 부족한 경우입니다. `/enrich`로 컬럼 설명을 보강하거나 `/term_custom`으로 관련 용어를 등록해보세요.
-
-**Q. "guild 용어는 관리자만 등록 가능" 오류가 나요.**
-`layer:guild`는 관리자 권한이 필요합니다. `layer:channel`로 채널 범위로 등록하거나 관리자에게 요청하세요.
-
-**Q. 이전 대화 내용을 기억하나요?**
-같은 채널(또는 DM 스레드)에서 이어지는 대화는 맥락이 유지됩니다. `/remember`로 중요한 사실을 명시적으로 저장할 수도 있습니다.
+`/ingest`, `/confirm_ingest`, `/term_custom`, `/remember`, `/audit_me`는 기존
+기능으로 남아 있다. `/enrich`와 `/org_setup`의 raw-value sampling은 semantic
+first-connect가 활성화된 DB에서는 의도적으로 비활성화된다.

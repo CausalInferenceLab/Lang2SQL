@@ -19,8 +19,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
-
 from ..core.ports.tool import ToolPort, ToolResult, ToolSpec
+from ..tools.enrich_schema import (
+    _KV_PREFIX as _ENRICH_PREFIX,
+    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
+)
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -42,11 +45,6 @@ def _validate_layer(
         return layer, "❌ 채널 컨텍스트 없이 channel 레이어에 등록할 수 없습니다."
     return layer, None
 
-
-from ..tools.enrich_schema import (
-    _KV_PREFIX as _ENRICH_PREFIX,
-    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
-)
 
 _AMBIGUITY_SIGNALS: dict[str, str] = {
     r"(^|_)(created|registered|joined|signup)(_at|_date)?$": "신규/최초 가입 기준 용어",
@@ -328,7 +326,9 @@ def _layer_tag(layer: str, entity: str, user_id: str, channel_id: str) -> str:
 def _scan_schema(store: Any, scope: str) -> str:
     col_entries = store.kv_list_prefix(scope, _ENRICH_PREFIX + ":")
     if not col_entries:
-        return "⚠️ enriched schema가 없습니다. 먼저 `/enrich`를 실행해 스키마를 보강하세요."
+        return (
+            "⚠️ enriched schema가 없습니다. 먼저 `/enrich`를 실행해 스키마를 보강하세요."
+        )
 
     col_map: dict[str, str] = {}
     for key, desc in col_entries:

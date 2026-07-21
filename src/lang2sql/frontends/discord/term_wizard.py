@@ -40,20 +40,20 @@ _LAYER_OPTIONS = [
 
 
 class _TermModal(ui.Modal, title="비즈니스 용어 등록"):
-    term = ui.TextInput(
+    term: ui.TextInput = ui.TextInput(
         label="용어명",
         placeholder="예: 활성고객",
         required=True,
         max_length=100,
     )
-    definition = ui.TextInput(
+    definition: ui.TextInput = ui.TextInput(
         label="정의",
         placeholder="예: 최근 30일 내 로그인한 users",
         required=True,
         style=discord.TextStyle.paragraph,
         max_length=500,
     )
-    synonyms = ui.TextInput(
+    synonyms: ui.TextInput = ui.TextInput(
         label="동의어 (쉼표 구분, 선택)",
         placeholder="예: active user, 활성화고객",
         required=False,
