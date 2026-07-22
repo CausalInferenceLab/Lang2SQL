@@ -19,6 +19,9 @@ Key management:
 
 from __future__ import annotations
 
+import hashlib
+import hmac
+import json
 import os
 
 from cryptography.fernet import Fernet
@@ -51,7 +54,11 @@ class EncryptedSecrets:
 
     def __init__(self, store: SqliteStore, *, key: bytes | None = None) -> None:
         self._store = store
-        self._fernet = Fernet(key if key is not None else _resolve_key(store))
+        resolved_key = key if key is not None else _resolve_key(store)
+        self._fernet = Fernet(resolved_key)
+        self._source_identity_key = hmac.new(
+            resolved_key, b"lang2sql-source-identity-v1", hashlib.sha256
+        ).digest()
 
     async def get(self, scope: str, key: str) -> str | None:
         blob = self._store.kv_get(scope, key)
@@ -70,3 +77,28 @@ class EncryptedSecrets:
         """Seal a value for an atomic bundle written by the concierge."""
 
         return self._fernet.encrypt(value.encode("utf-8")).decode("ascii")
+
+    def decode_from_storage(self, value: str) -> str:
+        """Open one value from a transactionally read encrypted bundle."""
+
+        return self._fernet.decrypt(value.encode("ascii")).decode("utf-8")
+
+    def source_identity(
+        self, scope: str, dsn: str, extras: dict[str, str]
+    ) -> str:
+        """Return a non-reversible identity for the exact execution material."""
+
+        material = json.dumps(
+            {
+                "version": 1,
+                "scope": scope,
+                "dsn": dsn.strip(),
+                "extras": dict(sorted(extras.items())),
+            },
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        return hmac.new(
+            self._source_identity_key, material, hashlib.sha256
+        ).hexdigest()

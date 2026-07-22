@@ -1,0 +1,189 @@
+version: 1
+description: >-
+  Reproducible SQLite-only public-data bundle for structural Lang2SQL evaluation.
+  This manifest contains source and topology metadata only. It is not a semantic
+  pack and must never be imported by production code.
+database_count: 21
+split_counts:
+  dev: 11
+  holdout: 10
+
+datasets:
+  - dataset_id: bird_mini_dev
+    domain: multi_domain
+    topology_family: multi_table_mixed
+    dialect: sqlite
+    official_page: https://github.com/bird-bench/mini_dev
+    license: CC BY-SA 4.0
+    download:
+      url: "https://drive.usercontent.google.com/download?id=13VLWIwpw5E3d5DUkMvzw7hvHE67a4XkG&export=download&confirm=t"
+      format: zip
+      filename: minidev_0703.zip
+      max_bytes: 850000000
+      checksum_policy: required
+      sha256: aeb211c0e39010bbdae3838bb5e8bd27dc446ed77495b1709f85ccc9bf67f2be
+    materialization:
+      kind: bird_sqlite_bundle
+      database_glob: minidev/MINIDEV/dev_databases/*/*.sqlite
+      databases:
+        - {db_id: california_schools, split: dev}
+        - {db_id: card_games, split: dev}
+        - {db_id: financial, split: dev}
+        - {db_id: formula_1, split: dev}
+        - {db_id: student_club, split: dev}
+        - {db_id: toxicology, split: dev}
+        - {db_id: codebase_community, split: holdout}
+        - {db_id: debit_card_specializing, split: holdout}
+        - {db_id: european_football_2, split: holdout}
+        - {db_id: superhero, split: holdout}
+        - {db_id: thrombosis_prediction, split: holdout}
+
+  - dataset_id: bts_cfs_shipments
+    domain: freight_transportation
+    topology_family: flat_event
+    dialect: sqlite
+    split: dev
+    official_page: https://catalog.data.gov/dataset/cfs-area-file-2012-2022
+    license: U.S. Government public data
+    download:
+      url: "https://data.bts.gov/resource/j246-y2rf.csv?$where=geotype=%2701%27&$order=year,naics,comm,dmode,shipdist&$limit=5000"
+      format: csv
+      filename: bts_cfs_shipments.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: cfs_shipments, max_rows: 5000}
+
+  - dataset_id: epa_waste_management
+    domain: waste_management
+    topology_family: flat_event
+    dialect: sqlite
+    split: holdout
+    official_page: https://catalog.data.gov/dataset/u-s-total-waste-management-by-sector-and-material-2018-v1-3-2
+    license: EPA ScienceHub public data
+    download:
+      url: https://pasteur.epa.gov/uploads/10.23719/1529938/Waste_national_2018_v1.3.2_9b1bb41.csv
+      format: csv
+      filename: epa_waste_management.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: waste_management, max_rows: 5000}
+
+  - dataset_id: usgs_earthquake_catalog
+    domain: earthquake_science
+    topology_family: spatial_event
+    dialect: sqlite
+    split: dev
+    official_page: https://earthquake.usgs.gov/fdsnws/event/1/
+    license: U.S. Government public data
+    download:
+      url: "https://earthquake.usgs.gov/fdsnws/event/1/query?format=csv&starttime=2025-01-01&endtime=2025-02-01&minmagnitude=4&limit=5000&orderby=time-asc"
+      format: csv
+      filename: usgs_earthquakes_2025_01.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: earthquake_events, max_rows: 5000}
+
+  - dataset_id: nasa_exoplanet_archive
+    domain: exoplanet_astronomy
+    topology_family: scientific_catalog
+    dialect: sqlite
+    split: holdout
+    official_page: https://exoplanetarchive.ipac.caltech.edu/docs/TAP/usingTAP.html
+    license: NASA Exoplanet Archive public data; archive acknowledgment required
+    download:
+      url: "https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+top+500+pl_name,disc_year,discoverymethod,pl_rade,pl_orbper,sy_dist+from+pscomppars+where+disc_year+is+not+null+order+by+pl_name&format=csv"
+      format: csv
+      filename: nasa_exoplanets_500.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: exoplanet_systems, max_rows: 500}
+
+  - dataset_id: cdc_places_health
+    domain: public_health
+    topology_family: geographic_panel
+    dialect: sqlite
+    split: dev
+    official_page: https://data.cdc.gov/500-Cities-Places/PLACES-Place-Data-GIS-Friendly-Format-2025-release/vgc8-iyc4
+    license: U.S. Government public data
+    download:
+      url: "https://data.cdc.gov/resource/vgc8-iyc4.csv?$select=stateabbr,statedesc,totalpopulation,access2_crudeprev&$order=stateabbr&$limit=5000"
+      format: csv
+      filename: cdc_places_2025.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: place_health_estimates, max_rows: 5000}
+
+  - dataset_id: fema_disaster_declarations
+    domain: disaster_management
+    topology_family: flat_event
+    dialect: sqlite
+    split: holdout
+    official_page: https://www.fema.gov/about/reports-and-data/openfema
+    license: OpenFEMA public data
+    download:
+      url: "https://www.fema.gov/api/open/v2/DisasterDeclarationsSummaries.csv?$select=disasterNumber,state,declarationType,incidentType,designatedArea&$orderby=disasterNumber%20desc,state%20asc&$top=5000"
+      format: csv
+      filename: fema_disasters.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: disaster_declaration_areas, max_rows: 5000}
+
+  - dataset_id: treasury_debt_to_the_penny
+    domain: federal_finance
+    topology_family: snapshot_time_series
+    dialect: sqlite
+    split: dev
+    official_page: https://fiscaldata.treasury.gov/datasets/debt-to-the-penny/
+    license: U.S. Government public data
+    download:
+      url: "https://api.fiscaldata.treasury.gov/services/api/fiscal_service/v2/accounting/od/debt_to_penny?fields=record_date,record_fiscal_year,record_fiscal_quarter,record_calendar_month,tot_pub_debt_out_amt&filter=record_date:gte:2025-01-01,record_date:lte:2025-12-31&sort=record_date&page%5Bsize%5D=5000&format=csv"
+      format: csv
+      filename: treasury_debt_2025.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: daily_public_debt, max_rows: 5000}
+
+  - dataset_id: nyc_311_requests
+    domain: civic_service
+    topology_family: wide_event
+    dialect: sqlite
+    split: holdout
+    official_page: https://data.cityofnewyork.us/Social-Services/311-Service-Requests-from-2010-to-Present/erm2-nwe9
+    license: NYC Open Data Terms of Use
+    download:
+      url: "https://data.cityofnewyork.us/resource/erm2-nwe9.csv?%24select=unique_key%2Ccreated_date%2Cagency%2Ccomplaint_type%2Cborough%2Cstatus&%24where=created_date%20between%20%272025-01-01T00%3A00%3A00%27%20and%20%272025-01-31T23%3A59%3A59%27&%24order=created_date&%24limit=5000"
+      format: csv
+      filename: nyc_311_2025_01.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: service_requests, max_rows: 5000}
+
+  - dataset_id: chicago_crimes
+    domain: public_safety
+    topology_family: wide_event
+    dialect: sqlite
+    split: holdout
+    official_page: https://data.cityofchicago.org/Public-Safety/Crimes-2001-to-Present/ijzp-q8t2
+    license: City of Chicago Data Portal Terms of Use
+    download:
+      url: "https://data.cityofchicago.org/resource/ijzp-q8t2.csv?%24select=id%2Cdate%2Cprimary_type%2Cdescription%2Clocation_description%2Carrest%2Cdomestic%2Cbeat%2Cdistrict%2Cward%2Ccommunity_area%2Cfbi_code%2Cx_coordinate%2Cy_coordinate%2Cyear%2Clatitude%2Clongitude&%24where=date%20between%20%272025-01-01T00%3A00%3A00.000%27%20and%20%272025-01-31T23%3A59%3A59.999%27&%24order=date&%24limit=5000"
+      format: csv
+      filename: chicago_crimes_2025_01.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: crime_events, max_rows: 5000}
+
+  - dataset_id: noaa_tides
+    domain: oceanography
+    topology_family: station_time_series
+    dialect: sqlite
+    split: dev
+    official_page: https://api.tidesandcurrents.noaa.gov/api/prod/
+    license: U.S. Government public data
+    download:
+      url: "https://api.tidesandcurrents.noaa.gov/api/prod/datagetter?begin_date=20250101&end_date=20250131&station=8518750&product=hourly_height&datum=MLLW&time_zone=gmt&units=metric&application=Lang2SQLBenchmark&format=csv"
+      format: csv
+      filename: noaa_tides_2025_01.csv
+      max_bytes: 10000000
+      checksum_policy: lock_on_first_fetch
+    materialization: {kind: csv_to_sqlite, table_name: hourly_tide_heights, max_rows: 5000}

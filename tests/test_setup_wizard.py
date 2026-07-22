@@ -16,6 +16,7 @@ from lang2sql.adapters.db import D1Explorer, SqlAlchemyExplorer
 from lang2sql.adapters.db.dsn_builder import assemble
 from lang2sql.core.identity import Identity
 from lang2sql.frontends.discord.commands import CommandHandlers
+from lang2sql.semantic.catalog import SemanticCatalog
 from lang2sql.tenancy.concierge import ContextConcierge
 
 # --- dsn_builder ---------------------------------------------------------
@@ -169,10 +170,13 @@ def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
     _seed_sqlite(str(db))
     concierge = ContextConcierge()
 
-    g_with = Identity(user_id="u", guild_id="g-real", channel_id="c")
+    g_with = Identity(
+        user_id="u", guild_id="g-real", channel_id="c", is_admin=True
+    )
     g_without = Identity(user_id="u", guild_id="g-default", channel_id="c")
 
-    asyncio.run(concierge.secrets.set("g-real", "db_dsn", f"sqlite:///{db}"))
+    result = asyncio.run(CommandHandlers(concierge).connect(g_with, f"sqlite:///{db}"))
+    assert "연결 완료" in result.text
 
     ctx_with = asyncio.run(concierge.build_context(g_with))
     ctx_without = asyncio.run(concierge.build_context(g_without))
@@ -185,33 +189,40 @@ def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
 
 def test_concierge_d1_extras_threaded_through_secrets():
     concierge = ContextConcierge()
-    asyncio.run(concierge.secrets.set("g-d1", "db_dsn", "d1://acct/db"))
-    asyncio.run(concierge.secrets.set("g-d1", "db_extras.d1_token", "tok-1"))
+    concierge.activate_connection(
+        scope="g-d1",
+        dsn="d1://acct/db",
+        extras={"d1_token": "tok-1"},
+        catalog=SemanticCatalog(fingerprint="fixture"),
+        expected_generation=0,
+    )
     identity = Identity(user_id="u", guild_id="g-d1", channel_id="c")
     ctx = asyncio.run(concierge.build_context(identity))
     assert isinstance(ctx.explorer, D1Explorer)
     assert ctx.explorer._token == "tok-1"
 
 
-def test_forget_explorer_busts_the_cache(tmp_path):
+def test_reactivation_rotates_generation_and_explorer_cache(tmp_path):
     db1 = tmp_path / "a.db"
     db2 = tmp_path / "b.db"
     _seed_sqlite(str(db1))
     _seed_sqlite(str(db2))
     concierge = ContextConcierge()
-    identity = Identity(user_id="u", guild_id="g", channel_id="c")
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+    handlers = CommandHandlers(concierge)
 
-    asyncio.run(concierge.secrets.set("g", "db_dsn", f"sqlite:///{db1}"))
+    first = asyncio.run(handlers.connect(identity, f"sqlite:///{db1}"))
+    assert "연결 완료" in first.text
     ctx1 = asyncio.run(concierge.build_context(identity))
+    binding1 = concierge.connection_binding("g")
 
-    # Update the DSN but don't bust the cache yet — the old explorer is reused.
-    asyncio.run(concierge.secrets.set("g", "db_dsn", f"sqlite:///{db2}"))
-    ctx_stale = asyncio.run(concierge.build_context(identity))
-    assert ctx_stale.explorer is ctx1.explorer
-
-    concierge.forget_explorer("g")
+    second = asyncio.run(handlers.connect(identity, f"sqlite:///{db2}"))
+    assert "연결 완료" in second.text
     ctx_fresh = asyncio.run(concierge.build_context(identity))
+    binding2 = concierge.connection_binding("g")
     assert ctx_fresh.explorer is not ctx1.explorer
+    assert binding1 is not None and binding2 is not None
+    assert binding2.generation == binding1.generation + 1
 
 
 # --- UI module import smoke ----------------------------------------------

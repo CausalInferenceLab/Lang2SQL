@@ -95,6 +95,8 @@ offline `FakeLLM`.
 export DISCORD_BOT_TOKEN=...        # required
 export OPENAI_API_KEY=...           # required for real answers, unless using local model below
 export LANG2SQL_SECRET_KEY=...      # optional; Fernet key for secret encryption
+# optional: parent channel IDs where non-admin members may query
+export LANG2SQL_DISCORD_QUERY_CHANNEL_IDS=123456789012345678
 .venv/bin/lang2sql-bot
 ```
 
@@ -122,10 +124,26 @@ deterministic compiler builds SQL. Phrase-to-column-to-aggregate bindings are
 persisted after review, so SUM and AVG over one physical column do not overwrite
 each other.
 
-Discord flow: `/setup` → ask a question → one `/semantic_review` choice when
-needed → the original question resumes automatically. See
+Unbounded string columns that are neither clearly sensitive nor clearly safe
+stay hidden from the model until an administrator explicitly approves grouped
+value disclosure with `/semantic_release`. That disclosure decision is separate
+from the requester's later phrase-to-column review. Physical source-row counts
+use an explicit `COUNT(*)` expression on every table, including PK-less tables.
+
+Discord flow: `/setup` → `/semantic_status` → when needed, an administrator
+uses 15-minute candidate tokens to review dimension disclosure or map an opaque
+dimension/metric phrase → ask a question → independently review the metric aggregate and
+dimension phrase when requested → the immutable original question resumes
+without a second LLM parse. Destructive or disclosure actions use warning and
+confirmation steps; metric/dimension mapping and dimension release bind the confirmation
+to the same administrator and exact payload. See
 [`docs/SEMANTIC_FIRST_CONNECT.md`](docs/SEMANTIC_FIRST_CONNECT.md) for the exact
 supported scope and fail-closed boundaries.
+
+Guild queries are admin-only by default. Non-admin members can query only in
+parent channels explicitly listed in `LANG2SQL_DISCORD_QUERY_CHANNEL_IDS`;
+threads inherit the parent channel. This frontend allowlist and the aggregate
+suppression rules are not a substitute for database row/column authorization.
 
 ---
 
@@ -144,6 +162,9 @@ supported scope and fail-closed boundaries.
 - Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
 - PII-safe first-connect catalog, lazy metric review, and a typed semantic query
   path for aggregate/group-by queries over declared many-to-one FK paths.
+- Private-by-default aggregate disclosure: fewer than five contributing rows
+  blocks `SUM`/`AVG`/source-record `COUNT`, while `MIN`/`MAX` require an explicit
+  public-data scope with no controlled dimension.
 
 **Does NOT yet:**
 - **Replace the no-DB default fixture.** If neither `LANG2SQL_DB_URL` nor
@@ -160,6 +181,16 @@ supported scope and fail-closed boundaries.
   point it at a file for durability.
 - Silently guess time/cohort semantics, unit conversions, free-form filters,
   composite joins, or fan-out joins in the governed query path.
+- Claim universal dialect parity: current public execution evidence covers
+  SQLite. Connector availability and verified governed execution are reported
+  separately.
+
+The cross-domain benchmark currently contains 28 cases over 21 public SQLite
+databases: 17 cases exercise the supported typed-query scope and 11 verify
+fail-closed handling of unsupported obligations. Its frozen semantic plans and
+gold SQL validate compilation, disclosure and result behavior; they do not
+measure natural-language planning accuracy. Dataset-specific mappings remain
+under `bench/**` and are not imported by product code.
 
 ---
 

@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import urllib.request
 from typing import Any, Callable
 
-from ...core.ports.explorer import Column, Table
+from ...core.ports.explorer import Column, QueryTimeoutUnsupportedError, Table
 
 _API_ROOT = "https://api.cloudflare.com/client/v4"
 
@@ -71,9 +72,23 @@ class D1Explorer:
     async def sample_rows(self, name: str, limit: int = 5) -> list[dict]:
         return await self._query(f"SELECT * FROM {_ident(name)} LIMIT {int(limit)}")
 
-    async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
-        rows = await self._query(sql)
-        return rows[: int(limit)]
+    async def execute(
+        self,
+        sql: str,
+        limit: int = 1000,
+        *,
+        timeout_seconds: float = 30.0,
+    ) -> list[dict]:
+        if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be a finite positive number")
+        # urllib's transport timeout cannot prove that D1 stopped server-side
+        # SQL. Refuse before sending until a verified server deadline exists.
+        raise QueryTimeoutUnsupportedError(
+            "D1 statement cancellation is not verified"
+        )
+
+    def governed_execution_supported(self) -> bool:
+        return False
 
     async def catalog_metadata(self) -> dict[str, Any]:
         """Return declared SQLite PK/FK facts without sampling user data."""

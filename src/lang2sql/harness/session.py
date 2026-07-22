@@ -17,6 +17,8 @@ from ..core.types import Message
 class Session:
     identity: Identity
     transcript: list[Message] = field(default_factory=list)
+    source_id: str = ""
+    connection_generation: int = 0
 
     def add(self, message: Message) -> None:
         self.transcript.append(message)
@@ -27,17 +29,26 @@ class Session:
     def reset(self) -> None:
         self.transcript.clear()
 
-    def compress(self) -> None:
+    def discard_transient(self) -> bool:
+        """Consume frontend-only one-turn context on any real user message."""
+
+        original = len(self.transcript)
+        self.transcript = [message for message in self.transcript if not message.transient]
+        return len(self.transcript) != original
+
+    def compress(self, *, preserve_tool_content: bool = True) -> None:
         """Remove tool call/result messages to prevent context pollution across turns."""
         from ..core.types import Role
 
         cleaned: list[Message] = []
         for msg in self.transcript:
+            if msg.transient:
+                continue
             if msg.role == Role.TOOL:
                 continue
             if msg.role == Role.ASSISTANT and msg.tool_calls:
                 if (
-                    msg.content
+                    preserve_tool_content and msg.content
                 ):  # skip if no text content — empty assistant messages confuse OpenAI
                     cleaned.append(Message(role=Role.ASSISTANT, content=msg.content))
             else:

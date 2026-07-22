@@ -9,7 +9,7 @@ layer (and its tests) stay free of the gateway dependency.
 from __future__ import annotations
 
 from .commands import CommandHandlers
-from .render import MAX_INLINE_ROWS, render_answer
+from .render import MAX_INLINE_ROWS, render_answer, sanitize_discord_text
 from .session_router import (
     InteractionContext,
     is_channel,
@@ -22,6 +22,7 @@ __all__ = [
     "CommandHandlers",
     "render_answer",
     "MAX_INLINE_ROWS",
+    "sanitize_discord_text",
     "InteractionContext",
     "to_identity",
     "is_dm",

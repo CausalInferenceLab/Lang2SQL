@@ -11,6 +11,8 @@ from __future__ import annotations
 
 import csv
 import io
+import re
+import unicodedata
 from collections.abc import Sequence
 from typing import Any
 
@@ -18,6 +20,25 @@ from ...core.ports.frontend import OutboundMessage
 
 # Above this many rows (or text lines) we attach a CSV instead of inlining.
 MAX_INLINE_ROWS = 50
+MAX_DISCORD_TEXT = 1900
+
+
+def sanitize_discord_text(value: Any, *, max_length: int = 512) -> str:
+    """Render untrusted DB/user metadata as inert, bounded Discord text."""
+
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        value = "hex:" + value.hex()
+    text = "".join(
+        " " if unicodedata.category(character).startswith("C") else character
+        for character in str(value)
+    )
+    text = re.sub(r"\s+", " ", text).strip()
+    text = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    text = text.replace("@", "@\u200b")
+    text = re.sub(r"([\\`*_{}\[\]()#+\-.!|~=])", r"\\\1", text)
+    return text[: max(0, int(max_length))]
 
 
 def render_answer(
@@ -38,7 +59,9 @@ def render_answer(
 
     Anything smaller is returned as plain ``text``.
     """
-    if rows is not None and len(rows) > MAX_INLINE_ROWS:
+    if rows is not None and (
+        len(rows) > MAX_INLINE_ROWS or _structured_rows_need_attachment(rows, header)
+    ):
         payload = _rows_to_csv(rows, header)
         summary = f"{len(rows)} rows — attached as {file_name}."
         if text.strip():
@@ -50,13 +73,21 @@ def render_answer(
         )
 
     if rows is not None:
-        # Small structured result: inline as text, CSV-formatted for legibility.
-        body = _rows_to_csv(rows, header).rstrip("\n")
+        # Small structured result stays readable while DB labels remain inert
+        # inside Discord Markdown.
+        body = _rows_to_markdown(rows, header)
         text_block = f"{text.strip()}\n{body}" if text.strip() else body
+        if len(text_block) > MAX_DISCORD_TEXT:
+            payload = _rows_to_csv(rows, header)
+            return OutboundMessage(
+                text=f"{len(rows)} rows — attached as {file_name}.",
+                file_bytes=payload.encode("utf-8"),
+                file_name=file_name,
+            )
         return OutboundMessage(text=text_block)
 
     lines = text.splitlines()
-    if len(lines) > MAX_INLINE_ROWS:
+    if len(lines) > MAX_INLINE_ROWS or len(text) > MAX_DISCORD_TEXT:
         summary = f"Result is {len(lines)} lines — attached as {file_name}."
         return OutboundMessage(
             text=summary,
@@ -67,12 +98,60 @@ def render_answer(
     return OutboundMessage(text=text)
 
 
+def _structured_rows_need_attachment(
+    rows: Sequence[Sequence[Any]], header: Sequence[str] | None
+) -> bool:
+    """Keep the inline preview bounded without truncating full cell values."""
+
+    values: list[Any] = [*(header or ()), *(cell for row in rows for cell in row)]
+    text_size = 0
+    for value in values:
+        rendered = "hex:" + value.hex() if isinstance(value, bytes) else str(value or "")
+        if len(rendered) > 512:
+            return True
+        text_size += len(rendered)
+    return text_size > MAX_DISCORD_TEXT
+
+
 def _rows_to_csv(rows: Sequence[Sequence[Any]], header: Sequence[str] | None) -> str:
     """Serialise ``rows`` (optionally with a ``header``) to a CSV string."""
     buf = io.StringIO()
     writer = csv.writer(buf)
     if header is not None:
-        writer.writerow(list(header))
+        writer.writerow([_csv_cell(value) for value in header])
     for row in rows:
-        writer.writerow(list(row))
+        writer.writerow([_csv_cell(value) for value in row])
     return buf.getvalue()
+
+
+def _csv_cell(value: Any) -> Any:
+    """Keep spreadsheet programs from treating DB strings as formulas."""
+
+    if value is None:
+        return ""
+    if isinstance(value, bytes):
+        return "hex:" + value.hex()
+    if not isinstance(value, str):
+        return value
+    if value.lstrip().startswith(("=", "+", "-", "@")):
+        return "'" + value
+    return value
+
+
+def _rows_to_markdown(
+    rows: Sequence[Sequence[Any]], header: Sequence[str] | None
+) -> str:
+    width = len(header) if header is not None else (len(rows[0]) if rows else 0)
+    headings = (
+        list(header)
+        if header is not None
+        else [f"column_{index + 1}" for index in range(width)]
+    )
+    lines = [" | ".join(_markdown_cell(item) for item in headings)]
+    lines.append(" | ".join("---" for _ in headings))
+    lines.extend(" | ".join(_markdown_cell(item) for item in row) for row in rows)
+    return "\n".join(lines)
+
+
+def _markdown_cell(value: Any) -> str:
+    return sanitize_discord_text(value)

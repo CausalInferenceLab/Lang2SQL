@@ -11,6 +11,11 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
+from ..core.ports.explorer import (
+    QueryTimedOutError,
+    QueryTimeoutUnsupportedError,
+    accepts_statement_timeout,
+)
 from ..core.ports.safety import SafetyContext, Verdict
 from ..core.types import ToolResult, ToolSpec
 
@@ -63,7 +68,8 @@ class RunSQL:
                 is_error=True,
             )
 
-        decision = ctx.safety.evaluate(sql, SafetyContext(row_limit=limit))
+        safety_context = SafetyContext(row_limit=limit)
+        decision = ctx.safety.evaluate(sql, safety_context)
         if decision.verdict == Verdict.BLOCK:
             return ToolResult(
                 call_id="",
@@ -75,7 +81,37 @@ class RunSQL:
                 call_id="", content=f"NEEDS CONFIRMATION: {decision.confirm_prompt}"
             )
 
-        rows = await ctx.explorer.execute(decision.sql, limit)
+        if not accepts_statement_timeout(ctx.explorer):
+            return ToolResult(
+                call_id="",
+                content=(
+                    "BLOCKED (query_timeout_unsupported): adapter must implement "
+                    "execute(..., *, timeout_seconds=...) before governed execution"
+                ),
+                is_error=True,
+            )
+
+        try:
+            rows = await ctx.explorer.execute(
+                decision.sql,
+                limit,
+                timeout_seconds=safety_context.timeout_seconds,
+            )
+        except QueryTimedOutError:
+            return ToolResult(
+                call_id="",
+                content="BLOCKED (query_timeout): query exceeded its execution deadline",
+                is_error=True,
+            )
+        except QueryTimeoutUnsupportedError:
+            return ToolResult(
+                call_id="",
+                content=(
+                    "BLOCKED (query_timeout_unsupported): adapter cannot prove "
+                    "statement cancellation"
+                ),
+                is_error=True,
+            )
 
         if ctx.audit is not None:
             await ctx.audit.record(

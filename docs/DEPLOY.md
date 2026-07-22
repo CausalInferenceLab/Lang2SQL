@@ -12,6 +12,8 @@ honest with yourself about scope first: see [§What's stub](#whats-stub-be-hones
 | `DISCORD_BOT_TOKEN` | **yes** | Bot token from the Discord developer portal. The bot raises a clear error and exits if this is unset. |
 | `OPENAI_API_KEY` | for real use | Uses OpenAI when set. Alternatively set `LANG2SQL_LLM_BASE_URL` and `LANG2SQL_LLM_MODEL` for an OpenAI-compatible local model. With neither, `FakeLLM` is installation-smoke only. |
 | `LANG2SQL_SECRET_KEY` | no | A urlsafe-base64 Fernet key used to encrypt stored secrets (DSNs/API keys) at rest. If unset, a key is auto-generated and persisted in the SQLite kv table — self-contained but only as private as the DB file. **Set this in production** so secrets decrypt across restarts and machines. |
+| `LANG2SQL_DISCORD_QUERY_CHANNEL_IDS` | no | Comma-separated Discord parent-channel IDs where non-admin members may query. Empty means admin-only. Threads inherit their parent channel. Malformed values fail startup. |
+| `LANG2SQL_DATA_PATH` | no | SQLite state path for the Discord bot. Defaults to `lang2sql_data.db`; place it on durable private storage. |
 
 Generate a Fernet key:
 
@@ -47,6 +49,14 @@ export DISCORD_BOT_TOKEN=...
 
 The bot connects to the gateway and serves. Explicitly mention the bot in a
 channel, thread, or DM; plain messages and `@everyone`/`@here` are ignored.
+Guild queries are admin-only unless their parent channel is explicitly listed:
+
+```bash
+export LANG2SQL_DISCORD_QUERY_CHANNEL_IDS=123456789012345678,234567890123456789
+```
+
+Use a read-only, least-privilege database account. The channel allowlist and
+aggregate contributor thresholds are not database row/column access control.
 
 ---
 
@@ -75,6 +85,8 @@ ExecStart=/opt/lang2sql/.venv/bin/lang2sql-bot
 Environment=DISCORD_BOT_TOKEN=...
 Environment=OPENAI_API_KEY=...
 Environment=LANG2SQL_SECRET_KEY=...
+Environment=LANG2SQL_DISCORD_QUERY_CHANNEL_IDS=123456789012345678
+Environment=LANG2SQL_DATA_PATH=/var/lib/lang2sql/lang2sql_data.db
 Restart=on-failure
 ```
 
@@ -82,10 +94,11 @@ Restart=on-failure
 
 ## 4. Persistence
 
-The V1 `SqliteStore` **defaults to `:memory:`**, so audit/session/secret state is
-lost on restart. For a real deployment, construct the store with a file path so it
-survives restarts and back it up alongside `LANG2SQL_SECRET_KEY` (you need both to
-decrypt stored secrets).
+The generic `SqliteStore` defaults to `:memory:`, but the Discord entry point
+uses `LANG2SQL_DATA_PATH` and defaults to `lang2sql_data.db`. Put this file on
+durable private storage and back it up alongside `LANG2SQL_SECRET_KEY` (you need
+both to decrypt stored secrets). Restrict filesystem permissions because the
+file also holds sessions, semantic governance state, and audit records.
 
 ---
 
@@ -101,3 +114,9 @@ decrypt stored secrets).
   server such as Ollama.
 - **No rate limiting** in V1 — keep deployments to small trial guilds so token
   spend stays bounded (rate limit + per-user token caps are v1.5).
+- **No role/row/column authorization model** in the semantic runtime. Discord
+  is admin-only by default and may be opened only to explicitly configured
+  channels; the connected database credential must still enforce least privilege.
+- **SQLite is the current public execution proof boundary.** Other connectors
+  may scan metadata, but governed execution remains blocked where safe statement
+  timeout/cancellation has not been verified.

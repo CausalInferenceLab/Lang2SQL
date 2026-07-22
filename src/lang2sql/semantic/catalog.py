@@ -16,6 +16,33 @@ from typing import Any
 
 CATALOG_KEY = "semantic_catalog:v1"
 PENDING_REVIEW_KEY = "semantic_pending_review:v1"
+CONNECTION_BINDING_KEY = "semantic_connection_binding:v1"
+CONNECTION_GENERATION_KEY = "semantic_connection_generation:v1"
+CLASSIFICATION_POLICY_VERSION = 4
+
+
+@dataclass(frozen=True)
+class ConnectionBinding:
+    """Server-owned identity for one activated execution source."""
+
+    source_id: str
+    generation: int
+    managed_credentials: bool = True
+
+    def to_json(self) -> str:
+        return json.dumps(asdict(self), sort_keys=True)
+
+    @classmethod
+    def from_json(cls, raw: str) -> "ConnectionBinding":
+        data = json.loads(raw)
+        binding = cls(
+            source_id=str(data["source_id"]),
+            generation=int(data["generation"]),
+            managed_credentials=bool(data.get("managed_credentials", True)),
+        )
+        if not binding.source_id or binding.generation <= 0:
+            raise ValueError("invalid connection binding")
+        return binding
 
 
 class Aggregate(str, Enum):
@@ -26,10 +53,32 @@ class Aggregate(str, Enum):
     COUNT = "count"
 
 
+class MetricExpressionKind(str, Enum):
+    """Typed physical expression used by the deterministic compiler."""
+
+    COLUMN = "column"
+    SOURCE_ROWS = "source_rows"
+
+
 class ReviewState(str, Enum):
     CONFIRMED = "confirmed"
     PENDING = "pending"
     REJECTED = "rejected"
+
+
+class DimensionReviewPolicy(str, Enum):
+    """Whether raw grouped labels are metadata-safe or steward-released."""
+
+    AUTO_SAFE = "auto_safe"
+    RELEASE_REQUIRED = "release_required"
+
+
+class DimensionDisclosureTier(str, Enum):
+    """Steward assertion governing grouped value disclosure."""
+
+    BLOCKED = "blocked"
+    CONTROLLED_GROUPED = "controlled_grouped"
+    PUBLIC_GROUPED = "public_grouped"
 
 
 @dataclass
@@ -49,6 +98,7 @@ class MetricSpec:
     label: str
     table_id: str
     column: str
+    expression_kind: MetricExpressionKind = MetricExpressionKind.COLUMN
     aggregate: Aggregate | None = None
     state: ReviewState = ReviewState.PENDING
     allowed_aggregates: list[Aggregate] = field(
@@ -60,6 +110,9 @@ class MetricSpec:
         ]
     )
     unit: str = ""
+    data_type: str = ""
+    nullable: bool = True
+    classification_evidence: str = "numeric_measure_metadata_only"
     source_record_count: bool = False
     aliases: list[str] = field(default_factory=list)
     auto_aliases: list[str] = field(default_factory=list)
@@ -67,6 +120,28 @@ class MetricSpec:
     reviewed_bindings: dict[str, list[str]] = field(default_factory=dict)
     rejected_bindings: list[str] = field(default_factory=list)
     binding_reviewers: dict[str, str] = field(default_factory=dict)
+    alias_reviewers: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        """Reject expression combinations the compiler cannot interpret safely."""
+
+        if self.expression_kind == MetricExpressionKind.SOURCE_ROWS:
+            if not self.source_record_count:
+                raise ValueError("source-row metrics require source_record_count")
+            if self.aggregate not in {None, Aggregate.COUNT}:
+                raise ValueError("source-row metrics only support COUNT")
+            if self.allowed_aggregates != [Aggregate.COUNT]:
+                raise ValueError("source-row metrics must allow exactly COUNT")
+            # A non-empty column remains accepted only so catalogs written by
+            # the older PK-based representation can migrate without losing
+            # reviewed aliases. The compiler keys exclusively on expression_kind.
+            return
+        if self.expression_kind != MetricExpressionKind.COLUMN:
+            raise ValueError("unsupported metric expression kind")
+        if self.source_record_count:
+            raise ValueError("column metrics cannot be source-record counts")
+        if not self.column:
+            raise ValueError("column metrics require a physical column")
 
 
 @dataclass
@@ -77,10 +152,51 @@ class DimensionSpec:
     column: str
     data_type: str
     kind: str = "categorical"
+    review_policy: DimensionReviewPolicy = DimensionReviewPolicy.AUTO_SAFE
+    classification_evidence: str = "metadata_safe"
+    classification_policy_version: int = CLASSIFICATION_POLICY_VERSION
+    raw_output_allowed: bool = True
+    disclosure_tier: DimensionDisclosureTier = DimensionDisclosureTier.BLOCKED
+    release_reviewer: str = ""
+    release_catalog_fingerprint: str = ""
+    released_at: str = ""
+    action_revision: int = 0
     aliases: list[str] = field(default_factory=list)
     auto_aliases: list[str] = field(default_factory=list)
+    # Physical-name aliases reserve ownership for conflict checks but never
+    # make a release-required dimension selectable or review-complete.
+    reserved_aliases: list[str] = field(default_factory=list)
     rejected_aliases: list[str] = field(default_factory=list)
     alias_reviewers: dict[str, str] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        if self.action_revision < 0:
+            raise ValueError("dimension action revision cannot be negative")
+        if self.review_policy == DimensionReviewPolicy.AUTO_SAFE:
+            if not self.raw_output_allowed:
+                raise ValueError("auto-safe dimensions must allow grouped output")
+            if self.disclosure_tier == DimensionDisclosureTier.BLOCKED:
+                self.disclosure_tier = DimensionDisclosureTier.PUBLIC_GROUPED
+            if self.disclosure_tier != DimensionDisclosureTier.PUBLIC_GROUPED:
+                raise ValueError("auto-safe dimensions require the public grouped tier")
+            return
+        if self.review_policy != DimensionReviewPolicy.RELEASE_REQUIRED:
+            raise ValueError("unsupported dimension review policy")
+        if self.auto_aliases:
+            raise ValueError("release-required dimensions cannot have auto aliases")
+        if not self.raw_output_allowed:
+            if self.disclosure_tier != DimensionDisclosureTier.BLOCKED:
+                raise ValueError("unreleased dimensions must use the blocked tier")
+            return
+        if self.disclosure_tier not in {
+            DimensionDisclosureTier.CONTROLLED_GROUPED,
+            DimensionDisclosureTier.PUBLIC_GROUPED,
+        }:
+            raise ValueError("released dimensions require a grouped disclosure tier")
+        if self.raw_output_allowed and not (
+            self.release_reviewer and self.release_catalog_fingerprint
+        ):
+            raise ValueError("released dimensions require reviewer and fingerprint")
 
 
 @dataclass
@@ -106,8 +222,92 @@ class SemanticCatalog:
     dimensions: list[DimensionSpec] = field(default_factory=list)
     joins: list[JoinSpec] = field(default_factory=list)
     blocked_columns: list[str] = field(default_factory=list)
-    version: int = 1
+    version: int = 3
     review_revision: int = 0
+    classification_policy_version: int = CLASSIFICATION_POLICY_VERSION
+    source_id: str = ""
+    connection_generation: int = 0
+    public_data_scope: bool = False
+    public_data_reviewer: str = ""
+    public_data_fingerprint: str = ""
+    public_data_confirmed_at: str = ""
+    # These epochs invalidate action tokens for global governance changes
+    # without invalidating unrelated per-dimension actions on every review.
+    metric_action_epoch: int = 0
+    dimension_action_epoch: int = 0
+    public_scope_epoch: int = 0
+
+    def __post_init__(self) -> None:
+        if (
+            self.metric_action_epoch < 0
+            or self.dimension_action_epoch < 0
+            or self.public_scope_epoch < 0
+        ):
+            raise ValueError("semantic governance epochs cannot be negative")
+        if bool(self.source_id) != (self.connection_generation > 0):
+            raise ValueError("source identity and connection generation must pair")
+        if self.public_data_scope:
+            if not (
+                self.public_data_reviewer
+                and self.public_data_fingerprint == self.fingerprint
+                and self.public_data_confirmed_at
+            ):
+                raise ValueError(
+                    "public data scope requires reviewer, fingerprint, and timestamp"
+                )
+        elif any(
+            (
+                self.public_data_reviewer,
+                self.public_data_fingerprint,
+                self.public_data_confirmed_at,
+            )
+        ):
+            raise ValueError("inactive public data scope cannot retain provenance")
+        stale_dimensions = [
+            item.id
+            for item in self.dimensions
+            if item.classification_policy_version
+            != self.classification_policy_version
+        ]
+        if stale_dimensions:
+            raise ValueError(
+                "dimension classification policy mismatch: "
+                + ", ".join(sorted(stale_dimensions))
+            )
+        dimension_refs = {f"{item.table_id}.{item.column}" for item in self.dimensions}
+        metric_refs = {
+            f"{item.table_id}.{item.column}"
+            for item in self.metrics
+            if item.expression_kind == MetricExpressionKind.COLUMN
+        }
+        overlap = (dimension_refs | metric_refs).intersection(self.blocked_columns)
+        if overlap:
+            raise ValueError(
+                "blocked columns cannot also be semantic objects: "
+                + ", ".join(sorted(overlap))
+            )
+        for metric in self.metrics:
+            alias_overlap = set(metric.aliases).intersection(metric.rejected_aliases)
+            if alias_overlap:
+                raise ValueError(
+                    f"metric aliases cannot be both approved and rejected: {metric.id}"
+                )
+            reviewed_bindings = {
+                f"{phrase}|{aggregate}"
+                for phrase, aggregates in metric.reviewed_bindings.items()
+                for aggregate in aggregates
+            }
+            if reviewed_bindings.intersection(metric.rejected_bindings):
+                raise ValueError(
+                    "metric bindings cannot be both approved and rejected: "
+                    + metric.id
+                )
+        for dimension in self.dimensions:
+            if set(dimension.aliases).intersection(dimension.rejected_aliases):
+                raise ValueError(
+                    "dimension aliases cannot be both approved and rejected: "
+                    + dimension.id
+                )
 
     def table(self, table_id: str) -> TableSpec | None:
         return next((item for item in self.tables if item.id == table_id), None)
@@ -132,61 +332,182 @@ class SemanticCatalog:
     @classmethod
     def from_json(cls, raw: str) -> "SemanticCatalog":
         data: dict[str, Any] = json.loads(raw)
+        version = int(data.get("version", 1))
+        if version not in {1, 2, 3}:
+            raise ValueError(f"unsupported semantic catalog version: {version}")
+
+        def metric_from_mapping(item: dict[str, Any]) -> MetricSpec:
+            source_record_count = bool(item.get("source_record_count", False))
+            expression_kind = MetricExpressionKind(
+                item.get(
+                    "expression_kind",
+                    (
+                        MetricExpressionKind.SOURCE_ROWS.value
+                        if source_record_count
+                        else MetricExpressionKind.COLUMN.value
+                    ),
+                )
+            )
+            default_aggregates = (
+                [Aggregate.COUNT.value]
+                if expression_kind == MetricExpressionKind.SOURCE_ROWS
+                else [
+                    Aggregate.SUM.value,
+                    Aggregate.AVG.value,
+                    Aggregate.MIN.value,
+                    Aggregate.MAX.value,
+                ]
+            )
+            return MetricSpec(
+                id=item["id"],
+                label=item["label"],
+                table_id=item["table_id"],
+                column=item["column"],
+                expression_kind=expression_kind,
+                aggregate=(
+                    Aggregate(item["aggregate"]) if item.get("aggregate") else None
+                ),
+                state=ReviewState(item.get("state", ReviewState.PENDING.value)),
+                allowed_aggregates=[
+                    Aggregate(value)
+                    for value in item.get("allowed_aggregates", default_aggregates)
+                ],
+                unit=item.get("unit", ""),
+                data_type=str(item.get("data_type", "")),
+                nullable=bool(item.get("nullable", True)),
+                classification_evidence=str(
+                    item.get("classification_evidence", "legacy_numeric_measure")
+                ),
+                source_record_count=source_record_count,
+                aliases=list(item.get("aliases", [])),
+                auto_aliases=list(item.get("auto_aliases", item.get("aliases", []))),
+                rejected_aliases=list(item.get("rejected_aliases", [])),
+                reviewed_bindings={
+                    phrase: (
+                        list(values) if isinstance(values, list) else [str(values)]
+                    )
+                    for phrase, values in item.get("reviewed_bindings", {}).items()
+                },
+                rejected_bindings=list(item.get("rejected_bindings", [])),
+                binding_reviewers=dict(item.get("binding_reviewers", {})),
+                alias_reviewers=dict(item.get("alias_reviewers", {})),
+            )
+
+        def dimension_from_mapping(item: dict[str, Any]) -> DimensionSpec:
+            data_type = str(item["data_type"])
+            lowered_type = data_type.lower()
+            legacy_string = version == 1 and not any(
+                marker in lowered_type
+                for marker in (
+                    "date",
+                    "time",
+                    "timestamp",
+                    "datetime",
+                    "bool",
+                )
+            )
+            policy = (
+                DimensionReviewPolicy.RELEASE_REQUIRED
+                if legacy_string
+                else DimensionReviewPolicy(
+                    item.get("review_policy", DimensionReviewPolicy.AUTO_SAFE.value)
+                )
+            )
+            raw_output_allowed = bool(
+                item.get(
+                    "raw_output_allowed",
+                    policy == DimensionReviewPolicy.AUTO_SAFE,
+                )
+            )
+            if legacy_string:
+                # V1 had no distinct disclosure review. Migrating its string
+                # aliases as selectable would silently reinterpret an old
+                # phrase mapping as permission to reveal grouped raw values.
+                raw_output_allowed = False
+            default_tier = (
+                DimensionDisclosureTier.PUBLIC_GROUPED
+                if policy == DimensionReviewPolicy.AUTO_SAFE
+                else DimensionDisclosureTier.CONTROLLED_GROUPED
+                if raw_output_allowed
+                else DimensionDisclosureTier.BLOCKED
+            )
+            return DimensionSpec(
+                id=item["id"],
+                label=item["label"],
+                table_id=item["table_id"],
+                column=item["column"],
+                data_type=data_type,
+                kind=item.get("kind", "categorical"),
+                review_policy=policy,
+                classification_evidence=(
+                    "legacy_catalog_requires_release"
+                    if legacy_string
+                    else item.get("classification_evidence", "legacy_catalog")
+                ),
+                classification_policy_version=(
+                    CLASSIFICATION_POLICY_VERSION
+                    if version == 1
+                    else int(item.get("classification_policy_version", 1))
+                ),
+                raw_output_allowed=raw_output_allowed,
+                disclosure_tier=DimensionDisclosureTier(
+                    item.get("disclosure_tier", default_tier.value)
+                ),
+                release_reviewer=item.get("release_reviewer", ""),
+                release_catalog_fingerprint=item.get("release_catalog_fingerprint", ""),
+                released_at=item.get("released_at", ""),
+                action_revision=int(item.get("action_revision", 0)),
+                aliases=[] if legacy_string else list(item.get("aliases", [])),
+                auto_aliases=(
+                    []
+                    if legacy_string
+                    else list(item.get("auto_aliases", item.get("aliases", [])))
+                ),
+                reserved_aliases=list(
+                    item.get(
+                        "reserved_aliases",
+                        [] if version == 1 else item.get("auto_aliases", []),
+                    )
+                ),
+                rejected_aliases=list(item.get("rejected_aliases", [])),
+                alias_reviewers=(
+                    {} if legacy_string else dict(item.get("alias_reviewers", {}))
+                ),
+            )
+
+        persisted_policy_version = int(data.get("classification_policy_version", 1))
+        if version in {2, 3} and persisted_policy_version != CLASSIFICATION_POLICY_VERSION:
+            raise ValueError(
+                "semantic catalog classification policy requires re-onboarding"
+            )
+
         return cls(
-            version=int(data.get("version", 1)),
+            # Loading V1 performs a fail-closed in-memory migration. Keeping
+            # the existing storage key prevents a missing-catalog state from
+            # re-enabling the legacy raw-SQL tool surface.
+            version=3,
             review_revision=int(data.get("review_revision", 0)),
+            classification_policy_version=(
+                CLASSIFICATION_POLICY_VERSION
+                if version == 1
+                else persisted_policy_version
+            ),
+            public_data_scope=bool(data.get("public_data_scope", False)),
+            public_data_reviewer=str(data.get("public_data_reviewer", "")),
+            public_data_fingerprint=str(data.get("public_data_fingerprint", "")),
+            public_data_confirmed_at=str(
+                data.get("public_data_confirmed_at", "")
+            ),
+            metric_action_epoch=int(data.get("metric_action_epoch", 0)),
+            dimension_action_epoch=int(data.get("dimension_action_epoch", 0)),
+            public_scope_epoch=int(data.get("public_scope_epoch", 0)),
+            source_id=str(data.get("source_id", "")),
+            connection_generation=int(data.get("connection_generation", 0)),
             fingerprint=str(data["fingerprint"]),
             tables=[TableSpec(**item) for item in data.get("tables", [])],
-            metrics=[
-                MetricSpec(
-                    id=item["id"],
-                    label=item["label"],
-                    table_id=item["table_id"],
-                    column=item["column"],
-                    aggregate=(
-                        Aggregate(item["aggregate"]) if item.get("aggregate") else None
-                    ),
-                    state=ReviewState(item.get("state", ReviewState.PENDING.value)),
-                    allowed_aggregates=[
-                        Aggregate(value)
-                        for value in item.get(
-                            "allowed_aggregates",
-                            [
-                                Aggregate.SUM.value,
-                                Aggregate.AVG.value,
-                                Aggregate.MIN.value,
-                                Aggregate.MAX.value,
-                            ],
-                        )
-                    ],
-                    unit=item.get("unit", ""),
-                    source_record_count=bool(item.get("source_record_count", False)),
-                    aliases=list(item.get("aliases", [])),
-                    auto_aliases=list(
-                        item.get("auto_aliases", item.get("aliases", []))
-                    ),
-                    rejected_aliases=list(item.get("rejected_aliases", [])),
-                    reviewed_bindings={
-                        phrase: (
-                            list(values) if isinstance(values, list) else [str(values)]
-                        )
-                        for phrase, values in item.get("reviewed_bindings", {}).items()
-                    },
-                    rejected_bindings=list(item.get("rejected_bindings", [])),
-                    binding_reviewers=dict(item.get("binding_reviewers", {})),
-                )
-                for item in data.get("metrics", [])
-            ],
+            metrics=[metric_from_mapping(item) for item in data.get("metrics", [])],
             dimensions=[
-                DimensionSpec(
-                    **{
-                        **item,
-                        "auto_aliases": item.get(
-                            "auto_aliases", item.get("aliases", [])
-                        ),
-                    }
-                )
-                for item in data.get("dimensions", [])
+                dimension_from_mapping(item) for item in data.get("dimensions", [])
             ],
             joins=[JoinSpec(**item) for item in data.get("joins", [])],
             blocked_columns=list(data.get("blocked_columns", [])),
@@ -205,9 +526,16 @@ class PendingReview:
     query_limit: int = 100
     catalog_fingerprint: str = ""
     catalog_review_revision: int = 0
+    catalog_version: int = 1
+    classification_policy_version: int = 1
+    source_id: str = ""
+    connection_generation: int = 0
     requester_id: str = ""
     metric_alias_pending: bool = False
     aggregate_pending: bool = False
+    review_kind: str = "metric"
+    review_id: str = ""
+    catalog_scope: str = ""
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)
@@ -231,7 +559,26 @@ class PendingReview:
             query_limit=int(data.get("query_limit", 100)),
             catalog_fingerprint=data.get("catalog_fingerprint", ""),
             catalog_review_revision=int(data.get("catalog_review_revision", 0)),
+            catalog_version=int(data.get("catalog_version", 1)),
+            classification_policy_version=int(
+                data.get("classification_policy_version", 1)
+            ),
+            source_id=str(data.get("source_id", "")),
+            connection_generation=int(data.get("connection_generation", 0)),
             requester_id=data.get("requester_id", ""),
             metric_alias_pending=bool(data.get("metric_alias_pending", False)),
             aggregate_pending=bool(data.get("aggregate_pending", True)),
+            review_kind=str(
+                data.get(
+                    "review_kind",
+                    (
+                        "metric"
+                        if data.get("metric_alias_pending")
+                        or data.get("aggregate_pending", True)
+                        else "dimension"
+                    ),
+                )
+            ),
+            review_id=str(data.get("review_id", "")),
+            catalog_scope=str(data.get("catalog_scope", "")),
         )

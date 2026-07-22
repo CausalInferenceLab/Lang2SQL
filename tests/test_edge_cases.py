@@ -78,6 +78,9 @@ def test_build_send_kwargs_omits_file_for_text_only() -> None:
     kwargs = _build_send_kwargs(out)
     assert "file" not in kwargs
     assert kwargs["content"] == "42 users"
+    assert kwargs["allowed_mentions"].everyone is False
+    assert kwargs["allowed_mentions"].users is False
+    assert kwargs["allowed_mentions"].roles is False
 
 
 def test_build_send_kwargs_includes_file_for_csv() -> None:
