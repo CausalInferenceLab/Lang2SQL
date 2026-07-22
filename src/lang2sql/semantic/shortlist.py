@@ -15,7 +15,6 @@ from typing import Iterable
 
 from .catalog import DimensionSpec, MetricSpec, SemanticCatalog
 
-
 SHORTLIST_POLICY_VERSION = 1
 MAX_TABLES = 6
 MAX_METRICS = 12
@@ -23,8 +22,7 @@ MAX_DIMENSIONS = 12
 MAX_TOOL_SCHEMA_BYTES = 12_288
 MAX_PROMPT_TABLE_BYTES = 4_096
 _GROUPING_CUE = re.compile(
-    r"\b(by|per|each|grouped\s+by|for\s+each|across|breakdown)\b|"
-    r"별|마다|각각|기준",
+    r"\b(by|per|each|grouped\s+by|for\s+each|across|breakdown)\b|" r"별|마다|각각|기준",
     re.IGNORECASE,
 )
 
@@ -42,6 +40,8 @@ class SemanticAttentionEnvelope:
     table_ids: tuple[str, ...]
     metric_ids: tuple[str, ...]
     dimension_ids: tuple[str, ...]
+    filter_dimension_ids: tuple[str, ...] = ()
+    time_dimension_ids: tuple[str, ...] = ()
     release_required_dimension_ids: tuple[str, ...] = ()
     state: str = "ready"
     message: str = ""
@@ -91,8 +91,7 @@ def build_attention_envelope(
             ),
         )
     table_ids = sorted(
-        {item.table_id for item in metrics}
-        | {item.table_id for item in all_dimensions}
+        {item.table_id for item in metrics} | {item.table_id for item in all_dimensions}
     )
     table_candidate_phrases = {
         table_id: {
@@ -166,76 +165,74 @@ def build_attention_envelope(
             ),
         )
 
+    metric_tables = {
+        item.table_id for item in metric_pool if item.id in set(metric_ids)
+    }
+    reachable_tables = _reachable_parent_tables(catalog, metric_tables)
+    dimension_pool = [
+        item
+        for item in dimensions
+        if item.table_id in selected_tables or item.table_id in reachable_tables
+    ]
+    unreleased_pool = [
+        item
+        for item in all_dimensions
+        if not item.raw_output_allowed
+        and (item.table_id in selected_tables or item.table_id in reachable_tables)
+    ]
+    dimension_scores = {
+        item.id: _score(question, _dimension_phrases(item)) for item in dimension_pool
+    }
+    exact_dimensions, exact_error = _owned_exact_candidates(
+        question,
+        {
+            item.id: _dimension_phrases(item)
+            for item in [*dimension_pool, *unreleased_pool]
+        },
+        MAX_DIMENSIONS,
+    )
+    if exact_error:
+        return _envelope(
+            catalog,
+            question,
+            table_ids=tuple(selected_tables),
+            metric_ids=tuple(metric_ids),
+            dimension_ids=(),
+            state="clarify_dimension",
+            message=(
+                "같은 질문 표현과 정확히 일치하는 분류 기준이 둘 이상입니다. "
+                "테이블 또는 분류 컬럼의 물리 이름을 함께 적어 주세요."
+            ),
+        )
+    unreleased_ids = {item.id for item in unreleased_pool}
+    unreleased_exact = [item for item in exact_dimensions if item in unreleased_ids]
+    if unreleased_exact:
+        shown = unreleased_exact[:5]
+        suffix = "" if len(exact_dimensions) <= 5 else " 외 추가 후보"
+        return _envelope(
+            catalog,
+            question,
+            table_ids=tuple(selected_tables),
+            metric_ids=tuple(metric_ids),
+            dimension_ids=(),
+            release_required_dimension_ids=tuple(shown),
+            state="dimension_release_required",
+            message=(
+                "질문의 그룹·필터·기간 기준과 일치하는 값 공개 검토 차원이 있습니다: "
+                + ", ".join(json.dumps(item, ensure_ascii=False) for item in shown)
+                + suffix
+                + ". 관리자는 `/semantic_candidates search:<물리 이름>`에서 "
+                "15분 후보 토큰을 받은 뒤 `/semantic_release`를 동일 토큰·등급으로 "
+                "`confirm:false`와 `confirm:true` 두 단계 실행해 주세요. public은 "
+                "먼저 `/semantic_public_data`로 연결 전체가 공개·비개인 데이터임을 "
+                "확인해야 합니다. SQL은 실행하지 않았습니다."
+            ),
+        )
+    released_exact = [item for item in exact_dimensions if item not in unreleased_ids]
     dimension_ids: list[str] = []
     if _GROUPING_CUE.search(question):
-        metric_tables = {
-            item.table_id for item in metric_pool if item.id in set(metric_ids)
-        }
-        reachable_tables = _reachable_parent_tables(catalog, metric_tables)
-        dimension_pool = [
-            item
-            for item in dimensions
-            if item.table_id in selected_tables or item.table_id in reachable_tables
-        ]
-        unreleased_pool = [
-            item
-            for item in all_dimensions
-            if not item.raw_output_allowed
-            and (item.table_id in selected_tables or item.table_id in reachable_tables)
-        ]
-        dimension_scores = {
-            item.id: _score(question, _dimension_phrases(item))
-            for item in dimension_pool
-        }
-        exact_dimensions, exact_error = _owned_exact_candidates(
-            question,
-            {
-                item.id: _dimension_phrases(item)
-                for item in [*dimension_pool, *unreleased_pool]
-            },
-            MAX_DIMENSIONS,
-        )
-        if exact_error:
-            return _envelope(
-                catalog,
-                question,
-                table_ids=tuple(selected_tables),
-                metric_ids=tuple(metric_ids),
-                dimension_ids=(),
-                state="clarify_dimension",
-                message=(
-                    "같은 질문 표현과 정확히 일치하는 분류 기준이 둘 이상입니다. "
-                    "테이블 또는 분류 컬럼의 물리 이름을 함께 적어 주세요."
-                ),
-            )
-        unreleased_ids = {item.id for item in unreleased_pool}
-        unreleased_exact = [
-            item for item in exact_dimensions if item in unreleased_ids
-        ]
-        if unreleased_exact:
-            shown = unreleased_exact[:5]
-            suffix = "" if len(exact_dimensions) <= 5 else " 외 추가 후보"
-            return _envelope(
-                catalog,
-                question,
-                table_ids=tuple(selected_tables),
-                metric_ids=tuple(metric_ids),
-                dimension_ids=(),
-                release_required_dimension_ids=tuple(shown),
-                state="dimension_release_required",
-                message=(
-                    "질문의 그룹 기준과 일치하는 값 공개 검토 차원이 있습니다: "
-                    + ", ".join(json.dumps(item, ensure_ascii=False) for item in shown)
-                    + suffix
-                    + ". 관리자는 `/semantic_candidates search:<물리 이름>`에서 "
-                    "15분 후보 토큰을 받은 뒤 `/semantic_release`를 동일 토큰·등급으로 "
-                    "`confirm:false`와 `confirm:true` 두 단계 실행해 주세요. public은 "
-                    "먼저 `/semantic_public_data`로 연결 전체가 공개·비개인 데이터임을 "
-                    "확인해야 합니다. SQL은 실행하지 않았습니다."
-                ),
-            )
-        if exact_dimensions:
-            dimension_ids, dimension_error = exact_dimensions, ""
+        if released_exact:
+            dimension_ids, dimension_error = released_exact, ""
         else:
             dimension_ids, dimension_error = _bounded_select(
                 [item.id for item in dimension_pool],
@@ -259,6 +256,17 @@ def build_attention_envelope(
                     "수 있습니다."
                 ),
             )
+    dimensions_by_id = {item.id: item for item in dimension_pool}
+    filter_dimension_ids = [
+        item
+        for item in released_exact
+        if dimensions_by_id[item].kind not in {"time", "calendar"}
+    ]
+    time_dimension_ids = [
+        item
+        for item in released_exact
+        if _native_date_dimension(dimensions_by_id[item])
+    ]
 
     estimate = {
         "tables": selected_tables,
@@ -270,10 +278,14 @@ def build_attention_envelope(
         "dimensions": [
             _candidate_projection(item)
             for item in dimensions
-            if item.id in set(dimension_ids)
+            if item.id
+            in set([*dimension_ids, *filter_dimension_ids, *time_dimension_ids])
         ],
     }
-    if len(json.dumps(estimate, ensure_ascii=False).encode("utf-8")) > MAX_TOOL_SCHEMA_BYTES:
+    if (
+        len(json.dumps(estimate, ensure_ascii=False).encode("utf-8"))
+        > MAX_TOOL_SCHEMA_BYTES
+    ):
         return _envelope(
             catalog,
             question,
@@ -300,6 +312,8 @@ def build_attention_envelope(
         table_ids=tuple(selected_tables),
         metric_ids=tuple(metric_ids),
         dimension_ids=tuple(dimension_ids),
+        filter_dimension_ids=tuple(filter_dimension_ids),
+        time_dimension_ids=tuple(time_dimension_ids),
     )
 
 
@@ -310,6 +324,8 @@ def _envelope(
     table_ids: tuple[str, ...],
     metric_ids: tuple[str, ...],
     dimension_ids: tuple[str, ...],
+    filter_dimension_ids: tuple[str, ...] = (),
+    time_dimension_ids: tuple[str, ...] = (),
     release_required_dimension_ids: tuple[str, ...] = (),
     state: str = "ready",
     message: str = "",
@@ -328,6 +344,8 @@ def _envelope(
         table_ids=table_ids,
         metric_ids=metric_ids,
         dimension_ids=dimension_ids,
+        filter_dimension_ids=filter_dimension_ids,
+        time_dimension_ids=time_dimension_ids,
         release_required_dimension_ids=release_required_dimension_ids,
         state=state,
         message=message,
@@ -362,7 +380,9 @@ def _strongest_exact(
     if not exact:
         return [], ""
     strongest_score = max(exact.values())
-    strongest = sorted(item for item, score in exact.items() if score == strongest_score)
+    strongest = sorted(
+        item for item, score in exact.items() if score == strongest_score
+    )
     if len(strongest) != 1:
         return [], "ambiguous_exact_candidates"
     return strongest, ""
@@ -440,6 +460,49 @@ def _equivalent_phrase_in_question(phrase: str, normalized_question: str) -> boo
     return False
 
 
+def grounded_candidate_phrase(question: str, phrases: Iterable[str]) -> str:
+    """Return a deterministic normalized phrase that is truly in the question.
+
+    The returned value is safe to feed back into the stricter service grounding
+    check. Concatenated metadata such as ``flowtype`` returns the actual
+    contiguous question span ``flow type`` rather than the physical spelling.
+    """
+
+    normalized_question = _normalize(question)
+    tokens = normalized_question.split()
+    matches: set[str] = set()
+    for raw in phrases:
+        phrase = _normalize(raw)
+        if not phrase:
+            continue
+        if f" {phrase} " in f" {normalized_question} ":
+            matches.add(phrase)
+            continue
+        compact = phrase.replace(" ", "")
+        for width in range(1, min(4, len(tokens)) + 1):
+            for start in range(0, len(tokens) - width + 1):
+                window = tokens[start : start + width]
+                if "".join(window) == compact:
+                    matches.add(" ".join(window))
+    if not matches:
+        return ""
+    return max(matches, key=lambda item: (len(item.split()), len(item), item))
+
+
+def metric_candidate_phrases(item: MetricSpec) -> set[str]:
+    return _metric_phrases(item)
+
+
+def dimension_candidate_phrases(item: DimensionSpec) -> set[str]:
+    return _dimension_phrases(item)
+
+
+def safe_candidate_label(value: object) -> str:
+    """Bound and strip control characters from untrusted DB metadata."""
+
+    return _prompt_identifier(value)
+
+
 def _metric_phrases(item: MetricSpec) -> set[str]:
     return {
         item.id,
@@ -479,18 +542,23 @@ def _qualified_column_phrases(table_id: str, column: str) -> set[str]:
     return {f"{table} {column}" for table in _table_phrases(table_id)}
 
 
-def _reachable_parent_tables(
-    catalog: SemanticCatalog, sources: set[str]
-) -> set[str]:
+def _reachable_parent_tables(catalog: SemanticCatalog, sources: set[str]) -> set[str]:
     reachable = set(sources)
     changed = True
     while changed:
         changed = False
         for join in catalog.joins:
-            if join.child_table_id in reachable and join.parent_table_id not in reachable:
+            if (
+                join.child_table_id in reachable
+                and join.parent_table_id not in reachable
+            ):
                 reachable.add(join.parent_table_id)
                 changed = True
     return reachable
+
+
+def _native_date_dimension(item: DimensionSpec) -> bool:
+    return item.kind == "time" and bool(re.search(r"\bdate\b", item.data_type.lower()))
 
 
 def _candidate_projection(item: MetricSpec | DimensionSpec) -> dict[str, object]:
@@ -523,6 +591,4 @@ def _prompt_identifier(value: object) -> str:
 
 
 def _normalize(value: object) -> str:
-    return " ".join(
-        re.sub(r"[^0-9a-zA-Z가-힣]+", " ", str(value).lower()).split()
-    )
+    return " ".join(re.sub(r"[^0-9a-zA-Z가-힣]+", " ", str(value).lower()).split())

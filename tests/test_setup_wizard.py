@@ -11,6 +11,7 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from sqlalchemy.exc import NoSuchModuleError
 
 from lang2sql.adapters.db import D1Explorer, SqlAlchemyExplorer
 from lang2sql.adapters.db.dsn_builder import assemble
@@ -148,6 +149,28 @@ def test_register_db_for_guild_unknown_driver_gives_friendly_error():
     assert "uv sync --extra snowflake" in res.text or "Couldn't connect" in res.text
 
 
+def test_register_missing_duckdb_dialect_gives_install_command(
+    monkeypatch, tmp_path
+) -> None:
+    concierge = ContextConcierge()
+    handlers = CommandHandlers(concierge)
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+
+    def missing_driver(*_args, **_kwargs):
+        raise NoSuchModuleError("Can't load plugin: sqlalchemy.dialects:duckdb")
+
+    monkeypatch.setattr(
+        "lang2sql.frontends.discord.commands.build_explorer", missing_driver
+    )
+    result = asyncio.run(
+        handlers.register_db_for_guild(
+            identity, "duckdb", {"path": str(tmp_path / "warehouse.duckdb")}
+        )
+    )
+    assert "uv sync --extra duckdb" in result.text
+    assert "파일 절대경로" not in result.text
+
+
 def test_register_db_for_guild_missing_field_reports_setup_error():
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
@@ -162,6 +185,21 @@ def test_register_db_for_guild_missing_field_reports_setup_error():
     assert "Setup error" in res.text and "missing required" in res.text
 
 
+def test_register_missing_sqlite_is_file_specific_and_does_not_create(tmp_path):
+    missing = tmp_path / "missing.db"
+    concierge = ContextConcierge()
+    handlers = CommandHandlers(concierge)
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+
+    result = asyncio.run(
+        handlers.register_db_for_guild(identity, "sqlite", {"path": str(missing)})
+    )
+
+    assert "파일 절대경로" in result.text
+    assert "읽기 권한" in result.text
+    assert not missing.exists()
+
+
 # --- concierge per-scope explorer routing --------------------------------
 
 
@@ -170,9 +208,7 @@ def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
     _seed_sqlite(str(db))
     concierge = ContextConcierge()
 
-    g_with = Identity(
-        user_id="u", guild_id="g-real", channel_id="c", is_admin=True
-    )
+    g_with = Identity(user_id="u", guild_id="g-real", channel_id="c", is_admin=True)
     g_without = Identity(user_id="u", guild_id="g-default", channel_id="c")
 
     result = asyncio.run(CommandHandlers(concierge).connect(g_with, f"sqlite:///{db}"))
@@ -239,3 +275,17 @@ def test_setup_picker_has_a_label_for_every_supported_database():
     from lang2sql.frontends.discord.setup_wizard import _LABELS
 
     assert set(SUPPORTED_DB_TYPES) <= set(_LABELS)
+
+
+def test_discord_review_storage_failure_returns_retryable_message(monkeypatch):
+    concierge = ContextConcierge()
+    handlers = CommandHandlers(concierge)
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+
+    def fail_review(*_args, **_kwargs):
+        raise RuntimeError("forced review storage failure")
+
+    monkeypatch.setattr(concierge.semantic, "confirm_pending", fail_review)
+    result = asyncio.run(handlers.semantic_review(identity, "sum"))
+    assert "BLOCKED" in result.text
+    assert "다시 시도" in result.text

@@ -12,15 +12,10 @@ import re
 from typing import TYPE_CHECKING, Any
 import unicodedata
 
-from ..core.ports.audit import AuditEvent
-from ..core.ports.explorer import (
-    QueryTimedOutError,
-    QueryTimeoutUnsupportedError,
-    accepts_statement_timeout,
-)
-from ..core.ports.safety import SafetyContext, Verdict
 from ..core.types import Role, ToolResult, ToolSpec
 from ..semantic.catalog import SemanticCatalog
+from ..semantic.execution import execute_governed_semantic
+from ..semantic.policy import predicate_dimension_is_selectable
 from ..semantic.shortlist import (
     SemanticAttentionEnvelope,
     MAX_TOOL_SCHEMA_BYTES,
@@ -29,11 +24,7 @@ from ..semantic.shortlist import (
 )
 from ..semantic.service import (
     SemanticService,
-    decode_semantic_query_rows,
-    enforce_metric_disclosure_output,
-    enforce_released_dimension_output,
     review_scope_key,
-    semantic_query_headers,
 )
 
 if TYPE_CHECKING:
@@ -74,6 +65,18 @@ class SemanticQuery:
             for item in self._catalog.dimensions
             if item.raw_output_allowed and item.id in self._attention.dimension_ids
         ]
+        selectable_filter_dimensions = [
+            item
+            for item in self._catalog.dimensions
+            if predicate_dimension_is_selectable(self._catalog, item)
+            and item.id in self._attention.filter_dimension_ids
+        ]
+        selectable_time_dimensions = [
+            item
+            for item in self._catalog.dimensions
+            if predicate_dimension_is_selectable(self._catalog, item)
+            and item.id in self._attention.time_dimension_ids
+        ]
         metric_lines = [
             (
                 f"{_safe_metadata(item.id)} = {_safe_metadata(item.label)}; allowed="
@@ -111,6 +114,14 @@ class SemanticQuery:
                 + "\n- ".join(metric_lines or ["(none)"])
                 + "\nDimensions:\n- "
                 + "\n- ".join(dimension_lines or ["(none)"])
+                + "\nFilter dimensions:\n- "
+                + "\n- ".join(
+                    _safe_metadata(item.id) for item in selectable_filter_dimensions
+                )
+                + "\nDATE window dimensions:\n- "
+                + "\n- ".join(
+                    _safe_metadata(item.id) for item in selectable_time_dimensions
+                )
             ),
             parameters={
                 "type": "object",
@@ -158,6 +169,152 @@ class SemanticQuery:
                         },
                         "default": [],
                     },
+                    "filters": {
+                        "type": "array",
+                        "maxItems": 8,
+                        "description": (
+                            "Explicit AND-only row filters. Use EQ for one exact "
+                            "value or IN for up to 20 exact values. Never express "
+                            "OR, NOT, free text, or a date here."
+                        ),
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "dimension_id": {
+                                    "type": "string",
+                                    "enum": [
+                                        item.id for item in selectable_filter_dimensions
+                                    ],
+                                },
+                                "dimension_phrase": {
+                                    "type": "string",
+                                    "description": (
+                                        "Exact words in the question naming the "
+                                        "filter dimension."
+                                    ),
+                                },
+                                "operator": {
+                                    "type": "string",
+                                    "enum": ["eq", "in"],
+                                },
+                                "operator_phrase": {
+                                    "type": "string",
+                                    "description": (
+                                        "Exact question words expressing the "
+                                        "operator; required and non-empty for IN."
+                                    ),
+                                },
+                                "values": {
+                                    "type": "array",
+                                    "minItems": 1,
+                                    "maxItems": 20,
+                                    "items": {
+                                        "type": "object",
+                                        "properties": {
+                                            "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                    "string",
+                                                    "integer",
+                                                    "decimal",
+                                                    "boolean",
+                                                ],
+                                            },
+                                            "value": {
+                                                "type": "string",
+                                                "description": (
+                                                    "Exact typed value, copied "
+                                                    "without semantic conversion."
+                                                ),
+                                            },
+                                            "phrase": {
+                                                "type": "string",
+                                                "description": (
+                                                    "Exact question text for this value."
+                                                ),
+                                            },
+                                        },
+                                        "required": ["kind", "value", "phrase"],
+                                        "additionalProperties": False,
+                                    },
+                                },
+                            },
+                            "required": [
+                                "dimension_id",
+                                "dimension_phrase",
+                                "operator",
+                                "operator_phrase",
+                                "values",
+                            ],
+                            "additionalProperties": False,
+                        },
+                        "default": [],
+                    },
+                    "time_window": {
+                        "description": (
+                            "Optional explicit native-DATE interval. Both ISO dates "
+                            "must appear verbatim in the question. Semantics are "
+                            "always UTC [start,end); relative dates are unsupported."
+                        ),
+                        "anyOf": [
+                            {"type": "null"},
+                            {
+                                "type": "object",
+                                "properties": {
+                                    "dimension_id": {
+                                        "type": "string",
+                                        "enum": [
+                                            item.id
+                                            for item in selectable_time_dimensions
+                                        ],
+                                    },
+                                    "dimension_phrase": {"type": "string"},
+                                    "range_phrase": {
+                                        "type": "string",
+                                        "description": (
+                                            "Exact contiguous question span that "
+                                            "states both interval endpoints."
+                                        ),
+                                    },
+                                    "start": {
+                                        "type": "object",
+                                        "properties": {
+                                            "kind": {
+                                                "type": "string",
+                                                "enum": ["date"],
+                                            },
+                                            "value": {"type": "string"},
+                                            "phrase": {"type": "string"},
+                                        },
+                                        "required": ["kind", "value", "phrase"],
+                                        "additionalProperties": False,
+                                    },
+                                    "end": {
+                                        "type": "object",
+                                        "properties": {
+                                            "kind": {
+                                                "type": "string",
+                                                "enum": ["date"],
+                                            },
+                                            "value": {"type": "string"},
+                                            "phrase": {"type": "string"},
+                                        },
+                                        "required": ["kind", "value", "phrase"],
+                                        "additionalProperties": False,
+                                    },
+                                },
+                                "required": [
+                                    "dimension_id",
+                                    "dimension_phrase",
+                                    "range_phrase",
+                                    "start",
+                                    "end",
+                                ],
+                                "additionalProperties": False,
+                            },
+                        ],
+                        "default": None,
+                    },
                     "unresolved_obligations": {
                         "type": "array",
                         "items": {"type": "string"},
@@ -184,6 +341,7 @@ class SemanticQuery:
                     "metric_phrase",
                     "aggregate",
                     "dimensions",
+                    "filters",
                     "unresolved_obligations",
                 ],
                 "additionalProperties": False,
@@ -329,6 +487,103 @@ class SemanticQuery:
                 content="BLOCKED (candidate_not_shortlisted): 분류 기준이 현재 질문 후보에 없습니다.",
                 is_error=True,
             )
+        raw_filters = args.get("filters", [])
+        if not isinstance(raw_filters, list):
+            return ToolResult(
+                call_id="",
+                content="BLOCKED: filters must be a list",
+                is_error=True,
+            )
+        filter_bindings: list[dict[str, object]] = []
+        for item in raw_filters:
+            if not isinstance(item, dict):
+                return ToolResult(
+                    call_id="",
+                    content="BLOCKED: every filter must be an object",
+                    is_error=True,
+                )
+            dimension_id = str(item.get("dimension_id", ""))
+            if dimension_id not in self._attention.filter_dimension_ids:
+                return ToolResult(
+                    call_id="",
+                    content=(
+                        "BLOCKED (candidate_not_shortlisted): 필터 기준이 현재 "
+                        "질문 후보에 없습니다."
+                    ),
+                    is_error=True,
+                )
+            raw_values = item.get("values")
+            if not isinstance(raw_values, list):
+                return ToolResult(
+                    call_id="",
+                    content="BLOCKED: filter values must be a list",
+                    is_error=True,
+                )
+            values: list[dict[str, str]] = []
+            for value in raw_values:
+                if not isinstance(value, dict):
+                    return ToolResult(
+                        call_id="",
+                        content="BLOCKED: every filter value must be an object",
+                        is_error=True,
+                    )
+                values.append(
+                    {
+                        "kind": str(value.get("kind", "")),
+                        "value": str(value.get("value", "")),
+                        "phrase": str(value.get("phrase", "")),
+                    }
+                )
+            filter_bindings.append(
+                {
+                    "dimension_id": dimension_id,
+                    "dimension_phrase": str(item.get("dimension_phrase", "")),
+                    "operator": str(item.get("operator", "")),
+                    "operator_phrase": str(item.get("operator_phrase", "")),
+                    "values": values,
+                }
+            )
+
+        raw_time_window = args.get("time_window")
+        time_window_binding: dict[str, object] | None = None
+        if raw_time_window is not None:
+            if not isinstance(raw_time_window, dict):
+                return ToolResult(
+                    call_id="",
+                    content="BLOCKED: time_window must be an object or null",
+                    is_error=True,
+                )
+            time_dimension_id = str(raw_time_window.get("dimension_id", ""))
+            if time_dimension_id not in self._attention.time_dimension_ids:
+                return ToolResult(
+                    call_id="",
+                    content=(
+                        "BLOCKED (candidate_not_shortlisted): 기간 기준이 현재 "
+                        "질문 후보에 없습니다."
+                    ),
+                    is_error=True,
+                )
+            endpoints: dict[str, dict[str, str]] = {}
+            for endpoint in ("start", "end"):
+                raw_endpoint = raw_time_window.get(endpoint)
+                if not isinstance(raw_endpoint, dict):
+                    return ToolResult(
+                        call_id="",
+                        content="BLOCKED: time endpoints must be objects",
+                        is_error=True,
+                    )
+                endpoints[endpoint] = {
+                    "kind": str(raw_endpoint.get("kind", "")),
+                    "value": str(raw_endpoint.get("value", "")),
+                    "phrase": str(raw_endpoint.get("phrase", "")),
+                }
+            time_window_binding = {
+                "dimension_id": time_dimension_id,
+                "dimension_phrase": str(raw_time_window.get("dimension_phrase", "")),
+                "range_phrase": str(raw_time_window.get("range_phrase", "")),
+                "start": endpoints["start"],
+                "end": endpoints["end"],
+            }
         raw_obligations = args.get("unresolved_obligations")
         if not isinstance(raw_obligations, list):
             return ToolResult(
@@ -353,6 +608,8 @@ class SemanticQuery:
             dimension_bindings=dimension_bindings,
             unresolved_obligations=[str(item) for item in raw_obligations],
             limit=limit,
+            filter_bindings=filter_bindings,
+            time_window_binding=time_window_binding,
         )
         if outcome.status == "clarification":
             return ToolResult(
@@ -365,218 +622,29 @@ class SemanticQuery:
                 is_error=True,
             )
 
-        safety_context = SafetyContext(row_limit=max(1, min(limit, 1000)))
-        safety = ctx.safety.evaluate(outcome.sql, safety_context)
-        if safety.verdict != Verdict.PASS:
-            return ToolResult(
-                call_id="",
-                content=f"BLOCKED by {safety.layer}: {safety.reason}",
-                is_error=True,
-            )
-        before_execute = self._service.load(ctx.identity.kv_scope)
-        if before_execute is None or (
-            before_execute.source_id != outcome.source_id
-            or before_execute.connection_generation != outcome.connection_generation
-            or before_execute.fingerprint != outcome.catalog_fingerprint
-            or before_execute.review_revision != outcome.catalog_review_revision
-        ):
-            return ToolResult(
-                call_id="",
-                content=(
-                    "BLOCKED (connection_stale_pre_execute): DB 연결 또는 의미 "
-                    "검토 상태가 실행 직전에 바뀌었습니다."
-                ),
-                is_error=True,
-            )
-        if not accepts_statement_timeout(ctx.explorer):
-            return ToolResult(
-                call_id="",
-                content=(
-                    "BLOCKED (query_timeout_unsupported): DB adapter가 검증된 "
-                    "statement timeout 계약을 구현하지 않았습니다."
-                ),
-                is_error=True,
-            )
-        try:
-            rows = await ctx.explorer.execute(
-                safety.sql,
-                max(1, min(limit, 1000)),
-                timeout_seconds=safety_context.timeout_seconds,
-            )
-        except QueryTimedOutError:
-            return ToolResult(
-                call_id="",
-                content="BLOCKED (query_timeout): 검토된 질의가 실행 제한 시간을 넘었습니다.",
-                is_error=True,
-            )
-        except QueryTimeoutUnsupportedError:
-            return ToolResult(
-                call_id="",
-                content=(
-                    "BLOCKED (query_timeout_unsupported): 연결된 DB에서 안전한 "
-                    "statement 취소를 검증하지 못해 실행하지 않았습니다."
-                ),
-                is_error=True,
-            )
-        except Exception as exc:
-            if ctx.audit is not None:
-                await ctx.audit.record(
-                    AuditEvent(
-                        actor=ctx.identity.user_id,
-                        action="semantic_query_failed",
-                        scope=ctx.identity.session_key(),
-                        detail={
-                            "metric_id": outcome.metric_id,
-                            "aggregate": outcome.aggregate,
-                            "dimension_ids": outcome.dimension_ids,
-                            "sql": safety.sql,
-                            "error_type": type(exc).__name__,
-                        },
-                    )
-                )
-            return ToolResult(
-                call_id="",
-                content=(
-                    "BLOCKED (query_execution_failed): DB가 검토된 질의를 "
-                    "실행하지 못했습니다. SQL과 드라이버 상세는 audit에만 남깁니다."
-                ),
-                is_error=True,
-            )
-        current_catalog = self._service.load(ctx.identity.kv_scope)
-        if current_catalog is None or (
-            current_catalog.source_id != outcome.source_id
-            or current_catalog.connection_generation != outcome.connection_generation
-            or current_catalog.fingerprint != outcome.catalog_fingerprint
-            or current_catalog.review_revision != outcome.catalog_review_revision
-            or current_catalog.version != outcome.catalog_version
-            or current_catalog.classification_policy_version
-            != outcome.classification_policy_version
-        ):
-            return ToolResult(
-                call_id="",
-                content=(
-                    "BLOCKED (semantic_catalog_changed): 실행 중 DB 또는 의미·공개 "
-                    "검토 상태가 바뀌어 결과를 폐기했습니다. 질문을 다시 실행해 주세요."
-                ),
-                is_error=True,
-            )
-        rows, metric_blocker = enforce_metric_disclosure_output(
-            current_catalog,
-            outcome.metric_id,
-            outcome.aggregate,
-            outcome.dimension_ids,
-            rows,
+        execution = await execute_governed_semantic(
+            service=self._service,
+            scope=ctx.identity.kv_scope,
+            explorer=ctx.explorer,
+            safety=ctx.safety,
+            outcome=outcome,
+            actor=ctx.identity.user_id,
+            audit_scope=ctx.identity.session_key(),
+            audit=ctx.audit,
+            row_limit=limit,
         )
-        if metric_blocker:
-            if ctx.audit is not None:
-                await ctx.audit.record(
-                    AuditEvent(
-                        actor=ctx.identity.user_id,
-                        action="semantic_query_output_blocked",
-                        scope=ctx.identity.session_key(),
-                        detail={
-                            "metric_id": outcome.metric_id,
-                            "dimension_ids": outcome.dimension_ids,
-                            "reason": metric_blocker,
-                        },
-                    )
-                )
+        if not execution.ready:
             return ToolResult(
                 call_id="",
-                content=(
-                    f"BLOCKED ({metric_blocker}): 비공개 지표 집계의 최소 기여 "
-                    "행 수 정책을 통과하지 못했습니다."
-                ),
+                content=f"BLOCKED ({execution.code}): {execution.message}",
                 is_error=True,
             )
-        rows, release_blocker = enforce_released_dimension_output(
-            current_catalog, outcome.dimension_ids, rows
-        )
-        if release_blocker:
-            if ctx.audit is not None:
-                await ctx.audit.record(
-                    AuditEvent(
-                        actor=ctx.identity.user_id,
-                        action="semantic_query_output_blocked",
-                        scope=ctx.identity.session_key(),
-                        detail={
-                            "metric_id": outcome.metric_id,
-                            "dimension_ids": outcome.dimension_ids,
-                            "reason": release_blocker,
-                        },
-                    )
-                )
-            return ToolResult(
-                call_id="",
-                content=(
-                    f"BLOCKED ({release_blocker}): 공개 승인된 문자열 차원이지만 "
-                    "최소 그룹 크기·범주 수·표시 길이 정책을 통과하지 못했습니다."
-                ),
-                is_error=True,
-            )
-        rows, layout_blocker = decode_semantic_query_rows(
-            current_catalog, outcome.dimension_ids, rows
-        )
-        if layout_blocker:
-            return ToolResult(
-                call_id="",
-                content=(
-                    f"BLOCKED ({layout_blocker}): 실행 결과 열 구성이 검토된 "
-                    "semantic output 계약과 일치하지 않습니다."
-                ),
-                is_error=True,
-            )
-        if ctx.audit is not None:
-            await ctx.audit.record(
-                AuditEvent(
-                    actor=ctx.identity.user_id,
-                    action="semantic_query",
-                    scope=ctx.identity.session_key(),
-                    detail={
-                        "metric_id": outcome.metric_id,
-                        "aggregate": outcome.aggregate,
-                        "dimension_ids": outcome.dimension_ids,
-                        "sql": safety.sql,
-                    },
-                )
-            )
-        publish_catalog = self._service.load(ctx.identity.kv_scope)
-        if publish_catalog is None or (
-            publish_catalog.source_id != outcome.source_id
-            or publish_catalog.connection_generation != outcome.connection_generation
-            or publish_catalog.fingerprint != outcome.catalog_fingerprint
-            or publish_catalog.review_revision != outcome.catalog_review_revision
-            or publish_catalog.version != outcome.catalog_version
-            or publish_catalog.classification_policy_version
-            != outcome.classification_policy_version
-        ):
-            return ToolResult(
-                call_id="",
-                content=(
-                    "BLOCKED (semantic_catalog_changed_before_publish): audit 또는 "
-                    "결과 게시 직전에 의미·공개 상태가 바뀌어 결과를 폐기했습니다."
-                ),
-                is_error=True,
-            )
-        headers = semantic_query_headers(publish_catalog, outcome.dimension_ids)
         ctx.semantic_result_ready = True
-        ctx.semantic_result_message = outcome.message
-        ctx.semantic_result_headers = headers
-        ctx.semantic_result_rows = [
-            tuple(row[header] for header in headers) for row in rows
-        ]
-        ctx.semantic_result_stamp = (
-            publish_catalog.source_id,
-            publish_catalog.connection_generation,
-            publish_catalog.fingerprint,
-            publish_catalog.review_revision,
-            publish_catalog.version,
-            publish_catalog.classification_policy_version,
-        )
-        return ToolResult(
-            call_id="",
-            content="READY: governed result is available.",
-        )
+        ctx.semantic_result_message = execution.message
+        ctx.semantic_result_headers = execution.headers
+        ctx.semantic_result_rows = list(execution.rows)
+        ctx.semantic_result_stamp = execution.stamp
+        return ToolResult(call_id="", content="READY: governed result is available.")
 
 
 def _latest_user_question(ctx: "HarnessContext") -> str:

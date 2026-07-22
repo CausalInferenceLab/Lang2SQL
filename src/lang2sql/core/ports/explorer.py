@@ -46,6 +46,36 @@ def accepts_statement_timeout(explorer: object) -> bool:
     )
 
 
+def accepts_bound_parameters(explorer: object) -> bool:
+    """Return whether the adapter explicitly accepts separated bind values."""
+
+    execute = getattr(explorer, "execute", None)
+    if execute is None:
+        return False
+    try:
+        signature = inspect.signature(execute)
+    except (TypeError, ValueError):
+        return False
+    parameter = signature.parameters.get("parameters")
+    if parameter is not None and parameter.kind in {
+        inspect.Parameter.KEYWORD_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+    }:
+        return True
+    return any(
+        item.kind == inspect.Parameter.VAR_KEYWORD
+        for item in signature.parameters.values()
+    )
+
+
+def close_explorer(explorer: object) -> None:
+    """Release an adapter resource when it exposes a synchronous close seam."""
+
+    close = getattr(explorer, "close", None)
+    if callable(close):
+        close()
+
+
 @dataclass
 class Column:
     name: str
@@ -88,6 +118,7 @@ class ExplorerPort(Protocol):
         limit: int = 1000,
         *,
         timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
     ) -> list[dict]:
         """Run a read-only query (already cleared by the safety pipeline) and
         return up to ``limit`` rows. The ``run_sql`` tool calls this only after

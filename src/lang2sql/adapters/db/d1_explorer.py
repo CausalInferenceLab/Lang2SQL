@@ -78,14 +78,13 @@ class D1Explorer:
         limit: int = 1000,
         *,
         timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
     ) -> list[dict]:
         if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be a finite positive number")
         # urllib's transport timeout cannot prove that D1 stopped server-side
         # SQL. Refuse before sending until a verified server deadline exists.
-        raise QueryTimeoutUnsupportedError(
-            "D1 statement cancellation is not verified"
-        )
+        raise QueryTimeoutUnsupportedError("D1 statement cancellation is not verified")
 
     def governed_execution_supported(self) -> bool:
         return False

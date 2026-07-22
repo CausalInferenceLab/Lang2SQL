@@ -1,6 +1,6 @@
-"""Lang2SQL — document-learning analytics agent (v4.1 rebuild)."""
+"""Curated SQL-free public API for embedding Lang2SQL."""
 
-from .api import (
+from .models import (
     AggregateKind,
     Blocked,
     CallContext,
@@ -22,7 +22,6 @@ from .api import (
     FilterCandidate,
     FilterInput,
     FilterOperation,
-    Lang2SQLRuntime,
     LiteralInput,
     MetricCandidate,
     PlanReady,
@@ -38,8 +37,7 @@ from .api import (
     TimeCandidate,
     ValueKind,
 )
-
-__version__ = "0.4.0.dev0"
+from .runtime import Lang2SQLRuntime
 
 __all__ = [
     "AggregateKind",

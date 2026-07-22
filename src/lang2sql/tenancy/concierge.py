@@ -21,7 +21,7 @@ from ..adapters.llm.openai_ import OpenAILLM
 from ..adapters.storage.sqlite_store import SqliteStore
 from ..core.identity import Identity
 from ..core.ports.audit import AuditPort
-from ..core.ports.explorer import ExplorerPort
+from ..core.ports.explorer import ExplorerPort, close_explorer
 from ..core.ports.llm import LLMPort
 from ..core.ports.safety import SafetyPipelinePort
 from ..core.ports.secrets import SecretsPort
@@ -112,9 +112,27 @@ class ContextConcierge:
 
     def forget_explorer(self, scope: str) -> None:
         """Bust the cached explorer for ``scope`` (call after /setup updates a DSN)."""
+        removed = [
+            value for key, value in self._scope_explorers.items() if key[0] == scope
+        ]
         self._scope_explorers = {
-            key: value for key, value in self._scope_explorers.items() if key[0] != scope
+            key: value
+            for key, value in self._scope_explorers.items()
+            if key[0] != scope
         }
+        for explorer in {id(item): item for item in removed}.values():
+            close_explorer(explorer)
+
+    def close(self) -> None:
+        """Release cached database handles and all transient sensitive state."""
+
+        explorers = {
+            id(item): item for item in [self._explorer, *self._scope_explorers.values()]
+        }
+        self._scope_explorers.clear()
+        for explorer in explorers.values():
+            close_explorer(explorer)
+        self._semantic.clear_transient_state()
 
     def connection_binding(self, scope: str) -> ConnectionBinding | None:
         raw = self._store.kv_get(scope, CONNECTION_BINDING_KEY)
@@ -132,9 +150,7 @@ class ContextConcierge:
         except ValueError:
             return -1
 
-    def source_identity(
-        self, scope: str, dsn: str, extras: dict[str, str]
-    ) -> str:
+    def source_identity(self, scope: str, dsn: str, extras: dict[str, str]) -> str:
         if not isinstance(self._secrets, EncryptedSecrets):
             raise RuntimeError("source identity requires EncryptedSecrets")
         return self._secrets.source_identity(scope, dsn, extras)
@@ -256,7 +272,12 @@ class ContextConcierge:
             try:
                 extras["d1_token"] = self._secrets.decode_from_storage(encrypted_token)
             except Exception:
-                return self._explorer, SemanticCatalog(fingerprint="invalid"), True, None
+                return (
+                    self._explorer,
+                    SemanticCatalog(fingerprint="invalid"),
+                    True,
+                    None,
+                )
         cache_key = (scope, binding.source_id, binding.generation)
         cached = self._scope_explorers.get(cache_key)
         if cached is not None:
@@ -272,7 +293,9 @@ class ContextConcierge:
         if session is None:
             session = Session(identity=identity)
 
-        explorer, catalog, raw_catalog_exists, binding = await self._active_state(identity)
+        explorer, catalog, raw_catalog_exists, binding = await self._active_state(
+            identity
+        )
         if binding is not None and (
             session.source_id != binding.source_id
             or session.connection_generation != binding.generation
@@ -301,12 +324,12 @@ class ContextConcierge:
             # sent to the model, not an approximate candidate projection.
             _ = semantic_query.spec
         tool_list = build_default_tools(
-                memory=self._memory,
-                ingestion=self._ingestion,
-                source=self._source,
-                extractor=self._extractor,
-                semantic_query=semantic_query,
-            )
+            memory=self._memory,
+            ingestion=self._ingestion,
+            source=self._source,
+            extractor=self._extractor,
+            semantic_query=semantic_query,
+        )
         tools = ToolRegistry(
             tool_list,
             # Governed natural-language turns expose only the typed query and
@@ -314,9 +337,7 @@ class ContextConcierge:
             # registered memory/ingestion tools without letting DB metadata
             # prompt the model into side effects.
             advertised_names=(
-                {"semantic_query", "ask_user"}
-                if semantic_query is not None
-                else None
+                {"semantic_query", "ask_user"} if semantic_query is not None else None
             ),
         )
 
@@ -334,16 +355,12 @@ class ContextConcierge:
             semantic_attention_state=(
                 "candidate_schema_too_large"
                 if semantic_query is not None and semantic_query.schema_blocker
-                else attention.state
-                if attention
-                else ""
+                else attention.state if attention else ""
             ),
             semantic_attention_message=(
                 semantic_query.schema_blocker
                 if semantic_query is not None and semantic_query.schema_blocker
-                else attention.message
-                if attention
-                else ""
+                else attention.message if attention else ""
             ),
             semantic_table_ids=attention.table_ids if attention else (),
             semantic_query=semantic_query,

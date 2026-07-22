@@ -13,7 +13,6 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Any
 
-
 CATALOG_KEY = "semantic_catalog:v1"
 PENDING_REVIEW_KEY = "semantic_pending_review:v1"
 CONNECTION_BINDING_KEY = "semantic_connection_binding:v1"
@@ -266,8 +265,7 @@ class SemanticCatalog:
         stale_dimensions = [
             item.id
             for item in self.dimensions
-            if item.classification_policy_version
-            != self.classification_policy_version
+            if item.classification_policy_version != self.classification_policy_version
         ]
         if stale_dimensions:
             raise ValueError(
@@ -299,8 +297,7 @@ class SemanticCatalog:
             }
             if reviewed_bindings.intersection(metric.rejected_bindings):
                 raise ValueError(
-                    "metric bindings cannot be both approved and rejected: "
-                    + metric.id
+                    "metric bindings cannot be both approved and rejected: " + metric.id
                 )
         for dimension in self.dimensions:
             if set(dimension.aliases).intersection(dimension.rejected_aliases):
@@ -427,9 +424,11 @@ class SemanticCatalog:
             default_tier = (
                 DimensionDisclosureTier.PUBLIC_GROUPED
                 if policy == DimensionReviewPolicy.AUTO_SAFE
-                else DimensionDisclosureTier.CONTROLLED_GROUPED
-                if raw_output_allowed
-                else DimensionDisclosureTier.BLOCKED
+                else (
+                    DimensionDisclosureTier.CONTROLLED_GROUPED
+                    if raw_output_allowed
+                    else DimensionDisclosureTier.BLOCKED
+                )
             )
             return DimensionSpec(
                 id=item["id"],
@@ -476,7 +475,10 @@ class SemanticCatalog:
             )
 
         persisted_policy_version = int(data.get("classification_policy_version", 1))
-        if version in {2, 3} and persisted_policy_version != CLASSIFICATION_POLICY_VERSION:
+        if (
+            version in {2, 3}
+            and persisted_policy_version != CLASSIFICATION_POLICY_VERSION
+        ):
             raise ValueError(
                 "semantic catalog classification policy requires re-onboarding"
             )
@@ -495,9 +497,7 @@ class SemanticCatalog:
             public_data_scope=bool(data.get("public_data_scope", False)),
             public_data_reviewer=str(data.get("public_data_reviewer", "")),
             public_data_fingerprint=str(data.get("public_data_fingerprint", "")),
-            public_data_confirmed_at=str(
-                data.get("public_data_confirmed_at", "")
-            ),
+            public_data_confirmed_at=str(data.get("public_data_confirmed_at", "")),
             metric_action_epoch=int(data.get("metric_action_epoch", 0)),
             dimension_action_epoch=int(data.get("dimension_action_epoch", 0)),
             public_scope_epoch=int(data.get("public_scope_epoch", 0)),
@@ -514,16 +514,17 @@ class SemanticCatalog:
         )
 
 
-@dataclass
+@dataclass(repr=False)
 class PendingReview:
     metric_id: str
-    question: str
     metric_phrase: str
     dimension_bindings: list[dict[str, str]]
     allowed_choices: list[str]
     proposed_aggregate: str = ""
-    query_dimensions: list[dict[str, str]] = field(default_factory=list)
-    query_limit: int = 100
+    # Persist safe shape metadata only. Original questions, predicate literals,
+    # date bounds, and complete typed drafts never enter the review KV record.
+    constraint_filter_count: int = 0
+    constraint_has_time_window: bool = False
     catalog_fingerprint: str = ""
     catalog_review_revision: int = 0
     catalog_version: int = 1
@@ -536,6 +537,7 @@ class PendingReview:
     review_kind: str = "metric"
     review_id: str = ""
     catalog_scope: str = ""
+    record_version: int = 2
 
     def to_json(self) -> str:
         return json.dumps(asdict(self), ensure_ascii=False)
@@ -543,9 +545,9 @@ class PendingReview:
     @classmethod
     def from_json(cls, raw: str) -> "PendingReview":
         data = json.loads(raw)
+        legacy_filters = data.get("query_filters", [])
         return cls(
             metric_id=data["metric_id"],
-            question=data.get("question", ""),
             metric_phrase=data.get("metric_phrase", ""),
             dimension_bindings=list(data.get("dimension_bindings", [])),
             allowed_choices=list(
@@ -555,8 +557,18 @@ class PendingReview:
                 )
             ),
             proposed_aggregate=data.get("proposed_aggregate", ""),
-            query_dimensions=list(data.get("query_dimensions", [])),
-            query_limit=int(data.get("query_limit", 100)),
+            constraint_filter_count=int(
+                data.get(
+                    "constraint_filter_count",
+                    len(legacy_filters) if isinstance(legacy_filters, list) else 0,
+                )
+            ),
+            constraint_has_time_window=bool(
+                data.get(
+                    "constraint_has_time_window",
+                    isinstance(data.get("query_time_window"), dict),
+                )
+            ),
             catalog_fingerprint=data.get("catalog_fingerprint", ""),
             catalog_review_revision=int(data.get("catalog_review_revision", 0)),
             catalog_version=int(data.get("catalog_version", 1)),
@@ -581,4 +593,5 @@ class PendingReview:
             ),
             review_id=str(data.get("review_id", "")),
             catalog_scope=str(data.get("catalog_scope", "")),
+            record_version=2,
         )

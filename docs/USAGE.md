@@ -10,6 +10,12 @@
 같은 OpenAI-compatible 서버를 연결한다.
 
 ```bash
+uv sync
+# Discord /setup에서 DuckDB를 선택할 경우
+uv sync --extra duckdb
+```
+
+```bash
 export LANG2SQL_LLM_BASE_URL=http://127.0.0.1:11434
 export LANG2SQL_LLM_MODEL=gemma4:26b
 export DISCORD_BOT_TOKEN=...
@@ -24,6 +30,11 @@ export LANG2SQL_DISCORD_QUERY_CHANNEL_IDS=123456789012345678
 모델 설정이 없으면 `FakeLLM`이 사용된다. 이는 설치 확인용일 뿐 자연어 질의
 검증용이 아니다. 채널 허용 목록은 Discord 접근 경계일 뿐 DB 자체의 row/column
 권한을 대신하지 않는다.
+
+> Discord가 아닌 서비스에 내장할 때는 `/setup`이나 `semantic_query` 대신 SQL 없는
+> `Lang2SQLRuntime`을 쓴다. 공개 흐름은 `connect → candidates → human feedback →
+> typed plan → execute`이며, 연결 검토의 실제 선택과 실행 결과 type-check를 포함한
+> 예제는 [`LIBRARY_API.md`](LIBRARY_API.md)에 있다.
 
 ## 1. `/setup`으로 DB 연결
 
@@ -110,6 +121,10 @@ credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출
 /semantic_review review_id:<다음 ID> aggregate:confirm
 ```
 
+대기열에는 원 질문·필터 값·날짜 경계를 저장하지 않는다. 봇 프로세스가 그대로면
+승인 후 같은 typed draft를 자동 재개하고, 재시작된 경우에는 승인은 저장하되 원
+요청자에게 같은 질문을 다시 보내도록 안내한다.
+
 선택 가능한 값은 해당 검토 항목에 따라 `sum`, `avg`, `min`, `max`, `count`,
 `confirm`, `reject` 중 일부다. 숫자 컬럼에는 `SUM`/`AVG`/`MIN`/`MAX`가 쓰이고,
 `COUNT`는 물리 테이블의 source-record count에만 쓰인다.
@@ -151,6 +166,9 @@ catalog stamp 재검사에서 준비된 결과를 폐기한다.
 - categorical group-by
 - 선언 FK의 유일한 child-to-parent 1~N hop join
 - nullable FK나 orphan fact를 보존하는 `LEFT JOIN`
+- 명시적 AND 최대 8개의 exact `EQ` 또는 값 최대 20개의 `IN` bound filter
+- native `DATE` 차원의 ISO date `[start, end)` 기간창
+- 기존 file-backed SQLite와 DuckDB의 read-only governed execution
 
 비공개 기본값에서는 그룹 유무와 무관하게 `SUM`/`AVG`/source-record `COUNT`의
 실제 기여 행이 5개 미만이면 결과 전체를 차단하고, 단일 극값을 드러내는
@@ -161,16 +179,17 @@ catalog stamp 재검사에서 준비된 결과를 폐기한다.
 
 차단 또는 추가 확인:
 
-- 자유로운 filter와 계산식
-- 기간/cohort 기준
+- raw SQL, row projection, OR/NOT, 부분 문자열·자유 filter와 계산식
+- timestamp timezone, relative time, fiscal/cohort 기간 기준
 - 단위 변환
 - composite FK, parent-to-child fan-out, 동률 join path
 - PII, credential-like, 서술문, 식별자형 문자열 컬럼
 - 관리자 공개 승인을 받지 않은 불확실한 문자열 차원
 
 미지원 조건을 버린 채 결과를 내지 않는다. 조건이 남으면 `NEEDS CLARIFICATION`
-또는 `BLOCKED`로 끝난다. 현재 실제 안전 실행 증거는 SQLite에 한정된다. 다른 DB
-커넥터는 연결 가능성과 timeout/취소가 검증된 질의 실행 범위를 구분한다.
+또는 `BLOCKED`로 끝난다. 현재 실제 안전 실행 증거는 existing file-backed SQLite와
+DuckDB에 한정된다. 다른 DB 커넥터는 연결 가능성과 timeout/취소가 검증된 질의 실행
+범위를 구분하며, 검증되지 않은 원격 dialect의 governed 실행은 차단한다.
 
 ## 기타 기존 명령
 

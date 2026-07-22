@@ -57,6 +57,21 @@
 현재 역할별 DB 정책은 범위 밖이다. 따라서 초기 실험은 read-only 전용 DB 계정,
 최소 권한, 신뢰된 전용 채널을 사용해야 한다.
 
+## 공개 라이브러리 경계
+
+Discord가 아닌 호스트는 SQL 없는 `Lang2SQLRuntime`을 사용한다.
+`connect → candidates → human feedback → typed plan → execute` 순서를 지키며,
+호스트/모델은 SQL을 주고받지 않는다. `connect`는 메타데이터만 읽고, `candidates`는
+질문에 맞춘 bounded ID와 타입만 준다. 사람이 `ReviewRequest.allowed_choices`에서
+명시적으로 고른 값을 `feedback`에 제출한 뒤에만 공개 범위나 의미 검토가 바뀐다.
+`execute`는 같은 사용자·대화·DB source에 묶인 일회용 `PreparedPlan`만 받는다.
+
+typed draft의 predicate는 명시적 AND, exact `EQ` 또는 값 최대 20개의 `IN`만
+허용하며 모든 값은 bound parameter가 된다. 기간은 native `DATE` 차원의 ISO date
+`[start, end)` 창만 받는다. 기존 파일을 read-only로 연 SQLite와 DuckDB만
+governed 실행을 지원한다. 상세 DTO와 안전한 검토 루프는
+[`LIBRARY_API.md`](LIBRARY_API.md)에 있다.
+
 ## 안전 경계
 
 - semantic catalog가 하나라도 존재하면 `run_sql`은 모델 도구 목록에서 제거된다.
@@ -64,11 +79,18 @@
 - PII 의심 컬럼은 metric/dimension 후보에 포함하지 않는다.
 - 문자열 차원의 관리자 공개 승인과 질문 표현 연결 승인을 분리한다.
 - 공개 승인 전 후보 ID는 모델 도구 enum에도 포함하지 않는다.
-- 모든 후보·행동 토큰은 15분, action, source ID, 연결 세대에 묶인다. 객체 후보
-  토큰은 관련 object state/epoch를, catalog-wide public/reset 토큰은 전체 catalog
-  revision을 검증한다. metric/dimension map과 dimension release는 추가로 경고를 실행한
-  reviewer와 payload에 묶여 경고 없는 실행이나 payload 변경을 차단한다.
+- Discord stewardship의 객체 후보·행동 토큰은 15분, action, source ID, 연결 세대에
+  묶인다. 객체 토큰은 관련 object state/epoch를, catalog-wide public/reset 토큰은
+  전체 catalog revision을 검증한다. metric/dimension map과 dimension release는 추가로
+  경고를 실행한 reviewer와 payload에 묶여 경고 없는 실행이나 payload 변경을 차단한다.
+- 공개 API의 `CandidateSet.candidate_token`은 별도 15분 action capability가 아니다.
+  runtime 인스턴스의 HMAC 키와 scope·actor·conversation·source·원 질문에 묶이고,
+  plan 시점에 현재 catalog shortlist를 다시 검증한다. 재연결·runtime 재시작에는
+  폐기되며 host도 한 질의 조립 뒤 저장하지 않고 새 `candidates`에서 다시 받는다.
 - review commit, pending 삭제, receipt, audit은 하나의 SQLite transaction이다.
+- pending review KV에는 질문 원문·필터 값·날짜 경계를 저장하지 않는다. 같은
+  프로세스에서는 15분 메모리 payload로 정확히 재개하고, 재시작 뒤에는 결정을
+  적용한 다음 원 질문 재제출을 안내한다.
   같은 reviewer·ID·choice 재시도는 idempotent이고 다른 actor/choice 재사용은 차단된다.
 - parent → child fan-out, 경로 없음, 동률 경로는 SQL 없이 차단한다.
 - child → parent join은 nullable FK와 orphan fact를 버리지 않도록 `LEFT JOIN`한다.
@@ -113,15 +135,16 @@ privacy, row-level security 또는 사용자 권한 보장이 아니다.
 - 모든 테이블의 명시적 physical source-record `COUNT(*)` (PK 불필요)
 - categorical dimension group-by
 - declared FK를 따라가는 유일한 child → parent 1~N hop join
-- SQLite/SQLAlchemy read-only 실행과 결과 비교
+- 기존 file-backed SQLite와 DuckDB의 read-only governed 실행과 결과 비교
 - metadata-only 문자열 공개 후보 및 수치 지표 후보
 - 모든 비차단 dimension의 metadata-only phrase mapping과 conflict 검증
 - 질문 시점의 metric/dimension review와 immutable draft 재개
 
 의도적으로 차단 또는 clarification:
 
-- 검토되지 않은 기간/cohort 기준과 단위 변환
-- 자유로운 filter expression과 row projection
+- timestamp/relative/fiscal/cohort 기간과 검토되지 않은 단위 변환
+- raw SQL, row projection, OR/NOT·부분 문자열·자유 filter expression
+- 자유 수식과 파생 지표 실행
 - composite FK
 - parent-to-child fan-out 또는 여러 최단 join path
 - PII/credential/서술문/식별자형 문자열 컬럼
@@ -129,9 +152,10 @@ privacy, row-level security 또는 사용자 권한 보장이 아니다.
 - 역할별 row/column policy
 
 이 제한은 조용한 fallback이 아니다. 각 경로는 typed blocker로 끝나며 raw SQL
-생성으로 우회하지 않는다. 현재 실제 안전 실행 증거는 SQLite뿐이다. 다른 DB를
-연결할 수 있다는 사실과 같은 compiler·timeout·취소 동작이 검증됐다는 주장은
-구분한다.
+생성으로 우회하지 않는다. 현재 실제 안전 실행 증거는 existing file-backed
+SQLite와 DuckDB뿐이다. 다른 DB를 연결할 수 있다는 사실과 같은 compiler·timeout·
+취소 동작이 검증됐다는 주장은 구분하며, 검증되지 않은 원격 dialect 실행은
+fail-closed한다.
 
 ## LLM에 남아 있는 역할
 

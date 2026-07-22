@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import asyncio
 import math
-import sqlite3
 import threading
+from pathlib import Path
 from typing import Any
 
 from ...core.ports.explorer import (
@@ -27,13 +27,13 @@ from ...core.ports.explorer import (
 )
 
 
-class _SQLiteCancellationController:
-    """Coordinate a per-request timer/cancel signal with one SQLite connection."""
+class _InterruptCancellationController:
+    """Coordinate a deadline with a DBAPI connection exposing interrupt()."""
 
     def __init__(self, timeout_seconds: float) -> None:
         self._timeout_seconds = timeout_seconds
         self._lock = threading.Lock()
-        self._connection: sqlite3.Connection | None = None
+        self._connection: Any | None = None
         self._timer: threading.Timer | None = None
         self._reason = ""
         self._finished = False
@@ -43,7 +43,7 @@ class _SQLiteCancellationController:
         with self._lock:
             return self._reason
 
-    def register(self, connection: sqlite3.Connection) -> None:
+    def register(self, connection: Any) -> None:
         with self._lock:
             if self._finished:
                 raise QueryCancelledError("query cancelled before execution")
@@ -63,7 +63,7 @@ class _SQLiteCancellationController:
         self._interrupt("timeout")
 
     def _interrupt(self, reason: str) -> None:
-        connection: sqlite3.Connection | None
+        connection: Any | None
         with self._lock:
             if self._finished or self._reason:
                 return
@@ -92,13 +92,69 @@ class SqlAlchemyExplorer:
         self.url = url
         self._schema = schema
         self._engine: Any = None  # created lazily
+        self._engine_lock = threading.RLock()
 
     def _get_engine(self) -> Any:
-        if self._engine is None:
-            from sqlalchemy import create_engine  # imported here = lazy driver load
+        with self._engine_lock:
+            if self._engine is not None:
+                return self._engine
+            import sqlite3
 
-            self._engine = create_engine(self.url)
-        return self._engine
+            from sqlalchemy import create_engine  # imported here = lazy driver load
+            from sqlalchemy.engine import make_url
+
+            url = make_url(self.url)
+            backend = url.get_backend_name()
+            if backend in {"sqlite", "duckdb"} and url.database not in {
+                None,
+                "",
+                ":memory:",
+            }:
+                database = Path(str(url.database))
+                if not database.is_file():
+                    # A typo must not create and then trust an empty database.
+                    raise FileNotFoundError(
+                        f"{backend} database file does not exist: {database}"
+                    )
+                if backend == "sqlite":
+                    sqlite_uri = f"file:{database.as_posix()}?mode=ro"
+                    # A governed analytics connection must never create or
+                    # mutate the user's SQLite file, even if a future caller
+                    # accidentally bypasses the SELECT-only safety layer.
+                    self._engine = create_engine(
+                        "sqlite://",
+                        creator=lambda: sqlite3.connect(
+                            sqlite_uri,
+                            uri=True,
+                            check_same_thread=False,
+                        ),
+                    )
+                else:
+                    self._engine = create_engine(
+                        self.url,
+                        connect_args={
+                            "read_only": True,
+                            "config": {
+                                "enable_external_access": "false",
+                                "autoinstall_known_extensions": "false",
+                                "autoload_known_extensions": "false",
+                                "allow_community_extensions": "false",
+                                "lock_configuration": "true",
+                            },
+                        },
+                    )
+            else:
+                self._engine = create_engine(self.url)
+            return self._engine
+
+    def close(self) -> None:
+        """Dispose pooled connections and make a later use start fresh."""
+
+        with self._engine_lock:
+            engine = self._engine
+            self._engine = None
+        if engine is not None:
+            engine.dispose()
 
     # --- ExplorerPort ----------------------------------------------------
 
@@ -120,24 +176,35 @@ class SqlAlchemyExplorer:
         limit: int = 1000,
         *,
         timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
     ) -> list[dict]:
         timeout_seconds = float(timeout_seconds)
         if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
             raise ValueError("timeout_seconds must be a finite positive number")
         from sqlalchemy.engine import make_url
 
-        if make_url(self.url).get_backend_name() != "sqlite":
+        backend = make_url(self.url).get_backend_name()
+        if backend not in {"sqlite", "duckdb"}:
             # A generic SQLAlchemy option cannot prove server-side statement
             # cancellation. Each dialect needs a verified implementation.
             raise QueryTimeoutUnsupportedError(
-                "statement timeout is currently verified only for SQLite"
+                "statement timeout is currently verified only for SQLite and DuckDB"
             )
-        controller = _SQLiteCancellationController(timeout_seconds)
+        if backend == "duckdb" and make_url(self.url).database == ":memory:":
+            raise QueryTimeoutUnsupportedError(
+                "governed DuckDB execution requires an existing file-backed database"
+            )
+        controller = _InterruptCancellationController(timeout_seconds)
+
         async def worker_outcome() -> tuple[list[dict] | None, Exception | None]:
             try:
                 return (
                     await asyncio.to_thread(
-                        self._execute_sync, sql, int(limit), controller
+                        self._execute_sync,
+                        sql,
+                        int(limit),
+                        controller,
+                        parameters or {},
                     ),
                     None,
                 )
@@ -198,7 +265,17 @@ class SqlAlchemyExplorer:
     def governed_execution_supported(self) -> bool:
         from sqlalchemy.engine import make_url
 
-        return make_url(self.url).get_backend_name() == "sqlite"
+        url = make_url(self.url)
+        if url.get_backend_name() == "sqlite":
+            return bool(
+                url.database in {None, "", ":memory:"}
+                or Path(str(url.database)).is_file()
+            )
+        return bool(
+            url.get_backend_name() == "duckdb"
+            and url.database not in {None, "", ":memory:"}
+            and Path(str(url.database)).is_file()
+        )
 
     # --- sync workers ----------------------------------------------------
 
@@ -236,8 +313,12 @@ class SqlAlchemyExplorer:
 
     def _catalog_metadata_sync(self) -> dict[str, Any]:
         from sqlalchemy import inspect
+        from sqlalchemy.engine import make_url
 
-        insp = inspect(self._get_engine())
+        engine = self._get_engine()
+        insp = inspect(engine)
+        if make_url(self.url).get_backend_name() == "duckdb":
+            return self._duckdb_catalog_metadata_sync(insp)
         tables: dict[str, Any] = {}
         for name in insp.get_table_names(schema=self._schema):
             pk = insp.get_pk_constraint(name, schema=self._schema) or {}
@@ -265,11 +346,68 @@ class SqlAlchemyExplorer:
             }
         return {"tables": tables}
 
+    def _duckdb_catalog_metadata_sync(self, inspector: Any) -> dict[str, Any]:
+        """Read DuckDB's native constraint catalog.
+
+        ``duckdb-engine`` currently omits declared primary keys during
+        SQLAlchemy reflection.  Semantic onboarding must not silently lose
+        those identity facts, so this adapter uses DuckDB's documented catalog
+        table function while preserving the same backend-neutral result shape.
+        """
+
+        from sqlalchemy import text
+
+        default_schema = inspector.default_schema_name or "main"
+        effective_schema = self._schema or default_schema
+        table_names = inspector.get_table_names(schema=self._schema)
+        tables: dict[str, Any] = {
+            name: {"primary_key": [], "foreign_keys": [], "unique": []}
+            for name in table_names
+        }
+        statement = text(
+            "SELECT table_name, constraint_type, constraint_column_names, "
+            "referenced_table, referenced_column_names "
+            "FROM duckdb_constraints() "
+            "WHERE schema_name = :schema_name "
+            "ORDER BY table_name, constraint_index"
+        )
+        with self._get_engine().connect() as connection:
+            rows = connection.execute(
+                statement, {"schema_name": effective_schema}
+            ).mappings()
+            for row in rows:
+                table_name = str(row["table_name"])
+                target = tables.get(table_name)
+                if target is None:
+                    # Respect the inspector's selected table/schema boundary.
+                    continue
+                columns = list(row["constraint_column_names"] or [])
+                constraint_type = str(row["constraint_type"])
+                if constraint_type == "PRIMARY KEY":
+                    target["primary_key"] = columns
+                elif constraint_type == "UNIQUE":
+                    target["unique"].append(columns)
+                elif constraint_type == "FOREIGN KEY":
+                    target["foreign_keys"].append(
+                        {
+                            "columns": columns,
+                            # DuckDB currently exposes the referenced table but
+                            # not a distinct referenced-schema field here.
+                            "referred_schema": "",
+                            "referred_table": str(row["referenced_table"] or ""),
+                            "referred_columns": list(
+                                row["referenced_column_names"] or []
+                            ),
+                        }
+                    )
+        return {"tables": tables}
+
     def _execute_sync(
         self,
         sql: str,
         limit: int,
-        controller: _SQLiteCancellationController,
+        controller: _InterruptCancellationController,
+        parameters: dict[str, object],
     ) -> list[dict]:
         from sqlalchemy import text
         from sqlalchemy.exc import DBAPIError
@@ -277,14 +415,14 @@ class SqlAlchemyExplorer:
         try:
             with self._get_engine().connect() as conn:
                 raw = conn.connection.driver_connection
-                if not isinstance(raw, sqlite3.Connection):
+                if not callable(getattr(raw, "interrupt", None)):
                     raise QueryTimeoutUnsupportedError(
-                        "SQLite driver does not expose interrupt()"
+                        "database driver does not expose interrupt()"
                     )
                 controller.register(raw)
                 result = None
                 try:
-                    result = conn.execute(text(sql))
+                    result = conn.execute(text(sql), parameters)
                     if not result.returns_rows:
                         return []
                     rows = result.mappings().fetchmany(limit)
@@ -294,11 +432,14 @@ class SqlAlchemyExplorer:
                         result.close()
         except DBAPIError as exc:
             original = getattr(exc, "orig", None)
+            if controller.reason == "timeout":
+                raise QueryTimedOutError(
+                    "database statement deadline exceeded"
+                ) from None
+            if controller.reason == "cancelled":
+                raise QueryCancelledError("database statement cancelled") from None
             if getattr(original, "sqlite_errorcode", None) == 9:
-                if controller.reason == "timeout":
-                    raise QueryTimedOutError("SQLite statement deadline exceeded") from None
-                if controller.reason == "cancelled":
-                    raise QueryCancelledError("SQLite statement cancelled") from None
+                raise QueryCancelledError("SQLite statement interrupted") from None
             raise
         finally:
             controller.finish()

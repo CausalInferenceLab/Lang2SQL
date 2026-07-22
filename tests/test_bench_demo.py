@@ -23,7 +23,13 @@ def _load_demo():
     return module
 
 
-def test_demo_runs_clean(capsys):
+def test_demo_runs_clean(capsys, monkeypatch):
+    # The demo promises an offline FakeLLM smoke regardless of credentials in
+    # a developer's shell; never let the test accidentally call a provider.
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+    monkeypatch.delenv("LANG2SQL_LLM_BASE_URL", raising=False)
+    monkeypatch.delenv("LANG2SQL_LLM_MODEL", raising=False)
     demo = _load_demo()
     asyncio.run(demo.main())
     out = capsys.readouterr().out

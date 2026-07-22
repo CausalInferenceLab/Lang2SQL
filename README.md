@@ -68,6 +68,8 @@ Requires Python ≥ 3.10 and [uv](https://docs.astral.sh/uv/).
 
 ```bash
 uv sync                       # create .venv and install deps
+# DuckDB 파일도 연결할 때만 선택 dependency를 함께 설치
+uv sync --extra duckdb
 ```
 
 ### 1. Run the offline demo (no token, no database)
@@ -112,6 +114,15 @@ does not provide a meaningful semantic-query experience.
 
 The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 [`docs/DEPLOY.md`](docs/DEPLOY.md). Copy [`.env.example`](.env.example) to start.
+
+### 앱에 내장하기: SQL 없는 공개 API
+
+Discord 외의 앱은 `Lang2SQLRuntime` 공개 API를 사용할 수 있다. 흐름은
+`connect → candidates → human feedback → typed plan → execute`다. 호스트와 모델은
+SQL 문자열을 만들거나 받지 않으며, 사람의 검토 선택과 서버가 검증한 typed plan만
+실행 경계로 넘는다. 현재 governed 실행은 **기존 파일을 read-only로 연 SQLite와
+DuckDB**에 한정한다. 정확한 DTO, 검토 루프, bound `EQ`/`IN` 필터와 native `DATE`
+`[start, end)` 기간창 예제는 [`docs/LIBRARY_API.md`](docs/LIBRARY_API.md)를 따른다.
 
 ### Semantic first-connect (experimental branch)
 
@@ -179,11 +190,14 @@ suppression rules are not a substitute for database row/column authorization.
   automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.
 - Persist across restarts by default: the V1 `SqliteStore` defaults to in-memory;
   point it at a file for durability.
-- Silently guess time/cohort semantics, unit conversions, free-form filters,
-  composite joins, or fan-out joins in the governed query path.
-- Claim universal dialect parity: current public execution evidence covers
-  SQLite. Connector availability and verified governed execution are reported
-  separately.
+- Silently widen the typed-query boundary: advanced filters (OR/NOT, partial
+  match, free search), timestamp/relative/fiscal/cohort time, unit conversion,
+  derived formulas, composite joins, and fan-out joins fail closed rather than
+  being guessed or dropped.
+- Claim universal dialect parity: current public governed-execution evidence
+  covers existing file-backed SQLite and DuckDB only. Connector availability and
+  verified governed execution are reported separately; unverified remote
+  dialects fail closed.
 
 The cross-domain benchmark currently contains 28 cases over 21 public SQLite
 databases: 17 cases exercise the supported typed-query scope and 11 verify

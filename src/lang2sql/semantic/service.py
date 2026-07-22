@@ -7,10 +7,12 @@ clarification, or blocked.  There is no raw-SQL fallback.
 
 from __future__ import annotations
 
+from copy import deepcopy
 import hashlib
 import json
 import re
 import secrets
+import threading
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -35,7 +37,38 @@ from .catalog import (
     SemanticCatalog,
     ConnectionBinding,
 )
+from .compiler import (
+    DIMENSION_OUTPUT_PREFIX as _DIMENSION_OUTPUT_PREFIX,
+    METRIC_CONTRIBUTOR_COUNT_KEY as _METRIC_CONTRIBUTOR_COUNT_KEY,
+    METRIC_OUTPUT_KEY as _METRIC_OUTPUT_KEY,
+    RELEASE_CATEGORY_COUNT_KEY as _RELEASE_CATEGORY_COUNT_KEY,
+    RELEASE_GROUP_SIZE_KEY as _RELEASE_GROUP_SIZE_KEY,
+    compile_semantic_plan,
+    compile_legacy_aggregate_sql,
+)
 from .onboarding import OnboardingSummary, build_catalog
+from .plan import (
+    BaseMeasure,
+    DimensionSelection,
+    FilterOperator,
+    FilterPredicate,
+    LiteralKind,
+    PreparedSql,
+    ScalarLiteral,
+    SemanticPlan,
+    SemanticStateStamp,
+    TimeWindow,
+)
+from .policy import (
+    dimension_is_released as _dimension_is_released,
+    has_controlled_dimension as _has_controlled_dimension,
+    public_data_scope_confirmed as _public_data_scope_confirmed,
+)
+from .shortlist import question_sha256
+from .type_compatibility import (
+    filter_compatibility_error,
+    time_window_compatibility_error,
+)
 
 if TYPE_CHECKING:
     from ..adapters.storage.sqlite_store import SqliteStore
@@ -54,7 +87,9 @@ _TIME_UNIT_CUE = re.compile(
     r"\b(month|week|year|quarter)\b|월|주|연도|년도|분기",
     re.IGNORECASE,
 )
-_TIME_RANGE_CUE = re.compile(r"\b(from|to|between|through|until)\b|[-~–—]", re.IGNORECASE)
+_TIME_RANGE_CUE = re.compile(
+    r"\b(from|to|between|through|until)\b|[-~–—]", re.IGNORECASE
+)
 _UNIT_CUES = {
     "kg": ("kg", "kilogram", "kilograms", "킬로그램"),
     "metric_ton": ("metric ton", "metric tons", "tonne", "tonnes", "톤"),
@@ -83,11 +118,6 @@ _GENERIC_SOURCE_CONTEXT_SCAFFOLD = re.compile(
 _RELEASE_MIN_GROUP_SIZE = 5
 _RELEASE_MAX_CATEGORY_COUNT = 50
 _RELEASE_MAX_LABEL_LENGTH = 128
-_RELEASE_GROUP_SIZE_KEY = "__semantic_group_size"
-_RELEASE_CATEGORY_COUNT_KEY = "__semantic_category_count"
-_METRIC_CONTRIBUTOR_COUNT_KEY = "__semantic_metric_contributors"
-_DIMENSION_OUTPUT_PREFIX = "__l2s_dimension_"
-_METRIC_OUTPUT_KEY = "__l2s_metric"
 _QUERY_GRAMMAR_WORDS = {
     "a",
     "all",
@@ -121,6 +151,7 @@ _QUERY_GRAMMAR_WORDS = {
     "much",
     "number",
     "of",
+    "only",
     "per",
     "please",
     "report",
@@ -131,6 +162,9 @@ _QUERY_GRAMMAR_WORDS = {
     "the",
     "total",
     "what",
+    "where",
+    "whose",
+    "with",
     "개수",
     "건수",
     "계산",
@@ -161,6 +195,8 @@ _ACTION_RECEIPT_KEY_PREFIX = "semantic_action_receipt:v1:"
 _ACTION_ARM_KEY_PREFIX = "semantic_action_arm:v1:"
 _REVIEW_RECEIPT_KEY_PREFIX = "semantic_review_receipt:v1:"
 _ACTION_TTL_SECONDS = 15 * 60
+_PENDING_DRAFT_TTL_SECONDS = 15 * 60
+_MAX_PENDING_DRAFTS = 256
 
 
 def _metric_action_digest(metric: MetricSpec) -> str:
@@ -224,7 +260,7 @@ def _dimension_action_digest(dimension: DimensionSpec) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
-@dataclass
+@dataclass(repr=False)
 class QueryOutcome:
     status: str
     message: str
@@ -239,6 +275,8 @@ class QueryOutcome:
     classification_policy_version: int = 0
     source_id: str = ""
     connection_generation: int = 0
+    plan: SemanticPlan | None = field(default=None, repr=False)
+    prepared: PreparedSql | None = field(default=None, repr=False)
 
 
 @dataclass(frozen=True)
@@ -251,18 +289,29 @@ class StewardAssertion:
     public_data_confirmed: bool = False
 
 
-@dataclass
+@dataclass(repr=False)
 class ReviewOutcome:
     status: str
     message: str
-    question: str = ""
-    tool_args: dict[str, object] = field(default_factory=dict)
+    question: str = field(default="", repr=False)
+    tool_args: dict[str, object] = field(default_factory=dict, repr=False)
     source_id: str = ""
     connection_generation: int = 0
     requester_id: str = ""
     review_id: str = ""
     mutation_applied: bool = False
     object_id: str = ""
+
+
+@dataclass(frozen=True, repr=False)
+class _PendingDraft:
+    """Short-lived same-process resume payload, never written to storage."""
+
+    review_scope: str
+    review_id: str
+    question: str = field(repr=False)
+    tool_args: dict[str, object] = field(repr=False)
+    expires_monotonic: float
 
 
 def review_scope_key(session_key: str, user_id: str) -> str:
@@ -281,13 +330,15 @@ def _apply_pending_choice(
 
     metric = catalog.metric(pending.metric_id)
     if metric is None:
-        return ReviewOutcome(
-            "blocked", "확인 대상 지표가 더 이상 존재하지 않습니다."
-        ), False
+        return (
+            ReviewOutcome("blocked", "확인 대상 지표가 더 이상 존재하지 않습니다."),
+            False,
+        )
     if pending.review_kind not in {"metric", "dimension"}:
-        return ReviewOutcome(
-            "blocked", "확인 종류가 유효하지 않아 요청을 폐기했습니다."
-        ), False
+        return (
+            ReviewOutcome("blocked", "확인 종류가 유효하지 않아 요청을 폐기했습니다."),
+            False,
+        )
 
     normalized = choice.strip().lower()
     if normalized == "reject":
@@ -308,9 +359,7 @@ def _apply_pending_choice(
             for binding in pending.dimension_bindings[:1]:
                 dimension = catalog.dimension(binding.get("dimension_id", ""))
                 if dimension is not None:
-                    _append_alias(
-                        dimension.rejected_aliases, binding.get("phrase", "")
-                    )
+                    _append_alias(dimension.rejected_aliases, binding.get("phrase", ""))
             message = (
                 "이 질문의 분류 표현 연결만 사용하지 않도록 저장했습니다. "
                 "지표 검토에는 영향을 주지 않았고 SQL도 실행하지 않았습니다."
@@ -319,30 +368,40 @@ def _apply_pending_choice(
 
     if normalized not in pending.allowed_choices:
         allowed = ", ".join(pending.allowed_choices)
-        return ReviewOutcome(
-            "blocked", f"선택 가능한 값은 {allowed}, reject 입니다."
-        ), False
+        return (
+            ReviewOutcome("blocked", f"선택 가능한 값은 {allowed}, reject 입니다."),
+            False,
+        )
     if pending.review_kind == "metric":
         if pending.aggregate_pending:
             try:
                 aggregate = Aggregate(normalized)
             except ValueError:
-                return ReviewOutcome(
-                    "blocked", "이 지표에는 집계 방식 선택이 필요합니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked", "이 지표에는 집계 방식 선택이 필요합니다."
+                    ),
+                    False,
+                )
             if aggregate not in metric.allowed_aggregates:
-                return ReviewOutcome(
-                    "blocked", "이 컬럼에는 해당 집계를 사용할 수 없습니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked", "이 컬럼에는 해당 집계를 사용할 수 없습니다."
+                    ),
+                    False,
+                )
             conflict = _metric_binding_conflict(
                 catalog, metric.id, pending.metric_phrase
             )
             if conflict:
-                return ReviewOutcome(
-                    "blocked",
-                    f"`{pending.metric_phrase}`은 이미 `{conflict}`에 연결되어 있습니다. "
-                    "공유 의미를 덮어쓰지 않았습니다.",
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked",
+                        f"`{pending.metric_phrase}`은 이미 `{conflict}`에 연결되어 있습니다. "
+                        "공유 의미를 덮어쓰지 않았습니다.",
+                    ),
+                    False,
+                )
             metric.aggregate = aggregate
             metric.state = ReviewState.CONFIRMED
             reviewed_aggregates = metric.reviewed_bindings.setdefault(
@@ -353,10 +412,13 @@ def _apply_pending_choice(
                 reviewed_aggregates.sort()
             metric.binding_reviewers[pending.metric_phrase] = reviewer_id or "unknown"
         elif normalized != "confirm":
-            return ReviewOutcome(
-                "blocked",
-                "이 단계에서는 지표 표현 연결 확인 또는 거절만 가능합니다.",
-            ), False
+            return (
+                ReviewOutcome(
+                    "blocked",
+                    "이 단계에서는 지표 표현 연결 확인 또는 거절만 가능합니다.",
+                ),
+                False,
+            )
         if pending.metric_alias_pending:
             _append_alias(metric.aliases, pending.metric_phrase)
             metric.alias_reviewers[_normalize_phrase(pending.metric_phrase)] = (
@@ -375,45 +437,167 @@ def _apply_pending_choice(
         return ReviewOutcome("confirmed", message), True
 
     if normalized != "confirm":
-        return ReviewOutcome(
-            "blocked", "이 단계에서는 분류 표현 연결 확인 또는 거절만 가능합니다."
-        ), False
+        return (
+            ReviewOutcome(
+                "blocked", "이 단계에서는 분류 표현 연결 확인 또는 거절만 가능합니다."
+            ),
+            False,
+        )
     if not pending.dimension_bindings:
-        return ReviewOutcome(
-            "blocked", "확인 대상 분류 기준이 더 이상 존재하지 않습니다."
-        ), False
+        return (
+            ReviewOutcome(
+                "blocked", "확인 대상 분류 기준이 더 이상 존재하지 않습니다."
+            ),
+            False,
+        )
     binding = pending.dimension_bindings[0]
     dimension = catalog.dimension(binding.get("dimension_id", ""))
     if dimension is None:
-        return ReviewOutcome(
-            "blocked", "확인 대상 분류 기준이 더 이상 존재하지 않습니다."
-        ), False
+        return (
+            ReviewOutcome(
+                "blocked", "확인 대상 분류 기준이 더 이상 존재하지 않습니다."
+            ),
+            False,
+        )
     conflict = _dimension_alias_conflict(
         catalog,
         dimension.id,
         binding.get("phrase", ""),
     )
     if conflict:
-        return ReviewOutcome(
-            "blocked",
-            f"`{binding.get('phrase', '')}`은 이미 `{conflict}`에 연결되어 있습니다. "
-            "공유 의미를 덮어쓰지 않았습니다.",
-        ), False
+        return (
+            ReviewOutcome(
+                "blocked",
+                f"`{binding.get('phrase', '')}`은 이미 `{conflict}`에 연결되어 있습니다. "
+                "공유 의미를 덮어쓰지 않았습니다.",
+            ),
+            False,
+        )
     _append_alias(dimension.aliases, binding.get("phrase", ""))
-    dimension.alias_reviewers[
-        _normalize_phrase(binding.get("phrase", ""))
-    ] = reviewer_id or "unknown"
-    return ReviewOutcome(
-        "confirmed",
-        f"`{binding.get('phrase', '')}` → `{dimension.label}` 분류 연결을 "
-        "저장했습니다. 다른 미확인 연결이 있으면 다음 단계에서 이어집니다.",
-    ), True
+    dimension.alias_reviewers[_normalize_phrase(binding.get("phrase", ""))] = (
+        reviewer_id or "unknown"
+    )
+    return (
+        ReviewOutcome(
+            "confirmed",
+            f"`{binding.get('phrase', '')}` → `{dimension.label}` 분류 연결을 "
+            "저장했습니다. 다른 미확인 연결이 있으면 다음 단계에서 이어집니다.",
+        ),
+        True,
+    )
 
 
 class SemanticService:
     def __init__(self, store: "SqliteStore") -> None:
         self._store = store
         self._unmanaged_explorer_sources: dict[int, tuple[ExplorerPort, str]] = {}
+        self._pending_drafts: dict[str, _PendingDraft] = {}
+        self._pending_draft_timers: dict[str, threading.Timer] = {}
+        self._pending_drafts_lock = threading.RLock()
+        self._scrub_legacy_pending_reviews()
+
+    def _scrub_legacy_pending_reviews(self) -> None:
+        """Remove pre-v2 question/literal payloads before serving any request."""
+
+        # Pending reviews are disposable workflow state. Upgrade every dormant
+        # record through the same value-CAS as active reads, and delete records
+        # that cannot be parsed safely rather than retaining unknown secrets.
+        for review_scope, raw in self._store.kv_list_key(PENDING_REVIEW_KEY):
+            if self._pending_review_record(review_scope) is None:
+                self._store.kv_delete_if_value(review_scope, PENDING_REVIEW_KEY, raw)
+
+    def _remember_pending_draft(
+        self,
+        review_scope: str,
+        review_id: str,
+        question: str,
+        tool_args: dict[str, object],
+    ) -> None:
+        """Keep one sensitive resume payload in memory for at most 15 minutes."""
+
+        now = time.monotonic()
+        expires = now + _PENDING_DRAFT_TTL_SECONDS
+        with self._pending_drafts_lock:
+            remove_ids = {
+                key
+                for key, item in self._pending_drafts.items()
+                if item.expires_monotonic >= now and item.review_scope == review_scope
+            }
+            remove_ids.update(
+                key
+                for key, item in self._pending_drafts.items()
+                if item.expires_monotonic < now
+            )
+            while len(self._pending_drafts) - len(remove_ids) >= _MAX_PENDING_DRAFTS:
+                remove_ids.add(
+                    min(
+                        (
+                            (key, item)
+                            for key, item in self._pending_drafts.items()
+                            if key not in remove_ids
+                        ),
+                        key=lambda pair: pair[1].expires_monotonic,
+                    )[0]
+                )
+            for stale_id in remove_ids:
+                self._pending_drafts.pop(stale_id, None)
+                timer = self._pending_draft_timers.pop(stale_id, None)
+                if timer is not None:
+                    timer.cancel()
+            self._pending_drafts[review_id] = _PendingDraft(
+                review_scope=review_scope,
+                review_id=review_id,
+                question=question,
+                tool_args=deepcopy(tool_args),
+                expires_monotonic=expires,
+            )
+            timer = threading.Timer(
+                _PENDING_DRAFT_TTL_SECONDS,
+                self._expire_pending_draft,
+                args=(review_id, expires),
+            )
+            timer.daemon = True
+            self._pending_draft_timers[review_id] = timer
+            timer.start()
+
+    def _expire_pending_draft(self, review_id: str, expires: float) -> None:
+        with self._pending_drafts_lock:
+            item = self._pending_drafts.get(review_id)
+            if (
+                item is not None
+                and item.expires_monotonic <= expires
+                and item.expires_monotonic <= time.monotonic()
+            ):
+                self._pending_drafts.pop(review_id, None)
+            self._pending_draft_timers.pop(review_id, None)
+
+    def _pending_draft(self, review_scope: str, review_id: str) -> _PendingDraft | None:
+        now = time.monotonic()
+        with self._pending_drafts_lock:
+            item = self._pending_drafts.get(review_id)
+            if item is None:
+                return None
+            if item.expires_monotonic < now or item.review_scope != review_scope:
+                self._forget_pending_draft(review_id)
+                return None
+            return item
+
+    def _forget_pending_draft(self, review_id: str) -> None:
+        with self._pending_drafts_lock:
+            self._pending_drafts.pop(review_id, None)
+            timer = self._pending_draft_timers.pop(review_id, None)
+            if timer is not None:
+                timer.cancel()
+
+    def clear_transient_state(self) -> None:
+        """Deterministically erase all question/literal resume payloads."""
+
+        with self._pending_drafts_lock:
+            timers = tuple(self._pending_draft_timers.values())
+            self._pending_draft_timers.clear()
+            self._pending_drafts.clear()
+        for timer in timers:
+            timer.cancel()
 
     def _source_for_unmanaged_explorer(
         self, explorer: ExplorerPort, *, create: bool = False
@@ -541,15 +725,11 @@ class SemanticService:
             self._store.kv_set(scope, CATALOG_KEY, catalog.to_json())
             return
         if expected_review_revision is None:
-            raise ValueError(
-                "bound catalog writes require an expected review revision"
-            )
+            raise ValueError("bound catalog writes require an expected review revision")
         binding = ConnectionBinding(
             source_id=catalog.source_id,
             generation=catalog.connection_generation,
-            managed_credentials=(
-                self._store.kv_get(scope, "db_dsn") is not None
-            ),
+            managed_credentials=(self._store.kv_get(scope, "db_dsn") is not None),
         )
         self._store.kv_set_bound_catalog(
             scope,
@@ -613,6 +793,33 @@ class SemanticService:
         raw = self._store.kv_get(review_scope, PENDING_REVIEW_KEY)
         if not raw:
             return None
+        for _attempt in range(2):
+            try:
+                pending = PendingReview.from_json(raw)
+            except (KeyError, TypeError, ValueError):
+                return None
+            safe_raw = pending.to_json()
+            if safe_raw == raw:
+                return pending, raw
+
+            # Older records may contain the full question, predicate literals,
+            # and date bounds. Rewrite them under a value-CAS the first time
+            # they are read; parsing into the v2 object alone would leave the
+            # legacy secrets indefinitely present in SQLite.
+            def scrub(snapshot: dict[str, str]):
+                current = snapshot.get(PENDING_REVIEW_KEY, "")
+                if current != raw:
+                    return {}, set(), current
+                return {PENDING_REVIEW_KEY: safe_raw}, set(), safe_raw
+
+            current_raw = self._store.kv_mutate_snapshot(
+                review_scope,
+                keys={PENDING_REVIEW_KEY},
+                mutate=scrub,
+            )
+            if not current_raw:
+                return None
+            raw = str(current_raw)
         try:
             return PendingReview.from_json(raw), raw
         except (KeyError, TypeError, ValueError):
@@ -643,9 +850,7 @@ class SemanticService:
             return "의미 검토가 바뀌어 이전 확인 요청을 폐기했습니다. 질문을 다시 실행해 주세요."
         return ""
 
-    def pending_review_queue(
-        self, scope: str
-    ) -> list[tuple[str, PendingReview]]:
+    def pending_review_queue(self, scope: str) -> list[tuple[str, PendingReview]]:
         """Return current requester-owned reviews for one catalog scope.
 
         The database lookup uses an exact storage key; the catalog scope and
@@ -657,14 +862,12 @@ class SemanticService:
         if catalog is None:
             return []
         pending: list[tuple[str, PendingReview]] = []
-        for review_scope, raw in self._store.kv_list_key(PENDING_REVIEW_KEY):
-            try:
-                item = PendingReview.from_json(raw)
-            except (KeyError, TypeError, ValueError):
+        for review_scope, _raw in self._store.kv_list_key(PENDING_REVIEW_KEY):
+            record = self._pending_review_record(review_scope)
+            if record is None:
                 continue
-            if item.review_id and not self._pending_stale_message(
-                scope, catalog, item
-            ):
+            item, _safe_raw = record
+            if item.review_id and not self._pending_stale_message(scope, catalog, item):
                 pending.append((review_scope, item))
         return sorted(pending, key=lambda pair: pair[1].review_id)
 
@@ -691,9 +894,7 @@ class SemanticService:
         pending_raw = pending_record[1] if pending_record is not None else ""
         stale_pending_message = ""
         if pending is not None:
-            stale_pending_message = self._pending_stale_message(
-                scope, catalog, pending
-            )
+            stale_pending_message = self._pending_stale_message(scope, catalog, pending)
             if stale_pending_message:
                 # A requester checking status should not keep seeing an item
                 # that the steward queue and confirmation path have invalidated.
@@ -725,7 +926,9 @@ class SemanticService:
                 f"- 현재 확인 대기: review_id `{pending.review_id or 'legacy'}`"
             )
         elif stale_pending_message:
-            lines.append("- 이전 확인 요청은 연결 또는 의미 상태 변경으로 폐기되었습니다.")
+            lines.append(
+                "- 이전 확인 요청은 연결 또는 의미 상태 변경으로 폐기되었습니다."
+            )
         return "\n".join(lines)
 
     def metric_candidates(self, scope: str) -> list[MetricSpec]:
@@ -844,7 +1047,10 @@ class SemanticService:
                     or generation != catalog.connection_generation
                 ):
                     return {}, set(), ""
-            elif CONNECTION_BINDING_KEY in snapshot or CONNECTION_GENERATION_KEY in snapshot:
+            elif (
+                CONNECTION_BINDING_KEY in snapshot
+                or CONNECTION_GENERATION_KEY in snapshot
+            ):
                 return {}, set(), ""
             return {action_key: json.dumps(record, sort_keys=True)}, set(), token
 
@@ -872,7 +1078,8 @@ class SemanticService:
         token = action_token.strip()
         if not _ACTION_TOKEN_RE.fullmatch(token):
             return ReviewOutcome(
-                "blocked", "후보 토큰이 유효하지 않습니다. 후보 목록을 새로 열어 주세요."
+                "blocked",
+                "후보 토큰이 유효하지 않습니다. 후보 목록을 새로 열어 주세요.",
             )
         digest = hashlib.sha256(token.encode("ascii")).hexdigest()
         action_key = f"{_ACTION_KEY_PREFIX}{digest}"
@@ -882,23 +1089,42 @@ class SemanticService:
         def mutate(snapshot: dict[str, str]):
             action_raw = snapshot.get(action_key)
             if action_raw is None:
-                return {}, set(), ReviewOutcome(
-                    "blocked", "후보 토큰을 찾지 못했습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome(
+                        "blocked",
+                        "후보 토큰을 찾지 못했습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             try:
                 action = json.loads(action_raw)
                 expires_at = float(action.get("expires_at", 0))
             except (TypeError, ValueError, json.JSONDecodeError):
-                return {}, {action_key, arm_key}, ReviewOutcome(
-                    "blocked", "후보 상태가 유효하지 않습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    {action_key, arm_key},
+                    ReviewOutcome(
+                        "blocked",
+                        "후보 상태가 유효하지 않습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             if expires_at <= now:
-                return {}, {action_key, arm_key}, ReviewOutcome(
-                    "blocked", "후보 토큰이 만료되었습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    {action_key, arm_key},
+                    ReviewOutcome(
+                        "blocked",
+                        "후보 토큰이 만료되었습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             if action.get("scope") != scope or action.get("action_kind") != action_kind:
-                return {}, set(), ReviewOutcome(
-                    "blocked", "이 후보 토큰은 현재 작업에 사용할 수 없습니다."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome(
+                        "blocked", "이 후보 토큰은 현재 작업에 사용할 수 없습니다."
+                    ),
                 )
             arm = {
                 "action_kind": action_kind,
@@ -909,10 +1135,12 @@ class SemanticService:
                 ).hexdigest(),
                 "expires_at": min(expires_at, now + _ACTION_TTL_SECONDS),
             }
-            return {
-                arm_key: json.dumps(arm, ensure_ascii=False, sort_keys=True)
-            }, set(), ReviewOutcome(
-                "confirmed", "표시된 작업 내용에 확인 토큰을 묶었습니다."
+            return (
+                {arm_key: json.dumps(arm, ensure_ascii=False, sort_keys=True)},
+                set(),
+                ReviewOutcome(
+                    "confirmed", "표시된 작업 내용에 확인 토큰을 묶었습니다."
+                ),
             )
 
         return self._store.kv_mutate_snapshot(
@@ -933,7 +1161,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "관리자 또는 steward 승인 권한이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "관리자 또는 steward 승인 권한이 필요합니다."
+            )
         normalized, error = _validate_mapping_phrase(phrase, subject="지표")
         if error:
             return ReviewOutcome("blocked", error)
@@ -959,7 +1189,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "관리자 또는 steward 승인 권한이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "관리자 또는 steward 승인 권한이 필요합니다."
+            )
         normalized, error = _validate_mapping_phrase(phrase, subject="분류")
         if error:
             return ReviewOutcome("blocked", error)
@@ -983,7 +1215,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         try:
             tier = DimensionDisclosureTier(disclosure_tier)
         except ValueError:
@@ -1022,7 +1256,8 @@ class SemanticService:
         token = action_token.strip()
         if not _ACTION_TOKEN_RE.fullmatch(token):
             return ReviewOutcome(
-                "blocked", "후보 토큰이 유효하지 않습니다. 후보 목록을 새로 열어 주세요."
+                "blocked",
+                "후보 토큰이 유효하지 않습니다. 후보 목록을 새로 열어 주세요.",
             )
         digest = hashlib.sha256(token.encode("ascii")).hexdigest()
         action_key = f"{_ACTION_KEY_PREFIX}{digest}"
@@ -1039,9 +1274,7 @@ class SemanticService:
                 record_revision = int(record.get("catalog_review_revision", -1))
                 record_version = int(record.get("catalog_version", -1))
                 record_policy = int(record.get("classification_policy_version", -1))
-                validation_mode = str(
-                    record.get("validation_mode", "catalog_revision")
-                )
+                validation_mode = str(record.get("validation_mode", "catalog_revision"))
             except (KeyError, TypeError, ValueError, json.JSONDecodeError):
                 return None
             if catalog.source_id:
@@ -1058,7 +1291,10 @@ class SemanticService:
                     or active_generation != catalog.connection_generation
                 ):
                     return None
-            elif CONNECTION_BINDING_KEY in snapshot or CONNECTION_GENERATION_KEY in snapshot:
+            elif (
+                CONNECTION_BINDING_KEY in snapshot
+                or CONNECTION_GENERATION_KEY in snapshot
+            ):
                 return None
             if (
                 record.get("source_id") != catalog.source_id
@@ -1112,16 +1348,31 @@ class SemanticService:
                     receipt = json.loads(receipt_raw)
                     receipt_expires = float(receipt.get("expires_at", 0))
                 except (TypeError, ValueError, json.JSONDecodeError):
-                    return {}, {receipt_key}, ReviewOutcome(
-                        "blocked", "후보 사용 기록이 손상되었습니다. 후보 목록을 새로 열어 주세요."
+                    return (
+                        {},
+                        {receipt_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "후보 사용 기록이 손상되었습니다. 후보 목록을 새로 열어 주세요.",
+                        ),
                     )
                 if receipt_expires <= now:
-                    return {}, {receipt_key}, ReviewOutcome(
-                        "blocked", "후보 토큰이 만료되었습니다. 후보 목록을 새로 열어 주세요."
+                    return (
+                        {},
+                        {receipt_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "후보 토큰이 만료되었습니다. 후보 목록을 새로 열어 주세요.",
+                        ),
                     )
                 if current_catalog(snapshot, receipt) is None:
-                    return {}, {receipt_key}, ReviewOutcome(
-                        "blocked", "연결 또는 의미 검토 상태가 바뀌었습니다. 후보 목록을 새로 열어 주세요."
+                    return (
+                        {},
+                        {receipt_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "연결 또는 의미 검토 상태가 바뀌었습니다. 후보 목록을 새로 열어 주세요.",
+                        ),
                     )
                 if (
                     receipt.get("action_kind") == action_kind
@@ -1129,52 +1380,93 @@ class SemanticService:
                     and receipt.get("reviewer_id") == reviewer_id
                     and receipt.get("result") == "confirmed"
                 ):
-                    return {}, set(), ReviewOutcome(
-                        "confirmed",
-                        idempotent_message,
-                        object_id=str(receipt.get("object_id", "")),
+                    return (
+                        {},
+                        set(),
+                        ReviewOutcome(
+                            "confirmed",
+                            idempotent_message,
+                            object_id=str(receipt.get("object_id", "")),
+                        ),
                     )
-                return {}, set(), ReviewOutcome(
-                    "blocked", "이 후보 토큰은 이미 다른 요청에 사용되었습니다."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome(
+                        "blocked", "이 후보 토큰은 이미 다른 요청에 사용되었습니다."
+                    ),
                 )
 
             action_raw = snapshot.get(action_key)
             if action_raw is None:
-                return {}, set(), ReviewOutcome(
-                    "blocked", "후보 토큰을 찾지 못했습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome(
+                        "blocked",
+                        "후보 토큰을 찾지 못했습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             try:
                 action = json.loads(action_raw)
                 expires_at = float(action.get("expires_at", 0))
             except (TypeError, ValueError, json.JSONDecodeError):
-                return {}, {action_key, arm_key}, ReviewOutcome(
-                    "blocked", "후보 상태가 유효하지 않습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    {action_key, arm_key},
+                    ReviewOutcome(
+                        "blocked",
+                        "후보 상태가 유효하지 않습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             if expires_at <= now:
-                return {}, {action_key, arm_key}, ReviewOutcome(
-                    "blocked", "후보 토큰이 만료되었습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    {action_key, arm_key},
+                    ReviewOutcome(
+                        "blocked",
+                        "후보 토큰이 만료되었습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             if action.get("scope") != scope or action.get("action_kind") != action_kind:
-                return {}, {action_key, arm_key}, ReviewOutcome(
-                    "blocked", "이 후보 토큰은 현재 작업에 사용할 수 없습니다."
+                return (
+                    {},
+                    {action_key, arm_key},
+                    ReviewOutcome(
+                        "blocked", "이 후보 토큰은 현재 작업에 사용할 수 없습니다."
+                    ),
                 )
             if require_armed_payload:
                 arm_raw = snapshot.get(arm_key)
                 if arm_raw is None:
-                    return {}, set(), ReviewOutcome(
-                        "blocked",
-                        "먼저 confirm:false로 표시된 작업 내용을 확인해 주세요.",
+                    return (
+                        {},
+                        set(),
+                        ReviewOutcome(
+                            "blocked",
+                            "먼저 confirm:false로 표시된 작업 내용을 확인해 주세요.",
+                        ),
                     )
                 try:
                     arm = json.loads(arm_raw)
                     arm_expires_at = float(arm.get("expires_at", 0))
                 except (TypeError, ValueError, json.JSONDecodeError):
-                    return {}, {arm_key}, ReviewOutcome(
-                        "blocked", "확인 단계가 손상되었습니다. 경고를 다시 열어 주세요."
+                    return (
+                        {},
+                        {arm_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "확인 단계가 손상되었습니다. 경고를 다시 열어 주세요.",
+                        ),
                     )
                 if arm_expires_at <= now:
-                    return {}, {arm_key}, ReviewOutcome(
-                        "blocked", "확인 단계가 만료되었습니다. 경고를 다시 열어 주세요."
+                    return (
+                        {},
+                        {arm_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "확인 단계가 만료되었습니다. 경고를 다시 열어 주세요.",
+                        ),
                     )
                 if (
                     arm.get("action_kind") != action_kind
@@ -1183,14 +1475,23 @@ class SemanticService:
                     or arm.get("action_record_digest")
                     != hashlib.sha256(action_raw.encode("utf-8")).hexdigest()
                 ):
-                    return {}, set(), ReviewOutcome(
-                        "blocked",
-                        "경고에서 확인한 작업 내용과 최종 요청이 다릅니다. 경고를 다시 열어 주세요.",
+                    return (
+                        {},
+                        set(),
+                        ReviewOutcome(
+                            "blocked",
+                            "경고에서 확인한 작업 내용과 최종 요청이 다릅니다. 경고를 다시 열어 주세요.",
+                        ),
                     )
             catalog = current_catalog(snapshot, action)
             if catalog is None:
-                return {}, {action_key, arm_key}, ReviewOutcome(
-                    "blocked", "연결 또는 의미 검토 상태가 바뀌었습니다. 후보 목록을 새로 열어 주세요."
+                return (
+                    {},
+                    {action_key, arm_key},
+                    ReviewOutcome(
+                        "blocked",
+                        "연결 또는 의미 검토 상태가 바뀌었습니다. 후보 목록을 새로 열어 주세요.",
+                    ),
                 )
             outcome, changed = apply(catalog, str(action.get("object_id", "")))
             if outcome.status != "confirmed":
@@ -1199,22 +1500,30 @@ class SemanticService:
             outcome.connection_generation = catalog.connection_generation
             outcome.mutation_applied = changed
             outcome.object_id = str(action.get("object_id", ""))
-            validation_mode = str(
-                action.get("validation_mode", "catalog_revision")
-            )
+            validation_mode = str(action.get("validation_mode", "catalog_revision"))
             object_state_digest = ""
             if validation_mode == "metric_projection":
                 metric = catalog.metric(outcome.object_id)
                 if metric is None:
-                    return {}, {action_key, arm_key}, ReviewOutcome(
-                        "blocked", "지표 후보 상태를 확인할 수 없습니다. 후보 목록을 새로 열어 주세요."
+                    return (
+                        {},
+                        {action_key, arm_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "지표 후보 상태를 확인할 수 없습니다. 후보 목록을 새로 열어 주세요.",
+                        ),
                     )
                 object_state_digest = _metric_action_digest(metric)
             elif validation_mode == "dimension_projection":
                 dimension = catalog.dimension(outcome.object_id)
                 if dimension is None:
-                    return {}, {action_key, arm_key}, ReviewOutcome(
-                        "blocked", "차원 후보 상태를 확인할 수 없습니다. 후보 목록을 새로 열어 주세요."
+                    return (
+                        {},
+                        {action_key, arm_key},
+                        ReviewOutcome(
+                            "blocked",
+                            "차원 후보 상태를 확인할 수 없습니다. 후보 목록을 새로 열어 주세요.",
+                        ),
                     )
                 object_state_digest = _dimension_action_digest(dimension)
             receipt = {
@@ -1294,7 +1603,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "관리자 또는 steward 승인 권한이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "관리자 또는 steward 승인 권한이 필요합니다."
+            )
         normalized, error = _validate_mapping_phrase(phrase, subject="지표")
         if error:
             return ReviewOutcome("blocked", error)
@@ -1302,36 +1613,46 @@ class SemanticService:
         def apply(catalog: SemanticCatalog, metric_id: str):
             metric = catalog.metric(metric_id)
             if metric is None or metric.expression_kind != MetricExpressionKind.COLUMN:
-                return ReviewOutcome(
-                    "blocked", "연결 가능한 수치 지표 후보가 아닙니다."
-                ), False
+                return (
+                    ReviewOutcome("blocked", "연결 가능한 수치 지표 후보가 아닙니다."),
+                    False,
+                )
             rejected_bindings = {
                 item.rpartition("|")[0]
                 for item in metric.rejected_bindings
                 if "|" in item
             }
             if normalized in metric.rejected_aliases or normalized in rejected_bindings:
-                return ReviewOutcome(
-                    "blocked",
-                    "이 표현은 이전 검토에서 거절되었습니다. 명시적으로 검토를 초기화한 뒤 다시 연결해 주세요.",
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked",
+                        "이 표현은 이전 검토에서 거절되었습니다. 명시적으로 검토를 초기화한 뒤 다시 연결해 주세요.",
+                    ),
+                    False,
+                )
             if _metric_binding_conflict(catalog, metric.id, normalized):
-                return ReviewOutcome(
-                    "blocked", "이 표현은 이미 다른 지표에 연결되어 있습니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked", "이 표현은 이미 다른 지표에 연결되어 있습니다."
+                    ),
+                    False,
+                )
             changed = normalized not in metric.aliases
             if changed:
                 _append_alias(metric.aliases, normalized)
                 metric.alias_reviewers[normalized] = assertion.reviewer_id
                 catalog.review_revision += 1
-            return ReviewOutcome(
-                "confirmed",
-                (
-                    "지표 표현 후보를 저장했습니다. SUM/AVG 같은 집계 의미는 실제 질문에서 별도 확인합니다."
-                    if changed
-                    else "이 표현은 이미 해당 지표 후보에 연결되어 있습니다. 집계 방식은 질문에서 별도 확인합니다."
+            return (
+                ReviewOutcome(
+                    "confirmed",
+                    (
+                        "지표 표현 후보를 저장했습니다. SUM/AVG 같은 집계 의미는 실제 질문에서 별도 확인합니다."
+                        if changed
+                        else "이 표현은 이미 해당 지표 후보에 연결되어 있습니다. 집계 방식은 질문에서 별도 확인합니다."
+                    ),
                 ),
-            ), changed
+                changed,
+            )
 
         return self._consume_catalog_action_token(
             scope=scope,
@@ -1367,7 +1688,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "관리자 또는 steward 승인 권한이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "관리자 또는 steward 승인 권한이 필요합니다."
+            )
         normalized, error = _validate_mapping_phrase(phrase, subject="분류")
         if error:
             return ReviewOutcome("blocked", error)
@@ -1375,32 +1698,44 @@ class SemanticService:
         def apply(catalog: SemanticCatalog, dimension_id: str):
             dimension = catalog.dimension(dimension_id)
             if dimension is None:
-                return ReviewOutcome(
-                    "blocked", "연결 가능한 비차단 분류 차원이 아닙니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked", "연결 가능한 비차단 분류 차원이 아닙니다."
+                    ),
+                    False,
+                )
             if normalized in dimension.rejected_aliases:
-                return ReviewOutcome(
-                    "blocked",
-                    "이 표현은 이전 검토에서 거절되었습니다. 명시적으로 검토를 초기화한 뒤 다시 연결해 주세요.",
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked",
+                        "이 표현은 이전 검토에서 거절되었습니다. 명시적으로 검토를 초기화한 뒤 다시 연결해 주세요.",
+                    ),
+                    False,
+                )
             conflict = _dimension_alias_conflict(catalog, dimension.id, normalized)
             if conflict:
-                return ReviewOutcome(
-                    "blocked", "이 표현은 이미 다른 분류 기준에 연결되어 있습니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "blocked", "이 표현은 이미 다른 분류 기준에 연결되어 있습니다."
+                    ),
+                    False,
+                )
             changed = normalized not in dimension.aliases
             if changed:
                 _append_alias(dimension.aliases, normalized)
                 dimension.alias_reviewers[normalized] = assertion.reviewer_id
                 catalog.review_revision += 1
-            return ReviewOutcome(
-                "confirmed",
-                (
-                    "분류 표현 후보를 저장했습니다. 그룹 값 공개 등급은 별도로 승인해야 합니다."
-                    if changed
-                    else "이 표현은 이미 해당 분류 후보에 연결되어 있습니다. 값 공개 등급은 별도 정책입니다."
+            return (
+                ReviewOutcome(
+                    "confirmed",
+                    (
+                        "분류 표현 후보를 저장했습니다. 그룹 값 공개 등급은 별도로 승인해야 합니다."
+                        if changed
+                        else "이 표현은 이미 해당 분류 후보에 연결되어 있습니다. 값 공개 등급은 별도 정책입니다."
+                    ),
                 ),
-            ), changed
+                changed,
+            )
 
         return self._consume_catalog_action_token(
             scope=scope,
@@ -1517,6 +1852,23 @@ class SemanticService:
             catalog=catalog,
         )
 
+    def discard_action_token(self, scope: str, action_token: str) -> None:
+        """Retire every persisted artifact for an uncommitted internal action."""
+
+        token = action_token.strip()
+        if not _ACTION_TOKEN_RE.fullmatch(token):
+            return
+        digest = hashlib.sha256(token.encode("ascii")).hexdigest()
+        self._store.kv_apply_atomic(
+            scope,
+            upserts={},
+            delete_keys={
+                f"{_ACTION_KEY_PREFIX}{digest}",
+                f"{_ACTION_ARM_KEY_PREFIX}{digest}",
+                f"{_ACTION_RECEIPT_KEY_PREFIX}{digest}",
+            },
+        )
+
     def _apply_public_data_scope(
         self,
         catalog: SemanticCatalog,
@@ -1529,23 +1881,30 @@ class SemanticService:
             or not assertion.reviewer_id
             or (enable and not assertion.public_data_confirmed)
         ):
-            return ReviewOutcome(
-                "blocked",
-                (
-                    "전체 데이터와 지표 값이 공개·비개인이라는 steward assertion이 필요합니다."
-                    if enable
-                    else "권한이 확인된 steward assertion이 필요합니다."
+            return (
+                ReviewOutcome(
+                    "blocked",
+                    (
+                        "전체 데이터와 지표 값이 공개·비개인이라는 steward assertion이 필요합니다."
+                        if enable
+                        else "권한이 확인된 steward assertion이 필요합니다."
+                    ),
                 ),
-            ), False
+                False,
+            )
         if enable:
             if (
                 catalog.public_data_scope
                 and catalog.public_data_reviewer == assertion.reviewer_id
                 and catalog.public_data_fingerprint == catalog.fingerprint
             ):
-                return ReviewOutcome(
-                    "confirmed", "현재 연결은 이미 공개 데이터 범위로 확인되어 있습니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "confirmed",
+                        "현재 연결은 이미 공개 데이터 범위로 확인되어 있습니다.",
+                    ),
+                    False,
+                )
             catalog.public_data_scope = True
             catalog.public_data_reviewer = assertion.reviewer_id
             catalog.public_data_fingerprint = catalog.fingerprint
@@ -1558,13 +1917,15 @@ class SemanticService:
             public_dimensions = [
                 dimension
                 for dimension in catalog.dimensions
-                if dimension.disclosure_tier
-                == DimensionDisclosureTier.PUBLIC_GROUPED
+                if dimension.disclosure_tier == DimensionDisclosureTier.PUBLIC_GROUPED
             ]
             if not catalog.public_data_scope and not public_dimensions:
-                return ReviewOutcome(
-                    "confirmed", "현재 연결은 이미 공개 데이터 범위가 아닙니다."
-                ), False
+                return (
+                    ReviewOutcome(
+                        "confirmed", "현재 연결은 이미 공개 데이터 범위가 아닙니다."
+                    ),
+                    False,
+                )
             catalog.public_data_scope = False
             catalog.public_data_reviewer = ""
             catalog.public_data_fingerprint = ""
@@ -1609,7 +1970,9 @@ class SemanticService:
         if catalog is None:
             return ReviewOutcome("blocked", "공개 데이터로 확인할 카탈로그가 없습니다.")
         if assertion.scope != scope:
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         outcome, changed = self._apply_public_data_scope(
             catalog, assertion, enable=True
         )
@@ -1628,7 +1991,9 @@ class SemanticService:
         if catalog is None:
             return ReviewOutcome("blocked", "공개 범위를 철회할 카탈로그가 없습니다.")
         if assertion.scope != scope:
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         outcome, changed = self._apply_public_data_scope(
             catalog, assertion, enable=False
         )
@@ -1657,7 +2022,9 @@ class SemanticService:
             or not assertion.reviewer_id
             or (enable and not assertion.public_data_confirmed)
         ):
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         action_kind = "public_data_confirm" if enable else "public_data_revoke"
         return self._consume_catalog_action_token(
             scope=scope,
@@ -1665,9 +2032,7 @@ class SemanticService:
             action_kind=action_kind,
             reviewer_id=assertion.reviewer_id,
             payload={"enable": str(enable).lower()},
-            idempotent_message=(
-                "같은 공개 데이터 범위 변경은 이미 적용되었습니다."
-            ),
+            idempotent_message=("같은 공개 데이터 범위 변경은 이미 적용되었습니다."),
             apply=lambda catalog, _object_id: self._apply_public_data_scope(
                 catalog, assertion, enable=enable
             ),
@@ -1693,7 +2058,9 @@ class SemanticService:
         if catalog is None:
             return ReviewOutcome("blocked", "공개 검토할 의미 카탈로그가 없습니다.")
         if assertion.scope != scope:
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         outcome, changed = self._apply_dimension_release(
             catalog, dimension_id, assertion, disclosure_tier
         )
@@ -1714,18 +2081,24 @@ class SemanticService:
     ) -> tuple[ReviewOutcome, bool]:
         dimension = catalog.dimension(dimension_id)
         if dimension is None:
-            return ReviewOutcome("blocked", "해당 차원 후보가 존재하지 않습니다."), False
+            return (
+                ReviewOutcome("blocked", "해당 차원 후보가 존재하지 않습니다."),
+                False,
+            )
         if dimension.review_policy != DimensionReviewPolicy.RELEASE_REQUIRED:
-            return ReviewOutcome(
-                "blocked", "이 차원은 별도 공개 승인이 필요하지 않습니다."
-            ), False
-        if (
-            not assertion.authorized
-            or not assertion.reviewer_id
-        ):
-            return ReviewOutcome(
-                "blocked", "권한이 확인된 steward assertion이 필요합니다."
-            ), False
+            return (
+                ReviewOutcome(
+                    "blocked", "이 차원은 별도 공개 승인이 필요하지 않습니다."
+                ),
+                False,
+            )
+        if not assertion.authorized or not assertion.reviewer_id:
+            return (
+                ReviewOutcome(
+                    "blocked", "권한이 확인된 steward assertion이 필요합니다."
+                ),
+                False,
+            )
         try:
             tier = DimensionDisclosureTier(disclosure_tier)
         except ValueError:
@@ -1734,25 +2107,27 @@ class SemanticService:
             DimensionDisclosureTier.CONTROLLED_GROUPED,
             DimensionDisclosureTier.PUBLIC_GROUPED,
         }:
-            return ReviewOutcome(
-                "blocked", "blocked 등급은 공개 승인이 아닙니다."
-            ), False
-        if (
-            tier == DimensionDisclosureTier.PUBLIC_GROUPED
-            and not (
-                assertion.public_data_confirmed
-                and catalog.public_data_scope
-                and catalog.public_data_fingerprint == catalog.fingerprint
+            return (
+                ReviewOutcome("blocked", "blocked 등급은 공개 승인이 아닙니다."),
+                False,
             )
+        if tier == DimensionDisclosureTier.PUBLIC_GROUPED and not (
+            assertion.public_data_confirmed
+            and catalog.public_data_scope
+            and catalog.public_data_fingerprint == catalog.fingerprint
         ):
-            return ReviewOutcome(
-                "blocked",
-                "public_grouped는 먼저 연결 전체를 공개 데이터 범위로 확인해야 합니다.",
-            ), False
+            return (
+                ReviewOutcome(
+                    "blocked",
+                    "public_grouped는 먼저 연결 전체를 공개 데이터 범위로 확인해야 합니다.",
+                ),
+                False,
+            )
         if dimension.raw_output_allowed and dimension.disclosure_tier == tier:
-            return ReviewOutcome(
-                "confirmed", "이미 같은 등급으로 공개된 차원입니다."
-            ), False
+            return (
+                ReviewOutcome("confirmed", "이미 같은 등급으로 공개된 차원입니다."),
+                False,
+            )
         dimension.raw_output_allowed = True
         dimension.disclosure_tier = tier
         dimension.release_reviewer = assertion.reviewer_id
@@ -1760,14 +2135,17 @@ class SemanticService:
         dimension.released_at = datetime.now(timezone.utc).isoformat()
         dimension.action_revision += 1
         catalog.review_revision += 1
-        return ReviewOutcome(
-            "confirmed",
-            (
-                f"`{dimension.id}`의 그룹 값을 `{tier.value}` 등급으로 Discord "
-                "결과에 표시할 수 있도록 승인했습니다. 질문 표현 연결은 실제 "
-                "질문에서 별도로 확인합니다."
+        return (
+            ReviewOutcome(
+                "confirmed",
+                (
+                    f"`{dimension.id}`의 그룹 값을 `{tier.value}` 등급으로 Discord "
+                    "결과에 표시할 수 있도록 승인했습니다. 질문 표현 연결은 실제 "
+                    "질문에서 별도로 확인합니다."
+                ),
             ),
-        ), True
+            True,
+        )
 
     def release_dimension_with_token(
         self,
@@ -1786,7 +2164,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         return self._consume_catalog_action_token(
             scope=scope,
             action_token=action_token,
@@ -1813,7 +2193,9 @@ class SemanticService:
         if catalog is None:
             return ReviewOutcome("blocked", "공개 철회할 의미 카탈로그가 없습니다.")
         if assertion.scope != scope:
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         outcome, changed = self._apply_dimension_revoke(
             catalog, dimension_id, assertion
         )
@@ -1836,20 +2218,19 @@ class SemanticService:
             dimension is None
             or dimension.review_policy != DimensionReviewPolicy.RELEASE_REQUIRED
         ):
-            return ReviewOutcome(
-                "blocked", "해당 공개 검토 차원이 존재하지 않습니다."
-            ), False
-        if (
-            not assertion.authorized
-            or not assertion.reviewer_id
-        ):
-            return ReviewOutcome(
-                "blocked", "권한이 확인된 steward assertion이 필요합니다."
-            ), False
+            return (
+                ReviewOutcome("blocked", "해당 공개 검토 차원이 존재하지 않습니다."),
+                False,
+            )
+        if not assertion.authorized or not assertion.reviewer_id:
+            return (
+                ReviewOutcome(
+                    "blocked", "권한이 확인된 steward assertion이 필요합니다."
+                ),
+                False,
+            )
         if not dimension.raw_output_allowed:
-            return ReviewOutcome(
-                "confirmed", "이미 공개되지 않은 차원입니다."
-            ), False
+            return ReviewOutcome("confirmed", "이미 공개되지 않은 차원입니다."), False
         dimension.raw_output_allowed = False
         dimension.disclosure_tier = DimensionDisclosureTier.BLOCKED
         dimension.release_reviewer = ""
@@ -1859,10 +2240,13 @@ class SemanticService:
         # Existing requester aliases remain recorded but are not selectable or
         # executable until a steward releases the dimension again.
         catalog.review_revision += 1
-        return ReviewOutcome(
-            "confirmed",
-            f"`{dimension.id}`의 그룹 값 공개를 철회했습니다.",
-        ), True
+        return (
+            ReviewOutcome(
+                "confirmed",
+                f"`{dimension.id}`의 그룹 값 공개를 철회했습니다.",
+            ),
+            True,
+        )
 
     def revoke_dimension_with_token(
         self,
@@ -1879,7 +2263,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         return self._consume_catalog_action_token(
             scope=scope,
             action_token=action_token,
@@ -1953,11 +2339,14 @@ class SemanticService:
         # reset. A separate revision invalidates confirmations created before
         # the reset without pretending that the DB structure changed.
         catalog.review_revision += 1
-        return ReviewOutcome(
-            "confirmed",
-            "사람이 확인한 표현·집계 연결, 문자열 차원 공개 승인, 공개 데이터 범위를 "
-            "초기화했습니다. 물리 catalog와 PII 차단은 유지됩니다.",
-        ), True
+        return (
+            ReviewOutcome(
+                "confirmed",
+                "사람이 확인한 표현·집계 연결, 문자열 차원 공개 승인, 공개 데이터 범위를 "
+                "초기화했습니다. 물리 catalog와 PII 차단은 유지됩니다.",
+            ),
+            True,
+        )
 
     def reset_reviews_with_token(
         self,
@@ -1974,7 +2363,9 @@ class SemanticService:
             or assertion.scope != scope
             or not assertion.reviewer_id
         ):
-            return ReviewOutcome("blocked", "권한이 확인된 steward assertion이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "권한이 확인된 steward assertion이 필요합니다."
+            )
         return self._consume_catalog_action_token(
             scope=scope,
             action_token=action_token,
@@ -2041,7 +2432,8 @@ class SemanticService:
             or receipt_policy != catalog.classification_policy_version
         ):
             return ReviewOutcome(
-                "blocked", "연결 또는 의미 검토 상태가 바뀌어 이전 결정을 재사용할 수 없습니다."
+                "blocked",
+                "연결 또는 의미 검토 상태가 바뀌어 이전 결정을 재사용할 수 없습니다.",
             )
         if (
             receipt.get("reviewer_id") != (reviewer_id or "unknown")
@@ -2079,20 +2471,24 @@ class SemanticService:
         def mutate(snapshot: dict[tuple[str, str], str]):
             catalog = self._catalog_from_review_snapshot(scope, snapshot)
             if catalog is None:
-                return {}, set(), ReviewOutcome(
-                    "blocked", "현재 의미 카탈로그가 유효하지 않습니다."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome("blocked", "현재 의미 카탈로그가 유효하지 않습니다."),
                 )
-            return {}, set(), self._review_receipt_result(
-                catalog,
-                snapshot.get((scope, receipt_key)),
-                review_id=review_id,
-                choice=choice,
-                reviewer_id=reviewer_id,
+            return (
+                {},
+                set(),
+                self._review_receipt_result(
+                    catalog,
+                    snapshot.get((scope, receipt_key)),
+                    review_id=review_id,
+                    choice=choice,
+                    reviewer_id=reviewer_id,
+                ),
             )
 
-        return self._store.kv_mutate_scoped_snapshot(
-            entries=entries, mutate=mutate
-        )
+        return self._store.kv_mutate_scoped_snapshot(entries=entries, mutate=mutate)
 
     def confirm_pending(
         self,
@@ -2121,11 +2517,10 @@ class SemanticService:
                     return replay
             return ReviewOutcome("blocked", "현재 확인할 항목이 없습니다.")
         pending, pending_raw = pending_record
+        resume = self._pending_draft(review_scope, pending.review_id)
         if expected_review_id and (
             not pending.review_id
-            or not secrets.compare_digest(
-                pending.review_id, expected_review_id.strip()
-            )
+            or not secrets.compare_digest(pending.review_id, expected_review_id.strip())
         ):
             return ReviewOutcome("blocked", "확인 요청 ID가 일치하지 않습니다.")
         receipt_id = pending.review_id or expected_review_id.strip()
@@ -2149,8 +2544,10 @@ class SemanticService:
         def mutate(snapshot: dict[tuple[str, str], str]):
             catalog = self._catalog_from_review_snapshot(scope, snapshot)
             if catalog is None:
-                return {}, set(), ReviewOutcome(
-                    "blocked", "현재 의미 카탈로그가 유효하지 않습니다."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome("blocked", "현재 의미 카탈로그가 유효하지 않습니다."),
                 )
             if receipt_key:
                 replay = self._review_receipt_result(
@@ -2163,15 +2560,23 @@ class SemanticService:
                 if replay is not None:
                     return {}, set(), replay
             if snapshot.get(pending_entry) != pending_raw:
-                return {}, set(), ReviewOutcome(
-                    "blocked",
-                    "확인 요청이 바뀌어 이 결정을 저장하지 않았습니다. 다시 확인해 주세요.",
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome(
+                        "blocked",
+                        "확인 요청이 바뀌어 이 결정을 저장하지 않았습니다. 다시 확인해 주세요.",
+                    ),
                 )
             try:
                 current_pending = PendingReview.from_json(pending_raw)
             except (KeyError, TypeError, ValueError):
-                return {}, {pending_entry}, ReviewOutcome(
-                    "blocked", "확인 요청이 손상되어 안전하게 폐기했습니다."
+                return (
+                    {},
+                    {pending_entry},
+                    ReviewOutcome(
+                        "blocked", "확인 요청이 손상되어 안전하게 폐기했습니다."
+                    ),
                 )
             if expected_review_id and (
                 not current_pending.review_id
@@ -2179,12 +2584,12 @@ class SemanticService:
                     current_pending.review_id, expected_review_id.strip()
                 )
             ):
-                return {}, set(), ReviewOutcome(
-                    "blocked", "확인 요청 ID가 일치하지 않습니다."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome("blocked", "확인 요청 ID가 일치하지 않습니다."),
                 )
-            stale_message = self._pending_stale_message(
-                scope, catalog, current_pending
-            )
+            stale_message = self._pending_stale_message(scope, catalog, current_pending)
             if stale_message:
                 return {}, {pending_entry}, ReviewOutcome("blocked", stale_message)
             if (
@@ -2192,8 +2597,12 @@ class SemanticService:
                 and reviewer_id != current_pending.requester_id
                 and not allow_cross_requester
             ):
-                return {}, set(), ReviewOutcome(
-                    "blocked", "이 확인 요청을 만든 사용자만 응답할 수 있습니다."
+                return (
+                    {},
+                    set(),
+                    ReviewOutcome(
+                        "blocked", "이 확인 요청을 만든 사용자만 응답할 수 있습니다."
+                    ),
                 )
             outcome, changed = _apply_pending_choice(
                 catalog, current_pending, normalized, reviewer_id
@@ -2212,16 +2621,15 @@ class SemanticService:
                 if current_pending.aggregate_pending
                 else current_pending.proposed_aggregate
             )
-            if normalized != "reject":
-                outcome.tool_args = {
-                    "metric_id": current_pending.metric_id,
-                    "metric_phrase": current_pending.metric_phrase,
-                    "aggregate": chosen_aggregate,
-                    "dimensions": current_pending.query_dimensions,
-                    "unresolved_obligations": [],
-                    "limit": current_pending.query_limit,
-                }
-            outcome.question = current_pending.question
+            if (
+                normalized != "reject"
+                and resume is not None
+                and secrets.compare_digest(resume.review_id, current_pending.review_id)
+                and resume.expires_monotonic > time.monotonic()
+            ):
+                outcome.tool_args = deepcopy(resume.tool_args)
+                outcome.tool_args["aggregate"] = chosen_aggregate
+                outcome.question = resume.question
             outcome.source_id = catalog.source_id
             outcome.connection_generation = catalog.connection_generation
             outcome.requester_id = current_pending.requester_id
@@ -2275,9 +2683,33 @@ class SemanticService:
             )
             return upserts, {pending_entry}, outcome, audit_event
 
-        return self._store.kv_mutate_scoped_snapshot(
-            entries=entries, mutate=mutate
-        )
+        result = self._store.kv_mutate_scoped_snapshot(entries=entries, mutate=mutate)
+        if (
+            resume is not None
+            and resume.expires_monotonic <= time.monotonic()
+            and (result.question or result.tool_args)
+        ):
+            # The transaction may have waited behind another writer after the
+            # initial cache lookup. Never return a resume payload whose TTL
+            # elapsed before the atomic decision finished committing.
+            result.question = ""
+            result.tool_args = {}
+        if (
+            result.status == "confirmed"
+            and result.mutation_applied
+            and normalized != "reject"
+            and not result.question
+        ):
+            result.message += (
+                " 원 질문과 필터 값은 저장하지 않았습니다. 같은 typed 질문을 "
+                "다시 제출하면 방금 확인한 의미 연결을 사용합니다."
+            )
+        if (
+            result.mutation_applied
+            or self._store.kv_get(review_scope, PENDING_REVIEW_KEY) is None
+        ):
+            self._forget_pending_draft(pending.review_id)
+        return result
 
     def confirm_pending_by_id(
         self,
@@ -2292,7 +2724,9 @@ class SemanticService:
         """Steward-review one requester-owned record by its opaque ID."""
 
         if not authorized or not reviewer_id:
-            return ReviewOutcome("blocked", "관리자 또는 steward 승인 권한이 필요합니다.")
+            return ReviewOutcome(
+                "blocked", "관리자 또는 steward 승인 권한이 필요합니다."
+            )
         replay = self._replay_review_receipt(
             scope, review_id.strip(), choice.strip().lower(), reviewer_id
         )
@@ -2305,7 +2739,9 @@ class SemanticService:
             )
             if replay is not None:
                 return replay
-            return ReviewOutcome("blocked", "현재 연결에서 해당 확인 요청을 찾지 못했습니다.")
+            return ReviewOutcome(
+                "blocked", "현재 연결에서 해당 확인 요청을 찾지 못했습니다."
+            )
         review_scope, _pending = located
         return self.confirm_pending(
             scope,
@@ -2331,6 +2767,10 @@ class SemanticService:
         dimension_bindings: list[dict[str, str]],
         unresolved_obligations: list[str],
         limit: int,
+        filter_bindings: list[dict[str, object]] | None = None,
+        time_window_binding: dict[str, object] | None = None,
+        expected_source_id: str = "",
+        expected_connection_generation: int = 0,
     ) -> QueryOutcome:
         catalog = self.load(scope)
         if catalog is None:
@@ -2339,6 +2779,18 @@ class SemanticService:
                 "의미 카탈로그가 준비되지 않았습니다. `/setup`을 먼저 실행해 주세요.",
                 blocker="semantic_catalog_missing",
             )
+        if expected_source_id or expected_connection_generation:
+            if (
+                not expected_source_id
+                or expected_connection_generation <= 0
+                or catalog.source_id != expected_source_id
+                or catalog.connection_generation != expected_connection_generation
+            ):
+                return QueryOutcome(
+                    "blocked",
+                    "후보를 만든 뒤 DB 연결이 바뀌었습니다. 후보를 다시 조회해 주세요.",
+                    blocker="candidate_source_stale",
+                )
         metric = catalog.metric(metric_id)
         if metric is None:
             return QueryOutcome(
@@ -2413,6 +2865,23 @@ class SemanticService:
                 blocker="metric_phrase_contains_unresolved_terms",
             )
 
+        filters, filter_error = _parse_filter_bindings(question, filter_bindings or [])
+        if filter_error:
+            return QueryOutcome(
+                "blocked",
+                filter_error[1],
+                blocker=filter_error[0],
+            )
+        time_window, time_error = _parse_time_window_binding(
+            question, time_window_binding
+        )
+        if time_error:
+            return QueryOutcome(
+                "blocked",
+                time_error[1],
+                blocker=time_error[0],
+            )
+
         dimensions = []
         normalized_bindings: list[dict[str, str]] = []
         unresolved_dimensions: list[dict[str, str]] = []
@@ -2471,6 +2940,85 @@ class SemanticService:
             if phrase not in dimension.aliases:
                 unresolved_dimensions.append(normalized)
 
+        extra_bindings = [
+            (predicate.dimension_id, predicate.dimension_phrase, "filter")
+            for predicate in filters
+        ]
+        if time_window is not None:
+            extra_bindings.append(
+                (
+                    time_window.dimension_id,
+                    time_window.dimension_phrase,
+                    "time_window",
+                )
+            )
+        extra_dimensions: dict[str, DimensionSpec] = {}
+        for dimension_id, phrase, role in extra_bindings:
+            dimension = catalog.dimension(dimension_id)
+            if dimension is None:
+                return QueryOutcome(
+                    "blocked",
+                    "필터·기간 기준은 현재 DB의 허용된 차원 목록에 있어야 합니다.",
+                    blocker="unknown_predicate_dimension",
+                )
+            if not _dimension_is_released(catalog, dimension):
+                return QueryOutcome(
+                    "blocked",
+                    "필터·기간 기준 차원은 관리자 공개 승인이 필요합니다.",
+                    blocker="predicate_dimension_release_required",
+                )
+            if (
+                dimension.disclosure_tier != DimensionDisclosureTier.PUBLIC_GROUPED
+                or not _public_data_scope_confirmed(catalog)
+            ):
+                return QueryOutcome(
+                    "blocked",
+                    "보호 차원은 행을 좁히는 필터로 사용할 수 없습니다.",
+                    blocker="controlled_predicate_dimension_blocked",
+                )
+            if not phrase or not _phrase_in_question(phrase, question):
+                return QueryOutcome(
+                    "blocked",
+                    "필터·기간 기준 표현은 사용자 질문에서 그대로 가져와야 합니다.",
+                    blocker="predicate_dimension_phrase_not_grounded",
+                )
+            if phrase in dimension.rejected_aliases:
+                return QueryOutcome(
+                    "blocked",
+                    "이 표현과 필터·기간 기준의 연결은 이전 검토에서 거절되었습니다.",
+                    blocker="predicate_dimension_alias_rejected",
+                )
+            phrase_residual = _metric_phrase_residual(
+                phrase,
+                sorted(set([*dimension.aliases, *dimension.reserved_aliases])),
+            )
+            if phrase_residual:
+                return QueryOutcome(
+                    "clarification",
+                    "필터·기간 표현 안에 검토되지 않은 수식어가 남아 있습니다: "
+                    + ", ".join(phrase_residual)
+                    + ". 조건을 흡수하지 않고 멈춥니다.",
+                    blocker="predicate_dimension_phrase_contains_unresolved_terms",
+                )
+            capability_error = (
+                _validate_filter_dimension(dimension, filters)
+                if role == "filter"
+                else _validate_time_dimension(dimension, time_window)
+            )
+            if capability_error:
+                return QueryOutcome(
+                    "blocked",
+                    capability_error[1],
+                    blocker=capability_error[0],
+                )
+            extra_dimensions[dimension.id] = dimension
+            normalized = {"dimension_id": dimension_id, "phrase": phrase}
+            if (
+                phrase not in dimension.aliases
+                and normalized not in unresolved_dimensions
+            ):
+                unresolved_dimensions.append(normalized)
+
         controlled_dimension = _has_controlled_dimension(dimensions)
         metric_is_controlled = not _public_data_scope_confirmed(catalog)
         if requested_aggregate in {Aggregate.MIN, Aggregate.MAX} and (
@@ -2501,7 +3049,12 @@ class SemanticService:
             )
 
         obligation_error = _check_obligations(
-            question, metric.unit, dimensions, normalized_bindings
+            question,
+            metric.unit,
+            dimensions,
+            normalized_bindings,
+            filters=filters,
+            time_window=time_window,
         )
         if obligation_error:
             return QueryOutcome(
@@ -2512,10 +3065,45 @@ class SemanticService:
                 blocker=obligation_error[0],
             )
 
+        predicate_phrases = [
+            phrase
+            for predicate in filters
+            for phrase in (
+                predicate.dimension_phrase,
+                predicate.operator_phrase,
+                *predicate.value_phrases,
+            )
+        ]
+        if time_window is not None:
+            predicate_phrases.extend(
+                [
+                    time_window.dimension_phrase,
+                    time_window.range_phrase,
+                    time_window.start_phrase,
+                    time_window.end_phrase,
+                ]
+            )
+        if len(filters) > 1:
+            # A conjunction is grammar only when the typed draft actually
+            # contains multiple AND predicates. Keeping it contextual avoids
+            # accepting a dangling or model-invented condition silently.
+            predicate_phrases.extend(
+                connector
+                for connector in ("and", "그리고")
+                if _phrase_in_question(connector, question)
+            )
         uncovered = _uncovered_question_terms(
             question,
-            [metric_phrase, *[item["phrase"] for item in normalized_bindings]],
-            [metric.table_id, *[dimension.table_id for dimension in dimensions]],
+            [
+                metric_phrase,
+                *[item["phrase"] for item in normalized_bindings],
+                *predicate_phrases,
+            ],
+            [
+                metric.table_id,
+                *[dimension.table_id for dimension in dimensions],
+                *[dimension.table_id for dimension in extra_dimensions.values()],
+            ],
         )
         if uncovered:
             return QueryOutcome(
@@ -2530,7 +3118,10 @@ class SemanticService:
         # any business mapping that could never produce a safe query.
         dimension_ids = [item["dimension_id"] for item in normalized_bindings]
         paths: list[list[JoinSpec]] = []
-        for dimension in dimensions:
+        referenced_dimensions = {
+            item.id: item for item in [*dimensions, *extra_dimensions.values()]
+        }
+        for dimension in referenced_dimensions.values():
             path, error = _unique_safe_path(
                 catalog, metric.table_id, dimension.table_id
             )
@@ -2559,15 +3150,29 @@ class SemanticService:
             pending_dimensions = (
                 [] if review_kind == "metric" else unresolved_dimensions[:1]
             )
+            review_id = secrets.token_urlsafe(18)
+            resume_args: dict[str, object] = {
+                "metric_id": metric.id,
+                "metric_phrase": metric_phrase,
+                "aggregate": requested_aggregate.value,
+                "dimensions": normalized_bindings,
+                "filters": [_filter_to_binding(item) for item in filters],
+                "time_window": (
+                    _time_window_to_binding(time_window)
+                    if time_window is not None
+                    else None
+                ),
+                "unresolved_obligations": remaining,
+                "limit": max(1, min(int(limit), 1000)),
+            }
             pending = PendingReview(
                 metric_id=metric.id,
-                question=question,
                 metric_phrase=metric_phrase,
                 dimension_bindings=pending_dimensions,
                 allowed_choices=allowed_choices,
                 proposed_aggregate=requested_aggregate.value,
-                query_dimensions=normalized_bindings,
-                query_limit=max(1, min(int(limit), 1000)),
+                constraint_filter_count=len(filters),
+                constraint_has_time_window=time_window is not None,
                 catalog_fingerprint=catalog.fingerprint,
                 catalog_review_revision=catalog.review_revision,
                 catalog_version=catalog.version,
@@ -2582,10 +3187,11 @@ class SemanticService:
                     aggregate_pending if review_kind == "metric" else False
                 ),
                 review_kind=review_kind,
-                review_id=secrets.token_urlsafe(18),
+                review_id=review_id,
                 catalog_scope=scope,
             )
             self._store.kv_set(review_scope, PENDING_REVIEW_KEY, pending.to_json())
+            self._remember_pending_draft(review_scope, review_id, question, resume_args)
             options = ", ".join(allowed_choices)
             return QueryOutcome(
                 "clarification",
@@ -2596,25 +3202,53 @@ class SemanticService:
                     "DM에서는 본인이 바로 확인할 수 있습니다. 본인이 확인하면 "
                     "원래 질문을 이어서 처리하지만, 길드에서 다른 관리자가 "
                     "승인한 경우 요청자가 같은 질문을 다시 보내야 합니다. "
-                    "표현 안에 필터·기간·조건이 섞였다면 "
-                    "확인하지 말고 reject를 선택하세요."
+                    "표현 안에 필터·기간·조건이 섞였다면 아래 typed 필터·기간으로 "
+                    "정확히 분리됐는지 확인하고, 누락됐거나 실제 업무 의미와 다르면 "
+                    "reject를 선택하세요. "
+                    "필터 값과 기간 경계는 승인 후에도 질문 원문과 다시 대조됩니다."
                 ),
                 metric_id=metric.id,
             )
 
-        sql = _compile_sql(
-            catalog=catalog,
-            explorer=explorer,
-            metric_id=metric.id,
-            aggregate=requested_aggregate,
-            dimension_ids=dimension_ids,
-            paths=paths,
-            limit=max(1, min(int(limit), 1000)),
-        )
+        try:
+            plan = SemanticPlan(
+                question_sha256=question_sha256(question),
+                stamp=SemanticStateStamp(
+                    source_id=catalog.source_id,
+                    connection_generation=catalog.connection_generation,
+                    catalog_fingerprint=catalog.fingerprint,
+                    catalog_review_revision=catalog.review_revision,
+                    catalog_version=catalog.version,
+                    classification_policy_version=(
+                        catalog.classification_policy_version
+                    ),
+                ),
+                measure=BaseMeasure(metric.id, requested_aggregate),
+                metric_phrase=metric_phrase,
+                dimensions=tuple(
+                    DimensionSelection(item["dimension_id"], item["phrase"])
+                    for item in normalized_bindings
+                ),
+                filters=filters,
+                time_window=time_window,
+                limit=max(1, min(int(limit), 1000)),
+            )
+            prepared = compile_semantic_plan(
+                catalog=catalog,
+                explorer=explorer,
+                plan=plan,
+                paths=paths,
+            )
+        except ValueError:
+            return QueryOutcome(
+                "blocked",
+                "검토된 의미 계획을 현재 DB의 안전한 실행 계약으로 컴파일하지 못했습니다.",
+                blocker="semantic_plan_validation_failed",
+            )
         return QueryOutcome(
             "ready",
             "검토된 값으로 결정론적 SQL을 준비했습니다.",
-            sql=sql,
+            sql=prepared.sql,
             metric_id=metric.id,
             aggregate=requested_aggregate.value,
             dimension_ids=dimension_ids,
@@ -2624,6 +3258,8 @@ class SemanticService:
             classification_policy_version=catalog.classification_policy_version,
             source_id=catalog.source_id,
             connection_generation=catalog.connection_generation,
+            plan=plan,
+            prepared=prepared,
         )
 
 
@@ -2686,55 +3322,6 @@ def _carry_forward_reviews(previous: SemanticCatalog, current: SemanticCatalog) 
         dimension.aliases = sorted(set([*dimension.aliases, *old_dimension.aliases]))
         dimension.rejected_aliases = sorted(set(old_dimension.rejected_aliases))
         dimension.alias_reviewers = dict(old_dimension.alias_reviewers)
-
-
-def _dimension_is_released(catalog: SemanticCatalog, dimension: DimensionSpec) -> bool:
-    if dimension.review_policy == DimensionReviewPolicy.AUTO_SAFE:
-        return bool(
-            dimension.raw_output_allowed
-            and dimension.classification_policy_version
-            == catalog.classification_policy_version
-        )
-    return bool(
-        dimension.review_policy == DimensionReviewPolicy.RELEASE_REQUIRED
-        and dimension.raw_output_allowed
-        and dimension.disclosure_tier
-        in {
-            DimensionDisclosureTier.CONTROLLED_GROUPED,
-            DimensionDisclosureTier.PUBLIC_GROUPED,
-        }
-        and (
-            dimension.disclosure_tier
-            != DimensionDisclosureTier.PUBLIC_GROUPED
-            or (
-                catalog.public_data_scope
-                and catalog.public_data_fingerprint == catalog.fingerprint
-            )
-        )
-        and dimension.release_reviewer
-        and dimension.release_catalog_fingerprint == catalog.fingerprint
-        and dimension.classification_policy_version
-        == catalog.classification_policy_version
-    )
-
-
-def _public_data_scope_confirmed(catalog: SemanticCatalog) -> bool:
-    """Bind a public-data assertion to the exact active physical catalog."""
-
-    return bool(
-        catalog.public_data_scope
-        and catalog.public_data_fingerprint == catalog.fingerprint
-        and catalog.public_data_reviewer
-    )
-
-
-def _has_controlled_dimension(dimensions: list[DimensionSpec]) -> bool:
-    return any(
-        dimension.review_policy == DimensionReviewPolicy.RELEASE_REQUIRED
-        and dimension.disclosure_tier
-        == DimensionDisclosureTier.CONTROLLED_GROUPED
-        for dimension in dimensions
-    )
 
 
 def enforce_metric_disclosure_output(
@@ -2819,7 +3406,10 @@ def enforce_released_dimension_output(
             )
         except (TypeError, ValueError):
             return [], "released_dimension_guard_invalid"
-        if minimum_group_size is not None and minimum_group_size < _RELEASE_MIN_GROUP_SIZE:
+        if (
+            minimum_group_size is not None
+            and minimum_group_size < _RELEASE_MIN_GROUP_SIZE
+        ):
             return [], "released_dimension_group_too_small"
         if category_count > _RELEASE_MAX_CATEGORY_COUNT:
             return [], "released_dimension_cardinality_too_high"
@@ -2829,8 +3419,7 @@ def enforce_released_dimension_output(
             if key not in {_RELEASE_GROUP_SIZE_KEY, _RELEASE_CATEGORY_COUNT_KEY}
         }
         dimension_slots = {
-            f"{_DIMENSION_OUTPUT_PREFIX}{index}"
-            for index in range(len(dimension_ids))
+            f"{_DIMENSION_OUTPUT_PREFIX}{index}" for index in range(len(dimension_ids))
         }
         for key, value in visible.items():
             if key not in dimension_slots or value is None:
@@ -3074,18 +3663,294 @@ def _metric_phrase_residual(metric_phrase: str, known_aliases: list[str]) -> lis
     )
 
 
+def _parse_filter_bindings(
+    question: str, bindings: list[dict[str, object]]
+) -> tuple[tuple[FilterPredicate, ...], tuple[str, str] | None]:
+    """Turn model wire values into a bounded, grounded AND-only predicate set."""
+
+    if len(bindings) > 8:
+        return (), (
+            "too_many_filters",
+            "한 질문에는 최대 8개의 명시적 AND 필터만 사용할 수 있습니다.",
+        )
+    parsed: list[FilterPredicate] = []
+    seen_dimensions: set[str] = set()
+    for binding in bindings:
+        if not isinstance(binding, dict):
+            return (), ("invalid_filter", "모든 필터는 typed object여야 합니다.")
+        dimension_id = str(binding.get("dimension_id", "")).strip()
+        dimension_phrase = _normalize_phrase(str(binding.get("dimension_phrase", "")))
+        if not dimension_id or not _phrase_in_question(dimension_phrase, question):
+            return (), (
+                "filter_dimension_phrase_not_grounded",
+                "필터 기준 표현은 사용자 질문에 그대로 있어야 합니다.",
+            )
+        if dimension_id in seen_dimensions:
+            return (), (
+                "duplicate_filter_dimension",
+                "Phase 2에서는 한 차원에 하나의 AND 필터만 사용할 수 있습니다.",
+            )
+        seen_dimensions.add(dimension_id)
+        try:
+            operator = FilterOperator(str(binding.get("operator", "")).lower())
+        except ValueError:
+            return (), (
+                "unsupported_filter_operator",
+                "지원하지 않는 필터 연산자입니다.",
+            )
+        if operator not in {FilterOperator.EQ, FilterOperator.IN}:
+            return (), (
+                "unsupported_filter_operator",
+                "Phase 2 필터는 exact EQ와 bounded IN만 지원합니다.",
+            )
+        operator_phrase = _normalize_phrase(str(binding.get("operator_phrase", "")))
+        if operator_phrase and not _phrase_in_question(operator_phrase, question):
+            return (), (
+                "filter_operator_phrase_not_grounded",
+                "필터 연산자 표현은 사용자 질문에서 그대로 가져와야 합니다.",
+            )
+        if operator == FilterOperator.IN and not operator_phrase:
+            return (), (
+                "filter_operator_phrase_required",
+                "IN 필터에는 질문에 명시된 연산자 표현이 필요합니다.",
+            )
+        raw_values = binding.get("values")
+        if not isinstance(raw_values, list) or not raw_values:
+            return (), (
+                "invalid_filter_values",
+                "필터에는 하나 이상의 값이 필요합니다.",
+            )
+        values: list[ScalarLiteral] = []
+        value_phrases: list[str] = []
+        for item in raw_values:
+            if not isinstance(item, dict) or not isinstance(item.get("value"), str):
+                return (), (
+                    "invalid_filter_literal",
+                    "필터 값은 종류·문자열 값·질문 원문 표현을 가져야 합니다.",
+                )
+            try:
+                kind = LiteralKind(str(item.get("kind", "")).lower())
+            except ValueError:
+                return (), (
+                    "invalid_filter_literal",
+                    "지원하지 않는 필터 값 종류입니다.",
+                )
+            if kind in {LiteralKind.DATE, LiteralKind.TIMESTAMP}:
+                return (), (
+                    "time_value_requires_window",
+                    "날짜·시각 조건은 일반 필터가 아니라 명시적 기간창으로 표현해야 합니다.",
+                )
+            raw_value = str(item["value"])
+            value_phrase = _normalize_phrase(str(item.get("phrase", "")))
+            if not value_phrase or not _phrase_in_question(value_phrase, question):
+                return (), (
+                    "filter_value_phrase_not_grounded",
+                    "필터 값은 사용자 질문에서 그대로 가져와야 합니다.",
+                )
+            if _normalize_phrase(raw_value) != value_phrase:
+                return (), (
+                    "filter_value_not_exact",
+                    "필터 실행 값과 질문 원문 값이 정확히 일치하지 않습니다.",
+                )
+            try:
+                values.append(ScalarLiteral(kind, raw_value))
+            except ValueError as exc:
+                return (), ("invalid_filter_literal", str(exc))
+            value_phrases.append(value_phrase)
+        if len({item.kind for item in values}) != 1:
+            return (), (
+                "mixed_filter_literal_types",
+                "하나의 IN 필터에는 같은 종류의 값만 사용할 수 있습니다.",
+            )
+        try:
+            parsed.append(
+                FilterPredicate(
+                    dimension_id=dimension_id,
+                    dimension_phrase=dimension_phrase,
+                    operator=operator,
+                    values=tuple(values),
+                    value_phrases=tuple(value_phrases),
+                    operator_phrase=operator_phrase,
+                )
+            )
+        except ValueError as exc:
+            return (), ("invalid_filter", str(exc))
+    return tuple(parsed), None
+
+
+def _parse_time_window_binding(
+    question: str, binding: dict[str, object] | None
+) -> tuple[TimeWindow | None, tuple[str, str] | None]:
+    if binding is None:
+        return None, None
+    if not isinstance(binding, dict):
+        return None, ("invalid_time_window", "기간창은 typed object여야 합니다.")
+    dimension_id = str(binding.get("dimension_id", "")).strip()
+    dimension_phrase = _normalize_phrase(str(binding.get("dimension_phrase", "")))
+    if not dimension_id or not _phrase_in_question(dimension_phrase, question):
+        return None, (
+            "time_dimension_phrase_not_grounded",
+            "기간 기준 표현은 사용자 질문에 그대로 있어야 합니다.",
+        )
+    range_phrase = _normalize_phrase(str(binding.get("range_phrase", "")))
+    if not range_phrase or not _phrase_in_question(range_phrase, question):
+        return None, (
+            "time_range_phrase_not_grounded",
+            "기간 관계 표현 전체를 사용자 질문에서 그대로 가져와야 합니다.",
+        )
+
+    literals: list[ScalarLiteral] = []
+    phrases: list[str] = []
+    for endpoint in ("start", "end"):
+        raw_endpoint = binding.get(endpoint)
+        if not isinstance(raw_endpoint, dict) or not isinstance(
+            raw_endpoint.get("value"), str
+        ):
+            return None, (
+                "invalid_time_endpoint",
+                "기간 시작·끝은 종류·문자열 값·질문 원문 표현을 가져야 합니다.",
+            )
+        try:
+            kind = LiteralKind(str(raw_endpoint.get("kind", "")).lower())
+        except ValueError:
+            return None, ("invalid_time_endpoint", "지원하지 않는 기간 값 종류입니다.")
+        if kind not in {LiteralKind.DATE, LiteralKind.TIMESTAMP}:
+            return None, (
+                "invalid_time_endpoint",
+                "기간 값은 ISO date 또는 explicit UTC timestamp여야 합니다.",
+            )
+        raw_value = str(raw_endpoint["value"])
+        phrase = _normalize_phrase(str(raw_endpoint.get("phrase", "")))
+        if not phrase or not _phrase_in_question(phrase, question):
+            return None, (
+                "time_endpoint_not_grounded",
+                "기간 시작·끝 값은 사용자 질문에서 그대로 가져와야 합니다.",
+            )
+        if _normalize_phrase(raw_value) != phrase:
+            return None, (
+                "time_endpoint_not_exact",
+                "기간 실행 값과 질문 원문 값이 정확히 일치하지 않습니다.",
+            )
+        try:
+            literals.append(ScalarLiteral(kind, raw_value))
+        except ValueError as exc:
+            return None, ("invalid_time_endpoint", str(exc))
+        phrases.append(phrase)
+    try:
+        return (
+            TimeWindow(
+                dimension_id=dimension_id,
+                dimension_phrase=dimension_phrase,
+                start=literals[0],
+                end=literals[1],
+                start_phrase=phrases[0],
+                end_phrase=phrases[1],
+                range_phrase=range_phrase,
+            ),
+            None,
+        )
+    except ValueError as exc:
+        return None, ("invalid_time_window", str(exc))
+
+
+def _validate_filter_dimension(
+    dimension: DimensionSpec, filters: tuple[FilterPredicate, ...]
+) -> tuple[str, str] | None:
+    predicates = [item for item in filters if item.dimension_id == dimension.id]
+    if len(predicates) != 1:
+        return ("filter_dimension_mismatch", "필터 차원 계약이 일치하지 않습니다.")
+    reason = filter_compatibility_error(dimension, predicates[0])
+    messages = {
+        "temporal_filter_requires_time_window": (
+            "시간·달력 차원은 일반 필터 대신 명시적 기간창이 필요합니다."
+        ),
+        "unsupported_filter_operator": "Phase 2 필터는 exact EQ와 bounded IN만 지원합니다.",
+        "filter_type_not_supported": (
+            "이 차원의 물리 타입에는 검증된 필터 바인딩 규칙이 없습니다."
+        ),
+        "filter_literal_type_mismatch": (
+            "필터 값 종류가 선택한 차원의 물리 타입과 일치하지 않습니다."
+        ),
+        "filter_dimension_mismatch": "필터 차원 계약이 일치하지 않습니다.",
+    }
+    if reason:
+        return reason, messages.get(reason, "필터 타입 계약을 검증하지 못했습니다.")
+    return None
+
+
+def _validate_time_dimension(
+    dimension: DimensionSpec, window: TimeWindow | None
+) -> tuple[str, str] | None:
+    if window is None or window.dimension_id != dimension.id:
+        return ("time_dimension_mismatch", "기간 기준 차원 계약이 일치하지 않습니다.")
+    reason = time_window_compatibility_error(dimension, window)
+    messages = {
+        "time_axis_not_reviewed": (
+            "Phase 2 기간창은 native DATE 차원만 지원합니다. 문자열·달력·timestamp는 "
+            "형식과 timezone 검토가 더 필요합니다."
+        ),
+        "time_literal_type_mismatch": (
+            "native DATE 기간창에는 ISO date 값만 사용할 수 있습니다."
+        ),
+        "time_dimension_mismatch": "기간 기준 차원 계약이 일치하지 않습니다.",
+    }
+    if reason:
+        return reason, messages.get(reason, "기간 타입 계약을 검증하지 못했습니다.")
+    return None
+
+
+def _filter_to_binding(predicate: FilterPredicate) -> dict[str, object]:
+    return {
+        "dimension_id": predicate.dimension_id,
+        "dimension_phrase": predicate.dimension_phrase,
+        "operator": predicate.operator.value,
+        "operator_phrase": predicate.operator_phrase,
+        "values": [
+            {
+                "kind": literal.kind.value,
+                "value": literal.value,
+                "phrase": phrase,
+            }
+            for literal, phrase in zip(
+                predicate.values, predicate.value_phrases, strict=True
+            )
+        ],
+    }
+
+
+def _time_window_to_binding(window: TimeWindow) -> dict[str, object]:
+    return {
+        "dimension_id": window.dimension_id,
+        "dimension_phrase": window.dimension_phrase,
+        "range_phrase": window.range_phrase,
+        "start": {
+            "kind": window.start.kind.value,
+            "value": window.start.value,
+            "phrase": window.start_phrase,
+        },
+        "end": {
+            "kind": window.end.kind.value,
+            "value": window.end.value,
+            "phrase": window.end_phrase,
+        },
+    }
+
+
 def _check_obligations(
     question: str,
     metric_unit: str,
     dimensions: list[DimensionSpec],
     dimension_bindings: list[dict[str, str]],
+    *,
+    filters: tuple[FilterPredicate, ...] = (),
+    time_window: TimeWindow | None = None,
 ) -> tuple[str, str] | None:
     if _GROUPING_CUE.search(question) and not dimensions:
         return (
             "grouping_dimension_missing",
             "질문에 그룹별 결과가 필요하지만 분류 기준이 선택되지 않았습니다.",
         )
-    if _RELATIVE_TIME_FILTER_CUE.search(question):
+    if _RELATIVE_TIME_FILTER_CUE.search(question) and time_window is None:
         return (
             "time_semantics_not_reviewed",
             "기간 질문은 아직 기준 날짜와 범위를 검토하지 않았습니다. 잘못 추측하지 않고 멈춥니다.",
@@ -3112,9 +3977,14 @@ def _check_obligations(
     temporal_residual = f" {normalized_question} "
     for phrase in sorted(set(temporal_phrases), key=len, reverse=True):
         temporal_residual = temporal_residual.replace(f" {phrase} ", " ")
-    if _TIME_UNIT_CUE.search(temporal_residual) or (
-        temporal_phrases
-        and (re.search(r"\d", temporal_residual) or _TIME_RANGE_CUE.search(question))
+    if time_window is None and (
+        _TIME_UNIT_CUE.search(temporal_residual)
+        or (
+            temporal_phrases
+            and (
+                re.search(r"\d", temporal_residual) or _TIME_RANGE_CUE.search(question)
+            )
+        )
     ):
         return (
             "time_semantics_not_reviewed",
@@ -3184,157 +4054,12 @@ def _compile_sql(
     paths: list[list[JoinSpec]],
     limit: int,
 ) -> str:
-    metric = catalog.metric(metric_id)
-    if metric is None or aggregate not in metric.allowed_aggregates:
-        raise ValueError("reviewed metric aggregate required")
-    dimensions = [catalog.dimension(item) for item in dimension_ids]
-    if any(item is None for item in dimensions):
-        raise ValueError("known dimensions required")
-    if any(
-        item is not None and not _dimension_is_released(catalog, item)
-        for item in dimensions
-    ):
-        raise ValueError("released dimensions required")
-    known_dimensions = [item for item in dimensions if item is not None]
-    controlled_dimension = _has_controlled_dimension(known_dimensions)
-    metric_guard_required = (
-        not _public_data_scope_confirmed(catalog) or controlled_dimension
+    return compile_legacy_aggregate_sql(
+        catalog=catalog,
+        explorer=explorer,
+        metric_id=metric_id,
+        aggregate=aggregate,
+        dimension_ids=dimension_ids,
+        paths=paths,
+        limit=limit,
     )
-    if aggregate in {Aggregate.MIN, Aggregate.MAX} and metric_guard_required:
-        # Contributor counts cannot make an extreme value non-sensitive.
-        raise ValueError("controlled metrics cannot compile MIN/MAX")
-
-    ordered_tables = [metric.table_id]
-    ordered_joins: list[JoinSpec] = []
-    seen_joins: set[str] = set()
-    for path in paths:
-        for join in path:
-            if join.id not in seen_joins:
-                ordered_joins.append(join)
-                seen_joins.add(join.id)
-            if join.parent_table_id not in ordered_tables:
-                ordered_tables.append(join.parent_table_id)
-    aliases = {
-        table_id: f"t{index + 1}" for index, table_id in enumerate(ordered_tables)
-    }
-
-    select_parts: list[str] = []
-    group_parts: list[str] = []
-    for index, dimension in enumerate(dimensions):
-        assert dimension is not None
-        expression = (
-            f"{_quote(explorer, aliases[dimension.table_id])}."
-            f"{_quote(explorer, dimension.column)}"
-        )
-        select_parts.append(
-            f"{expression} AS {_quote(explorer, f'{_DIMENSION_OUTPUT_PREFIX}{index}')}"
-        )
-        group_parts.append(expression)
-
-    if metric.expression_kind == MetricExpressionKind.SOURCE_ROWS:
-        if not metric.source_record_count or aggregate != Aggregate.COUNT:
-            raise ValueError("source rows require the dedicated COUNT expression")
-        metric_expression = "*"
-    elif metric.expression_kind == MetricExpressionKind.COLUMN:
-        if not metric.column:
-            raise ValueError("column metric requires a physical column")
-        metric_expression = (
-            f"{_quote(explorer, aliases[metric.table_id])}."
-            f"{_quote(explorer, metric.column)}"
-        )
-    else:
-        raise ValueError("unsupported metric expression kind")
-    aggregate_sql = aggregate.value.upper()
-    select_parts.append(
-        f"{aggregate_sql}({metric_expression}) AS {_quote(explorer, _METRIC_OUTPUT_KEY)}"
-    )
-    contributor_expression = (
-        "*"
-        if metric.expression_kind == MetricExpressionKind.SOURCE_ROWS
-        else metric_expression
-    )
-    if metric_guard_required:
-        # A grouped window is evaluated before LIMIT, preventing a small-model
-        # or caller-selected page from hiding a sparse group.  Ungrouped
-        # aggregates use the direct contributor count.
-        contributor_guard = (
-            f"MIN(COUNT({contributor_expression})) OVER ()"
-            if group_parts
-            else f"COUNT({contributor_expression})"
-        )
-        select_parts.append(
-            f"{contributor_guard} AS "
-            f"{_quote(explorer, _METRIC_CONTRIBUTOR_COUNT_KEY)}"
-        )
-    released_dimensions = [
-        item
-        for item in dimensions
-        if item is not None
-        and item.review_policy == DimensionReviewPolicy.RELEASE_REQUIRED
-    ]
-    if released_dimensions:
-        if any(
-            item.disclosure_tier == DimensionDisclosureTier.CONTROLLED_GROUPED
-            for item in released_dimensions
-        ):
-            # Protect rows that actually contribute to the aggregate. A group
-            # with five source rows but one non-NULL measure is still sparse.
-            # The grouped window is evaluated before LIMIT, so a caller cannot
-            # hide a sparse group outside the returned page.
-            select_parts.append(
-                f"MIN(COUNT({contributor_expression})) OVER () AS "
-                f"{_quote(explorer, _RELEASE_GROUP_SIZE_KEY)}"
-            )
-        select_parts.append(
-            f"COUNT(*) OVER () AS "
-            f"{_quote(explorer, _RELEASE_CATEGORY_COUNT_KEY)}"
-        )
-
-    source_table = catalog.table(metric.table_id)
-    if source_table is None:
-        raise ValueError("metric source table missing")
-    lines = [
-        "SELECT",
-        "  " + ",\n  ".join(select_parts),
-        (
-            f"FROM {_qualified_table(explorer, source_table.schema, source_table.name)} "
-            f"{_quote(explorer, aliases[source_table.id])}"
-        ),
-    ]
-    for join in ordered_joins:
-        parent = catalog.table(join.parent_table_id)
-        if parent is None:
-            raise ValueError("join parent table missing")
-        child_alias = _quote(explorer, aliases[join.child_table_id])
-        parent_alias = _quote(explorer, aliases[join.parent_table_id])
-        lines.extend(
-            [
-                (
-                    f"LEFT JOIN {_qualified_table(explorer, parent.schema, parent.name)} "
-                    f"{parent_alias}"
-                ),
-                (
-                    f"  ON {child_alias}.{_quote(explorer, join.child_column)} = "
-                    f"{parent_alias}.{_quote(explorer, join.parent_column)}"
-                ),
-            ]
-        )
-    if group_parts:
-        lines.append("GROUP BY " + ", ".join(group_parts))
-    lines.append(f"LIMIT {limit}")
-    return "\n".join(lines)
-
-
-def _qualified_table(explorer: ExplorerPort, schema: str, table: str) -> str:
-    if schema:
-        return f"{_quote(explorer, schema)}.{_quote(explorer, table)}"
-    return _quote(explorer, table)
-
-
-def _quote(explorer: ExplorerPort, name: str) -> str:
-    quote = getattr(explorer, "quote_identifier", None)
-    if quote is not None:
-        return str(quote(name))
-    if not name.replace("_", "").isalnum():
-        raise ValueError(f"unsafe identifier from catalog: {name!r}")
-    return f'"{name}"'

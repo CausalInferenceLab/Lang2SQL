@@ -36,7 +36,6 @@ import cross_domain_baseline
 import dataset_cache
 from eval_contract import EvalCase, load_cases
 
-
 DEFAULT_CASES = Path(__file__).parent / "cases" / "public_semantic_cases.jsonl"
 DEFAULT_OUTPUT = Path("lang2sql-datasets/reports/local_model_semantic_eval.json")
 
@@ -73,17 +72,14 @@ def _gold_available(case: EvalCase, catalog: SemanticCatalog) -> bool:
 def _normalize_phrase(value: object) -> str:
     import re
 
-    return " ".join(
-        re.sub(r"[^0-9a-zA-Z가-힣]+", " ", str(value).lower()).split()
-    )
+    return " ".join(re.sub(r"[^0-9a-zA-Z가-힣]+", " ", str(value).lower()).split())
 
 
 def _grounded(phrase: object, question: str) -> bool:
     normalized_phrase = _normalize_phrase(phrase)
     normalized_question = _normalize_phrase(question)
     return bool(
-        normalized_phrase
-        and f" {normalized_phrase} " in f" {normalized_question} "
+        normalized_phrase and f" {normalized_phrase} " in f" {normalized_question} "
     )
 
 
@@ -96,9 +92,11 @@ def score_completion(case: EvalCase, completion: Completion) -> dict[str, Any]:
             "status": (
                 "no_semantic_call"
                 if not calls
-                else "semantic_call_with_sibling_tools"
-                if len(completion.tool_calls) != 1
-                else "multiple_semantic_calls"
+                else (
+                    "semantic_call_with_sibling_tools"
+                    if len(completion.tool_calls) != 1
+                    else "multiple_semantic_calls"
+                )
             ),
             "semantic_call_count": len(calls),
             "total_tool_call_count": len(completion.tool_calls),
@@ -134,10 +132,7 @@ def score_completion(case: EvalCase, completion: Completion) -> dict[str, Any]:
         else []
     )
     observed_dimensions = (
-        sorted(
-            str(item.get("dimension_id", ""))
-            for item in dimension_items
-        )
+        sorted(str(item.get("dimension_id", "")) for item in dimension_items)
         if isinstance(raw_dimensions, list)
         else []
     )
@@ -152,14 +147,13 @@ def score_completion(case: EvalCase, completion: Completion) -> dict[str, Any]:
     dimension_phrases_grounded = bool(
         dimensions_shape_valid
         and len(dimension_items) == len(raw_dimensions)
-        and all(_grounded(item.get("phrase", ""), case.question) for item in dimension_items)
+        and all(
+            _grounded(item.get("phrase", ""), case.question) for item in dimension_items
+        )
     )
     selection_grounded = metric_phrase_grounded and dimension_phrases_grounded
     slot_exact = (
-        metric_match
-        and aggregate_match
-        and dimensions_match
-        and dimensions_shape_valid
+        metric_match and aggregate_match and dimensions_match and dimensions_shape_valid
     )
     return {
         "status": "semantic_call",
@@ -338,8 +332,7 @@ async def evaluate_case(
                 validation_blocker = "candidate_not_shortlisted"
             if (
                 candidate_membership_valid
-                and
-                score.get("dimensions_shape_valid") is True
+                and score.get("dimensions_shape_valid") is True
                 and isinstance(raw_dimensions, list)
                 and isinstance(raw_obligations, list)
             ):
@@ -369,6 +362,13 @@ async def evaluate_case(
                 validation_blocker = outcome.blocker
                 validation_sql_prepared = bool(outcome.sql)
                 pending = service.pending_review(f"review:{case.case_id}")
+                normalized_dimensions = [
+                    {
+                        "dimension_id": str(item.get("dimension_id", "")),
+                        "phrase": _normalize_phrase(item.get("phrase", "")),
+                    }
+                    for item in raw_dimensions
+                ]
                 validation_review_pending = bool(
                     outcome.status == "clarification"
                     and not outcome.blocker
@@ -376,14 +376,14 @@ async def evaluate_case(
                     and pending.metric_id == str(arguments.get("metric_id", ""))
                     and pending.metric_phrase
                     == _normalize_phrase(arguments.get("metric_phrase", ""))
-                    and pending.query_dimensions
-                    == [
-                        {
-                            "dimension_id": str(item.get("dimension_id", "")),
-                            "phrase": _normalize_phrase(item.get("phrase", "")),
-                        }
-                        for item in raw_dimensions
-                    ]
+                    # Metric reviews intentionally persist no unrelated draft
+                    # dimensions; dimension reviews retain only the one safe
+                    # binding currently presented to the steward.
+                    and len(pending.dimension_bindings) <= 1
+                    and all(
+                        binding in normalized_dimensions
+                        for binding in pending.dimension_bindings
+                    )
                 )
         score["production_draft_status"] = validation_status
         score["production_draft_blocker"] = validation_blocker
@@ -394,10 +394,7 @@ async def evaluate_case(
         score["usable_selection"] = bool(
             score.get("usable_selection")
             and candidate_membership_valid
-            and (
-                validation_status == "ready"
-                or validation_review_pending
-            )
+            and (validation_status == "ready" or validation_review_pending)
         )
         return {
             "case_id": case.case_id,
@@ -574,9 +571,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     release_mode = (
         "gold"
         if args.release_gold_candidates
-        else "all"
-        if args.release_all_candidates
-        else "none"
+        else "all" if args.release_all_candidates else "none"
     )
     report = asyncio.run(
         run_suite(

@@ -25,6 +25,14 @@ Copy [`.env.example`](../.env.example) to `.env` and fill it in. (The bot reads
 from the process environment; use your hosting platform's secrets mechanism or a
 tool like `direnv`/`dotenv` to export them.)
 
+Install the base bot dependencies, and install the DuckDB extra before exposing
+DuckDB in `/setup`:
+
+```bash
+uv sync
+uv sync --extra duckdb  # required only for DuckDB files
+```
+
 ---
 
 ## 2. Create the Discord application and bot
@@ -66,7 +74,8 @@ Per the v4.1 plan (§4.1), V1 targets a free always-on host:
 
 ### Oracle Cloud Always Free
 - Provision an **Always Free** ARM (Ampere A1) or AMD micro VM.
-- Install uv, clone the repo, `uv sync`.
+- Install uv, clone the repo, `uv sync` (or `uv sync --extra duckdb` when the
+  deployment exposes DuckDB in `/setup`).
 - Export the env vars and run `lang2sql-bot` under a process supervisor
   (`systemd` unit or `tmux`/`screen` for a quick trial).
 
@@ -117,6 +126,12 @@ file also holds sessions, semantic governance state, and audit records.
 - **No role/row/column authorization model** in the semantic runtime. Discord
   is admin-only by default and may be opened only to explicitly configured
   channels; the connected database credential must still enforce least privilege.
-- **SQLite is the current public execution proof boundary.** Other connectors
-  may scan metadata, but governed execution remains blocked where safe statement
-  timeout/cancellation has not been verified.
+- **Public governed execution proof is limited to existing file-backed SQLite
+  and DuckDB.** Both are opened read-only. Other connectors may scan metadata,
+  but governed execution remains blocked where safe statement
+  timeout/cancellation has not been verified; do not treat a successful remote
+  connection as execution approval.
+- **The embedded API is SQL-free.** For a non-Discord host, use
+  `connect → candidates → human feedback → typed plan → execute`; apply each
+  review with an explicit human choice and type-check the execution result
+  before reading rows. See [`LIBRARY_API.md`](LIBRARY_API.md).

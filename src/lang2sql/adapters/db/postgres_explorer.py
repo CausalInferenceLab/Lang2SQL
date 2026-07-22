@@ -91,6 +91,7 @@ class PostgresExplorer:
         limit: int = 1000,
         *,
         timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
     ) -> list[dict]:
         raise QueryTimeoutUnsupportedError(
             "PostgresExplorer is a metadata stub without statement cancellation"

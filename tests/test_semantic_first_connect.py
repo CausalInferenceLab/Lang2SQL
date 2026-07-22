@@ -280,15 +280,18 @@ def _release_all_dimensions(service: SemanticService, scope: str = "g1") -> None
     """Simulate an explicit steward pass for tests focused on later query stages."""
 
     for candidate in service.release_candidates(scope):
-        assert service.release_dimension(
-            scope,
-            candidate.id,
-            StewardAssertion(
-                scope=scope,
-                reviewer_id="test-steward",
-                authorized=True,
-            ),
-        ).status == "confirmed"
+        assert (
+            service.release_dimension(
+                scope,
+                candidate.id,
+                StewardAssertion(
+                    scope=scope,
+                    reviewer_id="test-steward",
+                    authorized=True,
+                ),
+            ).status
+            == "confirmed"
+        )
 
 
 def _onboard(path: str, *, release_dimensions: bool = True):
@@ -301,7 +304,9 @@ def _onboard(path: str, *, release_dimensions: bool = True):
     return explorer, store, service, summary
 
 
-def _review_until_ready(service: SemanticService, args: dict) -> tuple[object, list[str]]:
+def _review_until_ready(
+    service: SemanticService, args: dict
+) -> tuple[object, list[str]]:
     """Drive each independent review stage without merging its decisions."""
 
     stages: list[str] = []
@@ -329,9 +334,7 @@ def _review_until_ready(service: SemanticService, args: dict) -> tuple[object, l
 def test_first_connect_accepts_structure_without_sampling_or_manual_cards(tmp_path):
     db = tmp_path / "unseen.db"
     _seed_multitable(str(db))
-    explorer, _store, _service, summary = _onboard(
-        str(db), release_dimensions=False
-    )
+    explorer, _store, _service, summary = _onboard(str(db), release_dimensions=False)
 
     assert summary.table_count == 3
     assert summary.declared_join_count == 2
@@ -366,9 +369,7 @@ def test_first_connect_blocks_free_text_and_credential_like_dimensions(tmp_path)
                 "(1, 'a@example.com', 'Call Jane at 010-1234-5678', 'hash', 'token')"
             )
         )
-    _explorer, _store, _service, summary = _onboard(
-        str(db), release_dimensions=False
-    )
+    _explorer, _store, _service, summary = _onboard(str(db), release_dimensions=False)
     assert {
         "users.email",
         "users.notes",
@@ -459,9 +460,7 @@ def test_first_connect_pipeline_is_not_tied_to_one_domain(
         service.load("g1"), [dimension_id], rows
     )
     assert blocker == ""
-    rows, blocker = decode_semantic_query_rows(
-        service.load("g1"), [dimension_id], rows
-    )
+    rows, blocker = decode_semantic_query_rows(service.load("g1"), [dimension_id], rows)
     assert blocker == ""
     assert rows == [
         {f"{table}.{dimension}": "alpha", "metric_value": 40},
@@ -819,14 +818,20 @@ def test_source_context_is_ignored_only_with_original_question_provenance(tmp_pa
         ["water level"],
         ["observations"],
     ) == ["2", "above", "meters"]
-    assert _uncovered_question_terms(
-        "What is total refunds in the refunds dataset?", ["refunds"], ["refunds"]
-    ) == []
-    assert _uncovered_question_terms(
-        "What is total refunds in the source refunds dataset?",
-        ["refunds"],
-        ["refunds"],
-    ) == []
+    assert (
+        _uncovered_question_terms(
+            "What is total refunds in the refunds dataset?", ["refunds"], ["refunds"]
+        )
+        == []
+    )
+    assert (
+        _uncovered_question_terms(
+            "What is total refunds in the source refunds dataset?",
+            ["refunds"],
+            ["refunds"],
+        )
+        == []
+    )
 
     for noun in ("region", "regions", "order", "orders", "state", "states"):
         assert noun.rstrip("s") in _uncovered_question_terms(
@@ -1007,22 +1012,23 @@ def test_source_rows_use_count_star_without_a_primary_key_or_synthetic_id(tmp_pa
         rows,
     )
     assert blocker == ""
-    assert {
-        row["event rows.group label"]: row["metric_value"] for row in rows
-    } == {
+    assert {row["event rows.group label"]: row["metric_value"] for row in rows} == {
         None: 5,
         "alpha": 5,
     }
 
-    assert service.confirm_public_data_scope(
-        "g1",
-        StewardAssertion(
-            scope="g1",
-            reviewer_id="test-steward",
-            authorized=True,
-            public_data_confirmed=True,
-        ),
-    ).status == "confirmed"
+    assert (
+        service.confirm_public_data_scope(
+            "g1",
+            StewardAssertion(
+                scope="g1",
+                reviewer_id="test-steward",
+                authorized=True,
+                public_data_confirmed=True,
+            ),
+        ).status
+        == "confirmed"
+    )
     for table, expected in (("empty rows", 0), ("composite_rows", 2)):
         outcome = service.prepare_query(
             scope="g1",
@@ -1042,9 +1048,7 @@ def test_source_rows_use_count_star_without_a_primary_key_or_synthetic_id(tmp_pa
             service.load("g1"), [], asyncio.run(explorer.execute(outcome.sql))
         )
         assert blocker == ""
-        assert plain_rows == [
-            {"metric_value": expected}
-        ]
+        assert plain_rows == [{"metric_value": expected}]
 
 
 @pytest.mark.parametrize(
@@ -1125,9 +1129,7 @@ def test_legacy_pk_source_count_migrates_and_keeps_reviews(tmp_path):
 
     store.kv_set("g1", CATALOG_KEY, legacy_raw)
     refreshed = asyncio.run(
-        service.inspect(
-            "g1", explorer, carry_source_id=service.load("g1").source_id
-        )
+        service.inspect("g1", explorer, carry_source_id=service.load("g1").source_id)
     ).catalog
     current_orders = refreshed.metric("metric:orders.source_record_count")
     assert current_orders is not None
@@ -1615,9 +1617,7 @@ class _CountingSqlAlchemyExplorer(SqlAlchemyExplorer):
 
     async def execute(self, sql, limit=1000, *, timeout_seconds=30.0):
         self.execute_calls += 1
-        return await super().execute(
-            sql, limit=limit, timeout_seconds=timeout_seconds
-        )
+        return await super().execute(sql, limit=limit, timeout_seconds=timeout_seconds)
 
     async def sample_rows(self, name: str, limit: int = 5):
         self.sample_calls += 1
@@ -1662,6 +1662,11 @@ def test_discord_handler_clarifies_once_then_resumes_original_question(tmp_path)
     metric_resumed = asyncio.run(handlers.semantic_review(identity, "sum"))
     assert "분류 표현은 별도 단계" in metric_resumed.text
     assert "NEEDS CLARIFICATION:" in metric_resumed.text
+    dimension_listing = asyncio.run(
+        handlers.semantic_reviews(identity, search="region name")
+    )
+    assert "dimension:regions.region_name" in dimension_listing.text.replace("\\", "")
+    assert "region name" in dimension_listing.text
     resumed = asyncio.run(handlers.semantic_review(identity, "confirm"))
     assert "분류 연결을 저장" in resumed.text
     assert "READY:" in resumed.text
@@ -1708,22 +1713,23 @@ def test_guild_review_requires_admin_and_cross_user_approval_never_executes(tmp_
         handlers.semantic_review(admin, "sum", review_id="not-a-real-review")
     )
     assert "찾지 못했습니다" in wrong.text.replace("\\", "")
-    approved = asyncio.run(
-        handlers.semantic_review(admin, "sum", review_id=review_id)
-    )
+    approved = asyncio.run(handlers.semantic_review(admin, "sum", review_id=review_id))
     assert "다른 사용자의 DB 결과" in approved.text
     assert "metric_value" not in approved.text
     assert explorer.execute_calls == 0
 
-    assert concierge.semantic.confirm_public_data_scope(
-        "g1",
-        StewardAssertion(
-            scope="g1",
-            reviewer_id="admin",
-            authorized=True,
-            public_data_confirmed=True,
-        ),
-    ).status == "confirmed"
+    assert (
+        concierge.semantic.confirm_public_data_scope(
+            "g1",
+            StewardAssertion(
+                scope="g1",
+                reviewer_id="admin",
+                authorized=True,
+                public_data_confirmed=True,
+            ),
+        ).status
+        == "confirmed"
+    )
 
     retried = asyncio.run(handlers.query(requester, "total amount"))
     assert retried.text.startswith("READY:")
@@ -1753,9 +1759,7 @@ def test_guild_review_requires_admin_and_cross_user_approval_never_executes(tmp_
         limit=100,
     )
     assert legacy.status == "clarification"
-    legacy_pending = concierge.semantic.pending_review(
-        "review:legacy-empty-requester"
-    )
+    legacy_pending = concierge.semantic.pending_review("review:legacy-empty-requester")
     assert legacy_pending is not None and legacy_pending.requester_id == ""
     calls_before_legacy_review = explorer.execute_calls
     legacy_approved = asyncio.run(
@@ -1772,15 +1776,18 @@ def test_dm_requester_can_self_review_and_resume(tmp_path):
     identity = Identity(user_id="dm-user")
     concierge = ContextConcierge(explorer=explorer, llm=_ScalarMetricLLM())
     asyncio.run(concierge.semantic.onboard(identity.kv_scope, explorer))
-    assert concierge.semantic.confirm_public_data_scope(
-        identity.kv_scope,
-        StewardAssertion(
-            scope=identity.kv_scope,
-            reviewer_id=identity.user_id,
-            authorized=True,
-            public_data_confirmed=True,
-        ),
-    ).status == "confirmed"
+    assert (
+        concierge.semantic.confirm_public_data_scope(
+            identity.kv_scope,
+            StewardAssertion(
+                scope=identity.kv_scope,
+                reviewer_id=identity.user_id,
+                authorized=True,
+                public_data_confirmed=True,
+            ),
+        ).status
+        == "confirmed"
+    )
     handlers = CommandHandlers(concierge)
 
     first = asyncio.run(handlers.query(identity, "total amount"))
@@ -1796,9 +1803,7 @@ def test_discord_query_discards_stale_rows_before_render(tmp_path, monkeypatch):
     _seed_multitable(str(db))
     explorer = SqlAlchemyExplorer(f"sqlite:///{db}")
     concierge = ContextConcierge(explorer=explorer, llm=FakeLLM())
-    identity = Identity(
-        user_id="admin", guild_id="g1", channel_id="c1", is_admin=True
-    )
+    identity = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
     asyncio.run(concierge.semantic.onboard(identity.kv_scope, explorer))
     captured: dict[str, HarnessContext] = {}
 
@@ -1833,9 +1838,7 @@ def test_discord_query_discards_stale_rows_before_render(tmp_path, monkeypatch):
     assert stale_ctx.semantic_result_stamp == ()
 
 
-def test_discord_review_resume_discards_stale_rows_before_render(
-    tmp_path, monkeypatch
-):
+def test_discord_review_resume_discards_stale_rows_before_render(tmp_path, monkeypatch):
     db = tmp_path / "review-render-race.db"
     _seed_multitable(str(db))
     explorer = SqlAlchemyExplorer(f"sqlite:///{db}")
@@ -1912,14 +1915,17 @@ def test_metric_browse_and_map_is_metadata_only_and_keeps_aggregate_pending(tmp_
     assert token_match is not None
     candidate_token = token_match.group(1)
     assert explorer.sample_calls == 0 and explorer.execute_calls == 0
-    assert "관리자만" in asyncio.run(
-        handlers.semantic_metric_map(
-            member,
-            candidate_token,
-            "uninsured prevalence",
-            confirm=True,
-        )
-    ).text
+    assert (
+        "관리자만"
+        in asyncio.run(
+            handlers.semantic_metric_map(
+                member,
+                candidate_token,
+                "uninsured prevalence",
+                confirm=True,
+            )
+        ).text
+    )
 
     warning = asyncio.run(
         handlers.semantic_metric_map(
@@ -2047,9 +2053,10 @@ def test_rejected_metric_phrase_cannot_be_mapped_without_explicit_reset(tmp_path
         limit=100,
     )
     assert proposed.status == "clarification"
-    assert service.confirm_pending(
-        "g1", "review:u1", "reject", reviewer_id="u1"
-    ).status == "confirmed"
+    assert (
+        service.confirm_pending("g1", "review:u1", "reject", reviewer_id="u1").status
+        == "confirmed"
+    )
 
     mapped = service.map_metric_phrase(
         "g1",
@@ -2088,9 +2095,7 @@ def test_metric_action_token_is_atomic_under_concurrent_double_submit(tmp_path) 
     _seed_multitable(str(db))
     _explorer, _store, service, _summary = _onboard(str(db))
     token = service.issue_metric_action_token("g1", "metric:orders.amount")
-    assertion = StewardAssertion(
-        scope="g1", reviewer_id="admin", authorized=True
-    )
+    assertion = StewardAssertion(scope="g1", reviewer_id="admin", authorized=True)
 
     with ThreadPoolExecutor(max_workers=2) as pool:
         outcomes = list(
@@ -2158,13 +2163,9 @@ def test_discord_semantic_mutation_and_audit_roll_back_together(tmp_path):
     asyncio.run(concierge.semantic.onboard("g1", explorer))
     handlers = CommandHandlers(concierge)
     admin = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
-    token = concierge.semantic.issue_metric_action_token(
-        "g1", "metric:orders.amount"
-    )
+    token = concierge.semantic.issue_metric_action_token("g1", "metric:orders.amount")
     warning = asyncio.run(
-        handlers.semantic_metric_map(
-            admin, token, "atomic revenue", confirm=False
-        )
+        handlers.semantic_metric_map(admin, token, "atomic revenue", confirm=False)
     )
     assert "표현에 묶였습니다" in warning.text
 
@@ -2176,9 +2177,7 @@ def test_discord_semantic_mutation_and_audit_roll_back_together(tmp_path):
     concierge.store._conn.commit()
     with pytest.raises(sqlite3.DatabaseError, match="forced audit failure"):
         asyncio.run(
-            handlers.semantic_metric_map(
-                admin, token, "atomic revenue", confirm=True
-            )
+            handlers.semantic_metric_map(admin, token, "atomic revenue", confirm=True)
         )
 
     rolled_back = concierge.semantic.load("g1")
@@ -2250,9 +2249,10 @@ def test_semantic_review_pending_catalog_receipt_and_audit_share_one_transaction
     rolled_back = service.load("g1")
     assert rolled_back is not None
     assert rolled_back.review_revision == before.review_revision
-    assert rolled_back.metric("metric:orders.amount").aliases == before.metric(
-        "metric:orders.amount"
-    ).aliases
+    assert (
+        rolled_back.metric("metric:orders.amount").aliases
+        == before.metric("metric:orders.amount").aliases
+    )
     assert store.kv_get("review:u1", "semantic_pending_review:v1") == pending_raw
     assert not asyncio.run(store.query("admin"))
 
@@ -2279,22 +2279,28 @@ def test_semantic_review_pending_catalog_receipt_and_audit_share_one_transaction
     assert retry.status == "confirmed"
     assert retry.mutation_applied is False
     assert retry.question == "" and retry.tool_args == {}
-    assert service.confirm_pending_by_id(
-        "g1",
-        pending.review_id,
-        "avg",
-        reviewer_id="admin",
-        authorized=True,
-        audit_scope="channel:admin",
-    ).status == "blocked"
-    assert service.confirm_pending_by_id(
-        "g1",
-        pending.review_id,
-        "sum",
-        reviewer_id="other-admin",
-        authorized=True,
-        audit_scope="channel:other",
-    ).status == "blocked"
+    assert (
+        service.confirm_pending_by_id(
+            "g1",
+            pending.review_id,
+            "avg",
+            reviewer_id="admin",
+            authorized=True,
+            audit_scope="channel:admin",
+        ).status
+        == "blocked"
+    )
+    assert (
+        service.confirm_pending_by_id(
+            "g1",
+            pending.review_id,
+            "sum",
+            reviewer_id="other-admin",
+            authorized=True,
+            audit_scope="channel:other",
+        ).status
+        == "blocked"
+    )
     events = [
         event
         for event in asyncio.run(store.query("admin"))
@@ -2307,19 +2313,22 @@ def test_concurrent_semantic_review_has_one_mutation_and_one_audit(tmp_path):
     db = tmp_path / "concurrent-review.sqlite"
     _seed_multitable(str(db))
     explorer, store, service, _summary = _onboard(str(db))
-    assert service.prepare_query(
-        scope="g1",
-        review_scope="review:u1",
-        requester_id="u1",
-        explorer=explorer,
-        question="total amount",
-        metric_id="metric:orders.amount",
-        metric_phrase="amount",
-        aggregate="sum",
-        dimension_bindings=[],
-        unresolved_obligations=[],
-        limit=100,
-    ).status == "clarification"
+    assert (
+        service.prepare_query(
+            scope="g1",
+            review_scope="review:u1",
+            requester_id="u1",
+            explorer=explorer,
+            question="total amount",
+            metric_id="metric:orders.amount",
+            metric_phrase="amount",
+            aggregate="sum",
+            dimension_bindings=[],
+            unresolved_obligations=[],
+            limit=100,
+        ).status
+        == "clarification"
+    )
     pending = service.pending_review("review:u1")
     assert pending is not None
 
@@ -2354,9 +2363,7 @@ def test_metric_action_token_stales_after_same_schema_source_switch(tmp_path) ->
     for path, value in ((first, 1.0), (second, 2.0)):
         with create_engine(f"sqlite:///{path}").begin() as connection:
             connection.execute(
-                text(
-                    "CREATE TABLE observations (id INTEGER PRIMARY KEY, opaque REAL)"
-                )
+                text("CREATE TABLE observations (id INTEGER PRIMARY KEY, opaque REAL)")
             )
             connection.execute(
                 text("INSERT INTO observations VALUES (1, :value)"),
@@ -2365,9 +2372,9 @@ def test_metric_action_token_stales_after_same_schema_source_switch(tmp_path) ->
     concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
     admin = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
-    assert "연결 완료" in asyncio.run(
-        handlers.connect(admin, f"sqlite:///{first}")
-    ).text
+    assert (
+        "연결 완료" in asyncio.run(handlers.connect(admin, f"sqlite:///{first}")).text
+    )
     stale_snapshot, stale_candidates = concierge.semantic.metric_candidate_snapshot(
         "g1"
     )
@@ -2385,13 +2392,16 @@ def test_metric_action_token_stales_after_same_schema_source_switch(tmp_path) ->
         )
     )
     assert "표현에 묶였습니다" in warning.text
-    assert "연결 완료" in asyncio.run(
-        handlers.connect(admin, f"sqlite:///{second}")
-    ).text
+    assert (
+        "연결 완료" in asyncio.run(handlers.connect(admin, f"sqlite:///{second}")).text
+    )
     assert stale_snapshot is not None
-    assert concierge.semantic.issue_metric_action_token(
-        "g1", stale_metric_id, expected_catalog=stale_snapshot
-    ) == ""
+    assert (
+        concierge.semantic.issue_metric_action_token(
+            "g1", stale_metric_id, expected_catalog=stale_snapshot
+        )
+        == ""
+    )
 
     stale = asyncio.run(
         handlers.semantic_metric_map(
@@ -2418,9 +2428,7 @@ def test_metric_action_token_stales_after_review_revision_and_expires(tmp_path) 
     assertion = StewardAssertion(scope="g1", reviewer_id="admin", authorized=True)
     stale_token = service.issue_metric_action_token("g1", "metric:orders.amount")
     assert service.reset_reviews("g1").status == "confirmed"
-    stale = service.map_metric_phrase(
-        "g1", stale_token, "business value", assertion
-    )
+    stale = service.map_metric_phrase("g1", stale_token, "business value", assertion)
     assert stale.status == "blocked"
 
     expired_token = service.issue_metric_action_token("g1", "metric:orders.amount")
@@ -2433,12 +2441,13 @@ def test_metric_action_token_stales_after_review_revision_and_expires(tmp_path) 
     )
     assert expired.status == "blocked"
     assert store.kv_get("g1", action_key) is None
-    assert service.map_metric_phrase(
-        "g1", "metric:orders.amount", "business value", assertion
-    ).status == "blocked"
-    bounded_token = service.issue_metric_action_token(
-        "g1", "metric:orders.amount"
+    assert (
+        service.map_metric_phrase(
+            "g1", "metric:orders.amount", "business value", assertion
+        ).status
+        == "blocked"
     )
+    bounded_token = service.issue_metric_action_token("g1", "metric:orders.amount")
     oversized = service.map_metric_phrase(
         "g1", bounded_token, "!" * 10_000 + "ok", assertion
     )
@@ -2477,9 +2486,10 @@ def test_status_discards_pending_invalidated_by_another_review(tmp_path) -> None
         limit=100,
     )
     assert first.status == second.status == "clarification"
-    assert service.confirm_pending(
-        "g1", "review:u1", "sum", reviewer_id="u1"
-    ).status == "confirmed"
+    assert (
+        service.confirm_pending("g1", "review:u1", "sum", reviewer_id="u1").status
+        == "confirmed"
+    )
     assert service.pending_review_queue("g1") == []
 
     status = service.status_text("g1", "review:u2")
@@ -2503,23 +2513,29 @@ def test_pending_compare_delete_preserves_newer_same_scope_review(
         "unresolved_obligations": [],
         "limit": 100,
     }
-    assert service.prepare_query(
-        **common,
-        question="total amount",
-        metric_id="metric:orders.amount",
-        metric_phrase="amount",
-        aggregate="sum",
-    ).status == "clarification"
+    assert (
+        service.prepare_query(
+            **common,
+            question="total amount",
+            metric_id="metric:orders.amount",
+            metric_phrase="amount",
+            aggregate="sum",
+        ).status
+        == "clarification"
+    )
     first_raw = store.kv_get("review:u1", "semantic_pending_review:v1")
     first = service.pending_review("review:u1")
     assert first_raw is not None and first is not None
-    assert service.prepare_query(
-        **common,
-        question="total weight",
-        metric_id="metric:orders.weight_kg",
-        metric_phrase="weight",
-        aggregate="sum",
-    ).status == "clarification"
+    assert (
+        service.prepare_query(
+            **common,
+            question="total weight",
+            metric_id="metric:orders.weight_kg",
+            metric_phrase="weight",
+            aggregate="sum",
+        ).status
+        == "clarification"
+    )
     second_raw = store.kv_get("review:u1", "semantic_pending_review:v1")
     assert second_raw is not None and second_raw != first_raw
     before = service.load("g1")
@@ -2532,9 +2548,7 @@ def test_pending_compare_delete_preserves_newer_same_scope_review(
         "_pending_review_record",
         lambda _scope: (first, first_raw),
     )
-    applied = service.confirm_pending(
-        "g1", "review:u1", "sum", reviewer_id="u1"
-    )
+    applied = service.confirm_pending("g1", "review:u1", "sum", reviewer_id="u1")
     assert applied.status == "blocked"
     assert store.kv_get("review:u1", "semantic_pending_review:v1") == second_raw
     after = service.load("g1")
@@ -2892,9 +2906,7 @@ def test_discord_persists_only_sanitized_ask_user_for_one_real_reply(tmp_path):
     transient = [message for message in persisted.history() if message.transient]
     assert len(transient) == 1
     assert transient[0].content == first.text
-    assert "SELECT" not in " ".join(
-        message.content for message in persisted.history()
-    )
+    assert "SELECT" not in " ".join(message.content for message in persisted.history())
 
     second = asyncio.run(handlers.query(identity, "use amount"))
     assert second.text.startswith("NEEDS CLARIFICATION:")
@@ -2965,9 +2977,7 @@ def test_admin_can_map_opaque_dimension_phrase_without_sampling_values(tmp_path)
                 "id INTEGER PRIMARY KEY, value REAL, dmode_ttl TEXT, safe_flag BOOLEAN)"
             )
         )
-        connection.execute(
-            text("INSERT INTO observations VALUES (1, 12.5, 'rail', 1)")
-        )
+        connection.execute(text("INSERT INTO observations VALUES (1, 12.5, 'rail', 1)"))
     explorer = _CountingSqlAlchemyExplorer(f"sqlite:///{db}")
     concierge = ContextConcierge(explorer=explorer, llm=FakeLLM())
     asyncio.run(concierge.semantic.onboard("g1", explorer))
