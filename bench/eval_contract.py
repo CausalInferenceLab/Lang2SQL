@@ -8,7 +8,6 @@ from pathlib import Path
 import re
 from typing import Any, Mapping
 
-
 _EXPECTED_STATES = {"ready", "review_then_ready", "clarification", "blocked"}
 _SPLITS = {"dev", "holdout"}
 

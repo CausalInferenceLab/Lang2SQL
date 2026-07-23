@@ -37,7 +37,6 @@ import cross_domain_baseline
 import dataset_cache
 from eval_contract import EvalCase, load_cases
 
-
 DEFAULT_CASES = Path(__file__).parent / "cases" / "public_semantic_cases.jsonl"
 DEFAULT_OUTPUT = Path("lang2sql-datasets/reports/public_oracle_plan_execution.json")
 _CONTROLLED_EXTREME_POLICY_ERROR = "controlled metrics cannot compile MIN/MAX"
@@ -407,9 +406,11 @@ async def evaluate_case(
             "status": (
                 "exact_match"
                 if exact_match
-                else "oracle_join_coverage_policy_difference"
-                if join_coverage_difference
-                else "result_mismatch"
+                else (
+                    "oracle_join_coverage_policy_difference"
+                    if join_coverage_difference
+                    else "result_mismatch"
+                )
             ),
             "compiled_row_count": len(compiled_rows),
             "oracle_row_count": len(oracle_rows),

@@ -22,7 +22,6 @@ from lang2sql.semantic.onboarding import build_catalog
 
 import dataset_cache
 
-
 _NUMERIC_ROLE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
     ("identifier", re.compile(r"(^id$|_id$|^id_|_key$|^key$|_number$)", re.I)),
     (
@@ -183,11 +182,11 @@ async def evaluate_database(record: Mapping[str, str], path: Path) -> dict[str, 
                     observed_role = (
                         "blocked"
                         if reference in blocked
-                        else dimension.kind
-                        if dimension is not None
-                        else "metric"
-                        if metric is not None
-                        else "missing"
+                        else (
+                            dimension.kind
+                            if dimension is not None
+                            else "metric" if metric is not None else "missing"
+                        )
                     )
                     if observed_role != "time":
                         string_time_not_typed.append(

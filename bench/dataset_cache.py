@@ -28,7 +28,6 @@ import zipfile
 
 import yaml
 
-
 DEFAULT_MANIFEST = Path(__file__).parent / "datasets" / "public_lang2sql_domains.yaml"
 DEFAULT_CACHE_ROOT = Path("lang2sql-datasets/cache")
 LOCK_FILENAME = "public_lang2sql_domains.lock.json"
