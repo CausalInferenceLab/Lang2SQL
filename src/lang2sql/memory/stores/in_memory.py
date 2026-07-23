@@ -7,7 +7,7 @@ same :class:`StorePort`, with zero changes elsewhere.
 
 from __future__ import annotations
 
-from ...core.ports.memory import Fact, StorePort
+from ...core.ports.memory import Fact
 
 
 class InMemoryStore:

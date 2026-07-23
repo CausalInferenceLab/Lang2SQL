@@ -7,7 +7,7 @@ data so the agent loop and schema-aware tools can be exercised end-to-end.
 
 from __future__ import annotations
 
-from ...core.ports.explorer import Column, Table
+from ...core.ports.explorer import Column, QueryTimeoutUnsupportedError, Table
 
 # Canned catalog — two tables a demo guild would plausibly have.
 _TABLES: dict[str, Table] = {
@@ -85,12 +85,40 @@ class PostgresExplorer:
         key = _resolve_key(name)
         return list(_SAMPLES.get(key, []))[:limit]
 
-    async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
-        # V1 stub: no real query engine. Echo canned rows that match whichever
-        # known table the SQL mentions, else a generic single-row result.
-        lowered = sql.lower()
-        for key, rows in _SAMPLES.items():
-            table = key.split(".", 1)[-1]
-            if table in lowered:
-                return list(rows)[:limit]
-        return [{"result": 1}][:limit]
+    async def execute(
+        self,
+        sql: str,
+        limit: int = 1000,
+        *,
+        timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
+    ) -> list[dict]:
+        raise QueryTimeoutUnsupportedError(
+            "PostgresExplorer is a metadata stub without statement cancellation"
+        )
+
+    def governed_execution_supported(self) -> bool:
+        return False
+
+    async def catalog_metadata(self) -> dict:
+        """Declared facts for the canned fixture; no sample inference."""
+
+        return {
+            "tables": {
+                "orders": {
+                    "primary_key": ["id"],
+                    "foreign_keys": [],
+                    "unique": [],
+                },
+                "users": {
+                    "primary_key": ["id"],
+                    "foreign_keys": [],
+                    "unique": [],
+                },
+            }
+        }
+
+    def quote_identifier(self, name: str) -> str:
+        if not name.replace("_", "").isalnum():
+            raise ValueError(f"unsafe identifier: {name!r}")
+        return f'"{name}"'

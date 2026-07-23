@@ -39,11 +39,11 @@ def test_v1_tools_registered():
     }
 
 
-def test_run_sql_passes_gate_and_returns_rows():
+def test_run_sql_metadata_stub_fails_closed_without_statement_timeout():
     _, ctx = _ctx()
     res = asyncio.run(RunSQL().run({"sql": "SELECT * FROM orders", "limit": 10}, ctx))
-    assert not res.is_error
-    assert "row" in res.content.lower()
+    assert res.is_error
+    assert "query_timeout_unsupported" in res.content
 
 
 def test_run_sql_blocks_ddl():
@@ -55,7 +55,10 @@ def test_run_sql_blocks_ddl():
 def test_run_sql_tolerates_bad_limit():
     _, ctx = _ctx()
     res = asyncio.run(RunSQL().run({"sql": "SELECT 1", "limit": "demo"}, ctx))
-    assert not res.is_error  # malformed limit must not crash the tool
+    # A malformed limit still cannot crash the tool, but the metadata-only
+    # adapter must fail closed before execution because it cannot cancel SQL.
+    assert res.is_error
+    assert "query_timeout_unsupported" in res.content
 
 
 def test_term_custom_is_scope_local():

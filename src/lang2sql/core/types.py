@@ -57,6 +57,9 @@ class Message:
     tool_calls: list[ToolCall] = field(default_factory=list)
     tool_call_id: str | None = None
     name: str | None = None
+    # Frontends may persist one sanitized clarification for exactly the next
+    # user turn.  It is provider-visible but removed by the next compression.
+    transient: bool = False
 
 
 @dataclass

@@ -33,7 +33,7 @@ class SafetyDecision:
 class SafetyContext:
     """Knobs a layer reads (timeout, row cap). Grows over versions."""
 
-    timeout_seconds: int = 30
+    timeout_seconds: float = 30.0
     row_limit: int = 1000
     extras: dict = field(default_factory=dict)
 

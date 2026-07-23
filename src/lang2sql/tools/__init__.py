@@ -20,11 +20,13 @@ from .ingest_doc import IngestDoc
 from .org_setup import OrgSetupTool
 from .remember import Remember
 from .run_sql import RunSQL
+from .semantic_query import SemanticQuery
 from .semantic_federation import SemanticFederationTool
 
 __all__ = [
     "build_default_tools",
     "RunSQL",
+    "SemanticQuery",
     "ExploreSchema",
     "EnrichSchema",
     "SemanticFederationTool",
@@ -42,16 +44,28 @@ def build_default_tools(
     ingestion: IngestionPipeline,
     source: SourcePort,
     extractor: DocExtractorPort,
+    semantic_query: SemanticQuery | None = None,
 ) -> list[ToolPort]:
-    """The V1 tools."""
-    return [
-        RunSQL(),
-        ExploreSchema(),
-        EnrichSchema(),
-        SemanticFederationTool(),
-        OrgSetupTool(),
-        AskUser(),
-        Remember(memory),
-        IngestDoc(ingestion, source, extractor),
-        ConfirmIngest(),
-    ]
+    """Build tools for either legacy or governed query mode.
+
+    Once a first-connect catalog exists, ``semantic_query`` replaces
+    ``run_sql`` rather than sitting beside it.  Keeping both would let a model
+    bypass the reviewed value path with raw SQL.
+    """
+
+    query_tool: ToolPort = semantic_query if semantic_query is not None else RunSQL()
+    tools: list[ToolPort] = [query_tool]
+    if semantic_query is None:
+        # Legacy enrichment sends samples to an LLM.  It is intentionally not
+        # advertised after PII-safe first-connect onboarding is active.
+        tools.extend([ExploreSchema(), EnrichSchema(), OrgSetupTool()])
+    tools.extend(
+        [
+            SemanticFederationTool(),
+            AskUser(),
+            Remember(memory),
+            IngestDoc(ingestion, source, extractor),
+            ConfirmIngest(),
+        ]
+    )
+    return tools

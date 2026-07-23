@@ -9,12 +9,17 @@ from __future__ import annotations
 import asyncio
 import os
 
+import pytest
+
 from lang2sql.adapters.db.postgres_explorer import PostgresExplorer
 from lang2sql.adapters.llm.openai_ import OpenAILLM
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.core.identity import Identity
 from lang2sql.core.ports.audit import AuditEvent
-from lang2sql.core.ports.explorer import ExplorerPort
+from lang2sql.core.ports.explorer import (
+    ExplorerPort,
+    QueryTimeoutUnsupportedError,
+)
 from lang2sql.core.types import Message, Role, ToolCall
 from lang2sql.harness.session import Session
 
@@ -116,18 +121,10 @@ def test_postgres_explorer_satisfies_protocol() -> None:
     assert isinstance(explorer, ExplorerPort)
 
 
-def test_postgres_explorer_execute() -> None:
+def test_postgres_metadata_stub_refuses_unbounded_execute() -> None:
     explorer = PostgresExplorer("postgresql://ignored")
-    order_rows = asyncio.run(
-        explorer.execute("SELECT * FROM orders WHERE status='paid'")
-    )
-    assert order_rows and "amount" in order_rows[0]
-
-    capped = asyncio.run(explorer.execute("select * from orders", limit=1))
-    assert len(capped) == 1
-
-    generic = asyncio.run(explorer.execute("SELECT now()"))
-    assert generic == [{"result": 1}]
+    with pytest.raises(QueryTimeoutUnsupportedError, match="statement cancellation"):
+        asyncio.run(explorer.execute("SELECT * FROM orders WHERE status='paid'"))
 
 
 def test_openai_constructs_offline() -> None:

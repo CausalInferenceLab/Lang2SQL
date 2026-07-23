@@ -2,6 +2,12 @@
 
 이 문서는 *처음 보는 사람도 10분 안에 어디 무엇이 있는지 / 어디를 손대면 좋은지* 알 수 있도록 쓰여졌습니다. 상세 설계 의도는 [`docs/discord_first_redesign_v4_1.md`](./discord_first_redesign_v4_1.md)에 있습니다.
 
+> **두 질의 모드를 구분해서 읽어 주세요.** semantic catalog가 없는 연결은 아래의
+> legacy `run_sql` 경로를 사용한다. `/setup`으로 catalog가 활성화된 연결은 모델에서
+> `run_sql`을 제거하고, [`연결 즉시 의미 준비형 질의`](./REVIEWED_SEMANTIC_QUERY.md)의
+> 검토 기반 경로를 사용한다. 임베딩 애플리케이션은 모델이 SQL을 작성하지 않는
+> [`Lang2SQLRuntime`](./LIBRARY_API.md)을 사용할 수 있다.
+
 ---
 
 ## 1. 한 눈에 보는 아키텍처
@@ -34,11 +40,19 @@
 │  adapters/  외부 시스템과의 마지막 한 줄              │
 │   llm/openai_ · llm/fake                          │
 │   db/sqlalchemy_explorer · db/d1_explorer · db/postgres_explorer │
-│   storage/sqlite_store · storage/sqlite_semantic   │
+│   storage/sqlite_store (KV·transaction 경계)        │
 └─────────────────────────────────────────────────┘
 ```
 
 핵심 원칙: **로직은 포트(추상)에만 의존, 어댑터(구체)는 가장자리에만**. 그래서 새 LLM·새 DB·새 frontend를 *기존 코드 안 건드리고* 끼울 수 있습니다.
+
+### 연결 즉시 의미 준비형 질의 경로
+
+검토형 질의는 기존 frontend·tenancy·agent loop·4기둥을 사용하는 연결별 실행
+모드다. Catalog가 활성화되면 모델의 `run_sql`을 `semantic_query`로 바꾸고, 서버가
+후보 제한·사람 검토·typed plan·SQL 컴파일을 담당한다. 지원하지 않는 요청은
+legacy 경로로 우회하지 않는다. 구성 요소 경계와 catalog 생성 과정은
+[`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md)의 도식을 참고한다.
 
 ---
 
@@ -73,9 +87,15 @@
 - [`tool_registry.py`](../src/lang2sql/harness/tool_registry.py) — 이름→도구 dispatch
 - [`system_prompt.py`](../src/lang2sql/harness/system_prompt.py) — 시멘틱 + 스키마 주입
 
-### `src/lang2sql/semantic/` — 시멘틱 타입 정의 (★④)
-- [`types.py`](../src/lang2sql/semantic/types.py) — `SemanticEntry` (METRIC/DIMENSION/RELATIONSHIP/RULE)
-- Federation 로직은 [`tools/semantic_federation.py`](../src/lang2sql/tools/semantic_federation.py)로 통합 (KV 기반)
+### `src/lang2sql/semantic/` — 업무 의미, 검토, 계획, 실행 정책 (★④)
+- [`catalog.py`](../src/lang2sql/semantic/catalog.py) — 연결별 물리 사실과 검토된 업무 의미
+- [`onboarding.py`](../src/lang2sql/semantic/onboarding.py) — PII-safe metadata-only 초기 연결 scan
+- [`shortlist.py`](../src/lang2sql/semantic/shortlist.py) — 질문별 bounded candidate 생성
+- [`plan.py`](../src/lang2sql/semantic/plan.py) — SQL 없는 semantic plan IR
+- [`compiler.py`](../src/lang2sql/semantic/compiler.py) — 검증된 plan의 결정론적 SQL 컴파일
+- [`execution.py`](../src/lang2sql/semantic/execution.py) — read-only 실행, audit, 결과 공개 gate
+- [`service.py`](../src/lang2sql/semantic/service.py) — 검토와 Discord semantic-query lifecycle
+- 기존 federation 로직은 [`tools/semantic_federation.py`](../src/lang2sql/tools/semantic_federation.py)에 KV 기반으로 유지
 
 ### `src/lang2sql/safety/` — Read-only 게이트 (★①)
 - [`pipeline.py`](../src/lang2sql/safety/pipeline.py) — layer를 순서대로 통과, *첫 비-PASS에서 차단*
@@ -95,8 +115,9 @@
 - [`pipeline.py`](../src/lang2sql/ingestion/pipeline.py) — Source × Extractor matrix
 
 ### `src/lang2sql/tools/` — 에이전트가 부르는 capability
-8개 도구 (모두 ctx-aware, async):
-- [`run_sql.py`](../src/lang2sql/tools/run_sql.py) — safety 통과 후 explorer로 실행
+대표 도구는 모두 ctx-aware, async다. 연결 모드에 따라 질의 도구가 달라진다.
+- [`run_sql.py`](../src/lang2sql/tools/run_sql.py) — catalog가 없는 legacy 연결에서만 safety 통과 후 explorer로 실행
+- [`semantic_query.py`](../src/lang2sql/tools/semantic_query.py) — 연결 즉시 의미 준비형 질의 연결에서 typed slots만 받고 서버가 SQL을 컴파일
 - [`explore_schema.py`](../src/lang2sql/tools/explore_schema.py) — 테이블/컬럼 introspection
 - [`enrich_schema.py`](../src/lang2sql/tools/enrich_schema.py) — LLM으로 컬럼 메타데이터 자동 보강
 - [`semantic_federation.py`](../src/lang2sql/tools/semantic_federation.py) — `term_custom`: guild/channel/member 계층 용어 사전 (KV 기반, narrow→wide lookup)
@@ -117,8 +138,12 @@
 - `db/d1_explorer.py` — Cloudflare D1 (HTTP API, urllib)
 - `db/factory.py` — `build_explorer(connection)` scheme 라우팅
 - `db/postgres_explorer.py` — V1 stub (psycopg 미설치 환경용)
-- `storage/sqlite_store.py` — `AuditPort` + `SessionStorePort` + kv
-- `storage/sqlite_semantic.py` — 시멘틱 정의 영속화
+- `storage/sqlite_store.py` — `AuditPort` + `SessionStorePort` + kv; catalog와
+  semantic 검토 상태도 이 KV/transaction 경계에 저장
+
+Connector가 DSN을 해석할 수 있다는 사실과 governed execution이 검증됐다는 사실은
+다르다. 현재 compiler·bound parameter·timeout/cancel·read-only 실행까지 검증된
+governed dialect는 기존 파일 기반 SQLite와 DuckDB뿐이며, 나머지는 fail-closed한다.
 
 ### `src/lang2sql/frontends/` — 사용자 인터페이스
 - [`discord/bot.py`](../src/lang2sql/frontends/discord/bot.py) — **유일하게** `discord.py`를 import
@@ -131,6 +156,20 @@
 ---
 
 ## 4. 한 메시지의 lifecycle (디스코드 멘션 한 번 따라가기)
+
+### 연결 즉시 의미 준비형 질의 모드: catalog가 있는 연결
+
+```text
+1. 사용자가 자연어 질문을 보낸다.
+2. ContextConcierge가 active catalog와 연결 binding을 확인하고 semantic_query를 등록한다.
+3. 모델은 bounded 후보에서 typed slot을 조립하고, 미확정 의미는 review로 분기한다.
+4. 서버가 ID·join·filter·기간·정책을 검증해 SQL을 만들고, Safety·audit·catalog stamp가 통과한 결과만 표시한다.
+```
+
+정확한 Discord 검토 흐름은 [`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md),
+다른 애플리케이션의 공개 DTO 흐름은 [`LIBRARY_API.md`](./LIBRARY_API.md)를 따른다.
+
+### Legacy mode: catalog가 없는 연결
 
 ```
 1. 사용자: "@lang2sql-test 이번 달 매출 알려줘"
@@ -207,12 +246,13 @@ SQLAlchemy 미지원 (예: 자체 HTTP API):
 ```bash
 git clone https://github.com/CausalInferenceLab/Lang2SQL.git
 cd Lang2SQL
-uv sync                          # 기본 deps
-.venv/bin/pytest -q              # 106 테스트 통과 확인
+uv sync --extra duckdb           # 검토형 SQLite/DuckDB 경로 포함
+uv run pytest -q                 # 전체 회귀 확인
 .venv/bin/python bench/ecommerce_demo.py   # federation + safety 로컬 데모
 ```
 
-브랜치 → 코드 + 테스트 → PR. CI는 따로 없으니 *로컬에서 pytest 확인 후 PR*.
+브랜치 → 코드 + 테스트 → PR. GitHub Actions가 Python 3.10/3.12의 lint, mypy,
+전체 테스트와 DuckDB 계약을 확인한다. PR 전에는 같은 검사를 로컬에서도 실행한다.
 
 ---
 

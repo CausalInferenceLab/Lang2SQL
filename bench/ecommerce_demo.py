@@ -31,7 +31,6 @@ from lang2sql.tenancy.concierge import ContextConcierge
 from lang2sql.tools.semantic_federation import (
     FedEntry,
     _kv_key,
-    _load_all,
     _render_effective,
 )
 
@@ -99,7 +98,7 @@ async def section_1_define_metrics(store: SqliteStore) -> None:
         print(f"  defined {name:>14}  =  {definition}")
 
     rendered = _render_effective(store, scope, channel_id, ident.user_id)
-    lines = [l for l in rendered.splitlines() if l.startswith("-")]
+    lines = [line for line in rendered.splitlines() if line.startswith("-")]
     print(
         f"\nEffective layer for #{CH_MARKETING} now holds {len(lines)} definition(s):"
     )
@@ -111,7 +110,6 @@ async def section_2_federation(store: SqliteStore) -> None:
     _hr("SECTION 2 — semantic federation: one term, two definitions (★④)")
 
     mkt = _marketing_identity()
-    fin = _finance_identity()
 
     _define_term(
         store,
@@ -134,12 +132,7 @@ async def section_2_federation(store: SqliteStore) -> None:
     print("Now resolving the *effective* definition each channel sees")
     print("by walking its scope chain (most specific scope wins):\n")
 
-    mkt_rendered = _render_effective(store, GUILD, CH_MARKETING, mkt.user_id)
-    fin_rendered = _render_effective(store, GUILD, CH_FINANCE, fin.user_id)
-
     # Read definitions directly from the store — don't parse rendered display text
-    by_term = _load_all(store, GUILD)
-    entries = by_term.get("active_user", [])
     mkt_raw = store.kv_get(GUILD, _kv_key("active_user", "channel", CH_MARKETING))
     fin_raw = store.kv_get(GUILD, _kv_key("active_user", "channel", CH_FINANCE))
     mkt_def = FedEntry.from_json(mkt_raw).definition if mkt_raw else ""

@@ -1,5 +1,10 @@
 # Lang2SQL v4.1 — 컨셉과 아키텍처
 
+> **역사적 설계 문서**: 아래 명령 표는 2026-05 계획 당시의 walking skeleton이다.
+> 현재 실행 표면은 [`USAGE.md`](./USAGE.md)와
+> [`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md)를 따른다. 현재
+> Discord에는 raw DSN `/connect`가 없고 `/setup`을 사용한다.
+
 > **작성일**: 2026-05-18
 > **결정자**: ryan@brain-crew.com
 > **상태**: v4 → v4.1. 두 가지 큰 정정 — (a) Discord 를 *기둥* 에서 *Phase 1 인터페이스* 로 격하, (b) **시멘틱 federation (git-like 분기)** 을 4번째 ★ 패턴으로 추가.

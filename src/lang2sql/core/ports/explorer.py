@@ -8,7 +8,72 @@ slot in later.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+import inspect
 from typing import Protocol, runtime_checkable
+
+
+class QueryTimedOutError(TimeoutError):
+    """The adapter stopped a statement after its verified deadline."""
+
+
+class QueryTimeoutUnsupportedError(RuntimeError):
+    """The adapter cannot prove statement cancellation for this dialect."""
+
+
+class QueryCancelledError(RuntimeError):
+    """Internal worker signal after a caller cancellation interrupted SQL."""
+
+
+def accepts_statement_timeout(explorer: object) -> bool:
+    """Fail closed for legacy adapters that predate the timeout contract."""
+
+    execute = getattr(explorer, "execute", None)
+    if execute is None:
+        return False
+    try:
+        signature = inspect.signature(execute)
+    except (TypeError, ValueError):
+        return False
+    parameter = signature.parameters.get("timeout_seconds")
+    if parameter is not None and parameter.kind in {
+        inspect.Parameter.KEYWORD_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+    }:
+        return True
+    return any(
+        item.kind == inspect.Parameter.VAR_KEYWORD
+        for item in signature.parameters.values()
+    )
+
+
+def accepts_bound_parameters(explorer: object) -> bool:
+    """Return whether the adapter explicitly accepts separated bind values."""
+
+    execute = getattr(explorer, "execute", None)
+    if execute is None:
+        return False
+    try:
+        signature = inspect.signature(execute)
+    except (TypeError, ValueError):
+        return False
+    parameter = signature.parameters.get("parameters")
+    if parameter is not None and parameter.kind in {
+        inspect.Parameter.KEYWORD_ONLY,
+        inspect.Parameter.POSITIONAL_OR_KEYWORD,
+    }:
+        return True
+    return any(
+        item.kind == inspect.Parameter.VAR_KEYWORD
+        for item in signature.parameters.values()
+    )
+
+
+def close_explorer(explorer: object) -> None:
+    """Release an adapter resource when it exposes a synchronous close seam."""
+
+    close = getattr(explorer, "close", None)
+    if callable(close):
+        close()
 
 
 @dataclass
@@ -47,7 +112,14 @@ class ExplorerPort(Protocol):
         """A few rows to give the model a feel for the data."""
         ...
 
-    async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
+    async def execute(
+        self,
+        sql: str,
+        limit: int = 1000,
+        *,
+        timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
+    ) -> list[dict]:
         """Run a read-only query (already cleared by the safety pipeline) and
         return up to ``limit`` rows. The ``run_sql`` tool calls this only after
         a PASS verdict; the adapter must never see un-gated SQL."""

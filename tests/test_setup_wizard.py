@@ -11,11 +11,13 @@ from __future__ import annotations
 import asyncio
 
 import pytest
+from sqlalchemy.exc import NoSuchModuleError
 
 from lang2sql.adapters.db import D1Explorer, SqlAlchemyExplorer
 from lang2sql.adapters.db.dsn_builder import assemble
 from lang2sql.core.identity import Identity
 from lang2sql.frontends.discord.commands import CommandHandlers
+from lang2sql.semantic.catalog import SemanticCatalog
 from lang2sql.tenancy.concierge import ContextConcierge
 
 # --- dsn_builder ---------------------------------------------------------
@@ -77,6 +79,12 @@ def test_assemble_d1_returns_token_in_extras():
     assert spec.extras == {"d1_token": "secret"}
 
 
+def test_assemble_sqlite_path():
+    spec = assemble("sqlite", {"path": "/tmp/demo.db"})
+    assert spec.dsn == "sqlite:////tmp/demo.db"
+    assert spec.extras == {}
+
+
 def test_assemble_missing_required_field_raises():
     with pytest.raises(ValueError, match="missing required"):
         assemble("postgresql", {"host": "h"})  # no user/password/db
@@ -105,23 +113,13 @@ def test_register_db_for_guild_success_stores_encrypted(tmp_path):
 
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    identity = Identity(user_id="alice", guild_id="g1", channel_id="c")
+    identity = Identity(user_id="alice", guild_id="g1", channel_id="c", is_admin=True)
 
-    # Reuse the DuckDB-style path through the generic assembler bypass: we
-    # don't have a "sqlite" form, but we can drive register_db_for_guild
-    # directly via the DuckDB form which speaks SQLAlchemy via its own engine.
-    # For this test we want a guaranteed sqlite driver, so call the lower-
-    # level path: synthesise the spec ourselves and store via the handler's
-    # connection-test code path by piggy-backing on the DuckDB schema.
-    # Simpler: call register_db_for_guild with db_type="duckdb" so the assembly
-    # produces a sqlalchemy URL we can satisfy with a sqlite file extension.
-    # (DuckDB engine is not installed in this env, so we directly use the API
-    # below — see test_register_db_for_guild_unknown_driver_friendly_error.)
-
-    # Build the spec by hand via assemble + register via a tiny shim: store
-    # the DSN through secrets, then assert the next build_context wires it.
-    asyncio.run(concierge.secrets.set("g1", "db_dsn", f"sqlite:///{db}"))
-    concierge.forget_explorer("g1")
+    result = asyncio.run(
+        handlers.register_db_for_guild(identity, "sqlite", {"path": str(db)})
+    )
+    assert "연결 완료" in result.text
+    assert asyncio.run(concierge.secrets.get("g1", "db_dsn")) == f"sqlite:///{db}"
 
     ctx = asyncio.run(concierge.build_context(identity))
     assert isinstance(ctx.explorer, SqlAlchemyExplorer)
@@ -132,7 +130,7 @@ def test_register_db_for_guild_success_stores_encrypted(tmp_path):
 def test_register_db_for_guild_unknown_driver_gives_friendly_error():
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    identity = Identity(user_id="u", guild_id="g-x", channel_id="c")
+    identity = Identity(user_id="u", guild_id="g-x", channel_id="c", is_admin=True)
     # Snowflake driver isn't installed in this env; the handler should catch
     # ModuleNotFoundError and produce a clear, non-technical message.
     res = asyncio.run(
@@ -151,10 +149,32 @@ def test_register_db_for_guild_unknown_driver_gives_friendly_error():
     assert "uv sync --extra snowflake" in res.text or "Couldn't connect" in res.text
 
 
+def test_register_missing_duckdb_dialect_gives_install_command(
+    monkeypatch, tmp_path
+) -> None:
+    concierge = ContextConcierge()
+    handlers = CommandHandlers(concierge)
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+
+    def missing_driver(*_args, **_kwargs):
+        raise NoSuchModuleError("Can't load plugin: sqlalchemy.dialects:duckdb")
+
+    monkeypatch.setattr(
+        "lang2sql.frontends.discord.commands.build_explorer", missing_driver
+    )
+    result = asyncio.run(
+        handlers.register_db_for_guild(
+            identity, "duckdb", {"path": str(tmp_path / "warehouse.duckdb")}
+        )
+    )
+    assert "uv sync --extra duckdb" in result.text
+    assert "파일 절대경로" not in result.text
+
+
 def test_register_db_for_guild_missing_field_reports_setup_error():
     concierge = ContextConcierge()
     handlers = CommandHandlers(concierge)
-    identity = Identity(user_id="u", guild_id="g", channel_id="c")
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
     res = asyncio.run(
         handlers.register_db_for_guild(
             identity,
@@ -165,6 +185,21 @@ def test_register_db_for_guild_missing_field_reports_setup_error():
     assert "Setup error" in res.text and "missing required" in res.text
 
 
+def test_register_missing_sqlite_is_file_specific_and_does_not_create(tmp_path):
+    missing = tmp_path / "missing.db"
+    concierge = ContextConcierge()
+    handlers = CommandHandlers(concierge)
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+
+    result = asyncio.run(
+        handlers.register_db_for_guild(identity, "sqlite", {"path": str(missing)})
+    )
+
+    assert "파일 절대경로" in result.text
+    assert "읽기 권한" in result.text
+    assert not missing.exists()
+
+
 # --- concierge per-scope explorer routing --------------------------------
 
 
@@ -173,10 +208,11 @@ def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
     _seed_sqlite(str(db))
     concierge = ContextConcierge()
 
-    g_with = Identity(user_id="u", guild_id="g-real", channel_id="c")
+    g_with = Identity(user_id="u", guild_id="g-real", channel_id="c", is_admin=True)
     g_without = Identity(user_id="u", guild_id="g-default", channel_id="c")
 
-    asyncio.run(concierge.secrets.set("g-real", "db_dsn", f"sqlite:///{db}"))
+    result = asyncio.run(CommandHandlers(concierge).connect(g_with, f"sqlite:///{db}"))
+    assert "연결 완료" in result.text
 
     ctx_with = asyncio.run(concierge.build_context(g_with))
     ctx_without = asyncio.run(concierge.build_context(g_without))
@@ -189,33 +225,40 @@ def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
 
 def test_concierge_d1_extras_threaded_through_secrets():
     concierge = ContextConcierge()
-    asyncio.run(concierge.secrets.set("g-d1", "db_dsn", "d1://acct/db"))
-    asyncio.run(concierge.secrets.set("g-d1", "db_extras.d1_token", "tok-1"))
+    concierge.activate_connection(
+        scope="g-d1",
+        dsn="d1://acct/db",
+        extras={"d1_token": "tok-1"},
+        catalog=SemanticCatalog(fingerprint="fixture"),
+        expected_generation=0,
+    )
     identity = Identity(user_id="u", guild_id="g-d1", channel_id="c")
     ctx = asyncio.run(concierge.build_context(identity))
     assert isinstance(ctx.explorer, D1Explorer)
     assert ctx.explorer._token == "tok-1"
 
 
-def test_forget_explorer_busts_the_cache(tmp_path):
+def test_reactivation_rotates_generation_and_explorer_cache(tmp_path):
     db1 = tmp_path / "a.db"
     db2 = tmp_path / "b.db"
     _seed_sqlite(str(db1))
     _seed_sqlite(str(db2))
     concierge = ContextConcierge()
-    identity = Identity(user_id="u", guild_id="g", channel_id="c")
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+    handlers = CommandHandlers(concierge)
 
-    asyncio.run(concierge.secrets.set("g", "db_dsn", f"sqlite:///{db1}"))
+    first = asyncio.run(handlers.connect(identity, f"sqlite:///{db1}"))
+    assert "연결 완료" in first.text
     ctx1 = asyncio.run(concierge.build_context(identity))
+    binding1 = concierge.connection_binding("g")
 
-    # Update the DSN but don't bust the cache yet — the old explorer is reused.
-    asyncio.run(concierge.secrets.set("g", "db_dsn", f"sqlite:///{db2}"))
-    ctx_stale = asyncio.run(concierge.build_context(identity))
-    assert ctx_stale.explorer is ctx1.explorer
-
-    concierge.forget_explorer("g")
+    second = asyncio.run(handlers.connect(identity, f"sqlite:///{db2}"))
+    assert "연결 완료" in second.text
     ctx_fresh = asyncio.run(concierge.build_context(identity))
+    binding2 = concierge.connection_binding("g")
     assert ctx_fresh.explorer is not ctx1.explorer
+    assert binding1 is not None and binding2 is not None
+    assert binding2.generation == binding1.generation + 1
 
 
 # --- UI module import smoke ----------------------------------------------
@@ -225,3 +268,24 @@ def test_setup_wizard_module_imports_without_discord_runtime():
     # The wizard imports discord.ui at module level. Make sure that succeeds in
     # a no-gateway environment — the same contract as bot.py's import-safety.
     import lang2sql.frontends.discord.setup_wizard  # noqa: F401
+
+
+def test_setup_picker_has_a_label_for_every_supported_database():
+    from lang2sql.adapters.db.dsn_builder import SUPPORTED_DB_TYPES
+    from lang2sql.frontends.discord.setup_wizard import _LABELS
+
+    assert set(SUPPORTED_DB_TYPES) <= set(_LABELS)
+
+
+def test_discord_review_storage_failure_returns_retryable_message(monkeypatch):
+    concierge = ContextConcierge()
+    handlers = CommandHandlers(concierge)
+    identity = Identity(user_id="u", guild_id="g", channel_id="c", is_admin=True)
+
+    def fail_review(*_args, **_kwargs):
+        raise RuntimeError("forced review storage failure")
+
+    monkeypatch.setattr(concierge.semantic, "confirm_pending", fail_review)
+    result = asyncio.run(handlers.semantic_review(identity, "sum"))
+    assert "BLOCKED" in result.text
+    assert "다시 시도" in result.text

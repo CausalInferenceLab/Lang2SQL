@@ -14,7 +14,6 @@ import pytest
 from cryptography.fernet import Fernet, InvalidToken
 
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
-from lang2sql.core.identity import Scope, ScopeLevel
 from lang2sql.tenancy.encrypted_secrets import EncryptedSecrets
 from lang2sql.tools.semantic_federation import FedEntry, _kv_key, _render_effective
 

@@ -18,6 +18,7 @@ from lang2sql.adapters.db import (
     build_explorer,
     explorer_from_env,
 )
+from lang2sql.core.ports.explorer import QueryTimeoutUnsupportedError
 
 # --- factory routing -------------------------------------------------------
 
@@ -94,6 +95,9 @@ def test_sqlalchemy_explorer_introspect_and_execute(tmp_path):
     sample = asyncio.run(exp.sample_rows("users", limit=1))
     assert len(sample) == 1
 
+    metadata = asyncio.run(exp.catalog_metadata())
+    assert metadata["tables"]["users"]["primary_key"] == ["id"]
+
 
 # --- D1 explorer with mocked HTTP transport --------------------------------
 
@@ -122,6 +126,8 @@ def _d1_transport(sql, params):
                 "pk": 0,
             },
         ]
+    elif "pragma foreign_key_list" in s:
+        results = []
     else:
         results = [{"id": 1, "amount": 9.5}]
     return {
@@ -131,7 +137,7 @@ def _d1_transport(sql, params):
     }
 
 
-def test_d1_list_describe_execute():
+def test_d1_list_describe_and_fail_closed_execute():
     exp = D1Explorer("acct", "db", token="t", transport=_d1_transport)
 
     tables = asyncio.run(exp.list_tables())
@@ -141,8 +147,11 @@ def test_d1_list_describe_execute():
     cols = {c.name: c for c in desc.columns}
     assert cols["id"].nullable is False and cols["amount"].nullable is True
 
-    rows = asyncio.run(exp.execute("SELECT * FROM orders"))
-    assert rows == [{"id": 1, "amount": 9.5}]
+    with pytest.raises(QueryTimeoutUnsupportedError, match="statement cancellation"):
+        asyncio.run(exp.execute("SELECT * FROM orders"))
+
+    metadata = asyncio.run(exp.catalog_metadata())
+    assert metadata["tables"]["orders"]["primary_key"] == ["id"]
 
 
 def test_d1_raises_on_api_error():
@@ -151,7 +160,7 @@ def test_d1_raises_on_api_error():
 
     exp = D1Explorer("acct", "db", token="t", transport=failing)
     with pytest.raises(RuntimeError, match="D1 query failed"):
-        asyncio.run(exp.execute("SELECT 1"))
+        asyncio.run(exp.list_tables())
 
 
 def test_d1_rejects_unsafe_identifier():

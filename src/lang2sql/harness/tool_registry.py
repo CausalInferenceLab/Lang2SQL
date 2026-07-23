@@ -12,8 +12,14 @@ if TYPE_CHECKING:
 
 
 class ToolRegistry:
-    def __init__(self, tools: list[ToolPort] | None = None) -> None:
+    def __init__(
+        self,
+        tools: list[ToolPort] | None = None,
+        *,
+        advertised_names: set[str] | None = None,
+    ) -> None:
         self._tools: dict[str, ToolPort] = {}
+        self._advertised_names = advertised_names
         for tool in tools or []:
             self.register(tool)
 
@@ -21,11 +27,28 @@ class ToolRegistry:
         self._tools[tool.spec.name] = tool
 
     def specs(self) -> list[ToolSpec]:
-        return [t.spec for t in self._tools.values()]
+        return [
+            tool.spec
+            for name, tool in self._tools.items()
+            if self._advertised_names is None or name in self._advertised_names
+        ]
 
     async def dispatch(
         self, name: str, args: dict[str, Any], ctx: "HarnessContext", call_id: str
     ) -> ToolResult:
+        if self._advertised_names is not None and name not in self._advertised_names:
+            return ToolResult(
+                call_id=call_id,
+                content=f"blocked unadvertised tool: {name}",
+                is_error=True,
+            )
+        return await self.dispatch_direct(name, args, ctx, call_id)
+
+    async def dispatch_direct(
+        self, name: str, args: dict[str, Any], ctx: "HarnessContext", call_id: str
+    ) -> ToolResult:
+        """Dispatch a frontend-authorized command outside the model tool surface."""
+
         tool = self._tools.get(name)
         if tool is None:
             return ToolResult(

@@ -17,11 +17,12 @@ from __future__ import annotations
 
 import asyncio
 import json
+import math
 import os
 import urllib.request
 from typing import Any, Callable
 
-from ...core.ports.explorer import Column, Table
+from ...core.ports.explorer import Column, QueryTimeoutUnsupportedError, Table
 
 _API_ROOT = "https://api.cloudflare.com/client/v4"
 
@@ -71,9 +72,49 @@ class D1Explorer:
     async def sample_rows(self, name: str, limit: int = 5) -> list[dict]:
         return await self._query(f"SELECT * FROM {_ident(name)} LIMIT {int(limit)}")
 
-    async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
-        rows = await self._query(sql)
-        return rows[: int(limit)]
+    async def execute(
+        self,
+        sql: str,
+        limit: int = 1000,
+        *,
+        timeout_seconds: float = 30.0,
+        parameters: dict[str, object] | None = None,
+    ) -> list[dict]:
+        if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+            raise ValueError("timeout_seconds must be a finite positive number")
+        # urllib's transport timeout cannot prove that D1 stopped server-side
+        # SQL. Refuse before sending until a verified server deadline exists.
+        raise QueryTimeoutUnsupportedError("D1 statement cancellation is not verified")
+
+    def governed_execution_supported(self) -> bool:
+        return False
+
+    async def catalog_metadata(self) -> dict[str, Any]:
+        """Return declared SQLite PK/FK facts without sampling user data."""
+
+        tables: dict[str, Any] = {}
+        for table in await self.list_tables():
+            info = await self._query(f"PRAGMA table_info({_ident(table.name)})")
+            foreign_keys = await self._query(
+                f"PRAGMA foreign_key_list({_ident(table.name)})"
+            )
+            tables[table.name] = {
+                "primary_key": [row["name"] for row in info if row.get("pk")],
+                "foreign_keys": [
+                    {
+                        "columns": [row["from"]],
+                        "referred_schema": "",
+                        "referred_table": row["table"],
+                        "referred_columns": [row["to"]],
+                    }
+                    for row in foreign_keys
+                ],
+                "unique": [],
+            }
+        return {"tables": tables}
+
+    def quote_identifier(self, name: str) -> str:
+        return _ident(name)
 
     # --- internals -------------------------------------------------------
 

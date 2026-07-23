@@ -17,6 +17,7 @@ from __future__ import annotations
 import io
 import logging
 import os
+import re
 
 import discord
 from discord import app_commands
@@ -29,7 +30,35 @@ from .session_router import InteractionContext, to_identity
 logger = logging.getLogger(__name__)
 
 TOKEN_ENV = "DISCORD_BOT_TOKEN"
+QUERY_CHANNEL_IDS_ENV = "LANG2SQL_DISCORD_QUERY_CHANNEL_IDS"
 _DISCORD_CONTENT_LIMIT = 1900  # Discord hard limit is 2000; 100-char safety margin
+
+
+def _is_direct_user_mention(message: discord.Message, user_id: int | None) -> bool:
+    """Accept only an explicit user mention, never ``@everyone``/``@here``.
+
+    ``discord.User.mentioned_in`` deliberately treats mention-everyone as a
+    match. That behavior is useful for normal bots but violates this bot's
+    opt-in-only message contract.
+    """
+
+    return user_id is not None and user_id in message.raw_mentions
+
+
+def _parse_query_channel_ids(raw: str) -> frozenset[str]:
+    """Parse the explicit Discord parent-channel allowlist, failing closed."""
+
+    if not raw.strip():
+        return frozenset()
+    channel_ids = [item.strip() for item in raw.split(",")]
+    if any(re.fullmatch(r"[1-9][0-9]*", item) is None for item in channel_ids):
+        # A malformed access-control setting must fail startup rather than
+        # silently widening or partially applying database access.
+        raise ValueError(
+            f"{QUERY_CHANNEL_IDS_ENV} must contain only positive Discord channel "
+            "IDs separated by commas"
+        )
+    return frozenset(channel_ids)
 
 
 def _interaction_context(interaction: discord.Interaction) -> InteractionContext:
@@ -101,10 +130,13 @@ def _build_send_kwargs(out: OutboundMessage) -> dict:
     if len(text) > _DISCORD_CONTENT_LIMIT:
         if file is None:
             file = discord.File(io.BytesIO(text.encode()), filename="response.txt")
-            text = f"_(응답이 너무 길어 파일로 첨부합니다)_"
+            text = "_(응답이 너무 길어 파일로 첨부합니다)_"
         else:
             text = text[:_DISCORD_CONTENT_LIMIT] + "\n…(truncated)"
-    kwargs: dict = {"content": text}
+    kwargs: dict = {
+        "content": text,
+        "allowed_mentions": discord.AllowedMentions.none(),
+    }
     if file is not None:
         kwargs["file"] = file
     return kwargs
@@ -117,7 +149,9 @@ class Lang2SQLBot(discord.Client):
         intents = discord.Intents.default()
         intents.message_content = True  # needed to read @mention text
         super().__init__(intents=intents)
-        self._handlers = handlers
+        # discord.Client already owns a private ``_handlers`` mapping.  A
+        # distinct name avoids overwriting gateway internals.
+        self._command_handlers = handlers
         self.tree = app_commands.CommandTree(self)
         self._register_commands()
 
@@ -130,7 +164,7 @@ class Lang2SQLBot(discord.Client):
 
     def _register_commands(self) -> None:
         tree = self.tree
-        handlers = self._handlers
+        handlers = self._command_handlers
 
         @tree.command(
             name="setup",
@@ -142,13 +176,6 @@ class Lang2SQLBot(discord.Client):
             )  # local import — discord-only path
 
             await start_setup_flow(interaction, handlers, _interaction_context)
-
-        @tree.command(name="connect", description="Store a database connection string")
-        async def connect(interaction: discord.Interaction, dsn: str) -> None:
-            await self._run(
-                interaction,
-                handlers.connect(to_identity(_interaction_context(interaction)), dsn),
-            )
 
         @tree.command(
             name="ingest",
@@ -254,6 +281,284 @@ class Lang2SQLBot(discord.Client):
                 ),
             )
 
+        @tree.command(
+            name="semantic_status",
+            description="DB 연결 후 자동 준비와 현재 확인 대기 상태 보기",
+        )
+        async def semantic_status(interaction: discord.Interaction) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_status(
+                    to_identity(_interaction_context(interaction))
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_candidates",
+            description="값 공개 전 관리자 검토가 필요한 문자열 차원 보기",
+        )
+        @app_commands.choices(
+            state=[
+                app_commands.Choice(name="검토 대기", value="pending"),
+                app_commands.Choice(name="공개 승인됨", value="released"),
+                app_commands.Choice(name="전체", value="all"),
+            ]
+        )
+        async def semantic_candidates(
+            interaction: discord.Interaction,
+            page: int = 1,
+            search: str = "",
+            state: app_commands.Choice[str] | None = None,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_candidates(
+                    to_identity(_interaction_context(interaction)),
+                    page=page,
+                    search=search,
+                    state=state.value if state is not None else "pending",
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_dimension_candidates",
+            description="메타데이터만으로 비차단 분류 차원 검색 (관리자)",
+        )
+        @app_commands.choices(
+            state=[
+                app_commands.Choice(name="업무 표현 없음", value="unmapped"),
+                app_commands.Choice(name="업무 표현 연결됨", value="mapped"),
+                app_commands.Choice(name="전체", value="all"),
+            ]
+        )
+        async def semantic_dimension_candidates(
+            interaction: discord.Interaction,
+            page: int = 1,
+            search: str = "",
+            state: app_commands.Choice[str] | None = None,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_dimension_candidates(
+                    to_identity(_interaction_context(interaction)),
+                    page=page,
+                    search=search,
+                    state=state.value if state is not None else "all",
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_dimension_map",
+            description="분류 차원에 업무 표현만 연결 (관리자, confirm 필요)",
+        )
+        async def semantic_dimension_map(
+            interaction: discord.Interaction,
+            candidate_token: str,
+            phrase: app_commands.Range[str, 1, 256],
+            confirm: bool = False,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_dimension_map(
+                    to_identity(_interaction_context(interaction)),
+                    candidate_token=candidate_token,
+                    phrase=phrase,
+                    confirm=confirm,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_metric_candidates",
+            description="메타데이터만으로 수치 지표 후보 검색 (관리자)",
+        )
+        @app_commands.choices(
+            state=[
+                app_commands.Choice(name="업무 표현 없음", value="unmapped"),
+                app_commands.Choice(name="업무 표현 연결됨", value="mapped"),
+                app_commands.Choice(name="전체", value="all"),
+            ]
+        )
+        async def semantic_metric_candidates(
+            interaction: discord.Interaction,
+            page: int = 1,
+            search: str = "",
+            state: app_commands.Choice[str] | None = None,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_metric_candidates(
+                    to_identity(_interaction_context(interaction)),
+                    page=page,
+                    search=search,
+                    state=state.value if state is not None else "all",
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_metric_map",
+            description="수치 컬럼에 업무 표현만 연결 (관리자, confirm 필요)",
+        )
+        async def semantic_metric_map(
+            interaction: discord.Interaction,
+            candidate_token: str,
+            phrase: app_commands.Range[str, 1, 256],
+            confirm: bool = False,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_metric_map(
+                    to_identity(_interaction_context(interaction)),
+                    candidate_token=candidate_token,
+                    phrase=phrase,
+                    confirm=confirm,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_reviews",
+            description="현재 연결의 의미 검토 대기열 보기 (관리자)",
+        )
+        async def semantic_reviews(
+            interaction: discord.Interaction,
+            page: int = 1,
+            search: str = "",
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_reviews(
+                    to_identity(_interaction_context(interaction)),
+                    page=page,
+                    search=search,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_release",
+            description="차원의 그룹 값 공개 등급 승인 (관리자, confirm 필요)",
+        )
+        @app_commands.choices(
+            disclosure_tier=[
+                app_commands.Choice(
+                    name="보호 그룹 (최소 5)", value="controlled_grouped"
+                ),
+                app_commands.Choice(
+                    name="공개 범주 (최소 그룹 해제)", value="public_grouped"
+                ),
+            ]
+        )
+        async def semantic_release(
+            interaction: discord.Interaction,
+            candidate_token: str,
+            disclosure_tier: app_commands.Choice[str],
+            confirm: bool = False,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_release(
+                    to_identity(_interaction_context(interaction)),
+                    candidate_token=candidate_token,
+                    disclosure_tier=disclosure_tier.value,
+                    confirm=confirm,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_revoke",
+            description="차원의 그룹 값 공개 철회 (관리자, confirm 필요)",
+        )
+        async def semantic_revoke(
+            interaction: discord.Interaction,
+            candidate_token: str,
+            confirm: bool = False,
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_revoke(
+                    to_identity(_interaction_context(interaction)),
+                    candidate_token=candidate_token,
+                    confirm=confirm,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_public_data",
+            description="연결 전체를 공개·비개인 데이터로 확인/철회 (관리자)",
+        )
+        async def semantic_public_data(
+            interaction: discord.Interaction,
+            enable: bool = True,
+            confirm: bool = False,
+            action_token: str = "",
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_public_data(
+                    to_identity(_interaction_context(interaction)),
+                    enable=enable,
+                    confirm=confirm,
+                    action_token=action_token,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_reset",
+            description="사람이 확인한 의미 연결을 초기화 (관리자, confirm 필요)",
+        )
+        async def semantic_reset(
+            interaction: discord.Interaction,
+            confirm: bool = False,
+            action_token: str = "",
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_reset(
+                    to_identity(_interaction_context(interaction)),
+                    confirm=confirm,
+                    action_token=action_token,
+                ),
+                ephemeral=True,
+            )
+
+        @tree.command(
+            name="semantic_review",
+            description="질문 표현과 DB 컬럼·집계 연결을 확인하고 원래 질문 재개",
+        )
+        @app_commands.choices(
+            aggregate=[
+                app_commands.Choice(name="합계 (SUM)", value="sum"),
+                app_commands.Choice(name="평균 (AVG)", value="avg"),
+                app_commands.Choice(name="최솟값 (MIN)", value="min"),
+                app_commands.Choice(name="최댓값 (MAX)", value="max"),
+                app_commands.Choice(name="개수 (COUNT)", value="count"),
+                app_commands.Choice(name="표현과 컬럼 연결 확인", value="confirm"),
+                app_commands.Choice(name="이 후보 사용 안 함", value="reject"),
+            ]
+        )
+        async def semantic_review(
+            interaction: discord.Interaction,
+            aggregate: app_commands.Choice[str],
+            review_id: str = "",
+        ) -> None:
+            await self._run(
+                interaction,
+                handlers.semantic_review(
+                    to_identity(_interaction_context(interaction)),
+                    aggregate.value,
+                    review_id=review_id,
+                ),
+                ephemeral=True,
+            )
+
         @tree.command(name="audit_me", description="Show your recent activity")
         async def audit_me(interaction: discord.Interaction) -> None:
             await self._run(
@@ -265,12 +570,15 @@ class Lang2SQLBot(discord.Client):
         async def help(interaction: discord.Interaction) -> None:
             await self._run(interaction, handlers.help())
 
-    async def _run(self, interaction: discord.Interaction, coro) -> None:
-        """Await a handler coroutine and reply with its OutboundMessage."""
-        await interaction.response.defer(thinking=True)
+    async def _run(
+        self, interaction: discord.Interaction, coro, *, ephemeral: bool = False
+    ) -> None:
+        """Await a handler and preserve the command's response visibility."""
+        await interaction.response.defer(thinking=True, ephemeral=ephemeral)
         try:
             message = await coro
             kwargs = _build_send_kwargs(message)
+            kwargs["ephemeral"] = ephemeral
             await interaction.followup.send(**kwargs)
         except Exception as exc:
             import traceback
@@ -278,36 +586,39 @@ class Lang2SQLBot(discord.Client):
             traceback.print_exc()
             try:
                 await interaction.followup.send(
-                    content=f"❌ Error: {type(exc).__name__}: {exc}"
+                    content=f"❌ 요청을 처리하지 못했습니다. (오류 유형: {type(exc).__name__})",
+                    ephemeral=ephemeral,
                 )
             except Exception:
                 pass
 
     async def on_message(self, message: discord.Message) -> None:
-        """Treat an @mention (or a reply inside a thread) as a free-form query."""
+        """Treat an explicit @mention as a free-form query."""
         if message.author == self.user:
             return
-        mentioned = self.user is not None and self.user.mentioned_in(message)
-        in_thread = isinstance(message.channel, discord.Thread)
-        if not mentioned and not in_thread:
+        bot_user_id = self.user.id if self.user is not None else None
+        if not _is_direct_user_mention(message, bot_user_id):
             return
 
         text = message.content
         if self.user is not None:
-            text = text.replace(self.user.mention, "").strip()
+            text = text.replace(f"<@{self.user.id}>", "")
+            text = text.replace(f"<@!{self.user.id}>", "").strip()
         if not text:
             return
 
         identity = to_identity(_message_context(message))
         try:
-            out = await self._handlers.query(identity, text)
+            out = await self._command_handlers.query(identity, text)
             kwargs = _build_send_kwargs(out)
             await message.channel.send(**kwargs)
         except Exception as exc:
             import traceback
 
             traceback.print_exc()
-            await message.channel.send(content=f"❌ Error: {type(exc).__name__}: {exc}")
+            await message.channel.send(
+                content=f"❌ 요청을 처리하지 못했습니다. (오류 유형: {type(exc).__name__})"
+            )
 
 
 def run() -> None:
@@ -322,6 +633,12 @@ def run() -> None:
             f"{TOKEN_ENV} is not set; export your Discord bot token to run the bot."
         )
     data_path = os.environ.get("LANG2SQL_DATA_PATH", "lang2sql_data.db")
-    handlers = CommandHandlers(ContextConcierge(path=data_path))
+    query_channel_ids = _parse_query_channel_ids(
+        os.environ.get(QUERY_CHANNEL_IDS_ENV, "")
+    )
+    handlers = CommandHandlers(
+        ContextConcierge(path=data_path),
+        query_channel_ids=query_channel_ids,
+    )
     client = Lang2SQLBot(handlers)
     client.run(token)

@@ -145,10 +145,17 @@ def _decode_completion(raw: dict[str, Any]) -> Completion:
         fn = tc.get("function", {})
         raw_args = fn.get("arguments", "") or "{}"
         try:
-            args = json.loads(raw_args)
+            decoded_args = json.loads(raw_args)
         except (ValueError, TypeError):
-            # Model emitted malformed JSON args; surface raw so the tool can complain.
-            args = {"__raw__": raw_args}
+            # Provider/model output is untrusted.  Keep ToolCall.arguments an
+            # object so malformed local-model output cannot crash dispatch.
+            args = {"__invalid_argument_shape__": "malformed_json"}
+        else:
+            args = (
+                decoded_args
+                if isinstance(decoded_args, dict)
+                else {"__invalid_argument_shape__": type(decoded_args).__name__}
+            )
         tool_calls.append(
             ToolCall(id=tc.get("id", ""), name=fn.get("name", ""), arguments=args)
         )

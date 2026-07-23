@@ -1,6 +1,6 @@
 """build_explorer — turn a connection string into the right ExplorerPort.
 
-This is what makes ``/connect`` trivial: the user (or env) gives one URL and the
+The setup workflow (or an environment variable) supplies one URL and this
 factory routes it. Cloudflare D1 has its own HTTP adapter; everything else with
 a normal SQLAlchemy URL goes through the generic SQLAlchemy explorer.
 
@@ -14,6 +14,7 @@ a normal SQLAlchemy URL goes through the generic SQLAlchemy explorer.
 from __future__ import annotations
 
 import os
+from pathlib import Path
 from urllib.parse import urlsplit
 
 from ...core.ports.explorer import ExplorerPort
@@ -34,7 +35,8 @@ def build_explorer(
     belong in the URL — currently ``d1_token`` for the D1 HTTP API. Raises
     ``ValueError`` on an empty/unparseable string.
     """
-    if not connection or not connection.strip():
+    connection = canonicalize_connection(connection)
+    if not connection:
         raise ValueError("empty connection string")
 
     scheme = urlsplit(connection).scheme.lower()
@@ -61,6 +63,30 @@ def build_explorer(
 
     # Anything else is assumed to be a SQLAlchemy URL (driver loaded lazily).
     return SqlAlchemyExplorer(connection, schema=schema)
+
+
+def canonicalize_connection(connection: str) -> str:
+    """Freeze relative file-backed URLs before identity or execution uses them."""
+
+    value = connection.strip()
+    if not value:
+        return ""
+    scheme = urlsplit(value).scheme.lower()
+    if scheme == "postgresql":
+        value = "postgresql+psycopg" + value[len("postgresql") :]
+        scheme = "postgresql+psycopg"
+    if scheme.split("+", 1)[0] not in {"sqlite", "duckdb"}:
+        return value
+    from sqlalchemy.engine import make_url
+
+    url = make_url(value)
+    database = url.database
+    if not database or database == ":memory:":
+        return url.render_as_string(hide_password=False)
+    path = Path(database).expanduser()
+    if not path.is_absolute():
+        path = path.resolve(strict=False)
+    return url.set(database=str(path)).render_as_string(hide_password=False)
 
 
 def explorer_from_env() -> ExplorerPort | None:

@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1040" viewBox="0 0 1600 1040" role="img" aria-labelledby="title desc">
+  <title id="title">데이터베이스 연결에서 semantic catalog가 생성되고 관리되는 과정</title>
+  <desc id="desc">원본 행을 읽지 않는 metadata scan, 컬럼 분류, 후보 표현 보강, 물리 fingerprint 생성, 연결별 원자적 활성화, 질문별 후보 제한의 순서와 catalog 산출물</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#0f766e"/>
+    </marker>
+    <marker id="arrow-purple" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 19px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #475569; }
+      .step { font: 700 20px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #0f766e; }
+      .box-title { font: 700 24px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #0f172a; }
+      .box-copy { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #475569; }
+      .small { font: 600 19px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; }
+      .catalog-title { font: 700 26px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #ffffff; }
+      .catalog-copy { font: 600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #e0e7ff; }
+      .footer-title { font: 700 23px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #4c1d95; }
+      .footer-copy { font: 500 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #5b21b6; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="1040" fill="#f8fafc"/>
+  <text x="64" y="66" class="title">DB 연결 한 번으로 catalog를 어떻게 만드는가</text>
+  <text x="64" y="100" class="subtitle">DB마다 달라지는 사실은 catalog에 저장하고, 모델은 질문마다 그 일부만 전달받는다.</text>
+
+  <g filter="url(#shadow)">
+    <rect x="54" y="142" width="252" height="640" rx="24" fill="#ecfeff" stroke="#67e8f9" stroke-width="2"/>
+  </g>
+  <text x="82" y="184" class="step">INPUT</text>
+  <text x="82" y="218" class="box-title">물리 metadata</text>
+
+  <rect x="82" y="246" width="196" height="72" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+  <text x="100" y="274" class="small" fill="#155e75">table · column</text>
+  <text x="100" y="298" class="box-copy">name · type · nullable</text>
+
+  <rect x="82" y="334" width="196" height="72" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+  <text x="100" y="362" class="small" fill="#155e75">constraint</text>
+  <text x="100" y="386" class="box-copy">PK · FK · constraint metadata</text>
+
+  <rect x="82" y="422" width="196" height="72" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+  <text x="100" y="450" class="small" fill="#155e75">DB comment</text>
+  <text x="100" y="474" class="box-copy">설명은 후보 표현으로만</text>
+
+  <rect x="82" y="510" width="196" height="92" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+  <text x="100" y="538" class="small" fill="#155e75">재연결 시 선택 입력</text>
+  <text x="100" y="562" class="box-copy">동일 source + 동일</text>
+  <text x="100" y="584" class="box-copy">fingerprint의 Enrich 설명</text>
+
+  <rect x="82" y="618" width="196" height="92" rx="14" fill="#ffffff" stroke="#a5f3fc"/>
+  <text x="100" y="646" class="small" fill="#155e75">선택적 LLM 보강</text>
+  <text x="100" y="670" class="box-copy">metadata-only · strict JSON</text>
+  <text x="100" y="692" class="box-copy">객체당 alias 최대 3개</text>
+
+  <rect x="82" y="728" width="196" height="34" rx="17" fill="#cffafe"/>
+  <text x="180" y="750" text-anchor="middle" class="small" fill="#0e7490">raw row · 값 목록은 읽지 않음</text>
+
+  <line x1="308" y1="462" x2="350" y2="462" stroke="#0f766e" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="364" y="142" width="300" height="640" rx="24" fill="#ffffff" stroke="#99f6e4" stroke-width="2"/>
+  </g>
+  <text x="392" y="184" class="step">STEP 1</text>
+  <text x="392" y="218" class="box-title">분류 정책 적용</text>
+
+  <rect x="392" y="246" width="244" height="108" rx="16" fill="#fef2f2" stroke="#fecaca"/>
+  <text x="412" y="276" class="small" fill="#b91c1c">차단</text>
+  <text x="412" y="302" class="box-copy">PII · credential · free text</text>
+  <text x="412" y="326" class="box-copy">key · identifier · 비지원 type</text>
+
+  <rect x="392" y="372" width="244" height="108" rx="16" fill="#eff6ff" stroke="#bfdbfe"/>
+  <text x="412" y="402" class="small" fill="#1d4ed8">metric 후보</text>
+  <text x="412" y="428" class="box-copy">numeric measure</text>
+  <text x="412" y="452" class="box-copy">업무 지표·집계는 아직 미확정</text>
+
+  <rect x="392" y="498" width="244" height="108" rx="16" fill="#f0fdf4" stroke="#bbf7d0"/>
+  <text x="412" y="528" class="small" fill="#15803d">dimension 후보</text>
+  <text x="412" y="554" class="box-copy">time · boolean · categorical</text>
+  <text x="412" y="578" class="box-copy">공개 등급은 정책별 검토</text>
+
+  <rect x="392" y="624" width="244" height="108" rx="16" fill="#fffbeb" stroke="#fde68a"/>
+  <text x="412" y="654" class="small" fill="#b45309">declared join</text>
+  <text x="412" y="680" class="box-copy">단일 column FK</text>
+  <text x="412" y="704" class="box-copy">child → parent 경로만 등록</text>
+
+  <line x1="666" y1="462" x2="708" y2="462" stroke="#0f766e" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="722" y="142" width="300" height="640" rx="24" fill="#ffffff" stroke="#99f6e4" stroke-width="2"/>
+  </g>
+  <text x="750" y="184" class="step">STEP 2</text>
+  <text x="750" y="218" class="box-title">후보 표현 정리</text>
+
+  <rect x="750" y="246" width="244" height="94" rx="16" fill="#f0fdfa" stroke="#99f6e4"/>
+  <text x="770" y="276" class="small" fill="#0f766e">stable object ID</text>
+  <text x="770" y="302" class="box-copy">metric:orders.amount</text>
+  <text x="770" y="324" class="box-copy">dimension:orders.status</text>
+
+  <rect x="750" y="358" width="244" height="112" rx="16" fill="#f5f3ff" stroke="#ddd6fe"/>
+  <text x="770" y="388" class="small" fill="#6d28d9">candidate alias</text>
+  <text x="770" y="414" class="box-copy">physical name · DB comment</text>
+  <text x="770" y="438" class="box-copy">Enrich cache · optional LLM</text>
+  <text x="770" y="458" class="box-copy">승인된 의미로 자동 승격하지 않음</text>
+
+  <rect x="750" y="488" width="244" height="94" rx="16" fill="#fff7ed" stroke="#fed7aa"/>
+  <text x="770" y="518" class="small" fill="#c2410c">충돌 제거</text>
+  <text x="770" y="544" class="box-copy">공유 alias · 값 목록형 표현</text>
+  <text x="770" y="566" class="box-copy">URL · email · SQL형 문자열</text>
+
+  <rect x="750" y="600" width="244" height="132" rx="16" fill="#f8fafc" stroke="#cbd5e1"/>
+  <text x="770" y="630" class="small" fill="#334155">보강 상태도 catalog에 기록</text>
+  <text x="770" y="656" class="box-copy">metadata_ready</text>
+  <text x="770" y="678" class="box-copy">llm_ready 또는 llm_degraded</text>
+  <text x="770" y="700" class="box-copy">실패해도 후보 권한을 넓히지 않음</text>
+
+  <line x1="1024" y1="462" x2="1066" y2="462" stroke="#0f766e" stroke-width="4" marker-end="url(#arrow)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="1080" y="142" width="466" height="640" rx="24" fill="#312e81" stroke="#6366f1" stroke-width="2"/>
+  </g>
+  <text x="1112" y="184" class="step" fill="#c7d2fe">STEP 3 · OUTPUT</text>
+  <text x="1112" y="222" class="catalog-title">활성 SemanticCatalog</text>
+
+  <rect x="1112" y="250" width="402" height="92" rx="16" fill="#3730a3" stroke="#818cf8"/>
+  <text x="1134" y="280" class="small" fill="#ffffff">구조 객체</text>
+  <text x="1134" y="306" class="catalog-copy">tables · metrics · dimensions · joins</text>
+  <text x="1134" y="328" class="catalog-copy">blocked_columns · suggested_aliases</text>
+
+  <rect x="1112" y="360" width="402" height="126" rx="16" fill="#3730a3" stroke="#818cf8"/>
+  <text x="1134" y="390" class="small" fill="#ffffff">연결·스키마 식별</text>
+  <text x="1134" y="416" class="catalog-copy">source_id</text>
+  <text x="1134" y="438" class="catalog-copy">connection_generation — 재연결 세대</text>
+  <text x="1134" y="460" class="catalog-copy">schema fingerprint (SHA-256)</text>
+
+  <rect x="1112" y="504" width="402" height="126" rx="16" fill="#3730a3" stroke="#818cf8"/>
+  <text x="1134" y="534" class="small" fill="#ffffff">검토·정책 상태</text>
+  <text x="1134" y="560" class="catalog-copy">review_revision — 사람 결정 변경 marker</text>
+  <text x="1134" y="582" class="catalog-copy">catalog format version</text>
+  <text x="1134" y="604" class="catalog-copy">classification policy version</text>
+
+  <rect x="1112" y="648" width="402" height="96" rx="16" fill="#4338ca" stroke="#a5b4fc"/>
+  <text x="1134" y="678" class="small" fill="#ffffff">원자적 활성화</text>
+  <text x="1134" y="704" class="catalog-copy">encrypted credentials + catalog + binding</text>
+  <text x="1134" y="726" class="catalog-copy">세 값이 어긋나면 raw SQL fallback 없이 차단</text>
+
+  <rect x="54" y="822" width="1492" height="168" rx="26" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="2"/>
+  <text x="84" y="862" class="footer-title">질문 시에는 catalog 전체를 모델에 보내지 않는다</text>
+
+  <rect x="86" y="892" width="274" height="66" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+  <text x="223" y="919" text-anchor="middle" class="small" fill="#6d28d9">사용자 질문</text>
+  <text x="223" y="943" text-anchor="middle" class="footer-copy">scope · actor · conversation</text>
+
+  <line x1="362" y1="925" x2="416" y2="925" stroke="#7c3aed" stroke-width="4" marker-end="url(#arrow-purple)"/>
+
+  <rect x="430" y="892" width="340" height="66" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+  <text x="600" y="919" text-anchor="middle" class="small" fill="#6d28d9">서버 문자열 기반 후보 검색</text>
+  <text x="600" y="943" text-anchor="middle" class="footer-copy">table 6 · metric 12 · dimension 12 · shortlist policy</text>
+
+  <line x1="772" y1="925" x2="826" y2="925" stroke="#7c3aed" stroke-width="4" marker-end="url(#arrow-purple)"/>
+
+  <rect x="840" y="892" width="286" height="66" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+  <text x="983" y="919" text-anchor="middle" class="small" fill="#6d28d9">모델 typed 선택</text>
+  <text x="983" y="943" text-anchor="middle" class="footer-copy">ID · 집계 · filter · 기간</text>
+
+  <line x1="1128" y1="925" x2="1182" y2="925" stroke="#7c3aed" stroke-width="4" marker-end="url(#arrow-purple)"/>
+
+  <rect x="1196" y="892" width="318" height="66" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+  <text x="1355" y="919" text-anchor="middle" class="small" fill="#6d28d9">서버 재검증 · SQL 컴파일</text>
+  <text x="1355" y="943" text-anchor="middle" class="footer-copy">review · policy · source stamp · Safety</text>
+</svg>

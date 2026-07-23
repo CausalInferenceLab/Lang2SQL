@@ -7,7 +7,7 @@ v1.5 swaps Store→SQLite or Recall→keyword as a single adapter add.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Protocol, Sequence, runtime_checkable
 
 from ..types import Message
