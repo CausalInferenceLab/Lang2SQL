@@ -20,7 +20,7 @@ Vanna AI(~20k★), Wren AI(~12k★), SQLCoder 같은 Text-to-SQL 오픈소스들
 
 | 약점 | 기존 처리 | 우리 해결 |
 |---|---|---|
-| DB 메타데이터가 비어 있다 | Vanna: 학습 데이터 의존 | ★① **DB 강건성**: safety pipeline + 자동 보강 (V1.5) |
+| DB 메타데이터가 비어 있다 | Vanna: 학습 데이터 의존 | ★① **DB 강건성**: 연결 즉시 후보 보강 + 이후 사람 검토 |
 | 봇이 어제 한 얘기를 못 기억한다 | 대부분 stateless | ★② **Hermes 기억**: 3축 분리(Store/Recall/Extractor) |
 | 비즈니스 정의를 사람이 일일이 입력 | Wren: MDL 수동 | ★③ **Ingestion 매트릭스**: 문서 → 시멘틱 후보 |
 | 같은 *"활성 사용자"*가 팀마다 다르다 | Wren: 단일 MDL → 충돌 | ★④ **Semantic federation**: git-like 분기, 가장 구체적 scope 승리 |
@@ -40,26 +40,40 @@ Vanna AI(~20k★), Wren AI(~12k★), SQLCoder 같은 Text-to-SQL 오픈소스들
 
 **핵심 메타원칙**: 모든 외부 시스템 의존성을 *포트(Protocol)*로 추상화. *어댑터*는 가장자리에만. 그래서 새 LLM / 새 DB / 새 frontend 추가가 *기존 코드 안 건드리고 끼우기*로 끝남.
 
+**연결 즉시 의미 준비형 질의는 다섯 번째 기둥이 아니다.** 기존 4기둥과 Discord →
+tenancy → agent loop 구조를 그대로 사용하면서, semantic catalog가 활성화된 연결의
+질의 도구만 `run_sql`에서 `semantic_query`로 바꾸는 추가 실행 모드다. 기존
+Enrich·Federation은 의미를 발견하고 축적하고, 검토형 질의는 현재 질문을 안전하게
+실행할 typed plan으로 제한한다.
+
 ---
 
 ## 4. 지금 어디까지 와 있는가 — 정직한 현황
 
-### ✅ V1 완료 (master에서 동작)
+### ✅ 현재 구현
 - **core 포트 11종** — 모든 외부 의존을 Protocol로 추상화
 - **harness** — agent_loop(LLM → tool → 다음 턴), Session, HarnessContext
 - **★①~★④ 4기둥** 최소 구현 — safety 12 회귀, memory 3축, ingestion 매트릭스, federation 3-scope
-- **도구 8종** — run_sql · explore_schema · enrich_schema · term_custom · org_setup · remember · ask_user · ingest_doc
+- **두 질의 도구 조립 모드** — catalog가 없는 연결은 기존 `run_sql`·schema
+  탐색/보강, catalog가 활성화된 연결은 SQL 없는 `semantic_query`; federation,
+  ingestion, memory, clarification 도구는 두 모드에 유지
 - **Discord 프론트엔드** — 슬래시 명령 + `/setup` 위저드 (비개발자 DSN-free flow) + bot.py
+- **연결 즉시 의미 준비** — DB comment를 후보로 사용하고, 같은 source·물리
+  fingerprint의 재연결은 기존 Enrich 설명 캐시도 재사용한다. `auto` 모드에서 실제
+  provider가 설정되면 metadata-only LLM 보강을 자동 1회 수행. 후보는 질문에서
+  필요할 때만 사람 검토
 - **영속화** — KV store(federation) + Fernet 실암호화 secrets
-- **DB 어댑터** — `SqlAlchemyExplorer` 1개로 Postgres/MySQL/Snowflake/BigQuery/DuckDB 커버 + Cloudflare D1 HTTP 어댑터 + `build_explorer(DSN)` 자동 라우팅
-- **106개 자동화 테스트** (safety 회귀 12 포함)
+- **DB 어댑터** — `SqlAlchemyExplorer`의 DSN 라우팅 + Cloudflare D1 HTTP 어댑터.
+  검토형 compiler·실행 계약은 기존 file-backed SQLite/DuckDB에서 검증
+- **357개 자동화 테스트** (safety, semantic runtime, 공개 API, Discord 포함)
 - **bench 데모** — federation + safety 라이브 시연 (`bench/ecommerce_demo.py`)
 
 ### ⚠️ Stub / 미검증
 | 항목 | 상태 |
 |---|---|
 | PostgreSQL 실 연결 | psycopg 어댑터는 있음. 실 PG 테스트 미수행 |
-| 메타데이터 자동 보강 (★①의 핵심 차별점) | V1.5 |
+| 원격 DB의 검토형 실행 | connector 지원과 별개. 현재 SQLite/DuckDB 외 dialect는 fail-closed |
+| raw-value Enrich와 검토형 catalog의 더 깊은 통합 | 현재는 기존 설명 캐시를 후보로만 재사용 |
 | 키워드/벡터 recall | V1.5/V2 |
 | LLM 자동 fact 추출 | V1.5 |
 | `/semantic diff`, `/semantic promote` | V1.5 |
@@ -73,7 +87,7 @@ Vanna AI(~20k★), Wren AI(~12k★), SQLCoder 같은 Text-to-SQL 오픈소스들
 
 ```
 V1   ✅  골격 + 4기둥 최소 + Discord 어댑터 + 영속화        ← 지금
-V1.5 →  메타데이터 자동 보강(★①) + 키워드 recall +
+V1.5 →  후보 alias를 넘어선 설명·카드 보강(★①) + 키워드 recall +
          LLM 자동 fact 추출 + /semantic diff·promote +
          URL/DDL ingestion + 회귀 강화
 V2   →  벡터 recall + 비용 게이트(EXPLAIN) + Notion MCP +
@@ -91,8 +105,8 @@ V2.5 →  PostgreSQL 멀티인스턴스 + branch fork/merge UI +
 ```bash
 git clone https://github.com/CausalInferenceLab/Lang2SQL.git
 cd Lang2SQL
-uv sync                                  # 기본 deps
-.venv/bin/pytest -q                      # 106 테스트
+uv sync --extra duckdb                   # 검토형 SQLite/DuckDB 경로 포함
+.venv/bin/pytest -q                      # 전체 회귀
 .venv/bin/python bench/ecommerce_demo.py # federation + safety 데모
 ```
 
@@ -147,6 +161,6 @@ Discord 봇 운영: [`docs/DEPLOY.md`](./DEPLOY.md)
 | ~v0.3 | LangGraph + Streamlit 파이프라인 (질문→retrieval→gate→generation→execution) |
 | 2026 봄 | **방향 전환**: Vanna/Wren도 이미 잘 푸는 영역에서 경쟁 그만, "현실 robustness"로 이동 |
 | 2026-05 | v4.1 plan 확정 → ports & adapters로 백지 재작성 (PR #227–#230) |
-| (지금) | V1 master 안착. 다음은 V1.5 — ★①의 *진짜 차별점*인 메타데이터 자동 보강 |
+| (지금) | 연결 즉시 후보 보강 구현. 다음은 V1.5 — 설명·카드와 사람 피드백의 더 깊은 통합 |
 
 — *"더 똑똑한 SQL 생성기가 아니라, 현실의 messy함에 견디는 도구."*

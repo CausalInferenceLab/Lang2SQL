@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING, Any, Callable
 
 from ..core.ports.audit import AuditEvent
 from ..core.ports.explorer import ExplorerPort
+from ..core.ports.llm import LLMPort
 from .catalog import (
     CATALOG_KEY,
     CONNECTION_BINDING_KEY,
@@ -45,6 +46,11 @@ from .compiler import (
     RELEASE_GROUP_SIZE_KEY as _RELEASE_GROUP_SIZE_KEY,
     compile_semantic_plan,
     compile_legacy_aggregate_sql,
+)
+from .enrichment import (
+    apply_description_suggestions,
+    enrich_catalog_from_metadata,
+    remove_ambiguous_suggestions,
 )
 from .onboarding import OnboardingSummary, build_catalog
 from .plan import (
@@ -216,6 +222,8 @@ def _metric_action_digest(metric: MetricSpec) -> str:
         "source_record_count": metric.source_record_count,
         "aliases": sorted(metric.aliases),
         "auto_aliases": sorted(metric.auto_aliases),
+        "suggested_aliases": sorted(metric.suggested_aliases),
+        "suggestion_sources": dict(sorted(metric.suggestion_sources.items())),
         "rejected_aliases": sorted(metric.rejected_aliases),
         "reviewed_bindings": {
             phrase: sorted(aggregates)
@@ -251,6 +259,8 @@ def _dimension_action_digest(dimension: DimensionSpec) -> str:
         "action_revision": dimension.action_revision,
         "aliases": sorted(dimension.aliases),
         "reserved_aliases": sorted(dimension.reserved_aliases),
+        "suggested_aliases": sorted(dimension.suggested_aliases),
+        "suggestion_sources": dict(sorted(dimension.suggestion_sources.items())),
         "rejected_aliases": sorted(dimension.rejected_aliases),
         "alias_reviewers": dict(sorted(dimension.alias_reviewers.items())),
     }
@@ -421,6 +431,7 @@ def _apply_pending_choice(
             )
         if pending.metric_alias_pending:
             _append_alias(metric.aliases, pending.metric_phrase)
+            _promote_suggested_alias(metric, pending.metric_phrase)
             metric.alias_reviewers[_normalize_phrase(pending.metric_phrase)] = (
                 reviewer_id or "unknown"
             )
@@ -474,6 +485,7 @@ def _apply_pending_choice(
             False,
         )
     _append_alias(dimension.aliases, binding.get("phrase", ""))
+    _promote_suggested_alias(dimension, binding.get("phrase", ""))
     dimension.alias_reviewers[_normalize_phrase(binding.get("phrase", ""))] = (
         reviewer_id or "unknown"
     )
@@ -488,8 +500,14 @@ def _apply_pending_choice(
 
 
 class SemanticService:
-    def __init__(self, store: "SqliteStore") -> None:
+    def __init__(
+        self,
+        store: "SqliteStore",
+        *,
+        metadata_enrichment_llm: LLMPort | None = None,
+    ) -> None:
         self._store = store
+        self._metadata_enrichment_llm = metadata_enrichment_llm
         self._unmanaged_explorer_sources: dict[int, tuple[ExplorerPort, str]] = {}
         self._pending_drafts: dict[str, _PendingDraft] = {}
         self._pending_draft_timers: dict[str, threading.Timer] = {}
@@ -642,13 +660,37 @@ class SemanticService:
 
         built = await build_catalog(explorer)
         existing = self.load(scope)
-        if (
+        same_catalog_source = bool(
             carry_source_id
             and existing is not None
             and existing.source_id == carry_source_id
             and existing.fingerprint == built.catalog.fingerprint
-        ):
+        )
+        if same_catalog_source:
+            # The legacy Enrich cache is scope-keyed, not source-keyed. Reuse it
+            # only when an active source and full physical fingerprint match.
+            apply_description_suggestions(
+                built.catalog,
+                self._existing_enrich_descriptions(scope, built.catalog),
+                source="existing_enrich_cache",
+            )
+        if self._metadata_enrichment_llm is not None:
+            enrichment = await enrich_catalog_from_metadata(
+                built.catalog,
+                self._metadata_enrichment_llm,
+            )
+            built.catalog.enrichment_status = enrichment.status
+            built.catalog.enrichment_reason = enrichment.reason
+        if same_catalog_source:
+            assert existing is not None
             _carry_forward_reviews(existing, built.catalog)
+        semantic_items: list[MetricSpec | DimensionSpec] = []
+        semantic_items.extend(built.catalog.metrics)
+        semantic_items.extend(built.catalog.dimensions)
+        remove_ambiguous_suggestions(semantic_items)
+        enriched_object_count = sum(
+            bool(item.suggested_aliases) for item in semantic_items
+        )
         return OnboardingSummary(
             table_count=built.table_count,
             declared_join_count=built.declared_join_count,
@@ -656,7 +698,44 @@ class SemanticService:
             confirmed_metric_count=built.catalog.confirmed_metric_count,
             pending_metric_count=built.catalog.pending_metric_count,
             catalog=built.catalog,
+            enrichment_status=built.catalog.enrichment_status,
+            enriched_object_count=enriched_object_count,
+            enrichment_reason=built.catalog.enrichment_reason,
         )
+
+    def _existing_enrich_descriptions(
+        self,
+        scope: str,
+        catalog: SemanticCatalog,
+    ) -> dict[str, str]:
+        """Read the existing ContextFlow Enrich cache without widening authority."""
+
+        table_owners: dict[str, set[str]] = {}
+        for table in catalog.tables:
+            table_owners.setdefault(table.name, set()).add(table.id)
+        semantic_items: list[MetricSpec | DimensionSpec] = []
+        semantic_items.extend(catalog.metrics)
+        semantic_items.extend(catalog.dimensions)
+        object_ids = {
+            (item.table_id, item.column): item.id
+            for item in semantic_items
+            if item.column
+        }
+        descriptions: dict[str, str] = {}
+        for key, description in self._store.kv_list_prefix(scope, "enriched_desc:"):
+            parts = key.split(":", 2)
+            if len(parts) != 3:
+                continue
+            table_name, column = parts[1], parts[2]
+            table_ids = table_owners.get(table_name, set())
+            # The legacy cache key has no schema. Ambiguous multi-schema names
+            # are skipped instead of attaching a meaning to the wrong object.
+            if len(table_ids) != 1:
+                continue
+            object_id = object_ids.get((next(iter(table_ids)), column))
+            if object_id:
+                descriptions[object_id] = description
+        return descriptions
 
     async def onboard(self, scope: str, explorer: ExplorerPort) -> OnboardingSummary:
         # Library callers do not provide a source identity. Carrying reviews
@@ -908,17 +987,27 @@ class SemanticService:
             if item.review_policy == DimensionReviewPolicy.RELEASE_REQUIRED
             and not item.raw_output_allowed
         ]
+        semantic_items: list[MetricSpec | DimensionSpec] = []
+        semantic_items.extend(catalog.metrics)
+        semantic_items.extend(catalog.dimensions)
+        enriched_object_count = sum(
+            bool(item.suggested_aliases) for item in semantic_items
+        )
         lines = [
             "**Semantic setup 상태**",
             f"- 테이블: {len(catalog.tables)}개",
             f"- 선언된 안전 조인: {len(catalog.joins)}개",
             f"- 기본 차단 컬럼: {len(catalog.blocked_columns)}개",
+            f"- 연결 즉시 Enrich 후보: {enriched_object_count}개 객체 "
+            f"(상태: {catalog.enrichment_status})",
             f"- 확인된 지표: {catalog.confirmed_metric_count}개",
             f"- 확인된 표현·집계 연결: {sum(len(values) for metric in catalog.metrics for values in metric.reviewed_bindings.values())}개",
             f"- 관리자 값 공개 검토 대기 차원: {len(release_candidates)}개",
             f"- 연결 전체 공개 데이터 범위: {'확인됨' if catalog.public_data_scope else '아님'}",
             "- 지표 표현과 각 분류 표현은 실제 질문에서 서로 독립된 단계로 확인합니다.",
         ]
+        if catalog.enrichment_reason:
+            lines.append(f"- Enrich 보강 제한 사유: {catalog.enrichment_reason}")
         if pending is not None:
             # Do not echo user/DB-derived phrases in this generic status text.
             # Discord's steward queue renders bounded, escaped metadata.
@@ -1640,6 +1729,7 @@ class SemanticService:
             changed = normalized not in metric.aliases
             if changed:
                 _append_alias(metric.aliases, normalized)
+                _promote_suggested_alias(metric, normalized)
                 metric.alias_reviewers[normalized] = assertion.reviewer_id
                 catalog.review_revision += 1
             return (
@@ -1723,6 +1813,7 @@ class SemanticService:
             changed = normalized not in dimension.aliases
             if changed:
                 _append_alias(dimension.aliases, normalized)
+                _promote_suggested_alias(dimension, normalized)
                 dimension.alias_reviewers[normalized] = assertion.reviewer_id
                 catalog.review_revision += 1
             return (
@@ -2855,7 +2946,10 @@ class SemanticService:
                 "이 표현과 집계 방식의 연결은 이전 검토에서 거절되었습니다.",
                 blocker="metric_binding_rejected",
             )
-        phrase_residual = _metric_phrase_residual(metric_phrase, metric.aliases)
+        phrase_residual = _metric_phrase_residual(
+            metric_phrase,
+            sorted(set([*metric.aliases, *metric.suggested_aliases])),
+        )
         if phrase_residual:
             return QueryOutcome(
                 "clarification",
@@ -2923,7 +3017,15 @@ class SemanticService:
                 )
             phrase_residual = _metric_phrase_residual(
                 phrase,
-                sorted(set([*dimension.aliases, *dimension.reserved_aliases])),
+                sorted(
+                    set(
+                        [
+                            *dimension.aliases,
+                            *dimension.reserved_aliases,
+                            *dimension.suggested_aliases,
+                        ]
+                    )
+                ),
             )
             if phrase_residual:
                 return QueryOutcome(
@@ -2990,7 +3092,15 @@ class SemanticService:
                 )
             phrase_residual = _metric_phrase_residual(
                 phrase,
-                sorted(set([*dimension.aliases, *dimension.reserved_aliases])),
+                sorted(
+                    set(
+                        [
+                            *dimension.aliases,
+                            *dimension.reserved_aliases,
+                            *dimension.suggested_aliases,
+                        ]
+                    )
+                ),
             )
             if phrase_residual:
                 return QueryOutcome(
@@ -3279,6 +3389,8 @@ def _carry_forward_reviews(previous: SemanticCatalog, current: SemanticCatalog) 
         metric.state = old.state
         metric.aggregate = old.aggregate
         metric.aliases = sorted(set([*metric.aliases, *old.aliases]))
+        for alias in metric.aliases:
+            _promote_suggested_alias(metric, alias)
         metric.rejected_aliases = sorted(set(old.rejected_aliases))
         metric.reviewed_bindings = {
             phrase: list(aggregates)
@@ -3320,6 +3432,8 @@ def _carry_forward_reviews(previous: SemanticCatalog, current: SemanticCatalog) 
             dimension.released_at = old_dimension.released_at
             dimension.action_revision = old_dimension.action_revision
         dimension.aliases = sorted(set([*dimension.aliases, *old_dimension.aliases]))
+        for alias in dimension.aliases:
+            _promote_suggested_alias(dimension, alias)
         dimension.rejected_aliases = sorted(set(old_dimension.rejected_aliases))
         dimension.alias_reviewers = dict(old_dimension.alias_reviewers)
 
@@ -3512,6 +3626,19 @@ def _append_alias(target: list[str], value: str) -> None:
     if normalized and normalized not in target:
         target.append(normalized)
         target.sort()
+
+
+def _promote_suggested_alias(
+    item: MetricSpec | DimensionSpec,
+    value: str,
+) -> None:
+    """Remove candidate provenance once a human-approved alias owns the phrase."""
+
+    normalized = _normalize_phrase(value)
+    item.suggested_aliases = [
+        alias for alias in item.suggested_aliases if alias != normalized
+    ]
+    item.suggestion_sources.pop(normalized, None)
 
 
 def _binding_key(phrase: str, aggregate: str) -> str:

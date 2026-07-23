@@ -46,6 +46,7 @@ from .encrypted_secrets import EncryptedSecrets
 
 # DSN used for the V1 explorer stub when a scope has registered none yet.
 _DEFAULT_DSN = "postgresql://stub/v1"
+_AUTO_METADATA_ENRICH_MODES = {"auto", "metadata", "llm"}
 
 
 class ContextConcierge:
@@ -74,7 +75,10 @@ class ContextConcierge:
         )
         self._audit = audit if audit is not None else self._store
         self._max_turns = max_turns
-        self._semantic = SemanticService(self._store)
+        self._semantic = SemanticService(
+            self._store,
+            metadata_enrichment_llm=_metadata_enrichment_llm(self._llm),
+        )
 
         # V1 memory (in-memory + inject-all + manual) and ingestion (file × LLM).
         self._memory = MemoryService(
@@ -355,12 +359,16 @@ class ContextConcierge:
             semantic_attention_state=(
                 "candidate_schema_too_large"
                 if semantic_query is not None and semantic_query.schema_blocker
-                else attention.state if attention else ""
+                else attention.state
+                if attention
+                else ""
             ),
             semantic_attention_message=(
                 semantic_query.schema_blocker
                 if semantic_query is not None and semantic_query.schema_blocker
-                else attention.message if attention else ""
+                else attention.message
+                if attention
+                else ""
             ),
             semantic_table_ids=attention.table_ids if attention else (),
             semantic_query=semantic_query,
@@ -385,3 +393,26 @@ def _default_llm() -> LLMPort:
     if os.environ.get("OPENAI_API_KEY"):
         return OpenAILLM()
     return FakeLLM()
+
+
+def _metadata_enrichment_llm(llm: LLMPort) -> LLMPort | None:
+    """Select the optional connect-time metadata pass without a hidden fallback."""
+
+    # Missing means backward-compatible metadata mode for existing deployments.
+    # New installs that copy .env.example opt into provider-aware "auto".
+    mode = os.environ.get("LANG2SQL_AUTO_METADATA_ENRICH", "metadata").strip().lower()
+    if mode not in _AUTO_METADATA_ENRICH_MODES:
+        raise ValueError(
+            "LANG2SQL_AUTO_METADATA_ENRICH must be one of: auto, metadata, llm"
+        )
+    if mode == "metadata":
+        return None
+    if mode == "llm":
+        return llm
+    # In auto mode, a configured real provider enables the pass. An offline
+    # FakeLLM is not silently treated as semantic enrichment.
+    if isinstance(llm, FakeLLM):
+        return None
+    if os.environ.get("LANG2SQL_LLM_BASE_URL") or os.environ.get("OPENAI_API_KEY"):
+        return llm
+    return None

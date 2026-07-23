@@ -9,6 +9,13 @@
 4. `plan`: 모델이나 UI가 조립한 typed draft를 검증하고 일회용 계획을 발급한다.
 5. `execute`: 같은 사용자·대화·DB에 묶인 계획을 한 번만 실행한다.
 
+`connect`는 물리명과 실제 DB comment를 후보로 자동 준비한다. 같은 source와 전체
+물리 fingerprint로 재연결할 때만 기존 Enrich 설명 캐시를 다시 사용한다.
+`LANG2SQL_AUTO_METADATA_ENRICH=auto` 또는 `llm`이면 metadata-only LLM 보강을
+시도하며, `Connected.scan`의 `enrichment_status`, `enriched_object_count`,
+`enrichment_reason`으로 성공·제한 사유를 확인할 수 있다. 어느 결과도 승인된
+업무 의미, join, 집계 또는 공개 권한을 만들지 않는다.
+
 > `CandidateSet.candidate_token`은 Discord에서 사용하는 15분 candidate/action token이
 > 아니다. 공개 API의 token은 draft를 같은 runtime·사용자·대화·DB source·원 질문에
 > 묶는 요청 무결성 값이며, host는 한 질의가 끝나면 저장하지 않고 폐기한다.

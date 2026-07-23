@@ -510,6 +510,7 @@ def _metric_phrases(item: MetricSpec) -> set[str]:
         item.column,
         *item.aliases,
         *item.auto_aliases,
+        *item.suggested_aliases,
         *item.reviewed_bindings,
         *_qualified_column_phrases(item.table_id, item.column),
     }
@@ -522,6 +523,7 @@ def _dimension_phrases(item: DimensionSpec) -> set[str]:
         item.column,
         *item.aliases,
         *item.auto_aliases,
+        *item.suggested_aliases,
         *item.reserved_aliases,
         *item.alias_reviewers,
         *_qualified_column_phrases(item.table_id, item.column),

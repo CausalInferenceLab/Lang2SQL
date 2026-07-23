@@ -218,6 +218,9 @@ class Lang2SQLRuntime:
                 if item.review_policy.value == "release_required"
             ),
             execution_supported=execution_supported,
+            enrichment_status=summary.enrichment_status,
+            enriched_object_count=summary.enriched_object_count,
+            enrichment_reason=summary.enrichment_reason,
         )
         return Connected(
             source=source,

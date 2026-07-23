@@ -115,6 +115,10 @@ class MetricSpec:
     source_record_count: bool = False
     aliases: list[str] = field(default_factory=list)
     auto_aliases: list[str] = field(default_factory=list)
+    # Enrich suggestions improve candidate discovery only. They never count as
+    # reviewed business meaning or an approved aggregate binding.
+    suggested_aliases: list[str] = field(default_factory=list)
+    suggestion_sources: dict[str, str] = field(default_factory=dict)
     rejected_aliases: list[str] = field(default_factory=list)
     reviewed_bindings: dict[str, list[str]] = field(default_factory=dict)
     rejected_bindings: list[str] = field(default_factory=list)
@@ -162,6 +166,10 @@ class DimensionSpec:
     action_revision: int = 0
     aliases: list[str] = field(default_factory=list)
     auto_aliases: list[str] = field(default_factory=list)
+    # Candidate-only evidence from DB comments or metadata-only enrichment.
+    # A human review is still required before a new phrase becomes an alias.
+    suggested_aliases: list[str] = field(default_factory=list)
+    suggestion_sources: dict[str, str] = field(default_factory=dict)
     # Physical-name aliases reserve ownership for conflict checks but never
     # make a release-required dimension selectable or review-complete.
     reserved_aliases: list[str] = field(default_factory=list)
@@ -235,6 +243,10 @@ class SemanticCatalog:
     metric_action_epoch: int = 0
     dimension_action_epoch: int = 0
     public_scope_epoch: int = 0
+    # Connect-time Enrich diagnostics are persisted so every frontend can
+    # explain whether the optional metadata-only model pass succeeded.
+    enrichment_status: str = "metadata_ready"
+    enrichment_reason: str = ""
 
     def __post_init__(self) -> None:
         if (
@@ -243,6 +255,14 @@ class SemanticCatalog:
             or self.public_scope_epoch < 0
         ):
             raise ValueError("semantic governance epochs cannot be negative")
+        if self.enrichment_status not in {
+            "metadata_ready",
+            "llm_ready",
+            "llm_degraded",
+        }:
+            raise ValueError("unsupported semantic enrichment status")
+        if self.enrichment_status != "llm_degraded" and self.enrichment_reason:
+            raise ValueError("only degraded enrichment may retain a reason")
         if bool(self.source_id) != (self.connection_generation > 0):
             raise ValueError("source identity and connection generation must pair")
         if self.public_data_scope:
@@ -290,6 +310,21 @@ class SemanticCatalog:
                 raise ValueError(
                     f"metric aliases cannot be both approved and rejected: {metric.id}"
                 )
+            suggestion_overlap = set(metric.aliases).intersection(
+                metric.suggested_aliases
+            )
+            if suggestion_overlap:
+                raise ValueError(
+                    f"metric aliases cannot be both approved and suggested: {metric.id}"
+                )
+            unknown_sources = set(metric.suggestion_sources).difference(
+                metric.suggested_aliases
+            )
+            if unknown_sources:
+                raise ValueError(
+                    "metric suggestion provenance requires a matching alias: "
+                    + metric.id
+                )
             reviewed_bindings = {
                 f"{phrase}|{aggregate}"
                 for phrase, aggregates in metric.reviewed_bindings.items()
@@ -303,6 +338,19 @@ class SemanticCatalog:
             if set(dimension.aliases).intersection(dimension.rejected_aliases):
                 raise ValueError(
                     "dimension aliases cannot be both approved and rejected: "
+                    + dimension.id
+                )
+            if set(dimension.aliases).intersection(dimension.suggested_aliases):
+                raise ValueError(
+                    "dimension aliases cannot be both approved and suggested: "
+                    + dimension.id
+                )
+            unknown_sources = set(dimension.suggestion_sources).difference(
+                dimension.suggested_aliases
+            )
+            if unknown_sources:
+                raise ValueError(
+                    "dimension suggestion provenance requires a matching alias: "
                     + dimension.id
                 )
 
@@ -378,6 +426,8 @@ class SemanticCatalog:
                 source_record_count=source_record_count,
                 aliases=list(item.get("aliases", [])),
                 auto_aliases=list(item.get("auto_aliases", item.get("aliases", []))),
+                suggested_aliases=list(item.get("suggested_aliases", [])),
+                suggestion_sources=dict(item.get("suggestion_sources", {})),
                 rejected_aliases=list(item.get("rejected_aliases", [])),
                 reviewed_bindings={
                     phrase: (
@@ -462,6 +512,8 @@ class SemanticCatalog:
                     if legacy_string
                     else list(item.get("auto_aliases", item.get("aliases", [])))
                 ),
+                suggested_aliases=list(item.get("suggested_aliases", [])),
+                suggestion_sources=dict(item.get("suggestion_sources", {})),
                 reserved_aliases=list(
                     item.get(
                         "reserved_aliases",
@@ -501,6 +553,8 @@ class SemanticCatalog:
             metric_action_epoch=int(data.get("metric_action_epoch", 0)),
             dimension_action_epoch=int(data.get("dimension_action_epoch", 0)),
             public_scope_epoch=int(data.get("public_scope_epoch", 0)),
+            enrichment_status=str(data.get("enrichment_status", "metadata_ready")),
+            enrichment_reason=str(data.get("enrichment_reason", "")),
             source_id=str(data.get("source_id", "")),
             connection_generation=int(data.get("connection_generation", 0)),
             fingerprint=str(data["fingerprint"]),

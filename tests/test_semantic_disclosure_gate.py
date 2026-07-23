@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from concurrent.futures import ThreadPoolExecutor
+from dataclasses import replace
 import json
 import re
 
@@ -25,7 +26,6 @@ from lang2sql.semantic.catalog import (
     DimensionReviewPolicy,
     SemanticCatalog,
 )
-from lang2sql.semantic.onboarding import build_catalog
 from lang2sql.semantic.service import (
     SemanticService,
     StewardAssertion,
@@ -371,7 +371,16 @@ def test_onboarding_never_samples_or_executes_raw_values(tmp_path):
             return await self.wrapped.list_tables()
 
         async def describe_table(self, name):
-            return await self.wrapped.describe_table(name)
+            table = await self.wrapped.describe_table(name)
+            # TEST_ONLY_SYNTHETIC_METADATA: exercises the real DB-comment path
+            # without treating a fabricated description as product truth.
+            columns = [
+                replace(column, description="Gross billed amount.")
+                if column.name == "value"
+                else column
+                for column in table.columns
+            ]
+            return replace(table, columns=columns)
 
         async def catalog_metadata(self):
             return await self.wrapped.catalog_metadata()
@@ -388,10 +397,48 @@ def test_onboarding_never_samples_or_executes_raw_values(tmp_path):
             return self.wrapped.quote_identifier(name)
 
     spy = SpyExplorer(explorer)
-    summary = asyncio.run(build_catalog(spy))
+    store = SqliteStore()
+    store.kv_set(
+        "g1",
+        "enriched_desc:measurements:value",
+        "Net sales amount.",
+    )
+    service = SemanticService(store)
+    first = asyncio.run(service.onboard("g1", spy))
+    first_metric = first.catalog.metric("metric:measurements.value")
+    assert first_metric is not None
+    assert "net sales amount" not in first_metric.suggested_aliases
+    summary = asyncio.run(
+        service.inspect(
+            "g1",
+            spy,
+            carry_source_id=first.catalog.source_id,
+        )
+    )
     assert summary.table_count == 1
     assert spy.sample_calls == 0
     assert spy.execute_calls == 0
+    metric = summary.catalog.metric("metric:measurements.value")
+    assert metric is not None
+    assert {"gross billed amount", "net sales amount"}.issubset(
+        metric.suggested_aliases
+    )
+    assert metric.suggestion_sources == {
+        "gross billed amount": "real_db_comment",
+        "net sales amount": "existing_enrich_cache",
+    }
+    store.kv_delete("g1", "enriched_desc:measurements:value")
+    refreshed = asyncio.run(
+        service.inspect(
+            "g1",
+            spy,
+            carry_source_id=first.catalog.source_id,
+        )
+    )
+    refreshed_metric = refreshed.catalog.metric("metric:measurements.value")
+    assert refreshed_metric is not None
+    assert "gross billed amount" in refreshed_metric.suggested_aliases
+    assert "net sales amount" not in refreshed_metric.suggested_aliases
 
 
 def test_admin_release_and_requester_mapping_are_distinct_discord_gates(tmp_path):

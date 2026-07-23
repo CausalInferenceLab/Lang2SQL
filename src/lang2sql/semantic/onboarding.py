@@ -29,6 +29,10 @@ from .catalog import (
     SemanticCatalog,
     TableSpec,
 )
+from .enrichment import (
+    metadata_description_suggestions,
+    remove_ambiguous_suggestions,
+)
 
 _NUMERIC_TYPE = re.compile(
     r"\b(tinyint|smallint|mediumint|integer|bigint|hugeint|"
@@ -243,6 +247,9 @@ class OnboardingSummary:
     confirmed_metric_count: int
     pending_metric_count: int
     catalog: SemanticCatalog
+    enrichment_status: str = "metadata_ready"
+    enriched_object_count: int = 0
+    enrichment_reason: str = ""
 
 
 async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
@@ -340,6 +347,10 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
                 continue
 
             physical_aliases = _physical_aliases(table_id, column.name)
+            suggested_aliases = metadata_description_suggestions(column.description)
+            suggestion_sources = {
+                alias: "real_db_comment" for alias in suggested_aliases
+            }
             if is_numeric:
                 role = _numeric_non_measure_role(column.name)
                 if role in {"identifier", "coordinate"}:
@@ -362,6 +373,8 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
                             raw_output_allowed=False,
                             disclosure_tier=DimensionDisclosureTier.BLOCKED,
                             aliases=[],
+                            suggested_aliases=suggested_aliases,
+                            suggestion_sources=suggestion_sources,
                             reserved_aliases=physical_aliases,
                         )
                     )
@@ -377,6 +390,8 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
                         nullable=column.nullable,
                         classification_evidence="numeric_measure_metadata_only",
                         aliases=physical_aliases,
+                        suggested_aliases=suggested_aliases,
+                        suggestion_sources=suggestion_sources,
                     )
                 )
                 continue
@@ -410,6 +425,8 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
                         else DimensionDisclosureTier.BLOCKED
                     ),
                     aliases=aliases,
+                    suggested_aliases=suggested_aliases,
+                    suggestion_sources=suggestion_sources,
                     reserved_aliases=physical_aliases,
                 )
             )
@@ -417,6 +434,10 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
     joins = _build_declared_joins(tables, metadata, columns_by_table_id)
     _remove_ambiguous_auto_aliases(metrics)
     _remove_ambiguous_auto_aliases(dimensions)
+    semantic_items: list[MetricSpec | DimensionSpec] = []
+    semantic_items.extend(metrics)
+    semantic_items.extend(dimensions)
+    remove_ambiguous_suggestions(semantic_items)
     for metric in metrics:
         metric.auto_aliases = list(metric.aliases)
     for dimension in dimensions:
@@ -463,6 +484,9 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
         confirmed_metric_count=catalog.confirmed_metric_count,
         pending_metric_count=catalog.pending_metric_count,
         catalog=catalog,
+        enriched_object_count=sum(
+            bool(item.suggested_aliases) for item in semantic_items
+        ),
     )
 
 
@@ -523,10 +547,7 @@ def _build_declared_joins(
             seen.add(edge)
             joins.append(
                 JoinSpec(
-                    id=(
-                        f"join:{child.id}.{child_column}->"
-                        f"{parent.id}.{parent_column}"
-                    ),
+                    id=(f"join:{child.id}.{child_column}->{parent.id}.{parent_column}"),
                     child_table_id=child.id,
                     child_column=child_column,
                     parent_table_id=parent.id,

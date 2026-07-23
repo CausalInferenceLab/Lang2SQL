@@ -21,9 +21,9 @@
 > *separate* set of definitions per team → it answers questions over an
 > incomplete database → it remembers every definition and conversation.
 
-연결된 DB에 **업무 의미 검토형 질의**가 활성화되면 모델은 SQL을 작성하지 않는다.
-모델은 서버가 질문별로 제한한 후보만 고르고, 실행에 필요한 불확실한 업무 의미를
-사람이 확인한 뒤 결정론적 코드가 검증된 SQL을 컴파일한다.
+> **이번 변경의 위치:** 기존 ContextFlow를 대체하지 않는다. Enrich, Semantic
+> federation, Memory, Discord 흐름은 유지하고, catalog가 활성화된 연결의 **DB 질의
+> 실행 경계**만 검토형 typed plan으로 강화한다.
 
 👉 **프로젝트 전체 그림(단일 SSOT)**: [`docs/PROJECT.md`](docs/PROJECT.md) · **컨트리뷰터 한눈 가이드**: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
@@ -33,17 +33,6 @@ competes on everything *around* the query: business-context learning, per-team
 semantics, robustness to messy databases, and memory. **Discord is the Phase 1
 interface, not the identity** — Slack/Web are adapters on the same core.
 
-### 처음 읽을 때 필요한 용어
-
-| 용어 | 이 프로젝트에서의 뜻 |
-|---|---|
-| **Semantic catalog** | 테이블·컬럼·PK/FK 같은 물리 사실과 사람이 확인한 업무 표현·집계·공개 정책을 함께 보관하는 연결별 카탈로그 |
-| **Candidate** | 모델이나 UI가 고를 수 있도록 서버가 질문별로 제한한 지표·분류·필터·기간 후보 |
-| **Human review** | 불확실한 업무 의미나 데이터 공개 범위를 사람이 명시적으로 승인·거절하는 단계 |
-| **Typed plan** | SQL 문자열 대신 metric, aggregate, group-by, filter, date 범위를 구조화한 검증 대상 |
-| **업무 의미 검토형 질의** | 서버가 질문별 후보를 제한하고, 불확실한 업무 의미는 실행 전에 사람이 확인하며, 모델 대신 서버의 `semantic_query`가 SQL을 만드는 질의 방식 |
-| **Fail-closed** | 의미·권한·join·dialect를 확신할 수 없을 때 추측하거나 raw SQL로 우회하지 않고 질문 또는 차단으로 끝내는 동작 |
-
 ---
 
 ## The four pillars
@@ -51,9 +40,42 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 | Pillar | What it is |
 |---|---|
 | **① Business-context learning** | Documents are the source of truth. Drop in a doc → the agent extracts metric/dimension/rule candidates → you confirm → they land in the semantic layer. |
-| **② Two-axis robustness** | **(2a) DB robustness** — works even when columns lack descriptions (auto-enrichment, v1.5). **(2b) Semantic robustness** — teams hold *different* definitions of the same term without conflict. This axis is the product/research identity. |
+| **② Two-axis robustness** | **(2a) DB robustness** — starts from physical metadata and candidate-only enrichment even when descriptions are incomplete. **(2b) Semantic robustness** — teams hold *different* definitions of the same term without conflict. This axis is the product/research identity. |
 | **③ Hermes memory** | Conversations, facts, and preferences persist instead of resetting each session. |
 | **④ Multi-interface** | Phase 1 Discord today; Slack/Web are future adapters. No platform lock-in. |
+
+### 이번 PR: 연결 즉시 의미 준비형 질의
+
+```mermaid
+flowchart TD
+    A["Discord / CLI / 다른 호스트"] --> B["기존 tenancy + agent loop"]
+    B --> C["기존 의미·기억 계층<br/>Ingestion · Federation · Memory"]
+    B --> D{"연결에 semantic catalog가 있는가?"}
+    D -- "아니오" --> E["기존 질의 경로<br/>run_sql · schema 탐색 · enrich"]
+    D -- "예" --> F["기존 Enrich 설명 + DB comment<br/>후보 전용으로 자동 반영"]
+    F --> G["서버가 질문별 후보 제한"]
+    G --> H["LLM은 허용된 ID·집계·필터만 조립"]
+    H --> I{"미확정 의미·공개 범위가 있는가?"}
+    I -- "예" --> J["사람이 허용값 승인·거절"]
+    I -- "아니오" --> K["SQL 없는 typed plan"]
+    J --> K
+    K --> L["서버가 SQL 컴파일"]
+    E --> M["기존 Safety pipeline"]
+    L --> M
+    M --> N["읽기 전용 실행 또는 명시적 차단"]
+```
+
+사람은 매 SQL을 검토하지 않고, **현재 질문에 필요한 미확정 업무 의미나 공개
+범위만** 확인한다. catalog가 활성화된 연결에서는 모델의 `run_sql`을
+`semantic_query`로 교체하며, 기존 federation·ingestion·memory는 그대로 유지한다.
+연결할 때 실제 DB comment를 검색 후보로 자동 반영하고, 같은 source·물리
+fingerprint의 재연결이면 기존 Enrich 설명 캐시도 재사용한다.
+`LANG2SQL_AUTO_METADATA_ENRICH=auto`이고 실제 LLM provider가 설정되어 있으면
+raw row 없이 metadata-only 보강도 한 번 수행한다. 이 결과는 후보일 뿐 승인된
+의미·집계·공개 권한이 아니다.
+현재 검토형 실행은 기존 파일을 read-only로 연 SQLite와 DuckDB에서 검증했다.
+자세한 흐름과 제한은 [`연결 즉시 의미 준비형 질의`](docs/REVIEWED_SEMANTIC_QUERY.md)를
+참고한다.
 
 ## Extensibility — outlets and appliances (콘센트/가전)
 
@@ -132,54 +154,14 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 
 ### 앱에 내장하기: 모델이 SQL을 작성하지 않는 공개 API
 
-Discord 외의 앱은 `Lang2SQLRuntime` 공개 API를 사용할 수 있다. 흐름은
-`connect → candidates → human feedback → typed plan → execute`다. 호스트와 모델은
-SQL 문자열을 만들거나 받지 않으며, 사람의 검토 선택과 서버가 검증한 typed plan만
-실행 경계로 넘는다. 현재 검토 기반 실행은 **기존 파일을 read-only로 연 SQLite와
-DuckDB**에 한정한다. 정확한 DTO, 검토 루프, bound `EQ`/`IN` 필터와 native `DATE`
-`[start, end)` 기간창 예제는 [`docs/LIBRARY_API.md`](docs/LIBRARY_API.md)를 따른다.
-DB 준비부터 결과 출력까지 한 번에 확인하려면 다음 예제를 실행한다.
+Discord 외의 앱은 `Lang2SQLRuntime`의
+`connect → candidates → feedback → plan → execute` 흐름을 사용할 수 있다.
+호스트와 모델은 SQL 문자열을 만들거나 받지 않는다. DTO와 검토 루프는
+[`docs/LIBRARY_API.md`](docs/LIBRARY_API.md)에 있다.
 
 ```bash
 uv run python examples/semantic_runtime_quickstart.py
 ```
-
-### 업무 의미 검토형 질의
-
-`/setup` now performs a PII-safe catalog scan immediately after connecting.
-Physical PK/FK facts are accepted automatically, while numeric business metrics
-are reviewed only when a real question needs them. In this reviewed-query mode,
-the model cannot call `run_sql`; it selects allowlisted IDs and copies relevant
-phrases from the question, declares the requested aggregate and unresolved
-obligations, then a deterministic compiler builds SQL.
-Phrase-to-column-to-aggregate bindings are persisted after review, so SUM and
-AVG over one physical column do not overwrite each other.
-
-`/setup`이 catalog를 정상 활성화하면 해당 연결은 업무 의미 검토형 질의 모드로 전환된다.
-이 모드에서는 `run_sql`이 모델 도구 목록에서 제거되고 `semantic_query`만 서버 검증을
-거쳐 SQL을 컴파일한다. catalog가 손상되더라도 legacy raw SQL 경로로 되돌아가지 않고
-연결을 차단한다.
-
-Unbounded string columns that are neither clearly sensitive nor clearly safe
-stay hidden from the model until an administrator explicitly approves grouped
-value disclosure with `/semantic_release`. That disclosure decision is separate
-from the requester's later phrase-to-column review. Physical source-row counts
-use an explicit `COUNT(*)` expression on every table, including PK-less tables.
-
-Discord flow: `/setup` → `/semantic_status` → when needed, an administrator
-uses 15-minute candidate tokens to review dimension disclosure or map an opaque
-dimension/metric phrase → ask a question → independently review the metric aggregate and
-dimension phrase when requested → the immutable original question resumes
-without a second LLM parse. Destructive or disclosure actions use warning and
-confirmation steps; metric/dimension mapping and dimension release bind the confirmation
-to the same administrator and exact payload. See
-[`docs/REVIEWED_SEMANTIC_QUERY.md`](docs/REVIEWED_SEMANTIC_QUERY.md) for the exact
-supported scope and fail-closed boundaries.
-
-Guild queries are admin-only by default. Non-admin members can query only in
-parent channels explicitly listed in `LANG2SQL_DISCORD_QUERY_CHANNEL_IDS`;
-threads inherit the parent channel. This frontend allowlist and the aggregate
-suppression rules are not a substitute for database row/column authorization.
 
 ---
 
@@ -191,14 +173,14 @@ suppression rules are not a substitute for database row/column authorization.
 - Safety pipeline with the V1 layers (whitelist + timeout), gating every query.
 - Legacy raw mode includes `run_sql`, schema exploration/enrichment, semantic
   term, ingestion, memory, and clarification tools.
-- 업무 의미 검토형 질의 모드는 raw query/exploration surface를
-  `semantic_query`로 교체하고, sample-based enrichment를 차단하며, SQL은
-  audit에만 남긴다.
+- 연결 즉시 의미 준비형 질의 모드는 catalog가 활성화된 연결에서 `run_sql`과
+  sample-based schema exploration을 `semantic_query`로 교체한다.
 - Memory service (in-memory store + inject-all recall + manual `/remember`).
 - Discord frontend (bot, commands, session router, render).
 - Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
-- PII-safe initial catalog, lazy metric review, and a typed semantic query
-  path for aggregate/group-by queries over declared many-to-one FK paths.
+- Connect-time candidate enrichment from DB comments, the existing Enrich
+  cache, and an optional metadata-only LLM pass; lazy business-meaning review;
+  and a typed aggregate/group-by path over declared many-to-one FK paths.
 - Private-by-default aggregate disclosure: fewer than five contributing rows
   blocks `SUM`/`AVG`/source-record `COUNT`, while `MIN`/`MAX` require an explicit
   public-data scope with no controlled dimension.
@@ -211,9 +193,11 @@ suppression rules are not a substitute for database row/column authorization.
 - **Reason without a configured model.** Without `OPENAI_API_KEY` or the local
   model variables, `FakeLLM` returns deterministic canned tool cycles — useful
   for wiring tests, not for answers.
-- DB metadata auto-enrichment, AST-precise SQL validation, function blocklists,
-  cost gating, `/semantic diff` / `/semantic promote`, keyword/vector recall,
-  automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.
+- Turn candidate enrichment into approved descriptions, business formulas, or
+  inferred joins automatically. Richer semantic cards and feedback-driven
+  enrichment, AST-precise SQL validation, function blocklists, cost gating,
+  `/semantic diff` / `/semantic promote`, keyword/vector recall, automatic fact
+  extraction, and URL/Notion ingestion remain v1.5+.
 - Persist across restarts by default: the V1 `SqliteStore` defaults to in-memory;
   point it at a file for durability.
 - Silently widen the typed-query boundary: advanced filters (OR/NOT, partial
@@ -225,20 +209,13 @@ suppression rules are not a substitute for database row/column authorization.
   verified reviewed execution are reported separately; unverified remote
   dialects fail closed.
 
-The cross-domain benchmark currently contains 28 cases over 21 public SQLite
-databases: 17 cases exercise the supported typed-query scope and 11 verify
-fail-closed handling of unsupported obligations. Its frozen semantic plans and
-gold SQL validate compilation, disclosure and result behavior; they do not
-measure natural-language planning accuracy. Dataset-specific mappings remain
-under `bench/**` and are not imported by product code.
-
 ---
 
 ## Roadmap at a glance
 
 | Area | V1 | V1.5 | V2 | V2.5 |
 |---|---|---|---|---|
-| **Safety** | whitelist + timeout | + AST validation, function blocklist, auto LIMIT, **metadata enrichment**, rate limit | + cost gate (EXPLAIN), per-engine pipelines | — |
+| **Safety** | whitelist + timeout | + AST validation, function blocklist, auto LIMIT, **richer semantic cards**, rate limit | + cost gate (EXPLAIN), per-engine pipelines | — |
 | **Memory** | in-memory + inject-all + manual | SQLite store + keyword recall + auto-extract | + vector recall + conflict resolution | PostgreSQL + hybrid recall + confidence |
 | **Ingestion** | file upload + LLM extract | + URL fetch + DDL parsing | + Notion/Confluence + hybrid | + GitHub/Drive + chunked RAG |
 | **Federation** | 3-scope resolution, `/semantic show` | `/semantic diff`, `/semantic promote`, conflict alerts | git sync (semantic-as-code) | branch fork/merge UI, per-scope audit |

@@ -322,7 +322,7 @@ class CommandHandlers:
         if self._concierge.semantic.load(identity.kv_scope) is not None:
             return OutboundMessage(
                 text=(
-                    "`/enrich`의 원시 값 샘플링은 업무 의미 검토형 질의 모드에서 "
+                    "`/enrich`의 원시 값 샘플링은 연결 즉시 의미 준비형 질의 모드에서 "
                     "비활성화됩니다. 구조 메타데이터만 사용하는 자동 준비 결과를 "
                     "`/semantic_status`에서 확인해 주세요."
                 )
@@ -340,7 +340,7 @@ class CommandHandlers:
         if self._concierge.semantic.load(identity.kv_scope) is not None:
             return OutboundMessage(
                 text=(
-                    "`/org_setup`의 자동 샘플 추론은 업무 의미 검토형 질의 모드에서 "
+                    "`/org_setup`의 자동 샘플 추론은 연결 즉시 의미 준비형 질의 모드에서 "
                     "비활성화됩니다. 필요한 업무 의미는 실제 질문에서 한 번씩 "
                     "확인합니다."
                 )
@@ -1202,11 +1202,18 @@ class CommandHandlers:
             else "- 메타데이터 연결만 완료: 이 DB 방언의 안전한 statement 취소가 "
             "검증되지 않아 질문 실행은 차단됨"
         )
+        enrichment_line = (
+            f"- 연결 즉시 Enrich 후보: {summary.enriched_object_count}개 객체 "
+            f"(상태: {summary.enrichment_status})"
+        )
+        if summary.enrichment_reason:
+            enrichment_line += f" — 사유: {summary.enrichment_reason}"
         return OutboundMessage(
             text=(
                 f"✅ **{_display(db_type)}** 연결 완료 — 테이블 {table_count}개를 읽었습니다.\n"
                 f"- 선언된 안전 조인 {summary.declared_join_count}개 자동 등록\n"
                 f"- 민감·식별자·비지원 컬럼 {summary.blocked_column_count}개 기본 차단\n"
+                f"{enrichment_line}\n"
                 f"- 물리 구조 검토 질문 0개\n"
                 f"- 관리자 값 공개 검토 대기 차원 "
                 f"{len(self._concierge.semantic.release_candidates(scope))}개\n"
@@ -1300,7 +1307,7 @@ row/column 권한 정책을 대신하지 않습니다.
 
 **🔧 기타**
 `/ingest`, `/confirm_ingest`, `/term_custom` — 검토형 비즈니스 용어 등록
-업무 의미 검토형 질의에서는 raw-value sampling `/org_setup`, `/enrich` 비활성화
+연결 즉시 의미 준비형 질의에서는 raw-value sampling `/org_setup`, `/enrich` 비활성화
 `/remember text:...` — 사실 저장
 `/audit_me` — 내 활동 이력 조회
 `/help` — 이 도움말"""

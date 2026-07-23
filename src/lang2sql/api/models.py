@@ -97,6 +97,9 @@ class ScanSummary:
     pending_metric_count: int
     pending_disclosure_count: int
     execution_supported: bool
+    enrichment_status: str = "metadata_ready"
+    enriched_object_count: int = 0
+    enrichment_reason: str = ""
 
 
 @dataclass(frozen=True)
