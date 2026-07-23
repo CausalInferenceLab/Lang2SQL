@@ -9,9 +9,27 @@
 4. `plan`: 모델이나 UI가 조립한 typed draft를 검증하고 일회용 계획을 발급한다.
 5. `execute`: 같은 사용자·대화·DB에 묶인 계획을 한 번만 실행한다.
 
+> `CandidateSet.candidate_token`은 Discord에서 사용하는 15분 candidate/action token이
+> 아니다. 공개 API의 token은 draft를 같은 runtime·사용자·대화·DB source·원 질문에
+> 묶는 요청 무결성 값이며, host는 한 질의가 끝나면 저장하지 않고 폐기한다.
+
 모델은 SQL을 받거나 반환하지 않는다. 필터 값도 SQL 문자열, candidate DTO, repr,
 audit parameter detail 또는 영속 review record에 들어가지 않는다. 같은 프로세스의
 검토 자동 재개에 필요한 원 질문과 typed 값은 메모리에만 최대 15분 보관된다.
+
+## 먼저 실행해 보기
+
+다음 예제는 임시 SQLite DB를 직접 만들기 때문에 Discord, 기존 DB, LLM, 네트워크가
+필요하지 않다. 이 예제가 직접 만든 공개 fixture에 한해 정해진 검토 선택을 적용한
+뒤 공개 API의 전체 흐름을 실행한다.
+
+```bash
+uv run python examples/semantic_runtime_quickstart.py
+```
+
+예제에서 쓰는 테이블과 값은 실행할 때 임시 디렉터리에 생성되고 종료 시 제거된다.
+실서비스에서는 예제의 자동 선택 함수를 그대로 쓰지 말고 사용자의 명시적 결정을
+`FeedbackRequest`로 전달해야 한다.
 
 ## 최소 예제
 

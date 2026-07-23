@@ -1,6 +1,6 @@
 # Lang2SQL Discord 사용 가이드
 
-이 실험 브랜치에서 LLM은 SQL을 직접 쓰지 않는다. LLM은 질문을 서버가 검증할
+governed semantic mode에서 LLM은 SQL을 직접 쓰지 않는다. LLM은 질문을 서버가 검증할
 수 있는 지표·집계·분류 슬롯으로 조립하고, 서버가 확인된 값만으로 read-only SQL을
 만든다.
 
@@ -52,6 +52,16 @@ credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출
 연결 성공 메시지는 테이블 수, 선언 FK 수, 민감·식별자·비지원 컬럼 차단 수와
 관리자 공개 검토가 필요한 문자열 차원 수를 보여준다. 연결 단계에서는 업무
 지표를 전부 묻지 않는다.
+
+`/setup`이 catalog를 활성화한 뒤에는 같은 연결에서 다음 경계가 적용된다.
+
+| 기능 | Catalog 없는 legacy mode | Catalog 있는 governed mode |
+|---|---|---|
+| 자연어 질의 도구 | 모델이 `run_sql`을 호출 | 모델은 `semantic_query`의 typed slot만 조립 |
+| SQL 작성 | 모델이 SQL 문자열 작성 | 서버 compiler만 검증된 SQL 작성 |
+| `/enrich`, `/org_setup` 샘플링 | 사용 가능 | raw-value sampling 비활성화 |
+| `/ingest`, `/term_custom`, `/remember`, `/audit_me` | 사용 가능 | 기존 기능으로 유지 |
+| Catalog 손상 | 해당 없음 | raw SQL로 돌아가지 않고 연결 차단 |
 
 ### 불투명한 분류 컬럼에 업무 표현 연결
 
@@ -190,6 +200,19 @@ catalog stamp 재검사에서 준비된 결과를 폐기한다.
 또는 `BLOCKED`로 끝난다. 현재 실제 안전 실행 증거는 existing file-backed SQLite와
 DuckDB에 한정된다. 다른 DB 커넥터는 연결 가능성과 timeout/취소가 검증된 질의 실행
 범위를 구분하며, 검증되지 않은 원격 dialect의 governed 실행은 차단한다.
+
+### 막혔을 때 무엇을 해야 하나
+
+| 화면 또는 코드 | 의미 | 다음 행동 |
+|---|---|---|
+| `NEEDS CLARIFICATION` | 질문의 지표·분류·필터·기간을 현재 후보만으로 확정할 수 없음 | 안내된 항목을 구체적으로 다시 질문하거나 관리자가 표현을 연결 |
+| `ReviewRequired` / `/semantic_reviews` | 업무 의미 또는 공개 범위를 사람이 확인해야 함 | 허용된 선택지 중 하나를 승인·거절한 뒤 원 요청자가 질문 재개 |
+| 토큰 만료 또는 stale source | 15분 검토 토큰이 만료됐거나 DB가 재연결됨 | 후보 조회 또는 경고 단계부터 새 토큰 발급 |
+| `BLOCKED`와 unsupported obligation | 현재 typed plan이 지원하지 않는 조건이 있음 | 조건을 제거하지 말고 지원 범위를 확장하거나 다른 분석 경로 선택 |
+| contributor·disclosure 차단 | 결과가 너무 작거나 차원이 아직 공개되지 않음 | 데이터 공개 정책을 확인하고, 허용되는 경우에만 관리자 검토 |
+| catalog/audit 오류 | 의미 변경이나 실행을 안전하게 기록할 수 없음 | 저장소 오류를 복구한 뒤 새 plan으로 다시 시도 |
+
+차단 사유를 무시하고 `run_sql`로 우회하는 것은 governed mode의 복구 방법이 아니다.
 
 ## 기타 기존 명령
 

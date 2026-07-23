@@ -177,9 +177,15 @@ fail-closed한다.
 ## 검증 경계
 
 ```bash
+uv sync --extra duckdb
+uvx ruff check src/lang2sql tests bench/local_model_semantic_eval.py examples/semantic_runtime_quickstart.py
+uv run mypy src/lang2sql examples/semantic_runtime_quickstart.py
 env -u OPENAI_API_KEY -u LANG2SQL_LLM_BASE_URL \
-  .venv/bin/python -m pytest -q
+  uv run pytest -q
 ```
+
+GitHub Actions는 Python 3.10과 3.12에서 DuckDB import를 필수로 확인한 뒤 같은 lint,
+type-check, 전체 테스트를 실행한다.
 
 회귀 검증에는 테스트 중 생성하는 다중 테이블 SQLite fixture와 물류·발전·교육·
 고객지원·조위 schema matrix를 사용한다. 별도 공개 평가는 Spider, BIRD Mini-Dev,
