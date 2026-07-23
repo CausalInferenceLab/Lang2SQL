@@ -154,9 +154,10 @@ def test_dimension_action_revision_prevents_aba_token_revival(tmp_path):
         )
         for _ in range(2)
     ]
-    assert service.release_dimension_with_token(
-        "g1", sibling_tokens[0], assertion
-    ).status == "confirmed"
+    assert (
+        service.release_dimension_with_token("g1", sibling_tokens[0], assertion).status
+        == "confirmed"
+    )
 
     released_catalog, _candidates = service.dimension_candidate_snapshot(
         "g1", include_released=True
@@ -168,13 +169,12 @@ def test_dimension_action_revision_prevents_aba_token_revival(tmp_path):
         "dimension_revoke",
         expected_catalog=released_catalog,
     )
-    assert service.revoke_dimension_with_token(
-        "g1", revoke_token, assertion
-    ).status == "confirmed"
-
-    stale = service.release_dimension_with_token(
-        "g1", sibling_tokens[1], assertion
+    assert (
+        service.revoke_dimension_with_token("g1", revoke_token, assertion).status
+        == "confirmed"
     )
+
+    stale = service.release_dimension_with_token("g1", sibling_tokens[1], assertion)
     assert stale.status == "blocked"
     current = service.load("g1")
     assert current is not None
@@ -196,8 +196,7 @@ def test_reset_invalidates_a_pending_dimension_action_without_target_change(tmp_
     assert after is not None
     assert after.dimension_action_epoch == before.dimension_action_epoch + 1
     assert (
-        service.release_dimension_with_token("g1", token, assertion).status
-        == "blocked"
+        service.release_dimension_with_token("g1", token, assertion).status == "blocked"
     )
 
 
@@ -210,20 +209,20 @@ def test_dimension_receipt_survives_unrelated_review_but_not_target_mutation(tmp
     first = service.release_dimension_with_token("g1", token, assertion)
     assert first.status == "confirmed" and first.mutation_applied
 
-    metric_token = service.issue_metric_action_token(
-        "g1", "metric:measurements.value"
+    metric_token = service.issue_metric_action_token("g1", "metric:measurements.value")
+    assert (
+        service.map_metric_phrase(
+            "g1", metric_token, "business value", assertion
+        ).status
+        == "confirmed"
     )
-    assert service.map_metric_phrase(
-        "g1", metric_token, "business value", assertion
-    ).status == "confirmed"
     retry = service.release_dimension_with_token("g1", token, assertion)
     assert retry.status == "confirmed"
     assert retry.mutation_applied is False
 
     assert service.revoke_dimension("g1", target_id, assertion).status == "confirmed"
     assert (
-        service.release_dimension_with_token("g1", token, assertion).status
-        == "blocked"
+        service.release_dimension_with_token("g1", token, assertion).status == "blocked"
     )
 
 
@@ -239,10 +238,13 @@ def test_public_scope_epoch_invalidates_old_token_and_fresh_token_retiers(tmp_pa
         public_data_confirmed=True,
     )
     target_id, controlled_token = next(iter(_dimension_action_tokens(service).items()))
-    assert service.release_dimension_with_token(
-        "g1", controlled_token, assertion
-    ).status == "confirmed"
-    assert service.confirm_public_data_scope("g1", public_assertion).status == "confirmed"
+    assert (
+        service.release_dimension_with_token("g1", controlled_token, assertion).status
+        == "confirmed"
+    )
+    assert (
+        service.confirm_public_data_scope("g1", public_assertion).status == "confirmed"
+    )
 
     catalog, _candidates = service.dimension_candidate_snapshot(
         "g1", include_released=True
@@ -255,14 +257,19 @@ def test_public_scope_epoch_invalidates_old_token_and_fresh_token_retiers(tmp_pa
         expected_catalog=catalog,
     )
     assert service.revoke_public_data_scope("g1", assertion).status == "confirmed"
-    assert service.release_dimension_with_token(
-        "g1",
-        stale_retier_token,
-        public_assertion,
-        disclosure_tier="public_grouped",
-    ).status == "blocked"
+    assert (
+        service.release_dimension_with_token(
+            "g1",
+            stale_retier_token,
+            public_assertion,
+            disclosure_tier="public_grouped",
+        ).status
+        == "blocked"
+    )
 
-    assert service.confirm_public_data_scope("g1", public_assertion).status == "confirmed"
+    assert (
+        service.confirm_public_data_scope("g1", public_assertion).status == "confirmed"
+    )
     catalog, _candidates = service.dimension_candidate_snapshot(
         "g1", include_released=True
     )
@@ -280,7 +287,10 @@ def test_public_scope_epoch_invalidates_old_token_and_fresh_token_retiers(tmp_pa
         disclosure_tier="public_grouped",
     )
     assert retiered.status == "confirmed" and retiered.mutation_applied
-    assert service.load("g1").dimension(target_id).disclosure_tier.value == "public_grouped"
+    assert (
+        service.load("g1").dimension(target_id).disclosure_tier.value
+        == "public_grouped"
+    )
 
 
 def test_sensitive_identifier_variants_stay_out_of_catalog_and_tool(tmp_path):
@@ -626,11 +636,14 @@ def test_released_output_guards_fail_closed_without_returning_labels(tmp_path):
         str(tmp_path / "output-guards.db")
     )
     dimension_id = "dimension:measurements.dmode_ttl"
-    assert service.release_dimension(
-        "g1",
-        dimension_id,
-        StewardAssertion(scope="g1", reviewer_id="admin", authorized=True),
-    ).status == "confirmed"
+    assert (
+        service.release_dimension(
+            "g1",
+            dimension_id,
+            StewardAssertion(scope="g1", reviewer_id="admin", authorized=True),
+        ).status
+        == "confirmed"
+    )
     catalog = service.load("g1")
 
     valid, blocker = enforce_released_dimension_output(
@@ -770,26 +783,23 @@ def test_release_carries_only_under_same_classifier_policy_and_reset_revokes_it(
         str(tmp_path / "carry-release.db")
     )
     dimension_id = "dimension:measurements.dmode_ttl"
-    assert service.release_dimension(
-        "g1",
-        dimension_id,
-        StewardAssertion(scope="g1", reviewer_id="admin", authorized=True),
-    ).status == "confirmed"
+    assert (
+        service.release_dimension(
+            "g1",
+            dimension_id,
+            StewardAssertion(scope="g1", reviewer_id="admin", authorized=True),
+        ).status
+        == "confirmed"
+    )
     catalog = service.load("g1")
     dimension = catalog.dimension(dimension_id)
     dimension.aliases = ["drive mode"]
     dimension.alias_reviewers = {"drive mode": "u1"}
-    service.save(
-        "g1", catalog, expected_review_revision=catalog.review_revision
-    )
+    service.save("g1", catalog, expected_review_revision=catalog.review_revision)
 
     carried = asyncio.run(
-        service.inspect(
-            "g1", explorer, carry_source_id=service.load("g1").source_id
-        )
-    ).catalog.dimension(
-        dimension_id
-    )
+        service.inspect("g1", explorer, carry_source_id=service.load("g1").source_id)
+    ).catalog.dimension(dimension_id)
     assert carried.raw_output_allowed is True
     assert carried.release_reviewer == "admin"
     assert carried.aliases == ["drive mode"]
@@ -798,25 +808,22 @@ def test_release_carries_only_under_same_classifier_policy_and_reset_revokes_it(
     source_id = catalog.source_id
     catalog.classification_policy_version = 1
     catalog.dimension(dimension_id).classification_policy_version = 1
-    service.save(
-        "g1", catalog, expected_review_revision=catalog.review_revision
-    )
+    service.save("g1", catalog, expected_review_revision=catalog.review_revision)
     invalidated = asyncio.run(
-        service.inspect(
-            "g1", explorer, carry_source_id=source_id
-        )
-    ).catalog.dimension(
-        dimension_id
-    )
+        service.inspect("g1", explorer, carry_source_id=source_id)
+    ).catalog.dimension(dimension_id)
     assert invalidated.raw_output_allowed is False
     assert invalidated.aliases == []
 
     asyncio.run(service.onboard("g1", explorer))
-    assert service.release_dimension(
-        "g1",
-        dimension_id,
-        StewardAssertion(scope="g1", reviewer_id="admin", authorized=True),
-    ).status == "confirmed"
+    assert (
+        service.release_dimension(
+            "g1",
+            dimension_id,
+            StewardAssertion(scope="g1", reviewer_id="admin", authorized=True),
+        ).status
+        == "confirmed"
+    )
     assert service.reset_reviews("g1").status == "confirmed"
     reset = service.load("g1").dimension(dimension_id)
     assert reset.raw_output_allowed is False

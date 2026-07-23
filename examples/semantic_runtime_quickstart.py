@@ -1,4 +1,4 @@
-"""Run a fully local, SQL-free Lang2SQLRuntime aggregate example.
+"""Run a local aggregate query using bounded semantic IDs and explicit review.
 
 Run from an installed package, or from this repository with:
     uv run python examples/semantic_runtime_quickstart.py

@@ -82,9 +82,7 @@ def test_physical_fingerprint_is_independent_of_adapter_enumeration_order(tmp_pa
             metadata = deepcopy(await self.wrapped.catalog_metadata())
             metadata["tables"] = dict(reversed(list(metadata["tables"].items())))
             for table in metadata["tables"].values():
-                table["foreign_keys"] = list(
-                    reversed(table.get("foreign_keys", []))
-                )
+                table["foreign_keys"] = list(reversed(table.get("foreign_keys", [])))
             return metadata
 
         async def sample_rows(self, name, limit=5):
@@ -145,9 +143,7 @@ def test_managed_identical_schema_switch_invalidates_old_context(tmp_path):
     _seed_events(second, 3)
     concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
-    identity = Identity(
-        user_id="admin", guild_id="g1", channel_id="c1", is_admin=True
-    )
+    identity = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
     first_dsn = f"sqlite:///{first}"
     second_dsn = f"sqlite:///{second}"
 
@@ -177,9 +173,7 @@ def test_same_dsn_reactivation_carries_review_but_rotates_generation(tmp_path):
     explorer = _seed_events(database, 2)
     concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
-    identity = Identity(
-        user_id="admin", guild_id="g1", channel_id="c1", is_admin=True
-    )
+    identity = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
     dsn = explorer.url
     assert "연결 완료" in asyncio.run(handlers.connect(identity, dsn)).text
     first_binding = concierge.connection_binding("g1")
@@ -220,9 +214,7 @@ def test_generation_change_clears_db_derived_session_history(tmp_path):
     _seed_events(database, 2)
     concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
-    identity = Identity(
-        user_id="admin", guild_id="g1", channel_id="c1", is_admin=True
-    )
+    identity = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
     dsn = f"sqlite:///{database}"
     asyncio.run(handlers.connect(identity, dsn))
     context = asyncio.run(concierge.build_context(identity, user_text="amount"))
@@ -231,7 +223,9 @@ def test_generation_change_clears_db_derived_session_history(tmp_path):
 
     asyncio.run(handlers.connect(identity, dsn))
     refreshed = asyncio.run(concierge.build_context(identity, user_text="amount"))
-    assert all("SECRET_OLD_ROW" not in item.content for item in refreshed.session.history())
+    assert all(
+        "SECRET_OLD_ROW" not in item.content for item in refreshed.session.history()
+    )
 
 
 def test_stale_catalog_cannot_resurrect_after_managed_activation(tmp_path):
@@ -241,9 +235,7 @@ def test_stale_catalog_cannot_resurrect_after_managed_activation(tmp_path):
     _seed_events(second, 3)
     concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
-    identity = Identity(
-        user_id="admin", guild_id="g1", channel_id="c1", is_admin=True
-    )
+    identity = Identity(user_id="admin", guild_id="g1", channel_id="c1", is_admin=True)
     asyncio.run(handlers.connect(identity, f"sqlite:///{first}"))
     stale = concierge.semantic.load("g1")
     assert stale is not None
@@ -269,15 +261,11 @@ def test_bound_catalog_revision_cas_rejects_lost_update(tmp_path):
     prior_revision = first.review_revision
     first.metric("metric:events.amount").aliases.append("alpha amount")
     first.review_revision += 1
-    service.save(
-        "g1", first, expected_review_revision=prior_revision
-    )
+    service.save("g1", first, expected_review_revision=prior_revision)
     second.metric("metric:events.amount").aliases.append("beta amount")
     second.review_revision += 1
     with pytest.raises(RuntimeError, match="catalog changed"):
-        service.save(
-            "g1", second, expected_review_revision=prior_revision
-        )
+        service.save("g1", second, expected_review_revision=prior_revision)
     final = service.load("g1")
     assert final is not None
     aliases = final.metric("metric:events.amount").aliases

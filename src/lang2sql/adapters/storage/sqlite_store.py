@@ -231,13 +231,10 @@ class SqliteStore:
                     "SELECT key, value FROM kv WHERE scope = ? AND key IN (?, ?, ?)",
                     (scope, binding_key, generation_key, catalog_key),
                 ).fetchall()
-                snapshot = {
-                    str(row["key"]): str(row["value"]) for row in rows
-                }
-                if (
-                    snapshot.get(binding_key) != expected_binding_value
-                    or snapshot.get(generation_key) != str(expected_generation)
-                ):
+                snapshot = {str(row["key"]): str(row["value"]) for row in rows}
+                if snapshot.get(binding_key) != expected_binding_value or snapshot.get(
+                    generation_key
+                ) != str(expected_generation):
                     raise RuntimeError("connection changed before catalog mutation")
                 if expected_review_revision is not None:
                     try:
@@ -288,9 +285,7 @@ class SqliteStore:
                     f"AND key IN ({placeholders})",
                     (scope, *ordered_keys),
                 ).fetchall()
-                snapshot = {
-                    str(row["key"]): str(row["value"]) for row in rows
-                }
+                snapshot = {str(row["key"]): str(row["value"]) for row in rows}
                 mutation = mutate(snapshot)
                 if len(mutation) == 3:
                     upserts, delete_keys, result = mutation
@@ -302,10 +297,7 @@ class SqliteStore:
                     self._conn.executemany(
                         "INSERT INTO kv (scope, key, value) VALUES (?, ?, ?) "
                         "ON CONFLICT(scope, key) DO UPDATE SET value = excluded.value",
-                        [
-                            (scope, key, value)
-                            for key, value in upserts.items()
-                        ],
+                        [(scope, key, value) for key, value in upserts.items()],
                     )
                 if deletes:
                     self._conn.executemany(

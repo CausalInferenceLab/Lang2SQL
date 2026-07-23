@@ -21,9 +21,9 @@
 > *separate* set of definitions per team → it answers questions over an
 > incomplete database → it remembers every definition and conversation.
 
-연결된 DB에 **governed semantic mode**가 활성화되면 모델은 SQL을 작성하지 않는다.
-모델은 사람이 검토한 지표·분류·필터 후보만 고르고, 결정론적 코드가 검증된 SQL을
-컴파일한다.
+연결된 DB에 **업무 의미 검토형 질의**가 활성화되면 모델은 SQL을 작성하지 않는다.
+모델은 서버가 질문별로 제한한 후보만 고르고, 실행에 필요한 불확실한 업무 의미를
+사람이 확인한 뒤 결정론적 코드가 검증된 SQL을 컴파일한다.
 
 👉 **프로젝트 전체 그림(단일 SSOT)**: [`docs/PROJECT.md`](docs/PROJECT.md) · **컨트리뷰터 한눈 가이드**: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)
 
@@ -41,7 +41,7 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 | **Candidate** | 모델이나 UI가 고를 수 있도록 서버가 질문별로 제한한 지표·분류·필터·기간 후보 |
 | **Human review** | 불확실한 업무 의미나 데이터 공개 범위를 사람이 명시적으로 승인·거절하는 단계 |
 | **Typed plan** | SQL 문자열 대신 metric, aggregate, group-by, filter, date 범위를 구조화한 검증 대상 |
-| **Governed mode** | semantic catalog가 활성화되어 모델의 `run_sql` 접근을 제거하고 `semantic_query`만 허용하는 모드 |
+| **업무 의미 검토형 질의** | 서버가 질문별 후보를 제한하고, 불확실한 업무 의미는 실행 전에 사람이 확인하며, 모델 대신 서버의 `semantic_query`가 SQL을 만드는 질의 방식 |
 | **Fail-closed** | 의미·권한·join·dialect를 확신할 수 없을 때 추측하거나 raw SQL로 우회하지 않고 질문 또는 차단으로 끝내는 동작 |
 
 ---
@@ -130,12 +130,12 @@ does not provide a meaningful semantic-query experience.
 The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 [`docs/DEPLOY.md`](docs/DEPLOY.md). Copy [`.env.example`](.env.example) to start.
 
-### 앱에 내장하기: SQL 없는 공개 API
+### 앱에 내장하기: 모델이 SQL을 작성하지 않는 공개 API
 
 Discord 외의 앱은 `Lang2SQLRuntime` 공개 API를 사용할 수 있다. 흐름은
 `connect → candidates → human feedback → typed plan → execute`다. 호스트와 모델은
 SQL 문자열을 만들거나 받지 않으며, 사람의 검토 선택과 서버가 검증한 typed plan만
-실행 경계로 넘는다. 현재 governed 실행은 **기존 파일을 read-only로 연 SQLite와
+실행 경계로 넘는다. 현재 검토 기반 실행은 **기존 파일을 read-only로 연 SQLite와
 DuckDB**에 한정한다. 정확한 DTO, 검토 루프, bound `EQ`/`IN` 필터와 native `DATE`
 `[start, end)` 기간창 예제는 [`docs/LIBRARY_API.md`](docs/LIBRARY_API.md)를 따른다.
 DB 준비부터 결과 출력까지 한 번에 확인하려면 다음 예제를 실행한다.
@@ -144,18 +144,18 @@ DB 준비부터 결과 출력까지 한 번에 확인하려면 다음 예제를 
 uv run python examples/semantic_runtime_quickstart.py
 ```
 
-### Governed semantic mode (semantic first-connect)
+### 업무 의미 검토형 질의
 
 `/setup` now performs a PII-safe catalog scan immediately after connecting.
 Physical PK/FK facts are accepted automatically, while numeric business metrics
-are reviewed only when a real question needs them. In governed mode the model
-cannot call `run_sql`; it selects allowlisted IDs, copies the relevant question
-phrases, declares the requested aggregate and unresolved obligations, then a
-deterministic compiler builds SQL. Phrase-to-column-to-aggregate bindings are
-persisted after review, so SUM and AVG over one physical column do not overwrite
-each other.
+are reviewed only when a real question needs them. In this reviewed-query mode,
+the model cannot call `run_sql`; it selects allowlisted IDs and copies relevant
+phrases from the question, declares the requested aggregate and unresolved
+obligations, then a deterministic compiler builds SQL.
+Phrase-to-column-to-aggregate bindings are persisted after review, so SUM and
+AVG over one physical column do not overwrite each other.
 
-`/setup`이 catalog를 정상 활성화하면 해당 연결은 governed mode로 전환된다.
+`/setup`이 catalog를 정상 활성화하면 해당 연결은 업무 의미 검토형 질의 모드로 전환된다.
 이 모드에서는 `run_sql`이 모델 도구 목록에서 제거되고 `semantic_query`만 서버 검증을
 거쳐 SQL을 컴파일한다. catalog가 손상되더라도 legacy raw SQL 경로로 되돌아가지 않고
 연결을 차단한다.
@@ -173,7 +173,7 @@ dimension phrase when requested → the immutable original question resumes
 without a second LLM parse. Destructive or disclosure actions use warning and
 confirmation steps; metric/dimension mapping and dimension release bind the confirmation
 to the same administrator and exact payload. See
-[`docs/SEMANTIC_FIRST_CONNECT.md`](docs/SEMANTIC_FIRST_CONNECT.md) for the exact
+[`docs/REVIEWED_SEMANTIC_QUERY.md`](docs/REVIEWED_SEMANTIC_QUERY.md) for the exact
 supported scope and fail-closed boundaries.
 
 Guild queries are admin-only by default. Non-admin members can query only in
@@ -191,12 +191,13 @@ suppression rules are not a substitute for database row/column authorization.
 - Safety pipeline with the V1 layers (whitelist + timeout), gating every query.
 - Legacy raw mode includes `run_sql`, schema exploration/enrichment, semantic
   term, ingestion, memory, and clarification tools.
-- Governed mode replaces the raw query/exploration surface with
-  `semantic_query`, blocks sample-based enrichment, and keeps SQL in audit only.
+- 업무 의미 검토형 질의 모드는 raw query/exploration surface를
+  `semantic_query`로 교체하고, sample-based enrichment를 차단하며, SQL은
+  audit에만 남긴다.
 - Memory service (in-memory store + inject-all recall + manual `/remember`).
 - Discord frontend (bot, commands, session router, render).
 - Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
-- PII-safe first-connect catalog, lazy metric review, and a typed semantic query
+- PII-safe initial catalog, lazy metric review, and a typed semantic query
   path for aggregate/group-by queries over declared many-to-one FK paths.
 - Private-by-default aggregate disclosure: fewer than five contributing rows
   blocks `SUM`/`AVG`/source-record `COUNT`, while `MIN`/`MAX` require an explicit
@@ -219,9 +220,9 @@ suppression rules are not a substitute for database row/column authorization.
   match, free search), timestamp/relative/fiscal/cohort time, unit conversion,
   derived formulas, composite joins, and fan-out joins fail closed rather than
   being guessed or dropped.
-- Claim universal dialect parity: current public governed-execution evidence
+- Claim universal dialect parity: current public reviewed-execution evidence
   covers existing file-backed SQLite and DuckDB only. Connector availability and
-  verified governed execution are reported separately; unverified remote
+  verified reviewed execution are reported separately; unverified remote
   dialects fail closed.
 
 The cross-domain benchmark currently contains 28 cases over 21 public SQLite

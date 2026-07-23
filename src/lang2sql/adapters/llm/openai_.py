@@ -154,9 +154,7 @@ def _decode_completion(raw: dict[str, Any]) -> Completion:
             args = (
                 decoded_args
                 if isinstance(decoded_args, dict)
-                else {
-                    "__invalid_argument_shape__": type(decoded_args).__name__
-                }
+                else {"__invalid_argument_shape__": type(decoded_args).__name__}
             )
         tool_calls.append(
             ToolCall(id=tc.get("id", ""), name=fn.get("name", ""), arguments=args)

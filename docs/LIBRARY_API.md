@@ -1,4 +1,4 @@
-# SQL 없는 임베딩 API
+# 모델이 SQL을 작성하지 않는 임베딩 API
 
 `Lang2SQLRuntime`은 새 애플리케이션이 내부 semantic service나 SQL 객체를 직접
 다루지 않게 하는 비동기 facade다. 공개 흐름은 다음 다섯 단계다.

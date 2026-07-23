@@ -12,7 +12,6 @@ import zipfile
 
 import pytest
 
-
 _ROOT = Path(__file__).resolve().parent.parent
 _MODULE_PATH = _ROOT / "bench" / "dataset_cache.py"
 

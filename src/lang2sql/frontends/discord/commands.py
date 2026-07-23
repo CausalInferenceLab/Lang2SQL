@@ -187,8 +187,8 @@ class CommandHandlers:
             )
         await self._concierge.store.save(identity.session_key(), ctx.session)
 
-        # In governed mode the tool output is the authoritative result.  Using
-        # it directly prevents the final prose model from changing readiness,
+        # In reviewed-query mode the tool output is authoritative. Using it
+        # directly prevents the final prose model from changing readiness,
         # dropping a clarification, or rewriting the compiled SQL.
         if semantic_results:
             if ctx.semantic_result_ready:
@@ -322,7 +322,7 @@ class CommandHandlers:
         if self._concierge.semantic.load(identity.kv_scope) is not None:
             return OutboundMessage(
                 text=(
-                    "`/enrich`의 원시 값 샘플링은 semantic first-connect 모드에서 "
+                    "`/enrich`의 원시 값 샘플링은 업무 의미 검토형 질의 모드에서 "
                     "비활성화됩니다. 구조 메타데이터만 사용하는 자동 준비 결과를 "
                     "`/semantic_status`에서 확인해 주세요."
                 )
@@ -340,7 +340,7 @@ class CommandHandlers:
         if self._concierge.semantic.load(identity.kv_scope) is not None:
             return OutboundMessage(
                 text=(
-                    "`/org_setup`의 자동 샘플 추론은 semantic first-connect 모드에서 "
+                    "`/org_setup`의 자동 샘플 추론은 업무 의미 검토형 질의 모드에서 "
                     "비활성화됩니다. 필요한 업무 의미는 실제 질문에서 한 번씩 "
                     "확인합니다."
                 )
@@ -1300,7 +1300,7 @@ row/column 권한 정책을 대신하지 않습니다.
 
 **🔧 기타**
 `/ingest`, `/confirm_ingest`, `/term_custom` — 검토형 비즈니스 용어 등록
-semantic first-connect에서는 raw-value sampling `/org_setup`, `/enrich` 비활성화
+업무 의미 검토형 질의에서는 raw-value sampling `/org_setup`, `/enrich` 비활성화
 `/remember text:...` — 사실 저장
 `/audit_me` — 내 활동 이력 조회
 `/help` — 이 도움말"""

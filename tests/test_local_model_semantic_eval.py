@@ -11,7 +11,6 @@ import sys
 from lang2sql.core.types import Completion, ToolCall, ToolSpec
 from lang2sql.adapters.llm.openai_ import _decode_completion
 
-
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT / "bench"))
 from eval_contract import EvalCase  # noqa: E402
@@ -20,30 +19,30 @@ import local_model_semantic_eval as evaluator  # noqa: E402
 
 def _case(**overrides) -> EvalCase:
     raw = {
-            "case_id": "fixture.count",
-            "dataset_id": "fixture",
-            "dataset_version": "1",
-            "source_sha256": "a" * 64,
-            "license": "test-only",
-            "db_id": "fixture",
-            "domain": "test",
-            "topology_family": "flat_event",
-            "dialect": "sqlite",
-            "split": "dev",
-            "question": "How many rows by kind?",
-            "gold_operators": ["count_star", "group_by"],
-            "expected_state": "ready",
-            "gold_semantic_plan": {
-                "metric": {
-                    "table_id": "events",
-                    "aggregate": "count",
-                    "source_record_count": True,
-                },
-                "dimensions": [{"table_id": "events", "column": "kind"}],
+        "case_id": "fixture.count",
+        "dataset_id": "fixture",
+        "dataset_version": "1",
+        "source_sha256": "a" * 64,
+        "license": "test-only",
+        "db_id": "fixture",
+        "domain": "test",
+        "topology_family": "flat_event",
+        "dialect": "sqlite",
+        "split": "dev",
+        "question": "How many rows by kind?",
+        "gold_operators": ["count_star", "group_by"],
+        "expected_state": "ready",
+        "gold_semantic_plan": {
+            "metric": {
+                "table_id": "events",
+                "aggregate": "count",
+                "source_record_count": True,
             },
-            "safety_tags": ["test_only"],
-            "oracle_sql": "SELECT kind, COUNT(*) FROM events GROUP BY kind",
-        }
+            "dimensions": [{"table_id": "events", "column": "kind"}],
+        },
+        "safety_tags": ["test_only"],
+        "oracle_sql": "SELECT kind, COUNT(*) FROM events GROUP BY kind",
+    }
     raw.update(overrides)
     return EvalCase.from_mapping(raw)
 
@@ -148,17 +147,13 @@ def test_non_object_tool_arguments_are_a_case_level_invalid_selection():
 
     score = evaluator.score_completion(_case(), completion)
 
-    assert completion.tool_calls[0].arguments == {
-        "__invalid_argument_shape__": "list"
-    }
+    assert completion.tool_calls[0].arguments == {"__invalid_argument_shape__": "list"}
     assert score["status"] == "invalid_argument_shape"
     assert score["slot_exact"] is False
     assert score["usable_selection"] is False
 
 
-def test_production_blocker_is_not_counted_as_usable_selection(
-    tmp_path, monkeypatch
-):
+def test_production_blocker_is_not_counted_as_usable_selection(tmp_path, monkeypatch):
     database = tmp_path / "blocked-draft.sqlite"
     with sqlite3.connect(database) as connection:
         connection.execute("CREATE TABLE events (kind TEXT)")
@@ -265,9 +260,7 @@ def test_exact_persisted_review_pending_is_usable(tmp_path, monkeypatch):
     assert result["usable_selection"] is True
 
 
-def test_exact_hallucinated_id_outside_attention_is_not_usable(
-    tmp_path, monkeypatch
-):
+def test_exact_hallucinated_id_outside_attention_is_not_usable(tmp_path, monkeypatch):
     database = tmp_path / "outside-attention.sqlite"
     with sqlite3.connect(database) as connection:
         connection.execute("CREATE TABLE events (kind TEXT)")

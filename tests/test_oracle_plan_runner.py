@@ -9,7 +9,6 @@ import sys
 
 import pytest
 
-
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT / "bench"))
 from eval_contract import EvalCase  # noqa: E402
@@ -294,9 +293,7 @@ def test_public_extreme_metric_still_compares_with_oracle(tmp_path):
         ),
     )
 
-    result = asyncio.run(
-        runner.evaluate_case(case, database, disclosure_mode="public")
-    )
+    result = asyncio.run(runner.evaluate_case(case, database, disclosure_mode="public"))
     assert result["status"] == "exact_match"
 
 

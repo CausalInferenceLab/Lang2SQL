@@ -326,9 +326,7 @@ def _layer_tag(layer: str, entity: str, user_id: str, channel_id: str) -> str:
 def _scan_schema(store: Any, scope: str) -> str:
     col_entries = store.kv_list_prefix(scope, _ENRICH_PREFIX + ":")
     if not col_entries:
-        return (
-            "⚠️ enriched schema가 없습니다. 먼저 `/enrich`를 실행해 스키마를 보강하세요."
-        )
+        return "⚠️ enriched schema가 없습니다. 먼저 `/enrich`를 실행해 스키마를 보강하세요."
 
     col_map: dict[str, str] = {}
     for key, desc in col_entries:

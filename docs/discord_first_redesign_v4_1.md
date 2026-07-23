@@ -2,7 +2,7 @@
 
 > **역사적 설계 문서**: 아래 명령 표는 2026-05 계획 당시의 walking skeleton이다.
 > 현재 실행 표면은 [`USAGE.md`](./USAGE.md)와
-> [`SEMANTIC_FIRST_CONNECT.md`](./SEMANTIC_FIRST_CONNECT.md)를 따른다. 현재
+> [`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md)를 따른다. 현재
 > Discord에는 raw DSN `/connect`가 없고 `/setup`을 사용한다.
 
 > **작성일**: 2026-05-18

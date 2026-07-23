@@ -83,9 +83,7 @@ class EncryptedSecrets:
 
         return self._fernet.decrypt(value.encode("ascii")).decode("utf-8")
 
-    def source_identity(
-        self, scope: str, dsn: str, extras: dict[str, str]
-    ) -> str:
+    def source_identity(self, scope: str, dsn: str, extras: dict[str, str]) -> str:
         """Return a non-reversible identity for the exact execution material."""
 
         material = json.dumps(
@@ -99,6 +97,4 @@ class EncryptedSecrets:
             sort_keys=True,
             separators=(",", ":"),
         ).encode("utf-8")
-        return hmac.new(
-            self._source_identity_key, material, hashlib.sha256
-        ).hexdigest()
+        return hmac.new(self._source_identity_key, material, hashlib.sha256).hexdigest()

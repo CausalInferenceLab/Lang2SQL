@@ -69,9 +69,7 @@ class _AskThenActLLM:
             if self.sibling:
                 calls.append(ToolCall(id="ping-1", name="ping", arguments={}))
             return Completion(tool_calls=calls)
-        return Completion(
-            tool_calls=[ToolCall(id="ping-2", name="ping", arguments={})]
-        )
+        return Completion(tool_calls=[ToolCall(id="ping-2", name="ping", arguments={})])
 
 
 def _ask_ctx(llm: _AskThenActLLM) -> HarnessContext:

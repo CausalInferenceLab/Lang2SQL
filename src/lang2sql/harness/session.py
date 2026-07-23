@@ -33,7 +33,9 @@ class Session:
         """Consume frontend-only one-turn context on any real user message."""
 
         original = len(self.transcript)
-        self.transcript = [message for message in self.transcript if not message.transient]
+        self.transcript = [
+            message for message in self.transcript if not message.transient
+        ]
         return len(self.transcript) != original
 
     def compress(self, *, preserve_tool_content: bool = True) -> None:

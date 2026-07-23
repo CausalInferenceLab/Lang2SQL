@@ -30,7 +30,6 @@ from .catalog import (
     TableSpec,
 )
 
-
 _NUMERIC_TYPE = re.compile(
     r"\b(tinyint|smallint|mediumint|integer|bigint|hugeint|"
     r"u?int(?:8|16|32|64|128)?|int(?:8|16|32|64|128)?|"
@@ -267,9 +266,7 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
         tables.append(
             TableSpec(id=table_id, name=described.name, schema=described.schema)
         )
-        columns_by_table_id[table_id] = {
-            column.name for column in described.columns
-        }
+        columns_by_table_id[table_id] = {column.name for column in described.columns}
         raw_table_meta = metadata_tables.get(described.name, {})
         table_meta = raw_table_meta if isinstance(raw_table_meta, Mapping) else {}
         primary_key = set(_string_sequence(table_meta.get("primary_key", [])))
@@ -358,9 +355,7 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
                             data_type=column.type,
                             kind=role,
                             review_policy=DimensionReviewPolicy.RELEASE_REQUIRED,
-                            classification_evidence=(
-                                f"numeric_{role}_metadata_only"
-                            ),
+                            classification_evidence=(f"numeric_{role}_metadata_only"),
                             classification_policy_version=(
                                 CLASSIFICATION_POLICY_VERSION
                             ),
@@ -389,9 +384,7 @@ async def build_catalog(explorer: ExplorerPort) -> OnboardingSummary:
             if not _is_supported_dimension_type(column.type):
                 blocked_columns.append(column_ref)
                 continue
-            review_policy, evidence = _dimension_review_policy(
-                column.name, column.type
-            )
+            review_policy, evidence = _dimension_review_policy(column.name, column.type)
             raw_output_allowed = review_policy == DimensionReviewPolicy.AUTO_SAFE
             aliases = physical_aliases if raw_output_allowed else []
             dimensions.append(
@@ -507,25 +500,22 @@ def _build_declared_joins(
         child = by_name.get(child_name)
         if child is None:
             continue
-        for foreign_key in _mapping_sequence(
-            raw_table_meta.get("foreign_keys", [])
-        ):
+        for foreign_key in _mapping_sequence(raw_table_meta.get("foreign_keys", [])):
             columns = _string_sequence(foreign_key.get("columns", []))
-            referred_columns = _string_sequence(
-                foreign_key.get("referred_columns", [])
-            )
+            referred_columns = _string_sequence(foreign_key.get("referred_columns", []))
             referred_table = foreign_key.get("referred_table")
-            parent = by_name.get(referred_table) if isinstance(referred_table, str) else None
+            parent = (
+                by_name.get(referred_table) if isinstance(referred_table, str) else None
+            )
             # Composite joins are deliberately held back from the first slice;
             # missing/guessed identifiers would be equally unsafe.
             if parent is None or len(columns) != 1 or len(referred_columns) != 1:
                 continue
             child_column = columns[0]
             parent_column = referred_columns[0]
-            if (
-                child_column not in columns_by_table_id.get(child.id, set())
-                or parent_column not in columns_by_table_id.get(parent.id, set())
-            ):
+            if child_column not in columns_by_table_id.get(
+                child.id, set()
+            ) or parent_column not in columns_by_table_id.get(parent.id, set()):
                 continue
             edge = (child.id, child_column, parent.id, parent_column)
             if edge in seen:

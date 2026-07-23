@@ -5,12 +5,10 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
-
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT / "bench"))
 import dataset_cache  # noqa: E402
 import eval_contract  # noqa: E402
-
 
 _CASES = _ROOT / "bench" / "cases" / "public_semantic_cases.jsonl"
 

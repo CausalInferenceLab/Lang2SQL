@@ -1,10 +1,11 @@
-# Semantic first-connect
+# 업무 의미 검토형 질의
 
-이 브랜치는 `semantic-data-context`의 큰 Semantic Pack/Registry/UI를 Lang2SQL에
+이 기능은 `semantic-data-context`의 큰 Semantic Pack/Registry/UI를 Lang2SQL에
 그대로 복사하지 않는다. 혼탄 시스템에서 유효했던 원칙을 Lang2SQL의 기존 도구
 경계에 맞춘다.
 
-> 모델은 SQL을 쓰지 않고 검토 가능한 typed value만 고른다. SQL은 코드가 만든다.
+> 서버는 질문별 후보를 제한하고 모델은 그 후보를 조립한다. 실행에 필요한
+> 불확실한 업무 의미는 사람이 확인하며, SQL은 서버 코드가 결정론적으로 만든다.
 
 ## 사용 흐름
 
@@ -33,13 +34,13 @@
 관리자가 다른 사용자의 review를 승인하면 연결만 저장된다. 관리자 채널에서 타
 사용자의 DB 결과를 실행하거나 표시하지 않으며, 원 요청자가 다시 질문해야 한다.
 
-## 기존 first-connect와 다른 점
+## 기존 초기 연결 방식과 다른 점
 
-| 이전 방식 | 이 브랜치 |
+| 이전 방식 | 업무 의미 검토형 질의 |
 |---|---|
 | 모든 table/column/card 사전 검토 | 물리 catalog 사실은 자동 등록 |
 | 작은 DB도 수십 개 업무 결정 | 연결 시 업무 결정 0개; 질문 시 필요한 연결만 검토 |
-| `/enrich`가 distinct 샘플을 LLM에 전송 | first-connect는 raw 값을 후보 생성에 사용하지 않음 |
+| `/enrich`가 distinct 샘플을 LLM에 전송 | 초기 연결 시 raw 값을 후보 생성에 사용하지 않음 |
 | LLM이 `run_sql(sql=...)` 작성 | LLM은 typed ID·질문 표현·집계·미지원 의무만 조립 |
 | 전체 pack 승인 후 사용 | 현재 질문 dependency만 확인 |
 | 모델 SQL이 join을 자유롭게 선택 | declared FK의 유일한 child-to-parent path만 허용 |
@@ -59,7 +60,7 @@
 
 ## 공개 라이브러리 경계
 
-Discord가 아닌 호스트는 SQL 없는 `Lang2SQLRuntime`을 사용한다.
+Discord가 아닌 호스트는 모델이 SQL을 작성하지 않는 `Lang2SQLRuntime`을 사용한다.
 `connect → candidates → human feedback → typed plan → execute` 순서를 지키며,
 호스트/모델은 SQL을 주고받지 않는다. `connect`는 메타데이터만 읽고, `candidates`는
 질문에 맞춘 bounded ID와 타입만 준다. 사람이 `ReviewRequest.allowed_choices`에서
@@ -69,7 +70,7 @@ Discord가 아닌 호스트는 SQL 없는 `Lang2SQLRuntime`을 사용한다.
 typed draft의 predicate는 명시적 AND, exact `EQ` 또는 값 최대 20개의 `IN`만
 허용하며 모든 값은 bound parameter가 된다. 기간은 native `DATE` 차원의 ISO date
 `[start, end)` 창만 받는다. 기존 파일을 read-only로 연 SQLite와 DuckDB만
-governed 실행을 지원한다. 상세 DTO와 안전한 검토 루프는
+검토 기반 실행을 지원한다. 상세 DTO와 안전한 검토 루프는
 [`LIBRARY_API.md`](LIBRARY_API.md)에 있다.
 
 ## 안전 경계
@@ -135,7 +136,7 @@ privacy, row-level security 또는 사용자 권한 보장이 아니다.
 - 모든 테이블의 명시적 physical source-record `COUNT(*)` (PK 불필요)
 - categorical dimension group-by
 - declared FK를 따라가는 유일한 child → parent 1~N hop join
-- 기존 file-backed SQLite와 DuckDB의 read-only governed 실행과 결과 비교
+- 기존 file-backed SQLite와 DuckDB의 read-only 검토 기반 실행과 결과 비교
 - metadata-only 문자열 공개 후보 및 수치 지표 후보
 - 모든 비차단 dimension의 metadata-only phrase mapping과 conflict 검증
 - 질문 시점의 metric/dimension review와 immutable draft 재개

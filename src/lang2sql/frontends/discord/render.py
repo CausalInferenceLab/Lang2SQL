@@ -106,7 +106,9 @@ def _structured_rows_need_attachment(
     values: list[Any] = [*(header or ()), *(cell for row in rows for cell in row)]
     text_size = 0
     for value in values:
-        rendered = "hex:" + value.hex() if isinstance(value, bytes) else str(value or "")
+        rendered = (
+            "hex:" + value.hex() if isinstance(value, bytes) else str(value or "")
+        )
         if len(rendered) > 512:
             return True
         text_size += len(rendered)

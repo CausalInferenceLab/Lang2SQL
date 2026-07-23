@@ -4,8 +4,8 @@
 
 > **두 질의 모드를 구분해서 읽어 주세요.** semantic catalog가 없는 연결은 아래의
 > legacy `run_sql` 경로를 사용한다. `/setup`으로 catalog가 활성화된 연결은 모델에서
-> `run_sql`을 제거하고, [`SEMANTIC_FIRST_CONNECT.md`](./SEMANTIC_FIRST_CONNECT.md)의
-> governed 경로를 사용한다. 임베딩 애플리케이션은 SQL 없는
+> `run_sql`을 제거하고, [`업무 의미 검토형 질의`](./REVIEWED_SEMANTIC_QUERY.md)의
+> 검토 기반 경로를 사용한다. 임베딩 애플리케이션은 모델이 SQL을 작성하지 않는
 > [`Lang2SQLRuntime`](./LIBRARY_API.md)을 사용할 수 있다.
 
 ---
@@ -46,7 +46,7 @@
 
 핵심 원칙: **로직은 포트(추상)에만 의존, 어댑터(구체)는 가장자리에만**. 그래서 새 LLM·새 DB·새 frontend를 *기존 코드 안 건드리고* 끼울 수 있습니다.
 
-### Governed semantic 질의 경로
+### 업무 의미 검토형 질의 경로
 
 ```text
 Discord 또는 공개 API
@@ -97,7 +97,7 @@ typed blocker로 끝난다.
 
 ### `src/lang2sql/semantic/` — 업무 의미, 검토, 계획, 실행 정책 (★④)
 - [`catalog.py`](../src/lang2sql/semantic/catalog.py) — 연결별 물리 사실과 검토된 업무 의미
-- [`onboarding.py`](../src/lang2sql/semantic/onboarding.py) — PII-safe metadata-only first-connect scan
+- [`onboarding.py`](../src/lang2sql/semantic/onboarding.py) — PII-safe metadata-only 초기 연결 scan
 - [`shortlist.py`](../src/lang2sql/semantic/shortlist.py) — 질문별 bounded candidate 생성
 - [`plan.py`](../src/lang2sql/semantic/plan.py) — SQL 없는 semantic plan IR
 - [`compiler.py`](../src/lang2sql/semantic/compiler.py) — 검증된 plan의 결정론적 SQL 컴파일
@@ -125,7 +125,7 @@ typed blocker로 끝난다.
 ### `src/lang2sql/tools/` — 에이전트가 부르는 capability
 대표 도구는 모두 ctx-aware, async다. 연결 모드에 따라 질의 도구가 달라진다.
 - [`run_sql.py`](../src/lang2sql/tools/run_sql.py) — catalog가 없는 legacy 연결에서만 safety 통과 후 explorer로 실행
-- [`semantic_query.py`](../src/lang2sql/tools/semantic_query.py) — governed 연결에서 typed slots만 받고 서버가 SQL을 컴파일
+- [`semantic_query.py`](../src/lang2sql/tools/semantic_query.py) — 업무 의미 검토형 질의 연결에서 typed slots만 받고 서버가 SQL을 컴파일
 - [`explore_schema.py`](../src/lang2sql/tools/explore_schema.py) — 테이블/컬럼 introspection
 - [`enrich_schema.py`](../src/lang2sql/tools/enrich_schema.py) — LLM으로 컬럼 메타데이터 자동 보강
 - [`semantic_federation.py`](../src/lang2sql/tools/semantic_federation.py) — `term_custom`: guild/channel/member 계층 용어 사전 (KV 기반, narrow→wide lookup)
@@ -165,7 +165,7 @@ governed dialect는 기존 파일 기반 SQLite와 DuckDB뿐이며, 나머지는
 
 ## 4. 한 메시지의 lifecycle (디스코드 멘션 한 번 따라가기)
 
-### Governed mode: catalog가 있는 연결
+### 업무 의미 검토형 질의 모드: catalog가 있는 연결
 
 ```text
 1. 사용자가 자연어 질문을 보낸다.
@@ -178,7 +178,7 @@ governed dialect는 기존 파일 기반 SQLite와 DuckDB뿐이며, 나머지는
 8. safety, contributor 보호, 공개 정책, audit와 catalog stamp가 모두 통과해야 결과를 표시한다.
 ```
 
-정확한 Discord 검토 흐름은 [`SEMANTIC_FIRST_CONNECT.md`](./SEMANTIC_FIRST_CONNECT.md),
+정확한 Discord 검토 흐름은 [`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md),
 다른 애플리케이션의 공개 DTO 흐름은 [`LIBRARY_API.md`](./LIBRARY_API.md)를 따른다.
 
 ### Legacy mode: catalog가 없는 연결

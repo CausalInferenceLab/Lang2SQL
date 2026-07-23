@@ -75,9 +75,7 @@ def test_nonpublic_ungrouped_four_blocks_and_five_passes_with_guard_removed(
         connection.execute(
             text("CREATE TABLE five_rows (id INTEGER PRIMARY KEY, amount NUMERIC)")
         )
-        connection.execute(
-            text("INSERT INTO four_rows VALUES (1,1),(2,2),(3,3),(4,4)")
-        )
+        connection.execute(text("INSERT INTO four_rows VALUES (1,1),(2,2),(3,3),(4,4)"))
         connection.execute(
             text("INSERT INTO five_rows VALUES (1,1),(2,2),(3,3),(4,4),(5,5)")
         )
@@ -98,9 +96,7 @@ def test_nonpublic_ungrouped_four_blocks_and_five_passes_with_guard_removed(
     )
     assert blocker == ""
     assert rows == [{"__l2s_metric": 15}]
-    decoded, blocker = decode_semantic_query_rows(
-        service.load("g1"), [], rows
-    )
+    decoded, blocker = decode_semantic_query_rows(service.load("g1"), [], rows)
     assert blocker == ""
     assert decoded == [{"metric_value": 15}]
 
@@ -122,9 +118,7 @@ def test_nullable_column_aggregates_count_only_non_null_contributors(
     metric_id = "metric:facts.amount"
 
     sql = _compile(service, explorer, metric_id, aggregate)
-    _rows, blocker = _execute_and_enforce(
-        service, explorer, metric_id, aggregate, sql
-    )
+    _rows, blocker = _execute_and_enforce(service, explorer, metric_id, aggregate, sql)
 
     assert blocker == "metric_contributor_count_too_small"
 
@@ -203,18 +197,16 @@ def test_public_scope_allows_extremes_but_controlled_dimension_keeps_guard(
         authorized=True,
         public_data_confirmed=True,
     )
-    assert service.confirm_public_data_scope(
-        "g1", public_assertion
-    ).status == "confirmed"
+    assert (
+        service.confirm_public_data_scope("g1", public_assertion).status == "confirmed"
+    )
     public_min = _compile(service, explorer, metric_id, Aggregate.MIN)
     assert "__semantic_metric_contributors" not in public_min
 
     controlled_assertion = StewardAssertion(
         scope="g1", reviewer_id="steward", authorized=True
     )
-    released = service.release_dimension(
-        "g1", dimension_id, controlled_assertion
-    )
+    released = service.release_dimension("g1", dimension_id, controlled_assertion)
     assert released.status == "confirmed"
     grouped_sum = _compile(
         service,
@@ -263,12 +255,15 @@ def test_public_grouped_dimension_keeps_category_and_label_guards(tmp_path):
         public_data_confirmed=True,
     )
     assert service.confirm_public_data_scope("g1", assertion).status == "confirmed"
-    assert service.release_dimension(
-        "g1",
-        "dimension:facts.carrier",
-        assertion,
-        disclosure_tier="public_grouped",
-    ).status == "confirmed"
+    assert (
+        service.release_dimension(
+            "g1",
+            "dimension:facts.carrier",
+            assertion,
+            disclosure_tier="public_grouped",
+        ).status
+        == "confirmed"
+    )
 
     sql = _compile(
         service,
@@ -316,10 +311,7 @@ def test_left_join_preserves_nullable_orphan_and_multihop_metric_rows(tmp_path):
         )
         connection.execute(text("INSERT INTO regions VALUES ('known','north')"))
         connection.execute(
-            text(
-                "INSERT INTO customers VALUES "
-                "(1,'known'),(2,NULL),(3,'missing')"
-            )
+            text("INSERT INTO customers VALUES " "(1,'known'),(2,NULL),(3,'missing')")
         )
         rows = []
         row_id = 1
@@ -344,24 +336,25 @@ def test_left_join_preserves_nullable_orphan_and_multihop_metric_rows(tmp_path):
         authorized=True,
         public_data_confirmed=True,
     )
-    assert service.confirm_public_data_scope(
-        "g1", public_assertion
-    ).status == "confirmed"
+    assert (
+        service.confirm_public_data_scope("g1", public_assertion).status == "confirmed"
+    )
     dimension_id = "dimension:regions.carrier"
-    assert service.release_dimension(
-        "g1",
-        dimension_id,
-        public_assertion,
-        disclosure_tier="public_grouped",
-    ).status == "confirmed"
+    assert (
+        service.release_dimension(
+            "g1",
+            dimension_id,
+            public_assertion,
+            disclosure_tier="public_grouped",
+        ).status
+        == "confirmed"
+    )
     catalog = service.load("g1")
     path, error = _unique_safe_path(catalog, "orders", "regions")
     assert error == "" and len(path) == 2
 
     metric_id = "metric:orders.amount"
-    total_sql = _compile(
-        service, explorer, metric_id, Aggregate.SUM
-    )
+    total_sql = _compile(service, explorer, metric_id, Aggregate.SUM)
     total_rows, blocker = _execute_and_enforce(
         service, explorer, metric_id, Aggregate.SUM, total_sql
     )

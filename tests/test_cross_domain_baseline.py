@@ -7,7 +7,6 @@ from pathlib import Path
 import sqlite3
 import sys
 
-
 _ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(_ROOT / "bench"))
 import cross_domain_baseline as baseline  # noqa: E402

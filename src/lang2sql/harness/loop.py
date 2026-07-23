@@ -58,9 +58,7 @@ async def agent_loop(ctx: HarnessContext, user_text: str) -> str:
         if not completion.tool_calls:
             return completion.content
 
-        ask_calls = [
-            call for call in completion.tool_calls if call.name == "ask_user"
-        ]
+        ask_calls = [call for call in completion.tool_calls if call.name == "ask_user"]
         if ask_calls:
             # Clarification is a suspension boundary.  A model must never ask
             # the human and then keep acting in the same user turn, nor hide a
@@ -81,9 +79,7 @@ async def agent_loop(ctx: HarnessContext, user_text: str) -> str:
                     )
                 return content
             call = ask_calls[0]
-            result = await ctx.tools.dispatch(
-                call.name, call.arguments, ctx, call.id
-            )
+            result = await ctx.tools.dispatch(call.name, call.arguments, ctx, call.id)
             ctx.session.add(
                 Message(
                     role=Role.TOOL,
@@ -117,9 +113,7 @@ async def agent_loop(ctx: HarnessContext, user_text: str) -> str:
                     )
                 return content
             call = semantic_calls[0]
-            result = await ctx.tools.dispatch(
-                call.name, call.arguments, ctx, call.id
-            )
+            result = await ctx.tools.dispatch(call.name, call.arguments, ctx, call.id)
             ctx.session.add(
                 Message(
                     role=Role.TOOL,
