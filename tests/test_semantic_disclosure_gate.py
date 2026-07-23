@@ -375,9 +375,11 @@ def test_onboarding_never_samples_or_executes_raw_values(tmp_path):
             # TEST_ONLY_SYNTHETIC_METADATA: exercises the real DB-comment path
             # without treating a fabricated description as product truth.
             columns = [
-                replace(column, description="Gross billed amount.")
-                if column.name == "value"
-                else column
+                (
+                    replace(column, description="Gross billed amount.")
+                    if column.name == "value"
+                    else column
+                )
                 for column in table.columns
             ]
             return replace(table, columns=columns)

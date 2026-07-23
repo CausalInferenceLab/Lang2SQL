@@ -359,16 +359,12 @@ class ContextConcierge:
             semantic_attention_state=(
                 "candidate_schema_too_large"
                 if semantic_query is not None and semantic_query.schema_blocker
-                else attention.state
-                if attention
-                else ""
+                else attention.state if attention else ""
             ),
             semantic_attention_message=(
                 semantic_query.schema_blocker
                 if semantic_query is not None and semantic_query.schema_blocker
-                else attention.message
-                if attention
-                else ""
+                else attention.message if attention else ""
             ),
             semantic_table_ids=attention.table_ids if attention else (),
             semantic_query=semantic_query,
