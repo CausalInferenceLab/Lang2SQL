@@ -8,6 +8,48 @@ Discord는 기존대로 동작한다. 이 PR은 그 구조 위에서 **DB 질문
 > 서버는 질문별 후보를 제한하고 모델은 그 후보를 조립한다. 실행에 필요한
 > 불확실한 업무 의미는 사람이 확인하며, SQL은 서버 코드가 결정론적으로 만든다.
 
+## “규칙으로 SQL을 만든다”는 뜻
+
+`매출이면 orders.amount`처럼 도메인별 SQL이나 질문별 예외를 미리 작성하는
+구조가 아니다. 새 DB를 연결하면 Lang2SQL이 **DB마다 달라지는 사실**을 catalog로
+만든다.
+
+- 허용된 table/column 기반 metric·dimension ID와 타입
+- PK/FK와 unique constraint
+- DB comment와 같은 source의 Enrich 설명에서 얻은 후보 표현
+- 사람이 확인한 업무 의미와 공개 범위
+
+반대로 compiler에는 **지원되는 DB에서 공통으로 적용하는 규칙**만 둔다. 선택한
+집계가 타입에 맞는지, 선언된 FK에 유일한 안전 join이 있는지, filter가 정확
+일치와 bound parameter인지, 결과를 공개해도 되는지를 검증한 뒤 SQL을 만든다.
+
+예를 들어 필요한 의미·공개 범위 검토가 끝난 연결에서 다음 질문을 받았다고 하자.
+
+```text
+질문       ordered_on이 2025-01-01 이상 2025-02-01 미만이고
+           status가 paid인 주문의 amount 합계
+서버 후보  metric:orders.amount
+           dimension:orders.status, dimension:orders.ordered_on
+           aggregate: SUM
+모델 출력  metric_id=metric:orders.amount, aggregate=SUM
+           filter.dimension_id=dimension:orders.status
+           operator=EQ, value="paid"
+           time_window.dimension_id=dimension:orders.ordered_on
+           start=2025-01-01, end=2025-02-01
+```
+
+모델은 전체 schema, 임의 table/join, SQL 문법이나 dialect를 보지 않는다.
+질문별 최대 6개 table·12개 metric·12개 dimension으로 제한된 후보에서 ID를
+고르고 filter·기간을 채우는 구조화된 작업만 한다. candidate token은 원 질문,
+사용자, 대화, DB source에 묶이며 서버가 현재 catalog와 다시 대조한다. 따라서
+작은 모델도 전체 DB 구조를 보고 SQL을 직접 만드는 대신 소수 후보에서 정해진
+칸을 채우는 데 집중할 수 있다. 잘못 고르거나 의미가 미확정이면 SQL을 최선
+추정하지 않고 사람 검토·추가 질문·명시적 차단으로 끝난다.
+
+이 구조가 자연어 의도를 자동으로 완전히 이해한다는 뜻은 아니다. 모델이 질문의
+숨은 조건을 아예 발견하지 못하는 문제는 별도 planner 평가 대상이고, 현재
+검증된 실행 범위도 file-backed SQLite/DuckDB와 제한된 집계·필터·join이다.
+
 ## 한눈에 보기
 
 ```mermaid

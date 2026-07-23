@@ -46,6 +46,35 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 
 ### 이번 PR: 연결 즉시 의미 준비형 질의
 
+여기서 “규칙으로 SQL을 만든다”는 말은 `매출이면 orders.amount` 같은
+도메인별 `if` 문이나 SQL template을 미리 심는다는 뜻이 아니다. 첫 연결에서
+Lang2SQL이 **이 DB의 사실**—허용 ID, 타입, PK/FK, DB comment, 사람이 확인한
+의미—을 catalog로 만들고, 라이브러리는 **지원되는 DB에서 공통인 규칙**—집계·
+타입 호환성, 유일한 안전 join, bound parameter, 공개 정책—으로 그 catalog를
+컴파일한다.
+
+예를 들어 필요한 의미·공개 범위 검토가 끝난 연결에서 사용자가 “ordered_on이
+2025-01-01 이상 2025-02-01 미만이고 status가 paid인 주문의 amount 합계”를
+물으면 서버는 전체 schema 대신 관련 후보만 모델에 준다.
+
+```text
+서버 후보  metric:orders.amount · dimension:orders.status
+           dimension:orders.ordered_on · aggregate: SUM
+
+모델 출력  metric_id=metric:orders.amount · aggregate=SUM
+           filter.dimension_id=dimension:orders.status
+           operator=EQ · value="paid"
+           time_window.dimension_id=dimension:orders.ordered_on
+           start=2025-01-01 · end=2025-02-01
+```
+
+모델은 table·join·dialect나 SQL 문자열을 만들지 않는다. 질문과 DB source에 묶인
+후보 ID를 고르고 filter/기간의 **정해진 칸을 채우는 작업**만 한다.
+서버가 이를 다시 검증해 SQL로 컴파일하고, 의미나 공개 범위가 미확정이면 실행
+대신 사람 검토·추가 질문·명시적 차단으로 끝낸다. 그래서 작은 모델의 역할을
+전체 DB 구조를 보고 SQL을 직접 만드는 일에서 소수 후보의 구조화된 선택으로
+줄일 수 있다.
+
 ```mermaid
 flowchart TD
     A["Discord / CLI / 다른 호스트"] --> B["기존 tenancy + agent loop"]
