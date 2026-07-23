@@ -1,8 +1,11 @@
 # Lang2SQL Discord 사용 가이드
 
-연결 즉시 의미 준비형 질의 모드에서 LLM은 SQL을 직접 쓰지 않는다. LLM은 질문을 서버가 검증할
-수 있는 지표·집계·분류 슬롯으로 조립하고, 서버가 확인된 값만으로 read-only SQL을
-만든다.
+이 문서는 Discord에서 DB를 연결하고 질문·검토·철회를 수행하는 운영 절차만 다룬다.
+설계 근거와 token/state 계약은 [`REVIEWED_SEMANTIC_QUERY.md`](REVIEWED_SEMANTIC_QUERY.md),
+다른 애플리케이션 통합은 [`LIBRARY_API.md`](LIBRARY_API.md)를 참고한다.
+
+처음 사용하는 관리자는 **준비 → `/setup` → 봇 멘션 → 필요한 review 승인**까지만
+먼저 읽으면 된다. 표현 mapping·공개 등급·초기화는 관리자 상세 절차에 모았다.
 
 ## 준비
 
@@ -41,6 +44,8 @@ export LANG2SQL_DISCORD_QUERY_CHANNEL_IDS=123456789012345678
 Discord 서버 관리자가 `/setup`을 실행하고 DB 종류와 접속 정보를 입력한다.
 지원 선택지는 SQLite, PostgreSQL, MySQL, Snowflake, BigQuery, DuckDB, D1이다.
 credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출하지 않는다.
+다른 DB는 metadata scan이 가능해도, 현재 검토형 SQL 실행은 기존 file-backed
+SQLite와 DuckDB에서만 지원한다.
 
 처음 로컬 검증은 SQLite가 가장 단순하다.
 
@@ -62,6 +67,9 @@ credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출
 | `/enrich`, `/org_setup` 샘플링 | 사용 가능 | raw-value sampling 비활성화 |
 | `/ingest`, `/term_custom`, `/remember`, `/audit_me` | 사용 가능 | 기존 기능으로 유지 |
 | Catalog 손상 | 해당 없음 | raw SQL로 돌아가지 않고 연결 차단 |
+
+<details>
+<summary><strong>관리자 상세: catalog 표현과 공개 범위 연결 절차</strong></summary>
 
 ### 불투명한 분류 컬럼에 업무 표현 연결
 
@@ -111,6 +119,8 @@ credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출
 이 명령은 표현과 수치 컬럼만 연결한다. `SUM`/`AVG` 같은 집계 의미는 실제 질문의
 `/semantic_review`에서 별도로 확인한다.
 
+</details>
+
 ## 2. 봇을 멘션해 질문
 
 ```text
@@ -157,11 +167,10 @@ credential-bearing DSN을 채널 명령으로 직접 받는 `/connect`는 노출
 - `/semantic_public_data enable:false confirm:false` → 발급된 `action_token`으로 `confirm:true`
 - `/semantic_reset confirm:false` → 발급된 `action_token`으로 `confirm:true`
 
-모든 후보·행동 토큰은 15분 동안 source, 연결 세대, 행동 종류에 묶인다. 객체 후보
-토큰은 관련 metric/dimension 상태와 epoch를, catalog-wide public/reset 토큰은 전체
-catalog revision을 검증한다. metric/dimension map과 dimension release는 경고를 실행한 동일
-관리자와 정확한 표현 또는 등급에도 추가로 묶인다. 연결이나 관련 검토 상태가
-바뀌었거나 토큰이 만료되면 후보 목록 또는 경고 단계부터 다시 시작한다.
+모든 관리자 후보·행동 토큰은 15분 동안 현재 source, 연결 세대, 행동 종류와
+검토 대상에 묶인다. 연결이나 관련 상태가 바뀌었거나 token이 만료되면 후보 조회
+또는 경고 단계부터 다시 시작한다. 정확한 binding 필드는
+[`안전 경계`](REVIEWED_SEMANTIC_QUERY.md#안전-경계)에 정의돼 있다.
 `/semantic_reset`은 사람이 확인한 표현·집계 연결, 문자열 공개 승인, 공개 데이터
 범위를 함께 초기화하지만 물리 PK/FK와 기본 차단 정책은 제거하지 않는다.
 실행 중 revoke/reset/재연결이 발생하면 실행 후, audit 후, Discord 렌더 직전의

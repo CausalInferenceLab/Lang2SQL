@@ -40,7 +40,7 @@
 │  adapters/  외부 시스템과의 마지막 한 줄              │
 │   llm/openai_ · llm/fake                          │
 │   db/sqlalchemy_explorer · db/d1_explorer · db/postgres_explorer │
-│   storage/sqlite_store · storage/sqlite_semantic   │
+│   storage/sqlite_store (KV·transaction 경계)        │
 └─────────────────────────────────────────────────┘
 ```
 
@@ -48,25 +48,11 @@
 
 ### 연결 즉시 의미 준비형 질의 경로
 
-이 경로는 기존 4기둥을 대체하거나 다섯 번째 기둥을 추가하지 않는다. 같은
-frontend·tenancy·agent loop 안에서 **질의 도구와 실행 계약만** 연결별로 바꾼다.
-첫 연결은 DB comment를 후보로 사용하고, source·물리 fingerprint가 같은 재연결은
-기존 Enrich 설명 캐시도 후보로 재사용한다. 어느 쪽도 승인된 업무 의미·집계·공개
-정책으로 자동 승격하지 않는다.
-
-```text
-Discord 또는 공개 API
-  → 질문별 후보(shortlist)
-  → 사람 검토가 필요한 의미·공개 범위 확인
-  → SQL 없는 typed plan 검증
-  → 결정론적 compiler
-  → safety + 결과 공개 정책
-  → read-only SQLite/DuckDB 실행
-```
-
-이 경로에서 모델은 후보 ID와 질문에 실제 등장한 표현을 구조화할 뿐 SQL을 만들거나
-받지 않는다. 지원하지 않는 필터·기간·join·dialect는 legacy 경로로 되돌리지 않고
-typed blocker로 끝난다.
+검토형 질의는 기존 frontend·tenancy·agent loop·4기둥을 사용하는 연결별 실행
+모드다. Catalog가 활성화되면 모델의 `run_sql`을 `semantic_query`로 바꾸고, 서버가
+후보 제한·사람 검토·typed plan·SQL 컴파일을 담당한다. 지원하지 않는 요청은
+legacy 경로로 우회하지 않는다. 구성 요소 경계와 catalog 생성 과정은
+[`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md)의 도식을 참고한다.
 
 ---
 
@@ -152,8 +138,8 @@ typed blocker로 끝난다.
 - `db/d1_explorer.py` — Cloudflare D1 (HTTP API, urllib)
 - `db/factory.py` — `build_explorer(connection)` scheme 라우팅
 - `db/postgres_explorer.py` — V1 stub (psycopg 미설치 환경용)
-- `storage/sqlite_store.py` — `AuditPort` + `SessionStorePort` + kv
-- `storage/sqlite_semantic.py` — 시멘틱 정의 영속화
+- `storage/sqlite_store.py` — `AuditPort` + `SessionStorePort` + kv; catalog와
+  semantic 검토 상태도 이 KV/transaction 경계에 저장
 
 Connector가 DSN을 해석할 수 있다는 사실과 governed execution이 검증됐다는 사실은
 다르다. 현재 compiler·bound parameter·timeout/cancel·read-only 실행까지 검증된
@@ -175,13 +161,9 @@ governed dialect는 기존 파일 기반 SQLite와 DuckDB뿐이며, 나머지는
 
 ```text
 1. 사용자가 자연어 질문을 보낸다.
-2. bot/commands가 Identity와 원 질문을 그대로 ContextConcierge에 넘긴다.
-3. ContextConcierge가 연결의 semantic catalog를 확인하고 run_sql 대신 semantic_query를 등록한다.
-4. 모델은 질문별 metric/dimension/filter/date 후보에서 typed slot을 조립한다.
-5. 아직 확인되지 않은 의미나 공개 범위가 있으면 ReviewRequired로 멈춘다.
-6. 사람이 허용된 선택지를 고르면 같은 프로세스에서는 원 draft를 재해석 없이 재개한다.
-7. compiler가 allowlisted ID, aggregate, join, bound filter와 기간을 검증해 SQL을 만든다.
-8. safety, contributor 보호, 공개 정책, audit와 catalog stamp가 모두 통과해야 결과를 표시한다.
+2. ContextConcierge가 active catalog와 연결 binding을 확인하고 semantic_query를 등록한다.
+3. 모델은 bounded 후보에서 typed slot을 조립하고, 미확정 의미는 review로 분기한다.
+4. 서버가 ID·join·filter·기간·정책을 검증해 SQL을 만들고, Safety·audit·catalog stamp가 통과한 결과만 표시한다.
 ```
 
 정확한 Discord 검토 흐름은 [`REVIEWED_SEMANTIC_QUERY.md`](./REVIEWED_SEMANTIC_QUERY.md),
@@ -264,12 +246,13 @@ SQLAlchemy 미지원 (예: 자체 HTTP API):
 ```bash
 git clone https://github.com/CausalInferenceLab/Lang2SQL.git
 cd Lang2SQL
-uv sync                          # 기본 deps
-.venv/bin/pytest -q              # 106 테스트 통과 확인
+uv sync --extra duckdb           # 검토형 SQLite/DuckDB 경로 포함
+uv run pytest -q                 # 전체 회귀 확인
 .venv/bin/python bench/ecommerce_demo.py   # federation + safety 로컬 데모
 ```
 
-브랜치 → 코드 + 테스트 → PR. CI는 따로 없으니 *로컬에서 pytest 확인 후 PR*.
+브랜치 → 코드 + 테스트 → PR. GitHub Actions가 Python 3.10/3.12의 lint, mypy,
+전체 테스트와 DuckDB 계약을 확인한다. PR 전에는 같은 검사를 로컬에서도 실행한다.
 
 ---
 

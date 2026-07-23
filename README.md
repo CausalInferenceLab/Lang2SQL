@@ -46,114 +46,141 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 
 ### 이번 PR: 연결 즉시 의미 준비형 질의
 
-핵심은 도메인별 `if` 문이나 SQL template을 늘리는 것이 아니다.
+ContextFlow의 Enrich·Federation·Memory는 의미를 발견하고 축적한다. 이번 PR은
+그 구조를 교체하지 않고, **semantic catalog(연결별 허용 의미 목록)가 활성화된
+연결의 실행 경계**를 추가한다. 서버가 연결 시 catalog를 만들고 질문마다 후보를
+제한하면, 모델은 SQL 대신 허용된 metric/dimension ID·집계와 질문에서 가져온
+filter·기간만 선택한다. 이 PR에는 catalog 생성·검토·컴파일·실행 코어, 공개 API,
+Discord 관리 UX와 SQLite/DuckDB 검증이 함께 포함된다.
 
-- **연결별 사실:** DB metadata 기반 catalog를 만들고 버전 관리한다.
-- **공통 실행 규칙:** catalog의 허용 ID만 typed plan과 SQL로 컴파일한다.
-- **모델의 역할:** 전체 schema 검색이나 SQL 작성이 아니라, 상한으로 제한된
-  후보의 ID와 정해진 입력 칸만 고른다.
+#### 1. 기존 시스템에서 무엇이 달라졌나
 
-#### 데이터 연결부터 질문 처리까지
+<p align="center">
+  <a href="docs/assets/contextflow-semantic-query-delta.svg">
+    <img src="docs/assets/contextflow-semantic-query-delta.svg" width="100%" alt="기존 ContextFlow에서 유지되는 기능과 이번 PR이 추가한 검토형 실행 경계"/>
+  </a>
+</p>
+<p align="center"><sub>그림을 누르면 원본 크기로 볼 수 있다.</sub></p>
 
-1. **연결 확인**
-   - Discord `/setup` 또는 공개 API `connect`가 연결을 시험한다.
-   - 인증 정보와 DB 연결은 서버 안에만 두며 모델에 전달하지 않는다.
-   - 기존 ContextFlow의 tenancy·Memory·Federation은 유지한다. catalog가 없는
-     기존 경로에는 Explore/Enrich도 그대로 남는다.
+| 영역 | Catalog 없는 기존 연결 | Catalog가 활성화된 연결 |
+|---|---|---|
+| 모델 질의 도구 | `run_sql`, Explore, Enrich | `semantic_query`와 `ask_user`만 노출 |
+| 모델 출력 | SQL 문자열 | metric/dimension ID, 집계, filter, 기간 |
+| Enrich | row sample 기반 보강 가능 | 모델 도구에서는 제외; 같은 source/fingerprint의 기존 설명만 후보로 재사용 |
+| 의미 확정 | 모델과 기존 의미 계층에 의존 | 업무 표현·집계·분류 공개 범위를 서로 분리해 사람 검토 |
+| 실행 | 기존 Safety pipeline | catalog/source 재검증 → 서버 SQL 컴파일 → 기존 Safety |
+| 실패 처리 | legacy 질의 경로 | raw SQL로 우회하지 않고 추가 질문·검토·차단 |
 
-2. **물리 metadata를 catalog로 변환**
-   - table·column·type·nullable·PK/FK·DB comment만 읽는다.
-   - 연결 시 raw row나 값 목록을 표본 추출하지 않는다.
-   - PII형·자유서술형·key column은 차단하고, 수치·시간·분류 column은
-     metric/dimension **후보**로 분류한다.
-   - `metric:orders.amount`처럼 안정적인 ID, 허용 집계, 선언된 join을 기록한다.
-   - 자동 발견한 수치 column은 업무 지표로 확정하지 않고 검토 대기 상태로 둔다.
+Memory·Ingestion·Federation의 저장 기능과 Discord 인터페이스는 그대로 남는다.
+다만 catalog가 활성화된 **자연어 DB 질문 turn**에서는 모델이 raw SQL·Explore·
+Enrich를 호출하지 못한다.
 
-   → 작은 모델은 잡음과 민감정보가 제거된 구조만 보며, table·column·join을
-   처음부터 추론하지 않는다.
+#### 2. 연결할 때 catalog를 어떻게 만드는가
 
-3. **검색용 표현을 자동 보강**
-   - DB comment를 후보 alias로 반영한다.
-   - 같은 source와 같은 물리 fingerprint일 때만 기존 Enrich 설명을 재사용한다.
-   - `LANG2SQL_AUTO_METADATA_ENRICH=auto`와 실제 provider가 설정되었거나
-     `llm` 모드를 명시한 경우 metadata-only LLM 보강을 한 번 수행한다.
-   - 충돌하거나 값 목록처럼 보이는 표현은 버리고, 보강 결과는 승인된 업무
-     의미·공개 권한·join으로 승격하지 않는다.
+<p align="center">
+  <a href="docs/assets/semantic-catalog-build.svg">
+    <img src="docs/assets/semantic-catalog-build.svg" width="100%" alt="DB metadata에서 semantic catalog를 만들고 연결별 상태로 관리하는 과정"/>
+  </a>
+</p>
+<p align="center"><sub>그림을 누르면 원본 크기로 볼 수 있다.</sub></p>
 
-   → 작은 모델은 물리명뿐 아니라 사람이 쓰는 표현으로도 후보를 찾을 수 있지만,
-   자동 보강이 실행 권한을 넓히지는 못한다.
+1. **메타데이터만 읽기(metadata scan)**
+   - table·column·type·nullability·PK/FK·DB comment만 읽는다.
+   - 연결 시 raw row, 범주 값 목록, PII 값을 sample하지 않는다.
 
-4. **연결별 상태를 저장하고 변경을 추적**
-   - 암호화한 연결 정보와 catalog를 한 번에 활성화한다.
-   - `source_id`·연결 세대(재연결마다 바뀌는 버전)·물리 fingerprint·검토
-     revision을 함께 관리한다.
-   - 재연결 scan에서 schema 변경이 감지되면 이전 질문 후보와 검토 상태를
-     그대로 믿지 않고 무효화한다.
-   - 사람이 승인·거절한 의미는 동일한 source/fingerprint에서만 이어받는다.
-   - catalog와 검토 결정은 연결별로 저장한다. 검토 대기 중인 exact draft는
-     같은 서버 process에서 최대 15분만 보관한다.
-   - Discord `/semantic_status`에서 현재 후보·검토·보강 상태를 확인한다.
+2. **물리 column 분류**
+   - PII·credential·free text·key·비지원 type은 `blocked_columns`로 보낸다.
+   - numeric measure는 `MetricSpec`, time/boolean/categorical은
+     `DimensionSpec` 후보로 만든다.
+   - 각 table에는 물리적인 source-record `COUNT(*)` metric을 별도로 만든다.
+   - 일반 numeric column은 발견 즉시 업무 지표로 승인하지 않는다.
 
-   → 매 질문마다 모델이 DB의 의미를 다시 복원하지 않고, 검증된 현재 상태를
-   재사용한다.
+3. **Join과 검색 표현 후보 생성**
+   - 선언된 단일-column FK의 child → parent 방향만 join 후보로 등록한다.
+   - physical name과 DB comment를 후보 표현(alias)으로 만든다.
+   - 동일 source와 동일 스키마 지문(fingerprint)의 재연결에서만 기존 Enrich 설명과
+     사람 검토 결정을 이어받는다.
+   - `LANG2SQL_AUTO_METADATA_ENRICH=auto`와 실제 provider가 설정됐거나 `llm`
+     모드를 명시하면 metadata-only alias 보강을 한 번 수행한다.
+   - 충돌 alias·값 목록형 표현·URL/email/SQL형 문자열은 제거한다. LLM 보강
+     결과도 승인된 업무 의미, join, 집계, 공개 권한이 아니다.
 
-5. **서버가 질문마다 후보 범위를 제한**
-   - 서버는 VDB/embedding 대신 catalog의 물리명·승인 alias·후보 alias를
-     **결정론적 lexical matching**으로 검색한다.
-   - 최대 table 6개, metric 12개, dimension 12개로 attention envelope를 제한한다.
-   - 작은 catalog는 상한 안의 후보 전체를 줄 수 있다. 넓은 catalog는 질문에
-     정확히 나타난 metadata 표현으로 좁히며, 근거가 없거나 후보가 겹치면
-     임의 선택 대신 추가 질문을 반환한다.
-   - candidate token은 질문·사용자·대화·source·연결 세대에 묶는다.
-   - plan 단계에서는 현재 catalog/revision 기준으로 shortlist를 다시 만들고,
-     선택한 ID와 정책을 재검증한다.
+4. **정규화·식별·원자적 활성화**
+   - 물리 schema snapshot을 정렬한 뒤 SHA-256 fingerprint를 만든다.
+   - encrypted credentials, catalog JSON, connection binding을 하나의 SQLite
+     transaction으로 활성화한다.
+   - 세 상태가 어긋나거나 catalog가 손상되면 legacy `run_sql`로 돌아가지 않는다.
 
-   → 작은 모델에는 전체 schema가 아니라 상한으로 제한되고 현재 연결 상태에
-   묶인 enum형 도구 schema만 전달된다.
+재연결·schema 변경·검토 변경은 서로 다른 상태 값으로 추적한다. 현재 상태와 맞지
+않는 이전 후보와 draft는 재사용하지 않는다.
 
-6. **모델은 typed plan의 칸만 채움**
-   - 입력: 후보 ID, 허용 집계, 공개 가능한 filter/time 선택지.
-   - 출력: 허용된 metric/dimension ID와 집계, 질문에 명시된 허용 filter
-     값·기간, 지원하지 못한 요구사항.
-   - SQL 문자열·table·join·dialect는 모델 출력에 없다.
+<details>
+<summary><strong>Catalog 상태 필드 자세히 보기</strong></summary>
 
-7. **서버가 재검증·컴파일하고, 필요한 의미만 사람이 검토**
-   - 후보가 아직 현재 연결과 질문에 유효한지 다시 확인한다.
-   - 유일하게 안전한 FK 경로, 타입, bound parameter, 공개 정책으로 SQL을 만든다.
-   - 의미나 공개 범위가 미확정이면 사람 검토·추가 질문·명시적 차단으로 끝낸다.
-   - 같은 요청자가 15분 안에 승인하면 검토에 묶인 exact draft를 재검증해
-     이어갈 수 있다.
-   - 다른 관리자 승인, 만료 또는 서버 재시작 뒤에는 이전 질문을 자동 실행하지
-     않고 다시 제출받는다.
-   - 현재 검토형 실행 근거는 read-only SQLite와 DuckDB에 한정한다.
+| 상태 | 의미 | 바뀌는 시점 |
+|---|---|---|
+| `source_id` | scope와 canonical DSN/extras를 비가역적으로 묶은 실행 source identity | DB·credential·연결 option 변경 |
+| `connection_generation` | 현재 활성 연결 세대 | 재연결할 때마다 |
+| `fingerprint` | 물리 schema snapshot의 지문 | 재연결 scan에서 schema 변경 감지 |
+| `review_revision` | 사람 검토 결정의 동시성 marker | 표현·집계·공개 상태 변경 |
+| catalog/policy version | 저장 형식과 분류·shortlist 규칙 버전 | 코드 정책이 변경될 때 |
 
-```mermaid
-flowchart LR
-    A["DB 연결"] --> B["metadata scan<br/>raw row 없음"]
-    B --> C["catalog<br/>ID · type · FK · PII 차단"]
-    C --> D["검색 표현 보강<br/>comment · Enrich · 후보 alias"]
-    D --> E["상태 관리<br/>source · fingerprint · revision"]
-    E --> F["질문별 lexical matching"]
-    F --> G["제한된 후보<br/>table 6 · metric 12 · dimension 12"]
-    G --> H["작은 모델<br/>typed plan 칸 채우기"]
-    H --> I["서버 재검증<br/>SQL 컴파일 · Safety"]
-    I --> J["검증 범위: SQLite · DuckDB<br/>read-only 실행 또는 검토·추가 질문"]
-    J -. "사람 피드백" .-> E
+`catalog.version`은 내용이 바뀔 때마다 증가하는 revision이 아니다. 물리 변경은
+`fingerprint`, 사람 결정 변경은 `review_revision`으로 구분한다. Discord에서는
+`/semantic_status`로 현재 후보·보강·검토 상태를 확인할 수 있다.
+
+</details>
+
+#### 3. 작은 모델이 실제로 하는 일
+
+- **후보 검색은 서버가 수행한다.** 현재 구현은 vector search가 아니라 physical
+  name·승인 alias·후보 alias를 이용한 문자열 기반 검색이다.
+- **입력 크기를 제한한다.** table 6개, metric 12개, dimension 12개, tool schema
+  12 KiB 이내로 제한한다. 작은 catalog는 상한 안의 전체 후보를 줄 수 있고,
+  넓은 catalog는 질문에 정확히 나타난 metadata 표현으로 좁힌다.
+- **모델은 typed slot만 채운다.** metric/dimension ID, 허용 집계, 질문에서 복사한
+  filter 값과 기간, 미지원 요구사항을 구조화한다. SQL·table·join·dialect는
+  선택하지 않는다.
+- **서버가 다시 검증한다.** candidate token은 질문·사용자·대화·source·연결
+  세대에 묶고, plan 단계에서 현재 catalog/revision으로 shortlist와 정책을
+  다시 검사한다.
+- **미확정 의미는 실행하지 않는다.** 같은 요청자가 15분 안에 검토하면 exact
+  draft를 재검증해 이어갈 수 있다. 다른 관리자 승인·만료·서버 재시작 뒤에는
+  질문을 다시 제출해야 한다.
+
+```text
+질문       status가 paid인 주문의 amount 합계
+
+서버 후보  metric:orders.amount
+           dimension:orders.status
+           aggregate: SUM · operator: EQ
+
+모델 출력  metric_id=metric:orders.amount
+           aggregate=SUM
+           filter.dimension_id=dimension:orders.status
+           operator=EQ · value="paid"
+
+서버 처리  현재 catalog/review/source 확인
+           → 유일한 안전 FK·bound parameter로 SQL 컴파일
+           → Safety·결과 공개 정책
+           → read-only 실행 또는 명시적 차단
 ```
 
-예를 들어 필요한 의미·공개 범위·표현 검토가 끝난 연결에서 질문이
-“status가 paid인 주문의 amount 합계”라면 모델은 전체 DB 대신
-`metric:orders.amount`, `dimension:orders.status`, `SUM`, `EQ`만 받고
-`metric_id=metric:orders.amount`, `aggregate=SUM`,
-`filter.dimension_id=dimension:orders.status`, `operator=EQ`, `value="paid"`처럼
-조립한다.
-catalog가 활성화된 연결에서는 이 `semantic_query`가 모델의 `run_sql`을
-대체한다. 즉 작은 모델이 잘할 수 있는 이유는 더 많이 추론해서가 아니라,
-**서버가 연결 시 의미 후보를 준비·버전 관리하고 질문 시 선택지를 먼저 줄이기
-때문**이다.
+작은 모델의 성능을 높이는 핵심은 더 많은 추론을 요구하는 것이 아니라,
+**연결 시점에 후보를 준비·관리하고 질문 시점에 선택 문제로 축소하는 것**이다.
 
-자세한 흐름과 제한은 [`연결 즉시 의미 준비형 질의`](docs/REVIEWED_SEMANTIC_QUERY.md)를
-참고한다.
+#### 4. 현재 검증 경계
+
+- 업무 의미를 metadata만으로 완전히 복원한다고 주장하지 않는다. 사람 피드백은
+  catalog에 저장되고 같은 source/fingerprint에서만 재사용된다.
+- 문자열 기반 후보 검색이며 vector/VDB recall은 아직 구현하지 않았다.
+- 모델이 자연어의 숨은 조건을 전혀 발견하지 못하는 planner 문제는 별도 평가 대상이다.
+- 검토형 compiler·timeout/cancel·read-only 실행의 현재 근거는 기존 file-backed
+  SQLite와 DuckDB다. 다른 connector의 연결 가능성과 안전 실행 검증은 구분한다.
+
+상세 실행 계약은 [`연결 즉시 의미 준비형 질의`](docs/REVIEWED_SEMANTIC_QUERY.md),
+호스트 통합 API는 [`LIBRARY_API`](docs/LIBRARY_API.md), Discord 운영 절차는
+[`USAGE`](docs/USAGE.md)를 참고한다.
 
 ## Extensibility — outlets and appliances (콘센트/가전)
 

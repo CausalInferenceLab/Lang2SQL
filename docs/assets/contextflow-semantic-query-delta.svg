@@ -1,0 +1,140 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="920" viewBox="0 0 1600 920" role="img" aria-labelledby="title desc">
+  <title id="title">기존 ContextFlow와 연결 즉시 의미 준비형 질의의 경계</title>
+  <desc id="desc">기존 ContextFlow의 인터페이스, 테넌시, 의미 축적, 메모리, 안전 실행은 유지하고, semantic catalog가 활성화된 연결에서만 모델의 run_sql 도구를 semantic_query 기반 검토형 실행 경로로 교체하는 구조</desc>
+  <defs>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="130%">
+      <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#0f172a" flood-opacity="0.10"/>
+    </filter>
+    <marker id="arrow-blue" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#2563eb"/>
+    </marker>
+    <marker id="arrow-violet" markerWidth="12" markerHeight="12" refX="10" refY="6" orient="auto">
+      <path d="M0,0 L12,6 L0,12 Z" fill="#7c3aed"/>
+    </marker>
+    <style>
+      .title { font: 700 34px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #0f172a; }
+      .subtitle { font: 500 19px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #475569; }
+      .panel-title { font: 700 28px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; }
+      .panel-note { font: 500 19px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; }
+      .box-title { font: 700 23px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #0f172a; }
+      .box-copy { font: 500 19px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #475569; }
+      .pill { font: 700 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; }
+      .footer { font: 600 18px -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans KR", sans-serif; fill: #334155; }
+    </style>
+  </defs>
+
+  <rect width="1600" height="920" fill="#f8fafc"/>
+  <text x="64" y="66" class="title">기존 ContextFlow 위에 ‘검토형 실행 경계’를 추가</text>
+  <text x="64" y="100" class="subtitle">전체 시스템을 교체하지 않고, catalog가 활성화된 연결의 모델 권한과 실행 계약만 바꾼다.</text>
+
+  <rect x="54" y="135" width="676" height="665" rx="26" fill="#eff6ff" stroke="#93c5fd" stroke-width="2"/>
+  <text x="88" y="182" class="panel-title" fill="#1d4ed8">기존 ContextFlow — 유지</text>
+  <text x="88" y="210" class="panel-note" fill="#1e40af">PR 전부터 있던 구조를 같은 harness 안에서 계속 사용</text>
+
+  <g filter="url(#shadow)">
+    <rect x="92" y="240" width="600" height="92" rx="16" fill="#ffffff" stroke="#bfdbfe"/>
+    <circle cx="128" cy="286" r="20" fill="#dbeafe"/>
+    <text x="128" y="292" text-anchor="middle" class="pill" fill="#1d4ed8">1</text>
+    <text x="166" y="276" class="box-title">Discord · CLI · frontend 경계</text>
+    <text x="166" y="303" class="box-copy">Identity, scope, session, setup wizard와 메시지 라우팅</text>
+  </g>
+
+  <line x1="392" y1="332" x2="392" y2="359" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow-blue)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="92" y="362" width="600" height="92" rx="16" fill="#ffffff" stroke="#bfdbfe"/>
+    <circle cx="128" cy="408" r="20" fill="#dbeafe"/>
+    <text x="128" y="414" text-anchor="middle" class="pill" fill="#1d4ed8">2</text>
+    <text x="166" y="398" class="box-title">업무 의미와 대화 맥락 축적</text>
+    <text x="166" y="425" class="box-copy">Enrich · Federation · Ingestion · Memory</text>
+  </g>
+
+  <line x1="392" y1="454" x2="392" y2="481" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow-blue)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="92" y="484" width="600" height="92" rx="16" fill="#ffffff" stroke="#bfdbfe"/>
+    <circle cx="128" cy="530" r="20" fill="#dbeafe"/>
+    <text x="128" y="536" text-anchor="middle" class="pill" fill="#1d4ed8">3</text>
+    <text x="166" y="520" class="box-title">Agent loop와 tool registry</text>
+    <text x="166" y="547" class="box-copy">모델이 현재 연결에 허용된 도구를 선택하는 공통 실행 틀</text>
+  </g>
+
+  <line x1="392" y1="576" x2="392" y2="603" stroke="#2563eb" stroke-width="3" marker-end="url(#arrow-blue)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="92" y="606" width="600" height="92" rx="16" fill="#ffffff" stroke="#bfdbfe"/>
+    <circle cx="128" cy="652" r="20" fill="#dbeafe"/>
+    <text x="128" y="658" text-anchor="middle" class="pill" fill="#1d4ed8">4</text>
+    <text x="166" y="642" class="box-title">Safety pipeline · DB adapter · audit</text>
+    <text x="166" y="669" class="box-copy">질의 검사, 연결 어댑터, 결과 기록과 기존 저장소</text>
+  </g>
+
+  <rect x="112" y="724" width="560" height="46" rx="23" fill="#dbeafe"/>
+  <text x="392" y="753" text-anchor="middle" class="pill" fill="#1e40af">catalog가 없으면 기존 run_sql · Explore · Enrich 경로 유지</text>
+
+  <line x1="732" y1="445" x2="842" y2="445" stroke="#7c3aed" stroke-width="4" marker-end="url(#arrow-violet)"/>
+  <rect x="725" y="370" width="124" height="50" rx="25" fill="#ede9fe"/>
+  <text x="787" y="391" text-anchor="middle" class="pill" fill="#6d28d9">catalog</text>
+  <text x="787" y="409" text-anchor="middle" class="pill" fill="#6d28d9">활성 연결</text>
+  <text x="787" y="482" text-anchor="middle" class="box-copy">도구·실행 계약만 전환</text>
+
+  <rect x="870" y="135" width="676" height="665" rx="26" fill="#f5f3ff" stroke="#c4b5fd" stroke-width="2"/>
+  <text x="904" y="182" class="panel-title" fill="#6d28d9">이번 PR — 연결별 추가 실행 경계</text>
+  <text x="904" y="210" class="panel-note" fill="#5b21b6">연결별 catalog, 사람 검토, typed plan, 서버 SQL 컴파일</text>
+
+  <g filter="url(#shadow)">
+    <rect x="908" y="240" width="600" height="82" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+    <circle cx="944" cy="281" r="20" fill="#ede9fe"/>
+    <text x="944" y="287" text-anchor="middle" class="pill" fill="#6d28d9">1</text>
+    <text x="982" y="271" class="box-title">첫 연결: metadata-only catalog</text>
+    <text x="982" y="298" class="box-copy">table · column · type · PK/FK · comment · 차단 정책</text>
+  </g>
+
+  <line x1="1208" y1="322" x2="1208" y2="343" stroke="#7c3aed" stroke-width="3" marker-end="url(#arrow-violet)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="908" y="346" width="600" height="82" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+    <circle cx="944" cy="387" r="20" fill="#ede9fe"/>
+    <text x="944" y="393" text-anchor="middle" class="pill" fill="#6d28d9">2</text>
+    <text x="982" y="377" class="box-title">질문 시: bounded lexical shortlist</text>
+    <text x="982" y="404" class="box-copy">table 6 · metric 12 · dimension 12 이내의 ID 후보</text>
+  </g>
+
+  <line x1="1208" y1="428" x2="1208" y2="449" stroke="#7c3aed" stroke-width="3" marker-end="url(#arrow-violet)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="908" y="452" width="600" height="82" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+    <circle cx="944" cy="493" r="20" fill="#ede9fe"/>
+    <text x="944" y="499" text-anchor="middle" class="pill" fill="#6d28d9">3</text>
+    <text x="982" y="483" class="box-title">모델: semantic_query의 typed slot만 조립</text>
+    <text x="982" y="510" class="box-copy">허용 ID · 집계 · filter · 기간 · 미지원 요구사항</text>
+  </g>
+
+  <line x1="1208" y1="534" x2="1208" y2="555" stroke="#7c3aed" stroke-width="3" marker-end="url(#arrow-violet)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="908" y="558" width="600" height="82" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+    <circle cx="944" cy="599" r="20" fill="#ede9fe"/>
+    <text x="944" y="605" text-anchor="middle" class="pill" fill="#6d28d9">4</text>
+    <text x="982" y="589" class="box-title">서버: 검토 · policy · source 상태 재검증</text>
+    <text x="982" y="616" class="box-copy">미확정 의미는 승인·추가 질문·명시적 차단으로 분기</text>
+  </g>
+
+  <line x1="1208" y1="640" x2="1208" y2="661" stroke="#7c3aed" stroke-width="3" marker-end="url(#arrow-violet)"/>
+
+  <g filter="url(#shadow)">
+    <rect x="908" y="664" width="600" height="82" rx="16" fill="#ffffff" stroke="#ddd6fe"/>
+    <circle cx="944" cy="705" r="20" fill="#ede9fe"/>
+    <text x="944" y="711" text-anchor="middle" class="pill" fill="#6d28d9">5</text>
+    <text x="982" y="695" class="box-title">서버 SQL 컴파일 → 기존 Safety → 실행</text>
+    <text x="982" y="722" class="box-copy">검증 범위: file-backed SQLite · DuckDB read-only</text>
+  </g>
+
+  <rect x="870" y="825" width="676" height="55" rx="18" fill="#ede9fe"/>
+  <text x="1208" y="849" text-anchor="middle" class="footer">catalog가 활성화되면 모델의 run_sql 권한을 제거한다.</text>
+  <text x="1208" y="871" text-anchor="middle" class="box-copy">Explore/Enrich는 모델 턴에서 숨김 · 기존 설명은 후보로만 재사용</text>
+
+  <rect x="54" y="825" width="676" height="55" rx="18" fill="#dbeafe"/>
+  <text x="392" y="849" text-anchor="middle" class="footer">유지되는 철학: 의미는 발견·축적하고, 실행은 안전 경계를 통과한다.</text>
+  <text x="392" y="871" text-anchor="middle" class="box-copy">이번 PR은 이 철학을 DB 연결별 실행 계약까지 확장</text>
+</svg>

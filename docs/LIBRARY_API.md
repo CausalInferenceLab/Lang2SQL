@@ -1,13 +1,15 @@
-# 모델이 SQL을 작성하지 않는 임베딩 API
+# 모델이 SQL을 작성하지 않는 애플리케이션 통합 API
 
-`Lang2SQLRuntime`은 새 애플리케이션이 내부 semantic service나 SQL 객체를 직접
-다루지 않게 하는 비동기 facade다. 공개 흐름은 다음 다섯 단계다.
+`Lang2SQLRuntime`은 Discord가 아닌 호스트가 내부 semantic service나 SQL 객체를
+직접 다루지 않고 검토형 질의를 사용할 수 있게 하는 비동기 진입점이다.
 
-1. `connect`: 기존 DB 파일 또는 연결의 메타데이터만 읽고 사람 검토 항목을 반환한다.
-2. `candidates`: 원 질문에 맞는 bounded metric/group/filter/DATE 후보를 반환한다.
-3. `feedback`: 공개 범위와 업무 의미를 사람이 확인한다.
-4. `plan`: 모델이나 UI가 조립한 typed draft를 검증하고 일회용 계획을 발급한다.
-5. `execute`: 같은 사용자·대화·DB에 묶인 계획을 한 번만 실행한다.
+| 단계 | 호스트가 보내는 것 | 성공 응답 |
+|---|---|---|
+| `connect` | DB 연결 정보와 `CallContext` | metadata scan 결과와 초기 검토 항목 |
+| `candidates` | 원 질문 | bounded metric/group/filter/DATE 후보 |
+| `feedback` | 사람이 고른 허용 선택지 | 저장된 검토 결정과 재개 가능한 다음 단계 |
+| `plan` | 후보 ID로 조립한 `QueryDraft` | 일회용 `PreparedPlan` 또는 `ReviewRequired` |
+| `execute` | 같은 사용자·대화·DB에 묶인 plan | typed columns와 rows |
 
 `connect`는 물리명과 실제 DB comment를 후보로 자동 준비한다. 같은 source와 전체
 물리 fingerprint로 재연결할 때만 기존 Enrich 설명 캐시를 다시 사용한다.
@@ -15,10 +17,6 @@
 시도하며, `Connected.scan`의 `enrichment_status`, `enriched_object_count`,
 `enrichment_reason`으로 성공·제한 사유를 확인할 수 있다. 어느 결과도 승인된
 업무 의미, join, 집계 또는 공개 권한을 만들지 않는다.
-
-> `CandidateSet.candidate_token`은 Discord에서 사용하는 15분 candidate/action token이
-> 아니다. 공개 API의 token은 draft를 같은 runtime·사용자·대화·DB source·원 질문에
-> 묶는 요청 무결성 값이며, host는 한 질의가 끝나면 저장하지 않고 폐기한다.
 
 모델은 SQL을 받거나 반환하지 않는다. 필터 값도 SQL 문자열, candidate DTO, repr,
 audit parameter detail 또는 영속 review record에 들어가지 않는다. 같은 프로세스의
@@ -38,7 +36,15 @@ uv run python examples/semantic_runtime_quickstart.py
 실서비스에서는 예제의 자동 선택 함수를 그대로 쓰지 말고 사용자의 명시적 결정을
 `FeedbackRequest`로 전달해야 한다.
 
-## 최소 예제
+## API 흐름 예제
+
+아래는 각 호출의 연결 관계를 보여 주는 전체 예제다. 실제 서비스에서는
+`choose_human_choice()` 자리에 steward UI를 연결한다. 실행 가능한 동일 코드는
+[`examples/semantic_runtime_quickstart.py`](../examples/semantic_runtime_quickstart.py)에
+있다.
+
+<details>
+<summary>Python 전체 예제 펼치기</summary>
 
 ```python
 import asyncio
@@ -167,17 +173,22 @@ async def run() -> None:
 asyncio.run(run())
 ```
 
+</details>
+
+## Token과 재시작 경계
+
 `CandidateSet.source`는 진단용 표시가 아니라 안전 경계다. 재연결 뒤 과거 source로
 만든 `QueryDraft`는 `candidate_source_stale`로 차단된다. `ReviewRequired`도 source,
 catalog fingerprint/version, 분류 정책, 객체 revision과 15분 유효시간에 묶인다.
-`candidate_token`은 scope·사용자·대화·source·원 질문 hash를 묶은 opaque HMAC이다.
+`candidate_token`은 scope·사용자·대화·source·연결 세대·원 질문 hash를 묶은
+opaque HMAC이다.
 host는 `CandidateSet`에서 받은 token과 원 질문을 그대로 `QueryDraft`에 주입해야 하며,
 모델이 질문을 바꾸거나 다른 후보 응답의 token을 재사용하면
 `candidate_question_mismatch`로 차단된다.
 이 token은 15분짜리 Discord action token이나 일회용 실행 권한이 아니다. 같은 runtime
 인스턴스와 source 안에서는 별도 만료시각 없이 질문 binding을 증명하지만, `plan`은
-매번 현재 catalog와 shortlist를 다시 검증한다. host는 token을 영속 저장하지 말고 한
-질의 조립이 끝나면 버리며, 새 사용자 turn에는 `candidates`를 다시 호출한다.
+매번 현재 catalog와 shortlist를 다시 검증한다. Host는 한 질의가 끝나면 token을
+폐기하고, 새 사용자 turn에는 `candidates`를 다시 호출한다.
 프로세스가 재시작되면 사람의 검토 결정은 저장할 수 있지만 민감 draft는 복원하지
 않고 후보 HMAC 서명키도 회전한다. 이때 `FeedbackApplied.next`는 비어 있으며 host는
 사용자에게 같은 질문을 다시 받아 `candidates`부터 호출하고, 새 `source`와
