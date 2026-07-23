@@ -46,63 +46,112 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 
 ### 이번 PR: 연결 즉시 의미 준비형 질의
 
-여기서 “규칙으로 SQL을 만든다”는 말은 `매출이면 orders.amount` 같은
-도메인별 `if` 문이나 SQL template을 미리 심는다는 뜻이 아니다. 첫 연결에서
-Lang2SQL이 **이 DB의 사실**—허용 ID, 타입, PK/FK, DB comment, 사람이 확인한
-의미—을 catalog로 만들고, 라이브러리는 **지원되는 DB에서 공통인 규칙**—집계·
-타입 호환성, 유일한 안전 join, bound parameter, 공개 정책—으로 그 catalog를
-컴파일한다.
+핵심은 도메인별 `if` 문이나 SQL template을 늘리는 것이 아니다.
 
-예를 들어 필요한 의미·공개 범위 검토가 끝난 연결에서 사용자가 “ordered_on이
-2025-01-01 이상 2025-02-01 미만이고 status가 paid인 주문의 amount 합계”를
-물으면 서버는 전체 schema 대신 관련 후보만 모델에 준다.
+- **연결별 사실:** DB metadata 기반 catalog를 만들고 버전 관리한다.
+- **공통 실행 규칙:** catalog의 허용 ID만 typed plan과 SQL로 컴파일한다.
+- **모델의 역할:** 전체 schema 검색이나 SQL 작성이 아니라, 상한으로 제한된
+  후보의 ID와 정해진 입력 칸만 고른다.
 
-```text
-서버 후보  metric:orders.amount · dimension:orders.status
-           dimension:orders.ordered_on · aggregate: SUM
+#### 데이터 연결부터 질문 처리까지
 
-모델 출력  metric_id=metric:orders.amount · aggregate=SUM
-           filter.dimension_id=dimension:orders.status
-           operator=EQ · value="paid"
-           time_window.dimension_id=dimension:orders.ordered_on
-           start=2025-01-01 · end=2025-02-01
-```
+1. **연결 확인**
+   - Discord `/setup` 또는 공개 API `connect`가 연결을 시험한다.
+   - 인증 정보와 DB 연결은 서버 안에만 두며 모델에 전달하지 않는다.
+   - 기존 ContextFlow의 tenancy·Memory·Federation은 유지한다. catalog가 없는
+     기존 경로에는 Explore/Enrich도 그대로 남는다.
 
-모델은 table·join·dialect나 SQL 문자열을 만들지 않는다. 질문과 DB source에 묶인
-후보 ID를 고르고 filter/기간의 **정해진 칸을 채우는 작업**만 한다.
-서버가 이를 다시 검증해 SQL로 컴파일하고, 의미나 공개 범위가 미확정이면 실행
-대신 사람 검토·추가 질문·명시적 차단으로 끝낸다. 그래서 작은 모델의 역할을
-전체 DB 구조를 보고 SQL을 직접 만드는 일에서 소수 후보의 구조화된 선택으로
-줄일 수 있다.
+2. **물리 metadata를 catalog로 변환**
+   - table·column·type·nullable·PK/FK·DB comment만 읽는다.
+   - 연결 시 raw row나 값 목록을 표본 추출하지 않는다.
+   - PII형·자유서술형·key column은 차단하고, 수치·시간·분류 column은
+     metric/dimension **후보**로 분류한다.
+   - `metric:orders.amount`처럼 안정적인 ID, 허용 집계, 선언된 join을 기록한다.
+   - 자동 발견한 수치 column은 업무 지표로 확정하지 않고 검토 대기 상태로 둔다.
+
+   → 작은 모델은 잡음과 민감정보가 제거된 구조만 보며, table·column·join을
+   처음부터 추론하지 않는다.
+
+3. **검색용 표현을 자동 보강**
+   - DB comment를 후보 alias로 반영한다.
+   - 같은 source와 같은 물리 fingerprint일 때만 기존 Enrich 설명을 재사용한다.
+   - `LANG2SQL_AUTO_METADATA_ENRICH=auto`와 실제 provider가 설정되었거나
+     `llm` 모드를 명시한 경우 metadata-only LLM 보강을 한 번 수행한다.
+   - 충돌하거나 값 목록처럼 보이는 표현은 버리고, 보강 결과는 승인된 업무
+     의미·공개 권한·join으로 승격하지 않는다.
+
+   → 작은 모델은 물리명뿐 아니라 사람이 쓰는 표현으로도 후보를 찾을 수 있지만,
+   자동 보강이 실행 권한을 넓히지는 못한다.
+
+4. **연결별 상태를 저장하고 변경을 추적**
+   - 암호화한 연결 정보와 catalog를 한 번에 활성화한다.
+   - `source_id`·연결 세대(재연결마다 바뀌는 버전)·물리 fingerprint·검토
+     revision을 함께 관리한다.
+   - 재연결 scan에서 schema 변경이 감지되면 이전 질문 후보와 검토 상태를
+     그대로 믿지 않고 무효화한다.
+   - 사람이 승인·거절한 의미는 동일한 source/fingerprint에서만 이어받는다.
+   - catalog와 검토 결정은 연결별로 저장한다. 검토 대기 중인 exact draft는
+     같은 서버 process에서 최대 15분만 보관한다.
+   - Discord `/semantic_status`에서 현재 후보·검토·보강 상태를 확인한다.
+
+   → 매 질문마다 모델이 DB의 의미를 다시 복원하지 않고, 검증된 현재 상태를
+   재사용한다.
+
+5. **서버가 질문마다 후보 범위를 제한**
+   - 서버는 VDB/embedding 대신 catalog의 물리명·승인 alias·후보 alias를
+     **결정론적 lexical matching**으로 검색한다.
+   - 최대 table 6개, metric 12개, dimension 12개로 attention envelope를 제한한다.
+   - 작은 catalog는 상한 안의 후보 전체를 줄 수 있다. 넓은 catalog는 질문에
+     정확히 나타난 metadata 표현으로 좁히며, 근거가 없거나 후보가 겹치면
+     임의 선택 대신 추가 질문을 반환한다.
+   - candidate token은 질문·사용자·대화·source·연결 세대에 묶는다.
+   - plan 단계에서는 현재 catalog/revision 기준으로 shortlist를 다시 만들고,
+     선택한 ID와 정책을 재검증한다.
+
+   → 작은 모델에는 전체 schema가 아니라 상한으로 제한되고 현재 연결 상태에
+   묶인 enum형 도구 schema만 전달된다.
+
+6. **모델은 typed plan의 칸만 채움**
+   - 입력: 후보 ID, 허용 집계, 공개 가능한 filter/time 선택지.
+   - 출력: 허용된 metric/dimension ID와 집계, 질문에 명시된 허용 filter
+     값·기간, 지원하지 못한 요구사항.
+   - SQL 문자열·table·join·dialect는 모델 출력에 없다.
+
+7. **서버가 재검증·컴파일하고, 필요한 의미만 사람이 검토**
+   - 후보가 아직 현재 연결과 질문에 유효한지 다시 확인한다.
+   - 유일하게 안전한 FK 경로, 타입, bound parameter, 공개 정책으로 SQL을 만든다.
+   - 의미나 공개 범위가 미확정이면 사람 검토·추가 질문·명시적 차단으로 끝낸다.
+   - 같은 요청자가 15분 안에 승인하면 검토에 묶인 exact draft를 재검증해
+     이어갈 수 있다.
+   - 다른 관리자 승인, 만료 또는 서버 재시작 뒤에는 이전 질문을 자동 실행하지
+     않고 다시 제출받는다.
+   - 현재 검토형 실행 근거는 read-only SQLite와 DuckDB에 한정한다.
 
 ```mermaid
-flowchart TD
-    A["Discord / CLI / 다른 호스트"] --> B["기존 tenancy + agent loop"]
-    B --> C["기존 의미·기억 계층<br/>Ingestion · Federation · Memory"]
-    B --> D{"연결에 semantic catalog가 있는가?"}
-    D -- "아니오" --> E["기존 질의 경로<br/>run_sql · schema 탐색 · enrich"]
-    D -- "예" --> F["기존 Enrich 설명 + DB comment<br/>후보 전용으로 자동 반영"]
-    F --> G["서버가 질문별 후보 제한"]
-    G --> H["LLM은 허용된 ID·집계·필터만 조립"]
-    H --> I{"미확정 의미·공개 범위가 있는가?"}
-    I -- "예" --> J["사람이 허용값 승인·거절"]
-    I -- "아니오" --> K["SQL 없는 typed plan"]
-    J --> K
-    K --> L["서버가 SQL 컴파일"]
-    E --> M["기존 Safety pipeline"]
-    L --> M
-    M --> N["읽기 전용 실행 또는 명시적 차단"]
+flowchart LR
+    A["DB 연결"] --> B["metadata scan<br/>raw row 없음"]
+    B --> C["catalog<br/>ID · type · FK · PII 차단"]
+    C --> D["검색 표현 보강<br/>comment · Enrich · 후보 alias"]
+    D --> E["상태 관리<br/>source · fingerprint · revision"]
+    E --> F["질문별 lexical matching"]
+    F --> G["제한된 후보<br/>table 6 · metric 12 · dimension 12"]
+    G --> H["작은 모델<br/>typed plan 칸 채우기"]
+    H --> I["서버 재검증<br/>SQL 컴파일 · Safety"]
+    I --> J["검증 범위: SQLite · DuckDB<br/>read-only 실행 또는 검토·추가 질문"]
+    J -. "사람 피드백" .-> E
 ```
 
-사람은 매 SQL을 검토하지 않고, **현재 질문에 필요한 미확정 업무 의미나 공개
-범위만** 확인한다. catalog가 활성화된 연결에서는 모델의 `run_sql`을
-`semantic_query`로 교체하며, 기존 federation·ingestion·memory는 그대로 유지한다.
-연결할 때 실제 DB comment를 검색 후보로 자동 반영하고, 같은 source·물리
-fingerprint의 재연결이면 기존 Enrich 설명 캐시도 재사용한다.
-`LANG2SQL_AUTO_METADATA_ENRICH=auto`이고 실제 LLM provider가 설정되어 있으면
-raw row 없이 metadata-only 보강도 한 번 수행한다. 이 결과는 후보일 뿐 승인된
-의미·집계·공개 권한이 아니다.
-현재 검토형 실행은 기존 파일을 read-only로 연 SQLite와 DuckDB에서 검증했다.
+예를 들어 필요한 의미·공개 범위·표현 검토가 끝난 연결에서 질문이
+“status가 paid인 주문의 amount 합계”라면 모델은 전체 DB 대신
+`metric:orders.amount`, `dimension:orders.status`, `SUM`, `EQ`만 받고
+`metric_id=metric:orders.amount`, `aggregate=SUM`,
+`filter.dimension_id=dimension:orders.status`, `operator=EQ`, `value="paid"`처럼
+조립한다.
+catalog가 활성화된 연결에서는 이 `semantic_query`가 모델의 `run_sql`을
+대체한다. 즉 작은 모델이 잘할 수 있는 이유는 더 많이 추론해서가 아니라,
+**서버가 연결 시 의미 후보를 준비·버전 관리하고 질문 시 선택지를 먼저 줄이기
+때문**이다.
+
 자세한 흐름과 제한은 [`연결 즉시 의미 준비형 질의`](docs/REVIEWED_SEMANTIC_QUERY.md)를
 참고한다.
 
