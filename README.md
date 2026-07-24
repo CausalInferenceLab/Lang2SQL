@@ -40,13 +40,12 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 | **③ Hermes memory** | Conversations, facts, and preferences persist instead of resetting each session. |
 | **④ Multi-interface** | Phase 1 Discord today; Slack/Web are future adapters. No platform lock-in. |
 
-## Extensibility — outlets and appliances (콘센트/가전)
+## Extensibility — plug-in extension points
 
-V1 ships the **simplest single implementation** of each extension point, but the
-**abstraction (port) is already in place**, so v1.5/v2 add a new implementation
-*without touching existing code*. Like a wall outlet: the V1 socket has one LED
-bulb plugged in, but because the socket is standard, you later plug in a fan or a
-smart light without rewiring the wall.
+V1 ships the **simplest single implementation** of each extension point, but
+the **abstraction (port) is already in place**, so v1.5/v2 plug in a new
+implementation without touching existing code — like a standard wall outlet
+where you swap the appliance, not the wiring.
 
 Four ★ extension patterns sit behind `core/ports/`:
 
@@ -131,6 +130,8 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 ---
 
 ## Roadmap at a glance
+
+> **Current status: V1 complete** — `enrich_schema` and OKF bundle export are V1.5 features already shipped; next target is AST validation, SQLite file-mode default, and keyword recall.
 
 | Area | V1 | V1.5 | V2 | V2.5 |
 |---|---|---|---|---|
