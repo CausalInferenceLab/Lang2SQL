@@ -31,7 +31,7 @@ interface, not the identity** — Slack/Web are adapters on the same core.
 
 ---
 
-## The four pillars
+## Core capabilities
 
 | Pillar | What it is |
 |---|---|
