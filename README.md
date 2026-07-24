@@ -106,11 +106,13 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 ## What V1 does / does NOT do yet (honesty section)
 
 **Does:**
-- 3-scope semantic federation (guild / channel / member) with most-specific-wins
-  resolution; `term_custom` registers definitions per scope (KV-backed).
+- 3-scope semantic federation (org / team / user) — 동일 용어에 여러 레이어 정의가
+  존재하면 현재 채널 정의를 ★ 로 표시하고 전체 주입; LLM이 컨텍스트로 판단.
+  `term_custom` registers definitions per scope (KV-backed);
+  `kind`(metric/table/rule/dimension) · `applies_to` · `tags` 필드 지원.
 - Safety pipeline with the V1 layers (whitelist + timeout), gating every query.
-- Agent loop with eight tools: `run_sql`, `explore_schema`, `enrich_schema`,
-  `term_custom`, `org_setup`, `ingest_doc`, `remember`, `ask_user`.
+- Agent loop with nine tools: `run_sql`, `explore_schema`, `enrich_schema`,
+  `term_custom`, `org_setup`, `ingest_doc`, `confirm_ingest`, `remember`, `ask_user`.
 - Memory service (in-memory store + inject-all recall + manual `/remember`).
 - Discord frontend (bot, commands, session router, render).
 - Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
@@ -120,8 +122,8 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
   canned `orders`/`users` schema and sample rows; real psycopg execution is v1.5.
 - **Reason without a key.** Without `OPENAI_API_KEY`, the `FakeLLM` returns
   deterministic canned tool cycles — useful for wiring tests, not for answers.
-- DB metadata auto-enrichment, AST-precise SQL validation, function blocklists,
-  cost gating, `/semantic diff` / `/semantic promote`, keyword/vector recall,
+- AST-precise SQL validation, function blocklists, cost gating,
+  `/semantic diff` / `/semantic promote`, keyword/vector recall,
   automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.
 - Persist across restarts by default: the V1 `SqliteStore` defaults to in-memory;
   point it at a file for durability.
@@ -182,7 +184,7 @@ the [MIT License](https://opensource.org/licenses/MIT). 커뮤니티: [Discord](
 | **AI Engineer** | 김경서 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, FinNLP, FDS, RAG |
 | **Data Engineer** | 홍지영 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, Data Engineering |
 | **Data Operator** | 이화림 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, Data Engineering |
-| **AI Engineer** | 남경혜 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, RAG, Multi-Agent |
+| **AI Engineer** | 조태민 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, RAG, Multi-Agent |
 | **AI Engineer** | 심세원 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, RAG, Multi-Agent |
 | **Business Analyst** | 서희진 | ![Python](https://img.shields.io/badge/Python-Intermediate-FF6C37) | LLM, Data Analysis |
 
