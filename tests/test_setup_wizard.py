@@ -84,7 +84,7 @@ def test_assemble_missing_required_field_raises():
 
 def test_assemble_unknown_db_type_raises():
     with pytest.raises(ValueError, match="unsupported"):
-        assemble("oracle", {})
+        assemble("unsupported-db", {})
 
 
 # --- register_db_for_guild end-to-end (real sqlite) ----------------------

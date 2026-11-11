@@ -1,0 +1,121 @@
+{
+  "mode": "scripted",
+  "model": null,
+  "timestamp": "2026-11-11T14:30:25.702886+00:00",
+  "cases": [
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "1 row(s):\nrevenue\n---\n2000000\nSQL: SELECT SUM(gross_amount) AS revenue FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount) AS revenue FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "revenue": 2000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "finance",
+      "db_user": "L2S_DEMO_FINANCE",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "1 row(s):\nrevenue\n---\n1700000\nSQL: SELECT SUM(gross_amount - discount_amount - return_amount) AS revenue FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS revenue FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "revenue": 1700000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "clarification",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 충성고객 매출을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "❓ Awaiting user: 충성고객의 기준이 무엇인가요?",
+      "executions": [],
+      "tool_calls": [
+        "ask_user"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "salary",
+      "team": "hr",
+      "db_user": "L2S_DEMO_HR",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": null,
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2 row(s):\ndepartment | avg_salary\n--- | ---\nfinance | 4000000\nsales | 3000000\nSQL: SELECT department, AVG(salary) AS avg_salary FROM l2s_demo_owner.salaries GROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary FROM l2s_demo_owner.salaries GROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "department": "finance",
+              "avg_salary": 4000000
+            },
+            {
+              "department": "sales",
+              "avg_salary": 3000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "denied",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": "ORA-00942",
+      "answer": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary FROM l2s_demo_owner.salaries GROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "error": "ORA-00942"
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    }
+  ],
+  "database": "Oracle Database 23ai Free Release 23.0.0.0.0 - Develop, Learn, and Run for Free",
+  "passed": true
+}

@@ -59,6 +59,9 @@ def build_explorer(
     if scheme == "postgresql":
         connection = "postgresql+psycopg" + connection[len("postgresql") :]
 
+    if scheme == "oracle":
+        connection = "oracle+oracledb" + connection[len("oracle") :]
+
     # Anything else is assumed to be a SQLAlchemy URL (driver loaded lazily).
     return SqlAlchemyExplorer(connection, schema=schema)
 

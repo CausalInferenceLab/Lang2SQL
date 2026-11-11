@@ -24,6 +24,7 @@ class ConnectionSpec:
 # Supported DB types in the wizard. Order matters — surfaces in the dropdown.
 SUPPORTED_DB_TYPES: tuple[str, ...] = (
     "postgresql",
+    "oracle",
     "mysql",
     "snowflake",
     "bigquery",
@@ -47,6 +48,25 @@ def build_postgresql(
     suffix = "?sslmode=require" if clean_host.endswith(".neon.tech") else ""
     dsn = f"postgresql+psycopg://{_quote(user)}:{_quote(password)}@{clean_host}:{p}/{database}{suffix}"
     return ConnectionSpec(dsn=dsn, extras={})
+
+
+def build_oracle(
+    *, host: str, service_name: str, user: str, password: str
+) -> ConnectionSpec:
+    from sqlalchemy.engine import URL
+
+    parsed = urlsplit("//" + host)
+    if not parsed.hostname or parsed.path or parsed.query or parsed.username:
+        raise ValueError("Oracle host must be a hostname with optional :port")
+    url = URL.create(
+        "oracle+oracledb",
+        username=user,
+        password=password,
+        host=parsed.hostname,
+        port=parsed.port or 1521,
+        query={"service_name": service_name},
+    )
+    return ConnectionSpec(dsn=url.render_as_string(hide_password=False), extras={})
 
 
 def build_mysql(
@@ -89,6 +109,12 @@ def build_d1(*, account_id: str, database_id: str, api_token: str) -> Connection
 # Field schemas surfaced by the Discord Modal layer. Each entry is
 # (label, placeholder, required, masked).
 FIELD_SCHEMA: dict[str, list[tuple[str, str, bool, bool]]] = {
+    "oracle": [
+        ("host", "localhost:1521", True, False),
+        ("service_name", "FREEPDB1", True, False),
+        ("user", "readonly_user", True, False),
+        ("password", "•••••", True, True),
+    ],
     "postgresql": [
         ("host", "db.example.com", True, False),
         ("port", "5432", False, False),
@@ -126,6 +152,7 @@ FIELD_SCHEMA: dict[str, list[tuple[str, str, bool, bool]]] = {
 
 
 _BUILDERS = {
+    "oracle": build_oracle,
     "postgresql": build_postgresql,
     "mysql": build_mysql,
     "snowflake": build_snowflake,
