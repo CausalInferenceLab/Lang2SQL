@@ -1,5 +1,9 @@
 # Lang2SQL
 
+## Codex × Oracle 발표·실행
+
+Codex가 에이전트 실행을 맡고 Lang2SQL MCP가 부서 정의와 Oracle 조회를 제공합니다. [설치·실행·검증 안내](docs/codex_oracle_demo.md)와 [새 발표 장표](docs/presentations/Oracle_Lang2SQL_Codex_v2.pptx)를 참고하세요. 기존 CLI/Discord 진입점도 유지합니다.
+
 <div align="center">
 <a href="https://pseudo-lab.com"><img src="https://img.shields.io/badge/PseudoLab-S10-3776AB" alt="PseudoLab"/></a>
 <a href="https://discord.gg/EPurkHVtp2"><img src="https://img.shields.io/badge/Discord-BF40BF" alt="Discord Community"/></a>
@@ -117,10 +121,11 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 - Encrypted-at-rest secrets (Fernet) and SQLite-backed persistence.
 
 **Does NOT yet:**
-- **Execute against a real database.** `PostgresExplorer` is a **V1 stub** with
-  canned `orders`/`users` schema and sample rows; real psycopg execution is v1.5.
-- **Reason without a key.** Without `OPENAI_API_KEY`, the `FakeLLM` returns
-  deterministic canned tool cycles — useful for wiring tests, not for answers.
+- Without a configured database, `PostgresExplorer` remains an offline stub.
+  With `LANG2SQL_DB_URL`, SQLAlchemy executes against a real database, including Oracle.
+  The Codex path requires an explicit DB URL and never falls back to the stub.
+- The legacy agent without configured LLM credentials uses `FakeLLM` canned cycles.
+  The Codex path uses Codex CLI authentication and does not invoke this inner LLM.
 - AST-precise SQL validation, function blocklists, cost gating,
   `/semantic diff` / `/semantic promote`, keyword/vector recall,
   automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.

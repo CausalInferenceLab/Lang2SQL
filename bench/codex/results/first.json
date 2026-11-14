@@ -1,0 +1,949 @@
+{
+  "runtime": "codex-mcp",
+  "model": "Codex CLI default",
+  "timestamp": "2026-11-14T12:57:31.600117+00:00",
+  "cases": [
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 **2,000,000원**입니다.\n\n현재 채널의 정의에 따라 주문일(`ordered_at`) 기준으로 주문 금액(`gross_amount`)을 합산했습니다.\n\n```sql\nSELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY\n```",
+      "calls": [
+        {
+          "request_id": "f60a6714e9c1419898ad9ea8fac6f54b",
+          "tool": "get_context",
+          "arguments": {},
+          "content": "User: sales-revenue-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "f60a6714e9c1419898ad9ea8fac6f54b",
+          "tool": "explore_schema",
+          "arguments": {
+            "table": "l2s_demo_owner.orders"
+          },
+          "content": "l2s_demo_owner.orders\n- id: NUMBER NOT NULL\n- ordered_at: DATE NOT NULL\n- gross_amount: NUMBER NOT NULL\n- discount_amount: NUMBER NOT NULL\n- return_amount: NUMBER NOT NULL",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "f60a6714e9c1419898ad9ea8fac6f54b",
+          "tool": "run_sql",
+          "arguments": {
+            "sql": "SELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'"
+          },
+          "content": "1 row(s):\nrevenue_krw\n---\n2000000\nSQL: SELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "is_error": false,
+          "stop_turn": false
+        }
+      ],
+      "rows": [
+        {
+          "revenue_krw": 2000000
+        }
+      ],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a1da22-7975-7d70-82da-7c82084ff669"
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "agent_message",
+            "text": "먼저 매출의 업무 정의와 조회 기준을 확인하겠습니다.\n"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "User: sales-revenue-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다."
+                }
+              ],
+              "structured_content": {
+                "text": "User: sales-revenue-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.orders"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.orders"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "l2s_demo_owner.orders\n- id: NUMBER NOT NULL\n- ordered_at: DATE NOT NULL\n- gross_amount: NUMBER NOT NULL\n- discount_amount: NUMBER NOT NULL\n- return_amount: NUMBER NOT NULL"
+                }
+              ],
+              "structured_content": {
+                "text": "l2s_demo_owner.orders\n- id: NUMBER NOT NULL\n- ordered_at: DATE NOT NULL\n- gross_amount: NUMBER NOT NULL\n- discount_amount: NUMBER NOT NULL\n- return_amount: NUMBER NOT NULL",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "1 row(s):\nrevenue_krw\n---\n2000000\nSQL: SELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY"
+                }
+              ],
+              "structured_content": {
+                "text": "1 row(s):\nrevenue_krw\n---\n2000000\nSQL: SELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_4",
+            "type": "agent_message",
+            "text": "2026년 10월 매출은 **2,000,000원**입니다.\n\n현재 채널의 정의에 따라 주문일(`ordered_at`) 기준으로 주문 금액(`gross_amount`)을 합산했습니다.\n\n```sql\nSELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY\n```"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 86679,
+            "cached_input_tokens": 79488,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 331,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "finance",
+      "db_user": "L2S_DEMO_FINANCE",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 **1,700,000원**입니다.\n\n현재 채널의 정의에 따라 **순매출(주문 금액 − 할인 금액 − 반품 금액)**을 주문일 기준으로 합산했습니다.\n\n```sql\nSELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY\n```",
+      "calls": [
+        {
+          "request_id": "d303cd98d457458fb6d891ca3945908b",
+          "tool": "get_context",
+          "arguments": {},
+          "content": "User: finance-revenue-1\nTeam: finance\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "d303cd98d457458fb6d891ca3945908b",
+          "tool": "explore_schema",
+          "arguments": {
+            "table": "l2s_demo_owner.orders"
+          },
+          "content": "l2s_demo_owner.orders\n- id: NUMBER NOT NULL\n- ordered_at: DATE NOT NULL\n- gross_amount: NUMBER NOT NULL\n- discount_amount: NUMBER NOT NULL\n- return_amount: NUMBER NOT NULL",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "d303cd98d457458fb6d891ca3945908b",
+          "tool": "run_sql",
+          "arguments": {
+            "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'"
+          },
+          "content": "1 row(s):\nnet_revenue\n---\n1700000\nSQL: SELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "is_error": false,
+          "stop_turn": false
+        }
+      ],
+      "rows": [
+        {
+          "net_revenue": 1700000
+        }
+      ],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a1da22-d3be-78f3-a6c0-560df4b23122"
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "agent_message",
+            "text": "먼저 매출의 정의와 조회 기준을 확인하겠습니다."
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "User: finance-revenue-1\nTeam: finance\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다."
+                }
+              ],
+              "structured_content": {
+                "text": "User: finance-revenue-1\nTeam: finance\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.orders"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.orders"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "l2s_demo_owner.orders\n- id: NUMBER NOT NULL\n- ordered_at: DATE NOT NULL\n- gross_amount: NUMBER NOT NULL\n- discount_amount: NUMBER NOT NULL\n- return_amount: NUMBER NOT NULL"
+                }
+              ],
+              "structured_content": {
+                "text": "l2s_demo_owner.orders\n- id: NUMBER NOT NULL\n- ordered_at: DATE NOT NULL\n- gross_amount: NUMBER NOT NULL\n- discount_amount: NUMBER NOT NULL\n- return_amount: NUMBER NOT NULL",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "1 row(s):\nnet_revenue\n---\n1700000\nSQL: SELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY"
+                }
+              ],
+              "structured_content": {
+                "text": "1 row(s):\nnet_revenue\n---\n1700000\nSQL: SELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_4",
+            "type": "agent_message",
+            "text": "2026년 10월 매출은 **1,700,000원**입니다.\n\n현재 채널의 정의에 따라 **순매출(주문 금액 − 할인 금액 − 반품 금액)**을 주문일 기준으로 합산했습니다.\n\n```sql\nSELECT SUM(gross_amount - discount_amount - return_amount) AS net_revenue\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY\n```"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 92284,
+            "cached_input_tokens": 84224,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 347,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "clarification",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 충성고객 매출을 알려줘.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 **기준값과 산정 기간**을 알려주세요.",
+      "calls": [
+        {
+          "request_id": "9b55416b912540d3992ba75da475e4e4",
+          "tool": "get_context",
+          "arguments": {},
+          "content": "User: sales-clarification-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "9b55416b912540d3992ba75da475e4e4",
+          "tool": "ask_user",
+          "arguments": {
+            "question": "충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 기준값과 산정 기간을 알려주세요."
+          },
+          "content": "❓ Awaiting user: 충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 기준값과 산정 기간을 알려주세요.",
+          "is_error": false,
+          "stop_turn": true
+        }
+      ],
+      "rows": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a1da23-2665-7590-8b92-e572b3b09782"
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "agent_message",
+            "text": "먼저 분석 기준과 충성고객 정의를 확인하겠습니다.\n"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "User: sales-clarification-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다."
+                }
+              ],
+              "structured_content": {
+                "text": "User: sales-clarification-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "ask_user",
+            "arguments": {
+              "question": "충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 기준값과 산정 기간을 알려주세요."
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "ask_user",
+            "arguments": {
+              "question": "충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 기준값과 산정 기간을 알려주세요."
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "❓ Awaiting user: 충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 기준값과 산정 기간을 알려주세요."
+                }
+              ],
+              "structured_content": {
+                "text": "❓ Awaiting user: 충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 기준값과 산정 기간을 알려주세요.",
+                "stop_turn": true
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_3",
+            "type": "agent_message",
+            "text": "충성고객의 기준은 무엇인가요? 구매 횟수 또는 누적 구매액의 **기준값과 산정 기간**을 알려주세요."
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 75451,
+            "cached_input_tokens": 67968,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 199,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "salary",
+      "team": "hr",
+      "db_user": "L2S_DEMO_HR",
+      "question": "부서별 급여 평균을 알려줘.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "| 부서 | 평균 급여 |\n|---|---:|\n| finance | 4,000,000 |\n| sales | 3,000,000 |\n\n현재 채널 정의에 따라 `department`별 `salary`의 평균(`AVG`)을 계산했습니다. 급여 단위는 제공되지 않았습니다.\n\n```sql\nSELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY\n```",
+      "calls": [
+        {
+          "request_id": "aa912d2aaf6c4d4ea3c9d781fc0f32ea",
+          "tool": "get_context",
+          "arguments": {},
+          "content": "User: hr-salary-1\nTeam: hr\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders, l2s_demo_owner.salaries\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "aa912d2aaf6c4d4ea3c9d781fc0f32ea",
+          "tool": "explore_schema",
+          "arguments": {
+            "table": "l2s_demo_owner.salaries"
+          },
+          "content": "l2s_demo_owner.salaries\n- department: VARCHAR(30)\n- salary: NUMBER",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "aa912d2aaf6c4d4ea3c9d781fc0f32ea",
+          "tool": "run_sql",
+          "arguments": {
+            "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department"
+          },
+          "content": "2 row(s):\ndepartment | avg_salary\n--- | ---\nfinance | 4000000\nsales | 3000000\nSQL: SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "is_error": false,
+          "stop_turn": false
+        }
+      ],
+      "rows": [
+        {
+          "department": "finance",
+          "avg_salary": 4000000
+        },
+        {
+          "department": "sales",
+          "avg_salary": 3000000
+        }
+      ],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a1da23-6f6c-7d02-90a9-ed7284d0875a"
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "agent_message",
+            "text": "먼저 데이터 정의를 확인한 뒤 부서별 평균 급여를 조회하겠습니다."
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "User: hr-salary-1\nTeam: hr\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders, l2s_demo_owner.salaries\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다."
+                }
+              ],
+              "structured_content": {
+                "text": "User: hr-salary-1\nTeam: hr\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders, l2s_demo_owner.salaries\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.salaries"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.salaries"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "l2s_demo_owner.salaries\n- department: VARCHAR(30)\n- salary: NUMBER"
+                }
+              ],
+              "structured_content": {
+                "text": "l2s_demo_owner.salaries\n- department: VARCHAR(30)\n- salary: NUMBER",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "2 row(s):\ndepartment | avg_salary\n--- | ---\nfinance | 4000000\nsales | 3000000\nSQL: SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY"
+                }
+              ],
+              "structured_content": {
+                "text": "2 row(s):\ndepartment | avg_salary\n--- | ---\nfinance | 4000000\nsales | 3000000\nSQL: SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_4",
+            "type": "agent_message",
+            "text": "| 부서 | 평균 급여 |\n|---|---:|\n| finance | 4,000,000 |\n| sales | 3,000,000 |\n\n현재 채널 정의에 따라 `department`별 `salary`의 평균(`AVG`)을 계산했습니다. 급여 단위는 제공되지 않았습니다.\n\n```sql\nSELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY\n```"
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 88456,
+            "cached_input_tokens": 75776,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 374,
+            "reasoning_output_tokens": 0
+          }
+        }
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "denied",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "부서별 급여 평균을 알려줘.",
+      "passed": true,
+      "permission_probe": "ORA-00942",
+      "answer": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.\n\n적용한 정의는 `l2s_demo_owner.salaries`의 `department`별 `AVG(salary)`입니다. 조회에 실패하여 평균 결과와 성공한 SQL은 제공할 수 없습니다.",
+      "calls": [
+        {
+          "request_id": "be18dd906eaa4beca799841996065644",
+          "tool": "get_context",
+          "arguments": {},
+          "content": "User: sales-denied-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+          "is_error": false,
+          "stop_turn": false
+        },
+        {
+          "request_id": "be18dd906eaa4beca799841996065644",
+          "tool": "explore_schema",
+          "arguments": {
+            "table": "l2s_demo_owner.salaries"
+          },
+          "content": "NoSuchTableError: l2s_demo_owner.salaries",
+          "is_error": true,
+          "stop_turn": false
+        },
+        {
+          "request_id": "be18dd906eaa4beca799841996065644",
+          "tool": "run_sql",
+          "arguments": {
+            "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department"
+          },
+          "content": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+          "is_error": true,
+          "stop_turn": true
+        }
+      ],
+      "rows": [],
+      "events": [
+        {
+          "type": "thread.started",
+          "thread_id": "01a1da23-c244-7f30-952f-642a6f16e2b9"
+        },
+        {
+          "type": "turn.started"
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_0",
+            "type": "agent_message",
+            "text": "먼저 데이터 정의와 SQL 방언을 확인하겠습니다."
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "get_context",
+            "arguments": {},
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "User: sales-denied-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다."
+                }
+              ],
+              "structured_content": {
+                "text": "User: sales-denied-1\nTeam: sales\nYou are Lang2SQL, a read-only data analytics agent.\n\nRules:\n- Only ever read data. Never modify the database.\n- When you need data, call the run_sql tool with a single SELECT/WITH query.\n- Discover schema with explore_schema before guessing table or column names.\n- Prefer definitions from the semantic layer below over your own assumptions.\n- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.\n\nClarification rule:\n- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.\n- After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: \"이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다.\"\n\n\n## SQL dialect\noracle\n\nUse Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, not LIMIT. Preserve schema-qualified table names. On a permission denial, explain the denial without changing credentials or searching other tables for the denied data.\n\n## Known tables\nl2s_demo_owner.orders\n\n## Business Terminology\n(★ = 현재 채널/사용자 기준 정의. 여러 정의가 있을 때는 문맥상 명확하면 ★ 사용, 애매하면 사용자에게 선택 요청)\n\n### Metrics — 집계 지표 — SELECT/HAVING 절의 집계식으로 사용\n- **급여** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n  · 다른 채널: l2s_demo_owner.salaries의 salary, 부서는 department. 부서별 평균은 AVG(salary). DB 접근 권한을 따른다.\n- **매출** — 정의 여러 개 (채널 컨텍스트에 따라 판단):\n  ★ 이 채널: 주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n  · 다른 채널: 순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.\n\n## Ambiguous Term Policy\n사전에 없는 주관적/모호한 표현을 발견하면:\n1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.\n2. 예: \"충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?\"\n3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.\n4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "completed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.salaries"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "explore_schema",
+            "arguments": {
+              "table": "l2s_demo_owner.salaries"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "NoSuchTableError: l2s_demo_owner.salaries"
+                }
+              ],
+              "structured_content": {
+                "text": "NoSuchTableError: l2s_demo_owner.salaries",
+                "stop_turn": false
+              }
+            },
+            "error": null,
+            "status": "failed"
+          }
+        },
+        {
+          "type": "item.started",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department"
+            },
+            "result": null,
+            "error": null,
+            "status": "in_progress"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "lang2sql",
+            "tool": "run_sql",
+            "arguments": {
+              "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department"
+            },
+            "result": {
+              "content": [
+                {
+                  "type": "text",
+                  "text": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요."
+                }
+              ],
+              "structured_content": {
+                "text": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+                "stop_turn": true
+              }
+            },
+            "error": null,
+            "status": "failed"
+          }
+        },
+        {
+          "type": "item.completed",
+          "item": {
+            "id": "item_4",
+            "type": "agent_message",
+            "text": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.\n\n적용한 정의는 `l2s_demo_owner.salaries`의 `department`별 `AVG(salary)`입니다. 조회에 실패하여 평균 결과와 성공한 SQL은 제공할 수 없습니다."
+          }
+        },
+        {
+          "type": "turn.completed",
+          "usage": {
+            "input_tokens": 91976,
+            "cached_input_tokens": 77184,
+            "cache_write_input_tokens": 0,
+            "output_tokens": 292,
+            "reasoning_output_tokens": 12
+          }
+        }
+      ]
+    }
+  ],
+  "passed": true
+}

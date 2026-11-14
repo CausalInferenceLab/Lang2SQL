@@ -1,0 +1,19 @@
+name: Codex MCP tests
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --extra codex --extra oracle --locked
+      - run: uv run --extra codex --extra oracle pytest -q
+      - run: uv run --with black black --check src tests bench/codex_oracle_demo.py
+      - run: uv run --with ruff ruff check --isolated --select E4,E7,E9,F src/lang2sql/frontends/codex src/lang2sql/frontends/mcp src/lang2sql/tenancy/mcp_runtime.py bench/codex_oracle_demo.py tests/test_codex_mcp.py

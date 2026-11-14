@@ -1,5 +1,7 @@
 # Oracle × Lang2SQL 데모
 
+> Codex 기반 새 발표와 실행은 [Codex 전용 안내](codex_oracle_demo.md)를 사용한다. 이 문서는 공용 Oracle fixture 준비와 기존 내부 에이전트 평가를 설명한다.
+
 같은 질문에 부서별 정의를 적용하고, 정의가 없으면 되묻고, Oracle 조회 권한을 지키는 CLI 데모다. `bench/oracle_demo.py`는 기존 `ContextConcierge → agent_loop → RunSQL → SqlAlchemyExplorer` 경로를 실행한다. 별도 SQL 생성 엔진이나 Oracle 전용 에이전트는 없다.
 
 ## 보여줄 장면과 합격 조건
