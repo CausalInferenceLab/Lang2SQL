@@ -5,8 +5,8 @@ Run:  .venv/bin/python bench/ecommerce_demo.py
 
 This is the study-group demo. It exercises the *real* V1 code paths
 (``ContextConcierge`` + KV-backed federation + the canned Postgres explorer +
-the offline ``FakeLLM``) to show three things end-to-end without a token or a
-live database:
+authenticated ``CodexLLM``) to show three things end-to-end with a canned
+database fixture:
 
   Section 1 — define three e-commerce metrics in a channel and read them back.
   Section 2 — ★④ semantic federation: the *same* term ``active_user`` carries
@@ -63,21 +63,21 @@ def _define_term(
 
 
 async def section_0_harness(concierge: ContextConcierge) -> None:
-    """Drive one full agent turn through the assembled harness (offline)."""
-    _hr("SECTION 0 — assembled harness runs one turn (ContextConcierge + FakeLLM)")
+    """Drive one full agent turn through the assembled Codex-backed harness."""
+    _hr("SECTION 0 — assembled harness runs one turn (ContextConcierge + Codex)")
 
     ident = _marketing_identity()
     ctx = await concierge.build_context(ident)
-    print(f"LLM in use:  {type(ctx.llm).__name__}   (offline, no key required)")
+    print(
+        f"LLM in use:  {type(ctx.llm).__name__}   (Codex CLI authentication required)"
+    )
     print(f"Explorer:    {type(ctx.explorer).__name__}   (canned orders/users tables)")
     print(f"Tools wired: {', '.join(s.name for s in ctx.tools.specs())}\n")
 
     final = await agent_loop(ctx, "How many orders do we have?")
     print("user>  How many orders do we have?")
     print(f"loop>  {final}")
-    print("\n  The loop completed a real LLM→tool→LLM cycle. The stub's blind")
-    print("  run_sql call was caught by the safety gate, which is exactly the")
-    print("  ★① behaviour Section 3 isolates.")
+    print("\n  Codex selects tools; the harness executes them through the safety gate.")
 
 
 async def section_1_define_metrics(store: SqliteStore) -> None:
@@ -188,7 +188,7 @@ def section_3_safety(pipeline: SafetyPipeline) -> None:
 
 
 async def main() -> None:
-    print("Lang2SQL v4.1 — e-commerce demo (offline: FakeLLM, canned PG, in-memory)")
+    print("Lang2SQL — e-commerce demo (Codex inference, canned PG, in-memory)")
 
     store = SqliteStore()
     pipeline = SafetyPipeline()
@@ -201,7 +201,7 @@ async def main() -> None:
 
     _hr("DONE")
     print("Sections 1–2 exercise ★④ federation; section 3 exercises ★① safety.")
-    print("No network, no token, no live database were used.")
+    print("Codex inference uses the network; this demo uses canned database rows.")
 
 
 if __name__ == "__main__":

@@ -1,6 +1,6 @@
 """LLM port — the one outbound call the agent loop makes per turn.
 
-V1 wires a single OpenAI ``gpt-4.1-mini`` adapter behind this. Because the loop
+Production wires CodexLLM behind this port. Because the loop
 depends only on this Protocol, swapping in Anthropic/NIM later (v1.5+) is an
 adapter add with zero loop changes.
 """

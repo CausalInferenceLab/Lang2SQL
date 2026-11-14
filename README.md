@@ -2,7 +2,7 @@
 
 ## Codex × Oracle 발표·실행
 
-Codex가 에이전트 실행을 맡고 Lang2SQL MCP가 부서 정의와 Oracle 조회를 제공합니다. [설치·실행·검증 안내](docs/codex_oracle_demo.md)와 [새 발표 장표](docs/presentations/Oracle_Lang2SQL_Codex_v2.pptx)를 참고하세요. 기존 CLI/Discord 진입점도 유지합니다.
+CLI·Discord·문서 추출·스키마 강화·조직 용어 추출이 모두 Codex를 기본 추론 엔진으로 사용합니다. 기존 하네스가 도구 실행·권한·세션을 관리하며 MCP 실행은 선택 가능한 별도 진입점입니다. [설치·실행·검증 안내](docs/codex_oracle_demo.md)와 [새 발표 장표](docs/presentations/Oracle_Lang2SQL_Codex_v2.pptx)를 참고하세요. 기존 CLI/Discord 진입점도 유지합니다.
 
 <div align="center">
 <a href="https://pseudo-lab.com"><img src="https://img.shields.io/badge/PseudoLab-S10-3776AB" alt="PseudoLab"/></a>
@@ -73,9 +73,10 @@ Requires Python ≥ 3.10 and [uv](https://docs.astral.sh/uv/).
 uv sync                       # create .venv and install deps
 ```
 
-### 1. Run the offline demo (no token, no database)
+### 1. Authenticate Codex and run the demo
 
 ```bash
+codex login
 .venv/bin/python bench/ecommerce_demo.py
 ```
 
@@ -89,14 +90,15 @@ the safety gate (DROP/INSERT blocked, SELECT passes). See [`bench/README.md`](be
 ```
 
 The CLI assembles a real `HarnessContext` and runs one turn through the agent
-loop. With `OPENAI_API_KEY` set it calls `gpt-4.1-mini`; otherwise it uses the
-offline `FakeLLM`.
+loop. Every inference call uses Codex CLI structured output. Tool requests are
+executed by the existing harness, preserving identity, safety and session history.
+Codex must be installed and authenticated; failures propagate without a fake/provider fallback.
 
 ### 3. Run the Discord bot
 
 ```bash
 export DISCORD_BOT_TOKEN=...        # required
-export OPENAI_API_KEY=...           # optional; offline FakeLLM if unset
+codex login                       # required on the service account
 export LANG2SQL_SECRET_KEY=...      # optional; Fernet key for secret encryption
 .venv/bin/lang2sql-bot
 ```
@@ -124,8 +126,8 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
 - Without a configured database, `PostgresExplorer` remains an offline stub.
   With `LANG2SQL_DB_URL`, SQLAlchemy executes against a real database, including Oracle.
   The Codex path requires an explicit DB URL and never falls back to the stub.
-- The legacy agent without configured LLM credentials uses `FakeLLM` canned cycles.
-  The Codex path uses Codex CLI authentication and does not invoke this inner LLM.
+- All default application inference requires authenticated Codex CLI.
+  `FakeLLM` is only an explicitly injected test double; no automatic fallback.
 - AST-precise SQL validation, function blocklists, cost gating,
   `/semantic diff` / `/semantic promote`, keyword/vector recall,
   automatic fact extraction, URL/Notion ingestion — all scoped to v1.5+.

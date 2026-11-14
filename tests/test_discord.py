@@ -24,6 +24,7 @@ from lang2sql.frontends.discord import (
     to_identity,
 )
 from lang2sql.frontends.discord.render import MAX_INLINE_ROWS
+from lang2sql.adapters.llm.fake import FakeLLM
 from lang2sql.tenancy.concierge import ContextConcierge
 
 # -- session_router -------------------------------------------------------
@@ -105,7 +106,7 @@ def test_render_many_text_lines_attaches() -> None:
 
 
 def test_term_custom_then_list() -> None:
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     ident = to_identity(
         InteractionContext(user_id="u1", guild_id="g1", channel_id="c1")
     )
@@ -127,7 +128,7 @@ def test_term_custom_then_list() -> None:
 
 
 def test_term_custom_list_empty_scope() -> None:
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     ident = to_identity(
         InteractionContext(user_id="solo", guild_id="g9", channel_id="c9")
     )
@@ -137,7 +138,7 @@ def test_term_custom_list_empty_scope() -> None:
 
 def test_term_custom_is_scope_isolated() -> None:
     """A channel definition must not leak into a different channel (federation)."""
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     marketing = to_identity(
         InteractionContext(user_id="u1", guild_id="g1", channel_id="mkt")
     )
@@ -155,7 +156,7 @@ def test_term_custom_is_scope_isolated() -> None:
 
 
 def test_remember_and_audit_me() -> None:
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     ident = to_identity(
         InteractionContext(user_id="u2", guild_id="g1", channel_id="c1")
     )
@@ -171,7 +172,7 @@ def test_remember_and_audit_me() -> None:
 
 
 def test_audit_me_empty() -> None:
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     ident = to_identity(
         InteractionContext(user_id="never-acted", guild_id="g1", channel_id="c1")
     )
@@ -181,7 +182,7 @@ def test_audit_me_empty() -> None:
 
 def test_query_returns_outbound_message() -> None:
     """With the default FakeLLM (no OPENAI key), a query still returns text."""
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     ident = to_identity(
         InteractionContext(user_id="u3", guild_id="g1", channel_id="c1")
     )
@@ -191,7 +192,7 @@ def test_query_returns_outbound_message() -> None:
 
 
 def test_query_persists_session() -> None:
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
     ident = to_identity(
         InteractionContext(user_id="u4", guild_id="g1", channel_id="c1")
@@ -207,7 +208,7 @@ def test_query_persists_session() -> None:
 
 
 def test_connect_stub_acknowledges() -> None:
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
     ident = to_identity(
         InteractionContext(user_id="u5", guild_id="g1", channel_id="c1")
@@ -218,7 +219,7 @@ def test_connect_stub_acknowledges() -> None:
 
 
 def test_ingest_lists_or_reports() -> None:
-    handlers = CommandHandlers(ContextConcierge())
+    handlers = CommandHandlers(ContextConcierge(llm=FakeLLM()))
     ident = to_identity(
         InteractionContext(user_id="u6", guild_id="g1", channel_id="c1")
     )

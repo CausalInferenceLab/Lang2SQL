@@ -1,0 +1,119 @@
+{
+  "mode": "codex_harness",
+  "model": "Codex CLI default",
+  "timestamp": "2026-11-14T13:27:09.935301+00:00",
+  "cases": [
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 **2,000,000원**입니다.\n\n```sql\nSELECT SUM(gross_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY\n```",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount) AS revenue_krw FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "revenue_krw": 2000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "explore_schema",
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "finance",
+      "db_user": "L2S_DEMO_FINANCE",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 **1,700,000원**입니다. 할인액과 반품액을 차감한 순매출 기준입니다.\n\n```sql\nSELECT SUM(gross_amount - discount_amount - return_amount) AS revenue_krw\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01'\n  AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY\n```",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS revenue_krw FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "revenue_krw": 1700000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "explore_schema",
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "clarification",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 충성고객 매출을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "❓ Awaiting user: 충성고객의 기준은 무엇인가요? 구매 횟수나 누적 구매액 등의 조건과 집계 기간을 알려주세요.",
+      "executions": [],
+      "tool_calls": [
+        "ask_user"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "salary",
+      "team": "hr",
+      "db_user": "L2S_DEMO_HR",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": null,
+      "passed": true,
+      "permission_probe": null,
+      "answer": "| 부서 | 평균 급여 |\n| --- | ---: |\n| finance | 4,000,000 |\n| sales | 3,000,000 |\n\n```sql\nSELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY\n```",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary FROM l2s_demo_owner.salaries GROUP BY department ORDER BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "department": "finance",
+              "avg_salary": 4000000
+            },
+            {
+              "department": "sales",
+              "avg_salary": 3000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "explore_schema",
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "denied",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": "ORA-00942",
+      "answer": "급여 정의에 지정된 `l2s_demo_owner.salaries` 테이블을 스키마 조회에서 찾지 못해 부서별 평균을 계산하지 못했습니다. 테이블 존재 여부와 조회 권한을 확인해 주세요.",
+      "executions": [],
+      "tool_calls": [
+        "explore_schema"
+      ]
+    }
+  ],
+  "database": "Oracle Database 23ai Free Release 23.0.0.0.0 - Develop, Learn, and Run for Free",
+  "passed": true
+}

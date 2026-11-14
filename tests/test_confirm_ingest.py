@@ -306,9 +306,10 @@ def test_confirm_with_okf_bundle_exports_files() -> None:
 
 
 def test_registered_tool_name_in_registry() -> None:
+    from lang2sql.adapters.llm.fake import FakeLLM
     from lang2sql.tenancy.concierge import ContextConcierge
 
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     identity = Identity(user_id="u1", guild_id="g1", channel_id="c1")
     ctx = asyncio.run(concierge.build_context(identity))
     names = {s.name for s in ctx.tools.specs()}

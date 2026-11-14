@@ -1,4 +1,6 @@
-"""OpenAILLM — the V1 :class:`LLMPort`, talking OpenAI chat/completions.
+"""Explicit compatibility adapter; production assembly uses CodexLLM.
+
+OpenAILLM — the V1 :class:`LLMPort`, talking OpenAI chat/completions.
 
 stdlib only: HTTP via :mod:`urllib.request`, JSON via :mod:`json`. No openai
 SDK. The adapter's whole job is translation — core :class:`Message`/:class:`ToolSpec`

@@ -1,7 +1,7 @@
 """Oracle demo: disposable fixtures and the real Lang2SQL harness.
 
 `seed` creates new demo users (never drops/replaces existing objects).
-`verify` uses only three read-only accounts; --live requires an API key.
+`verify` uses only three read-only accounts; --live uses authenticated Codex CLI.
 The scripted mode proves wiring, not LLM accuracy. Both modes use a real Oracle DB.
 """
 
@@ -20,7 +20,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import make_url
 
 from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
-from lang2sql.adapters.llm.openai_ import OpenAILLM
+from lang2sql.adapters.llm.codex import CodexLLM
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.core.identity import Identity
 from lang2sql.core.types import Completion, ToolCall
@@ -141,14 +141,12 @@ class ScriptedLLM:
 
 
 async def verify(
-    url: str, live: bool, api_key: str | None, model: str, repeats: int
+    url: str, live: bool, env: dict[str, str], model: str | None, repeats: int
 ) -> dict:
-    if live and not api_key:
-        raise ValueError("--live requires OPENAI_API_KEY; no FakeLLM fallback")
     base = make_url(url)
     report = {
-        "mode": "live_llm" if live else "scripted",
-        "model": model if live else None,
+        "mode": "codex_harness" if live else "scripted",
+        "model": (model or "Codex CLI default") if live else None,
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "cases": [],
     }
@@ -182,11 +180,7 @@ async def verify(
                         "ask_user",
                         {"question": "충성고객의 기준이 무엇인가요?"},
                     )
-                llm = (
-                    OpenAILLM(model=model, api_key=api_key)
-                    if live
-                    else ScriptedLLM(call)
-                )
+                llm = CodexLLM(model=model, env=env) if live else ScriptedLLM(call)
                 concierge = ContextConcierge(store=store, explorer=explorer, llm=llm)
                 identity = Identity(
                     user_id=user, guild_id="oracle-demo", channel_id=team
@@ -332,8 +326,8 @@ def main() -> None:
         verify(
             url,
             args.live,
-            os.environ.get("OPENAI_API_KEY"),
-            os.environ.get("LANG2SQL_LLM_MODEL") or "gpt-4.1-mini",
+            dict(os.environ),
+            os.environ.get("LANG2SQL_LLM_MODEL") or None,
             args.repeats,
         )
     )

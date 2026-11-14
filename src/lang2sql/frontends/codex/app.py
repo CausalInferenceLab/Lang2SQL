@@ -7,47 +7,27 @@ import asyncio
 import json
 import logging
 import os
-import signal
 import sys
-import tempfile
 from pathlib import Path
 
 from ..mcp.server import ENV_KEYS, McpSettings
+from ...adapters.llm import codex_process
 
 logger = logging.getLogger(__name__)
 
 
-def command(model: str | None = None) -> list[str]:
-    """A dedicated, read-only Codex session with only this MCP connection."""
-    overrides = {
-        "approval_policy": '"never"',
-        "web_search": '"disabled"',
-        "features.shell_tool": "false",
-        "features.apps": "false",
-        "features.multi_agent": "false",
+def _mcp_config() -> dict[str, str]:
+    return {
         "mcp_servers.lang2sql.command": json.dumps(sys.executable),
         "mcp_servers.lang2sql.args": '["-m", "lang2sql.frontends.mcp.server"]',
         "mcp_servers.lang2sql.env_vars": json.dumps(list(ENV_KEYS)),
         "mcp_servers.lang2sql.required": "true",
         "mcp_servers.lang2sql.default_tools_approval_mode": '"approve"',
     }
-    cmd = [
-        "codex",
-        "exec",
-        "--ignore-user-config",
-        "--ephemeral",
-        "--skip-git-repo-check",
-        "--sandbox",
-        "read-only",
-        "--json",
-        "--color",
-        "never",
-    ]
-    for key, value in overrides.items():
-        cmd += ["-c", f"{key}={value}"]
-    if model:
-        cmd += ["--model", model]
-    return cmd + ["-"]
+
+
+def command(model: str | None = None) -> list[str]:
+    return codex_process.command(model, overrides=_mcp_config())
 
 
 async def run(
@@ -71,67 +51,22 @@ async def run(
         "Never use shell, files, web, other agents, or other data connections.\n\nQuestion:\n"
         + question
     )
-    # Empty cwd prevents a user's repository instructions/files becoming analytics context.
-    with tempfile.TemporaryDirectory(prefix="lang2sql-codex-") as cwd:
-        proc = await asyncio.create_subprocess_exec(
-            *command(model),
-            cwd=cwd,
-            start_new_session=(os.name == "posix"),
-            env=env,
-            stdin=asyncio.subprocess.PIPE,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-        )
-        logger.info("codex started pid=%s", proc.pid)
-        try:
-            stdout, stderr = await asyncio.wait_for(
-                proc.communicate(prompt.encode()), timeout
-            )
-        except (asyncio.TimeoutError, asyncio.CancelledError):
-            logger.error("codex interrupted or timed out pid=%s", proc.pid)
-            if os.name == "posix":
-                os.killpg(proc.pid, signal.SIGKILL)
-            else:
-                proc.kill()
-            await proc.wait()
-            raise
-        if proc.returncode:
-            logger.error("codex failed exit=%s", proc.returncode)
-            raise RuntimeError(
-                f"Codex exited {proc.returncode}: {stderr.decode()[-2000:]}"
-            )
-        events = [
-            json.loads(line) for line in stdout.decode().splitlines() if line.strip()
-        ]
-        if any(e.get("type") in {"error", "turn.failed"} for e in events):
-            raise RuntimeError("Codex reported a failed turn")
-        messages = [
-            e["item"]["text"]
-            for e in events
-            if e.get("type") == "item.completed"
-            and e.get("item", {}).get("type") == "agent_message"
-        ]
-        if not messages or not any(e.get("type") == "turn.completed" for e in events):
-            raise RuntimeError("Codex did not complete an answer")
-        context_calls = [
-            e["item"]
-            for e in events
-            if e.get("type") == "item.completed"
-            and e.get("item", {}).get("type") == "mcp_tool_call"
-            and e["item"].get("server") == "lang2sql"
-            and e["item"].get("tool") == "get_context"
-            and e["item"].get("status") == "completed"
-            and not e["item"].get("error")
-        ]
-        if not context_calls:
-            raise RuntimeError("Codex completed without reading Lang2SQL context")
-        logger.info("codex completed events=%d", len(events))
-        return {
-            "runtime": "codex-mcp",
-            "model": model or "Codex CLI default",
-            "answer": messages[-1],
-            "events": events,
-        }
+    result = await codex_process.execute(
+        prompt, env=env, model=model, timeout=timeout, overrides=_mcp_config()
+    )
+    context_calls = [
+        e["item"]
+        for e in result["events"]
+        if e.get("type") == "item.completed"
+        and e.get("item", {}).get("type") == "mcp_tool_call"
+        and e["item"].get("server") == "lang2sql"
+        and e["item"].get("tool") == "get_context"
+        and e["item"].get("status") == "completed"
+        and not e["item"].get("error")
+    ]
+    if not context_calls:
+        raise RuntimeError("Codex completed without reading Lang2SQL context")
+    return {"runtime": "codex-mcp", **result}
 
 
 def main() -> None:

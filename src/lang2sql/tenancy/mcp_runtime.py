@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ..adapters.db.factory import build_explorer
-from ..adapters.llm.fake import FakeLLM
+from .concierge import _default_llm
 from ..adapters.storage.sqlite_store import SqliteStore
 from ..core.identity import Identity
 from ..frontends.mcp.server import McpSettings, ToolGateway
@@ -21,7 +21,7 @@ async def build_gateway(settings: McpSettings) -> ToolGateway:
     store = SqliteStore(settings.data_path)
     ctx = HarnessContext(
         identity=identity,
-        llm=FakeLLM(),
+        llm=_default_llm(),
         session=Session(identity),
         tools=ToolRegistry([ExploreSchema(), RunSQL(), AskUser()]),
         explorer=build_explorer(settings.db_url, schema=settings.schema),

@@ -97,10 +97,11 @@ def test_build_send_kwargs_includes_file_for_csv() -> None:
 def test_term_custom_remove_emits_audit_event() -> None:
     """Deleting a term must be recorded in the audit log."""
     from lang2sql.core.identity import Identity
+    from lang2sql.adapters.llm.fake import FakeLLM
     from lang2sql.tenancy.concierge import ContextConcierge
     from lang2sql.tools.semantic_federation import SemanticFederationTool
 
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     ident = Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=True)
     ctx = asyncio.run(concierge.build_context(ident))
 
@@ -127,10 +128,11 @@ def test_term_custom_remove_emits_audit_event() -> None:
 def test_guild_write_requires_admin() -> None:
     """Non-admin must be blocked from writing guild-layer terms via term_custom."""
     from lang2sql.core.identity import Identity
+    from lang2sql.adapters.llm.fake import FakeLLM
     from lang2sql.tenancy.concierge import ContextConcierge
     from lang2sql.tools.semantic_federation import SemanticFederationTool
 
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     ident = Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=False)
     ctx = asyncio.run(concierge.build_context(ident))
 
@@ -146,10 +148,11 @@ def test_guild_write_requires_admin() -> None:
 def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
     """Non-admin remove skips guild-layer entry but deletes their own member entry."""
     from lang2sql.core.identity import Identity
+    from lang2sql.adapters.llm.fake import FakeLLM
     from lang2sql.tenancy.concierge import ContextConcierge
     from lang2sql.tools.semantic_federation import SemanticFederationTool, _kv_key
 
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
 
     # Admin registers the guild-layer term
     admin_ctx = asyncio.run(

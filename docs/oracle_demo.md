@@ -33,14 +33,15 @@ uv run python bench/oracle_demo.py verify --output /tmp/oracle-scripted.json
 
 기본 verify는 **실제 Oracle + 명시적인 ScriptedLLM**으로 연결·안전장치·도구 동작을 검증한다. 이 결과는 LLM 정확도가 아니다.
 
-실제 모델로 같은 사례를 반복하려면 `OPENAI_API_KEY`를 환경에 설정한 뒤 실행한다. 키를 명령행 인수나 결과 파일에 넣지 않는다.
+실제 모델로 같은 사례를 반복하려면 Codex CLI를 설치하고 `codex login`으로 인증한다. 기본 CLI/Discord와 같은 CodexLLM + 하네스 경로를 사용한다.
 
 ```bash
-export LANG2SQL_LLM_MODEL=gpt-4.1-mini
+codex login
+# 선택: export LANG2SQL_LLM_MODEL=<사용 가능한 Codex 모델 ID>
 uv run python bench/oracle_demo.py verify --live --repeats 3 --output /tmp/oracle-live.json
 ```
 
-`--live`는 키가 없으면 실패하며 FakeLLM으로 대체하지 않는다. 모델 호출은 실제 API 요금이 발생한다. 하나라도 판정에 실패하면 종료 코드 1을 반환한다. 결과 JSON의 답변과 SQL도 발표 전에 읽어 확인한다.
+`--live`는 Codex 실행/인증 실패를 전파하며 FakeLLM으로 대체하지 않는다. Codex 계정의 사용량과 한도가 적용된다. 하나라도 판정에 실패하면 종료 코드 1을 반환한다. 결과 JSON의 답변과 SQL도 발표 전에 읽어 확인한다.
 
 ```bash
 # DB를 남겨두고 중지 / 다시 시작

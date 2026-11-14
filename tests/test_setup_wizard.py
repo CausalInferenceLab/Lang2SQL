@@ -16,6 +16,7 @@ from lang2sql.adapters.db import D1Explorer, SqlAlchemyExplorer
 from lang2sql.adapters.db.dsn_builder import assemble
 from lang2sql.core.identity import Identity
 from lang2sql.frontends.discord.commands import CommandHandlers
+from lang2sql.adapters.llm.fake import FakeLLM
 from lang2sql.tenancy.concierge import ContextConcierge
 
 # --- dsn_builder ---------------------------------------------------------
@@ -103,7 +104,7 @@ def test_register_db_for_guild_success_stores_encrypted(tmp_path):
     db = tmp_path / "demo.db"
     _seed_sqlite(str(db))
 
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
     identity = Identity(user_id="alice", guild_id="g1", channel_id="c")
 
@@ -130,7 +131,7 @@ def test_register_db_for_guild_success_stores_encrypted(tmp_path):
 
 
 def test_register_db_for_guild_unknown_driver_gives_friendly_error():
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
     identity = Identity(user_id="u", guild_id="g-x", channel_id="c")
     # Snowflake driver isn't installed in this env; the handler should catch
@@ -152,7 +153,7 @@ def test_register_db_for_guild_unknown_driver_gives_friendly_error():
 
 
 def test_register_db_for_guild_missing_field_reports_setup_error():
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     handlers = CommandHandlers(concierge)
     identity = Identity(user_id="u", guild_id="g", channel_id="c")
     res = asyncio.run(
@@ -171,7 +172,7 @@ def test_register_db_for_guild_missing_field_reports_setup_error():
 def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
     db = tmp_path / "scoped.db"
     _seed_sqlite(str(db))
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
 
     g_with = Identity(user_id="u", guild_id="g-real", channel_id="c")
     g_without = Identity(user_id="u", guild_id="g-default", channel_id="c")
@@ -188,7 +189,7 @@ def test_concierge_per_scope_dsn_routes_correctly(tmp_path):
 
 
 def test_concierge_d1_extras_threaded_through_secrets():
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     asyncio.run(concierge.secrets.set("g-d1", "db_dsn", "d1://acct/db"))
     asyncio.run(concierge.secrets.set("g-d1", "db_extras.d1_token", "tok-1"))
     identity = Identity(user_id="u", guild_id="g-d1", channel_id="c")
@@ -202,7 +203,7 @@ def test_forget_explorer_busts_the_cache(tmp_path):
     db2 = tmp_path / "b.db"
     _seed_sqlite(str(db1))
     _seed_sqlite(str(db2))
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     identity = Identity(user_id="u", guild_id="g", channel_id="c")
 
     asyncio.run(concierge.secrets.set("g", "db_dsn", f"sqlite:///{db1}"))

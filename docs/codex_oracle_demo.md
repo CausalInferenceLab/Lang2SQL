@@ -1,5 +1,15 @@
 # Codex × Lang2SQL × Oracle
 
+## 전체 애플리케이션 전환
+
+기존 `lang2sql`, `lang2sql-bot`, 문서 추출, 스키마 설명 생성, 조직/팀 용어 추출은 모두 `ContextConcierge → CodexLLM → codex_process.execute`를 사용한다. Codex가 구조화된 content/tool_calls를 반환하면 기존 하네스가 도구·안전 검사·세션·감사 기록을 처리한다. `OPENAI_API_KEY`나 로컬 LLM URL에 따른 자동 분기는 제거했다. 인증/실행 오류는 전파하며 FakeLLM은 테스트에서 명시적으로 주입할 때만 사용한다. 기존 OpenAILLM 클래스는 명시적 호환용으로만 남아 있고 제품 조립점에서는 사용하지 않는다.
+
+`codex login` 후 기존 CLI/Discord 명령을 그대로 실행한다. `LANG2SQL_LLM_MODEL`은 Codex 모델, `LANG2SQL_LLM_TIMEOUT`은 호출당 시간 제한(기본 180초)이다. 설치된 Codex 실행 파일과 서비스 계정의 인증 환경이 필요하다.
+
+`bench/oracle_demo.py verify --live`도 이제 Codex + 기존 하네스를 검증한다. 과거 gpt-4.1-mini JSON은 당시 기록으로만 보존한다. 아래 MCP 실행은 선택 가능한 별도 진입점이며 전체 전환의 필수 경로가 아니다.
+
+## 선택적 MCP 진입점
+
 Codex CLI가 질문 해석·도구 선택·최종 답변을 맡고, Lang2SQL MCP가 부서별 정의·스키마·SQL 안전 검사·Oracle 실행을 제공한다. 기존 `agent_loop`를 안쪽에서 다시 돌리지 않는다. 기존 CLI/Discord는 호환성을 유지한다.
 
 ## 실행
@@ -70,3 +80,11 @@ uv run --extra codex --extra oracle pytest -q
 2026-11-14 기준 Python 3.10과 3.13에서 각각 pytest 188개 통과. 실제 stdio handshake, context 선행, 읽기 도구 목록, SQL 안전 검사, 중단 뒤 동시/추가 호출 차단, 내부 LLM 미호출, Codex 완료·실패·timeout을 검사한다. Black 및 변경 파일 Ruff(E4/E7/E9/F) 통과. mypy는 기반 Oracle 브랜치와 동일한 기존 오류 19개이며 신규 오류는 없다.
 
 첫 실행 5/5 이후 3회 반복 중 로컬 Python 환경을 교체해 MCP 시작 실패가 발생했다. 이 중단된 실행은 성공률에 합산하지 않는다. 이후 Python 테스트 환경을 별도로 분리하여 최종 재검증 **5/5 통과**. [최종 기록](../bench/codex/results/verified.json)을 기준으로 발표한다.
+
+## 전체 전환 후 검증
+
+- Python 3.10 / 3.13 각각 **199 tests passed**. 기존 CLI·Discord가 Codex 어댑터를 거쳐 실제 도구를 호출하는지, ingestion/enrich_schema/org_setup도 같은 어댑터를 사용하는지 검증했다. 인증 실패·미등록 도구·잘못된 인수·빈 답변은 실패 처리한다.
+- [Codex + 기본 하네스 + 실제 Oracle](../bench/codex/results/harness.json): 고정 5개 시나리오 **5/5 통과**. 이전 MCP 검증과 별도 기록이다.
+- [실제 Codex 문서 추출](../bench/codex/results/extraction.json): 기본 ContextConcierge의 ingestion extractor로 합성 매출 정의 추출 성공.
+- 서비스 자체를 Discord에 접속해 메시지를 전송하는 검증은 하지 않았다. Discord command handler의 호출 경로는 자동 테스트로 검증했다.
+- 초기 Oracle 재시작 직후 서비스 등록 전 연결이 실패해, 컨테이너 healthy 확인 후 다시 실행했다. 성공 기록은 후속 완료 실행이다.

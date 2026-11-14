@@ -2,7 +2,7 @@
 
 Per v4.1 the CLI is a dev tool (Discord is the Phase 1 product frontend). It
 assembles a real :class:`HarnessContext` via the :class:`ContextConcierge`
-(OpenAI when ``OPENAI_API_KEY`` is set, else the offline FakeLLM) and runs one
+(Codex CLI authentication; no automatic offline fallback) and runs one
 turn through ``agent_loop`` — the harness's end-to-end smoke test.
 
 Run:  python -m lang2sql.frontends.cli.app "your question"

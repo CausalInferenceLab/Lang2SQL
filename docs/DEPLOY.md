@@ -5,12 +5,15 @@ honest with yourself about scope first: see [§What's stub](#whats-stub-be-hones
 
 ---
 
-## 1. Environment variables
+## 1. Codex runtime and environment variables
+
+Install Codex CLI on the host and run `codex login` as the same OS user that runs the bot. Ensure `codex` is on the service PATH and its authentication home is available to that user. CLI, query, ingestion, schema enrichment and organization setup all use Codex. No OpenAI/local/FakeLLM backend is selected automatically. Each inference step starts an isolated `codex exec` process; account usage limits apply.
 
 | Variable | Required | Purpose |
 |---|---|---|
 | `DISCORD_BOT_TOKEN` | **yes** | Bot token from the Discord developer portal. The bot raises a clear error and exits if this is unset. |
-| `OPENAI_API_KEY` | no | When set, the agent uses OpenAI `gpt-4.1-mini`. When unset, it falls back to the **offline `FakeLLM`** (deterministic canned tool cycles — fine for a smoke run, not for real answers). |
+| `LANG2SQL_LLM_MODEL` | no | Codex model ID; unset uses CLI default. |
+| `LANG2SQL_LLM_TIMEOUT` | no | Per-call deadline, default 180 seconds. |
 | `LANG2SQL_SECRET_KEY` | no | A urlsafe-base64 Fernet key used to encrypt stored secrets (DSNs/API keys) at rest. If unset, a key is auto-generated and persisted in the SQLite kv table — self-contained but only as private as the DB file. **Set this in production** so secrets decrypt across restarts and machines. |
 
 Generate a Fernet key:
@@ -62,8 +65,8 @@ Per the v4.1 plan (§4.1), V1 targets a free always-on host:
 ### fly.io (free allowance)
 - A tiny `fly.toml` running `lang2sql-bot` as the process; the bot is a
   long-lived gateway client, not an HTTP server, so no exposed ports are needed.
-- Set `DISCORD_BOT_TOKEN`, `OPENAI_API_KEY`, `LANG2SQL_SECRET_KEY` with
-  `fly secrets set`.
+- Set `DISCORD_BOT_TOKEN`, `LANG2SQL_SECRET_KEY` with
+  `fly secrets set`. Provision Codex CLI and authentication for the service user separately.
 
 A minimal `systemd` unit:
 
@@ -72,7 +75,8 @@ A minimal `systemd` unit:
 WorkingDirectory=/opt/lang2sql
 ExecStart=/opt/lang2sql/.venv/bin/lang2sql-bot
 Environment=DISCORD_BOT_TOKEN=...
-Environment=OPENAI_API_KEY=...
+Environment=LANG2SQL_LLM_TIMEOUT=180
+# Ensure the service user can find codex and has completed codex login.
 Environment=LANG2SQL_SECRET_KEY=...
 Restart=on-failure
 ```
@@ -90,12 +94,7 @@ decrypt stored secrets).
 
 ## What's stub (be honest)
 
-- **No real database execution.** `PostgresExplorer` returns canned
-  `orders`/`users` schema and sample rows. `run_sql` enforces the safety gate and
-  goes through the executor, but there is no live psycopg connection in V1 — real
-  execution is v1.5. `/connect` stores a DSN (encrypted) but it is not yet used to
-  open a connection.
-- **No reasoning without `OPENAI_API_KEY`.** The offline `FakeLLM` produces
-  deterministic tool cycles, not real answers.
+- Without a configured DB, the default explorer is a canned stub. Configure a real DB URL or guild DSN and install its driver extra for real execution.
+- Codex CLI must be installed and authenticated as the service account. There is no automatic fake/provider fallback when authentication fails.
 - **No rate limiting** in V1 — keep deployments to small trial guilds so token
   spend stays bounded (rate limit + per-user token caps are v1.5).

@@ -12,13 +12,14 @@ import asyncio
 
 from lang2sql.core.identity import Identity
 from lang2sql.core.ports.safety import SafetyContext, Verdict
+from lang2sql.adapters.llm.fake import FakeLLM
 from lang2sql.tenancy.concierge import ContextConcierge
 from lang2sql.tools.run_sql import RunSQL
 from lang2sql.tools.semantic_federation import SemanticFederationTool
 
 
 def _ctx():
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     ident = Identity(user_id="u1", guild_id="g1", channel_id="c-mkt")
     return ident, asyncio.run(concierge.build_context(ident))
 
@@ -77,7 +78,7 @@ def test_term_custom_is_scope_local():
 
 
 def test_term_custom_emits_audit_event():
-    concierge = ContextConcierge()
+    concierge = ContextConcierge(llm=FakeLLM())
     ident = Identity(user_id="u1", guild_id="g1", channel_id="c-mkt", is_admin=True)
     ctx = asyncio.run(concierge.build_context(ident))
     asyncio.run(

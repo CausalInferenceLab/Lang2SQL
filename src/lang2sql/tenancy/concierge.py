@@ -2,7 +2,7 @@
 
 This is the only module allowed to import the concrete semantic/safety/adapter
 classes; everywhere else depends on the ``core.ports`` Protocols. Per request it
-picks an LLM (OpenAI when keyed, else the FakeLLM), restores or starts a
+uses Codex for inference, restores or starts a
 :class:`Session`, and wires the explorer, safety pipeline, scope resolver, and
 audit store into a :class:`HarnessContext` for the loop.
 
@@ -16,8 +16,7 @@ import os
 
 from ..adapters.db.factory import build_explorer, explorer_from_env
 from ..adapters.db.postgres_explorer import PostgresExplorer
-from ..adapters.llm.fake import FakeLLM
-from ..adapters.llm.openai_ import OpenAILLM
+from ..adapters.llm.codex import CodexLLM
 from ..adapters.storage.sqlite_store import SqliteStore
 from ..core.identity import Identity
 from ..core.ports.audit import AuditPort
@@ -144,19 +143,9 @@ class ContextConcierge:
 
 
 def _default_llm() -> LLMPort:
-    """Local vLLM/Ollama when LANG2SQL_LLM_BASE_URL is set, OpenAI when keyed, else FakeLLM."""
-    base_url = os.environ.get("LANG2SQL_LLM_BASE_URL")
-    if base_url:
-        model = os.environ.get("LANG2SQL_LLM_MODEL", "default")
-        # Local servers (vLLM, Ollama) speak OpenAI-compatible API; dummy key satisfies the header.
-        api_key = os.environ.get("OPENAI_API_KEY") or "local"
-        timeout = float(os.environ.get("LANG2SQL_LLM_TIMEOUT", "120"))
-        url = base_url.rstrip("/")
-        if not url.endswith("/chat/completions"):
-            if not url.endswith("/v1"):
-                url = url + "/v1"
-            url = url + "/chat/completions"
-        return OpenAILLM(model=model, api_key=api_key, base_url=url, timeout=timeout)
-    if os.environ.get("OPENAI_API_KEY"):
-        return OpenAILLM()
-    return FakeLLM()
+    """All production inference uses Codex; offline doubles must be injected explicitly."""
+    return CodexLLM(
+        env=dict(os.environ),
+        model=os.environ.get("LANG2SQL_LLM_MODEL") or None,
+        timeout=float(os.environ.get("LANG2SQL_LLM_TIMEOUT", "180")),
+    )

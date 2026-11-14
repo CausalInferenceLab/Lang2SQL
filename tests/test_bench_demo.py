@@ -23,8 +23,14 @@ def _load_demo():
     return module
 
 
-def test_demo_runs_clean(capsys):
+def test_demo_runs_clean(capsys, monkeypatch):
     demo = _load_demo()
+    from lang2sql.adapters.llm.fake import FakeLLM
+    from lang2sql.tenancy.concierge import ContextConcierge
+
+    monkeypatch.setattr(
+        demo, "ContextConcierge", lambda: ContextConcierge(llm=FakeLLM())
+    )
     asyncio.run(demo.main())
     out = capsys.readouterr().out
 

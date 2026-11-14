@@ -1,6 +1,6 @@
 """Tenancy tests — EncryptedSecrets round trip + ContextConcierge wiring.
 
-No network: with no OPENAI_API_KEY the concierge falls back to FakeLLM.
+Construction is offline; production inference defaults to Codex.
 """
 
 from __future__ import annotations
@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import os
 
+from lang2sql.adapters.llm.codex import CodexLLM
 from lang2sql.adapters.llm.fake import FakeLLM
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.core.identity import Identity
@@ -46,7 +47,7 @@ def test_build_context_populates_llm_and_session() -> None:
         )
 
         assert isinstance(ctx, HarnessContext)
-        assert isinstance(ctx.llm, FakeLLM)  # no key → fallback
+        assert isinstance(ctx.llm, CodexLLM)  # no key still uses Codex
         assert isinstance(ctx.session, Session)
         assert ctx.session.identity == identity
         assert ctx.explorer is not None
