@@ -20,16 +20,16 @@ from ..tools.semantic_federation import SemanticFederationTool
 
 class ExternalAgentLLM:
     async def complete(self, messages, tools=()):
-        raise RuntimeError("MCP tools must not invoke an internal LLM")
+        raise RuntimeError("External-agent tools must not invoke an internal LLM")
 
 
-def build_mcp_context(
+def build_tool_context(
     identity: Identity,
     *,
     store_path: str = ":memory:",
     explorer: ExplorerPort | None = None,
 ) -> HarnessContext:
-    """Bind one connection and identity for the lifetime of a local MCP process."""
+    """Bind one connection and identity for the lifetime of a local tool process."""
     database = explorer if explorer is not None else explorer_from_env()
     if database is None:
         raise ValueError(

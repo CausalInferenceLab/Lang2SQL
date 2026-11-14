@@ -14,7 +14,7 @@ from mcp.server.stdio import stdio_server
 
 from ...core.identity import Identity
 from ...harness.context import HarnessContext
-from ...tenancy.mcp import build_mcp_context
+from ...tenancy.tool_runtime import build_tool_context
 
 logger = logging.getLogger(__name__)
 
@@ -91,7 +91,7 @@ def main() -> None:
         parser.error("user and org IDs must not be blank")
     logging.basicConfig(level=logging.INFO)
     # Composition reads the existing DB environment; no model/API key is needed.
-    ctx = build_mcp_context(
+    ctx = build_tool_context(
         Identity(
             user_id=args.user_id,
             guild_id=args.org_id,

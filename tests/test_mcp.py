@@ -12,7 +12,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from lang2sql.core.identity import Identity
-from lang2sql.tenancy.mcp import ExternalAgentLLM, build_mcp_context
+from lang2sql.tenancy.tool_runtime import ExternalAgentLLM, build_tool_context
 
 
 @asynccontextmanager
@@ -126,7 +126,7 @@ def test_no_connection_does_not_silently_use_stub(monkeypatch):
     ]:
         monkeypatch.delenv(key, raising=False)
     with pytest.raises(ValueError, match="LANG2SQL_DB_URL"):
-        build_mcp_context(Identity(user_id="test"))
+        build_tool_context(Identity(user_id="test"))
 
 
 @pytest.mark.asyncio

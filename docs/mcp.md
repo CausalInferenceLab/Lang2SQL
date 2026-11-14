@@ -5,7 +5,7 @@ stdio server forwards calls to Lang2SQL's existing tool registry; it does not ru
 `agent_loop`, instantiate an LLM provider, or require an OpenAI API key.
 The CLI/Discord harness, core ports, SQL safety pipeline and existing tools are
 unchanged. `HarnessContext` is reused with an inert session and an LLM that raises
-if called. Concrete dependencies are assembled separately under `tenancy/mcp.py`.
+if called. Concrete dependencies are assembled separately under `tenancy/tool_runtime.py`.
 
 ## Install and connect
 
@@ -109,3 +109,5 @@ uv run --extra mcp python bench/ecommerce_demo.py
 The stdio tests launch the actual server process and check handshake, tool listing,
 schema discovery, SQL execution, blocked DDL, input errors, unavailable tools,
 metadata permission checks, team scoping, persistence and process-local notes.
+
+For direct command-line calls using the same runtime, see [tool CLI](tool_cli.md).
