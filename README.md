@@ -206,3 +206,9 @@ the [MIT License](https://opensource.org/licenses/MIT). 커뮤니티: [Discord](
 <a href="https://github.com/CausalInferenceLab/lang2sql/graphs/contributors">
   <img src="https://contrib.rocks/image?repo=CausalInferenceLab/lang2sql" />
 </a>
+
+## Coding-agent MCP connection
+
+Codex/Claude Code can use the existing DB and business-definition tools through
+an optional stdio adapter, without the internal agent loop or an LLM API key.
+See [MCP setup and limitations](docs/mcp.md).
