@@ -1,0 +1,19 @@
+name: Spider2 benchmark checks
+on:
+  pull_request:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: ${{ matrix.python }}
+      - run: uv sync --extra benchmark --locked
+      - run: uv run --extra benchmark pytest -q
+      - run: uv run --with black black --check bench/spider2 tests/test_spider2.py
+      - run: uv run --with ruff ruff check --isolated --select E4,E7,E9,F bench/spider2 tests/test_spider2.py
