@@ -188,6 +188,7 @@ the [MIT License](https://opensource.org/licenses/MIT). 커뮤니티: [Discord](
 | **AI Engineer** | 조태민 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, RAG, Multi-Agent |
 | **AI Engineer** | 심세원 | ![Python](https://img.shields.io/badge/Python-Expert-3776AB) | LLM, RAG, Multi-Agent |
 | **Business Analyst** | 서희진 | ![Python](https://img.shields.io/badge/Python-Intermediate-FF6C37) | LLM, Data Analysis |
+| **AI Engineer** | 박제형 | ![Python](https://img.shields.io/badge/Python-Intermediate-FF6C37) | LLM, RAG, Multi-Agent |
 
 ---
 
