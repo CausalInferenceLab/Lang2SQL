@@ -1,0 +1,25 @@
+name: MCP integration tests
+
+on:
+  pull_request:
+    branches: [master]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - 'uv.lock'
+      - '.github/workflows/mcp-tests.yml'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python: ['3.10', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python }}
+      - run: python -m pip install -e '.[mcp,tools]' pytest pytest-asyncio
+      - run: python -m pytest -q
