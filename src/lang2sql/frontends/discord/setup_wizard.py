@@ -22,7 +22,6 @@ from .session_router import to_identity
 
 if TYPE_CHECKING:
     from .commands import CommandHandlers
-    from .bot import InteractionContext
 
 
 # Per-DB human labels surfaced in the dropdown.
@@ -32,6 +31,7 @@ _LABELS: dict[str, str] = {
     "snowflake": "Snowflake",
     "bigquery": "BigQuery",
     "duckdb": "DuckDB (file)",
+    "oracle": "Oracle Database",
     "d1": "Cloudflare D1",
 }
 

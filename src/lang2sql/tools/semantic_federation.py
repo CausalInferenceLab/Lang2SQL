@@ -21,6 +21,10 @@ from typing import TYPE_CHECKING, Any
 from ..core.ports.audit import AuditEvent
 
 from ..core.ports.tool import ToolPort, ToolResult, ToolSpec
+from ..tools.enrich_schema import (
+    _KV_PREFIX as _ENRICH_PREFIX,
+    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
+)
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -42,11 +46,6 @@ def _validate_layer(
         return layer, "❌ 채널 컨텍스트 없이 team 레이어에 등록할 수 없습니다."
     return layer, None
 
-
-from ..tools.enrich_schema import (
-    _KV_PREFIX as _ENRICH_PREFIX,
-    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
-)
 
 _AMBIGUITY_SIGNALS: dict[str, str] = {
     r"(^|_)(created|registered|joined|signup)(_at|_date)?$": "신규/최초 가입 기준 용어",
@@ -409,11 +408,10 @@ _KIND_ORDER = ["metric", "dimension", "rule", "table"]
 _AMBIGUOUS_TERM_POLICY = """\
 ## Ambiguous Term Policy
 사전에 없는 주관적/모호한 표현을 발견하면:
-1. DB 스키마 기준으로 가장 합리적인 해석으로 SQL을 실행한다.
-2. 실행 후 사용한 해석을 명시하고, kind(metric/rule/dimension/table)와 범위(org/team/user)를 사용자에게 묻는다.
-   예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. metric/rule/dimension/table 중 어느 종류이며, 어느 범위로 등록할까요?"
-3. 사용자가 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
-4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.\
+1. SQL을 실행하기 전에 ask_user 툴로 기준을 묻고 사용자 답변을 기다린다. 추측한 정의로 실행하지 않는다.
+2. 예: "충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?"
+3. 사용자가 정의를 확인하면 해당 기준으로 질의한다. 영구 저장은 사용자가 종류(metric/rule/dimension/table)와 범위(org/team/user)를 지정한 경우에만 term_custom으로 수행한다.
+4. inferred=true인 임시 정의도 사용 전에 사용자에게 확인한다.\
 """
 
 

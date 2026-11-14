@@ -41,6 +41,7 @@ class ToolResult:
     call_id: str
     content: str
     is_error: bool = False
+    stop_turn: bool = False
 
 
 @dataclass
