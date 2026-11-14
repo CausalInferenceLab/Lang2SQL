@@ -40,6 +40,8 @@ Compare the generated manifest with the checked-in one. `--limit 0` selects all 
 
 `models.example.json` describes independent profiles: provider/model identifier, name, and API key **environment variable name**. LiteLLM translates requests to the actual provider, while Lang2SQL's existing message/tool/response conversion is reused. Provider-specific tool-call metadata is retained for follow-up turns (including Gemini thought signatures).
 
+Run with `OKF_BUNDLE_DIR` unset so an unrelated local knowledge bundle cannot enter the baseline prompt.
+
 Set the keys through your shell or a local `.env` file and use `--env-file /path/to/file`. Only variables referenced by profiles are used. Existing project configurations using `OPEN_AI_KEY` can reference that name in `api_key_env`; no key needs to be copied into the JSON. Unknown/missing keys never trigger another provider. Model availability must be checked against the relevant account; example model names are not a claim of live verification for every provider.
 
 ```bash
@@ -57,6 +59,8 @@ uv run --extra benchmark python -m bench.spider2.evaluate score \
 Use a new output directory for every run; overwriting or mixing outputs is rejected. Record files are written atomically per completed task, so interrupted runs retain evidence. A full run replaces the manifest with `manifest-sqlite135.json`; keep the same budgets and model profiles. No production application deployment changes are needed; the extra installs evaluation dependencies only.
 
 ## Results and limits
+
+[Measured 135-task baseline results](RESULTS.md): GPT-4.1 mini 21/135 (15.56%), GPT-4.1 17/135 (12.59%). Anthropic/Gemini remain blocked on credentials.
 
 Runs contain a protocol snapshot, per-model final SQL/CSV, per-task answer/transcript/API usage/timing/status, official per-task scores and a summary. API exception messages are not persisted because providers may echo credentials. Public result exports can omit bulky transcripts but should retain SQL, scores and the exact manifest/settings.
 
