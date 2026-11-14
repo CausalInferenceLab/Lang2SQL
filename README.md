@@ -78,6 +78,9 @@ uv sync                       # create .venv and install deps
 Shows the federation money-shot (one term, two team definitions, no conflict) and
 the safety gate (DROP/INSERT blocked, SELECT passes). See [`bench/README.md`](bench/README.md).
 
+For a reproducible public benchmark across API models, see the
+[Spider 2.0-Lite SQLite baseline](bench/spider2/README.md).
+
 ### 2. Run the CLI (developer driver)
 
 ```bash
