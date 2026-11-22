@@ -103,7 +103,7 @@ DB 스키마를 분석해 비즈니스 용어 후보를 자동으로 뽑습니�
 | `/confirm_ingest ref:... accept:... layer:...` | 추출된 후보 검토 후 등록 |
 | `/term_custom` | 용어 직접 등록 (위저드) |
 | `/term_custom action:show` | 등록된 용어 전체 조회 |
-| `/term_custom action:remove term:용어명` | 용어 삭제 |
+| `/term_custom action:remove term:용어명 layer:user` | 내 개인 용어 삭제. `layer`를 생략하면 현재 채널의 팀 용어를 삭제합니다. |
 | `/org_setup org:...` | 전사 조직 등록 + DB 스캔 |
 | `/org_setup team:...` | 팀(채널) 등록 |
 | `/enrich` | DB 컬럼 메타데이터 자동 보강 |

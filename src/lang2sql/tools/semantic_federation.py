@@ -30,16 +30,24 @@ _LAYERS = ("org", "team", "user")
 
 
 def _validate_layer(
-    layer_raw: str, channel_id: str, is_admin: bool
+    layer_raw: str, channel_id: str, is_admin: bool, *, remove: bool = False
 ) -> tuple[str, str | None]:
     """layer 정규화·권한 검증. (normalized_layer, error_msg_or_None) 반환."""
     layer = layer_raw.strip().lower()
     if layer not in _LAYERS:
         return layer, f"❌ layer는 {list(_LAYERS)} 중 하나여야 합니다."
     if layer == "org" and not is_admin:
-        return layer, "❌ org 용어 등록·수정은 관리자만 가능합니다."
+        return layer, (
+            "❌ org 용어는 관리자만 삭제할 수 있습니다."
+            if remove
+            else "❌ org 용어 등록·수정은 관리자만 가능합니다."
+        )
     if layer == "team" and not channel_id:
-        return layer, "❌ 채널 컨텍스트 없이 team 레이어에 등록할 수 없습니다."
+        return layer, (
+            "❌ 채널 컨텍스트 없이 team 레이어에서 삭제할 수 없습니다."
+            if remove
+            else "❌ 채널 컨텍스트 없이 team 레이어에 등록할 수 없습니다."
+        )
     return layer, None
 
 
@@ -146,7 +154,10 @@ class SemanticFederationTool(ToolPort):
                     "layer": {
                         "type": "string",
                         "enum": ["org", "team", "user"],
-                        "description": "등록 범위. org=전사 공통, channel=이 채널(팀), member=개인(기본값)",
+                        "description": (
+                            "용어 등록·삭제 범위. org=전사, team=현재 채널, user=본인. "
+                            "등록 시 기본값은 team입니다."
+                        ),
                     },
                     "synonyms": {
                         "type": "string",
@@ -175,7 +186,10 @@ class SemanticFederationTool(ToolPort):
                     },
                     "remove": {
                         "type": "boolean",
-                        "description": "true 시 해당 term+layer 삭제",
+                        "description": (
+                            "true이면 지정한 layer의 용어만 삭제합니다. layer를 생략하면 "
+                            "현재 채널과 본인의 정의를 삭제하며, 관리자라면 전사 정의도 삭제합니다."
+                        ),
                     },
                     "list": {
                         "type": "boolean",
@@ -212,21 +226,32 @@ class SemanticFederationTool(ToolPort):
                 call_id="", content="❌ term에 ':'를 사용할 수 없습니다.", is_error=True
             )
 
+        layer_entities = {"org": "", "team": channel_id, "user": user_id}
         if args.get("remove"):
-            # 존재하는 항목 모두 삭제 — guild layer는 admin만 삭제 가능
+            requested_layer = None
+            if "layer" in args:
+                requested_layer, err = _validate_layer(
+                    str(args["layer"]), channel_id, ctx.identity.is_admin, remove=True
+                )
+                if err:
+                    return ToolResult(call_id="", content=err, is_error=True)
+                layers: tuple[str, ...] = (requested_layer,)
+            else:
+                layers = _LAYERS if ctx.identity.is_admin else ("team", "user")
+
             deleted_tags: list[str] = []
-            for lyr, ent in [
-                ("org", ""),
-                ("team", channel_id),
-                ("user", user_id),
-            ]:
-                if lyr == "org" and not ctx.identity.is_admin:
-                    continue
-                k = _kv_key(term, lyr, ent)
-                if ctx.store.kv_get(scope, k) is not None:
-                    ctx.store.kv_delete(scope, k)
-                    deleted_tags.append(_layer_tag(lyr, ent, user_id, channel_id))
+            for layer in layers:
+                entity = layer_entities[layer]
+                key = _kv_key(term, layer, entity)
+                if ctx.store.kv_delete(scope, key):
+                    deleted_tags.append(_layer_tag(layer, entity))
             if not deleted_tags:
+                if requested_layer is not None:
+                    tag = _layer_tag(requested_layer, layer_entities[requested_layer])
+                    return ToolResult(
+                        call_id="",
+                        content=f"⚠️ **{term}** [{tag}] — 등록된 정의가 없습니다.",
+                    )
                 if not ctx.identity.is_admin:
                     guild_k = _kv_key(term, "org", "")
                     if ctx.store.kv_get(scope, guild_k) is not None:
@@ -257,7 +282,7 @@ class SemanticFederationTool(ToolPort):
         if err:
             return ToolResult(call_id="", content=err, is_error=True)
 
-        entity = "" if layer == "org" else (user_id if layer == "user" else channel_id)
+        entity = layer_entities[layer]
         key = _kv_key(term, layer, entity)
 
         definition = str(args.get("definition", "")).strip()
@@ -296,7 +321,7 @@ class SemanticFederationTool(ToolPort):
                 )
             )
 
-        tag = _layer_tag(layer, entity, user_id, channel_id)
+        tag = _layer_tag(layer, entity)
         syn_str = f" (= {', '.join(synonyms)})" if synonyms else ""
         inferred_badge = " 🤖추론" if inferred else ""
         return ToolResult(
@@ -310,12 +335,12 @@ class SemanticFederationTool(ToolPort):
 # ---------------------------------------------------------------------------
 
 
-def _layer_tag(layer: str, entity: str, user_id: str, channel_id: str) -> str:
+def _layer_tag(layer: str, entity: str) -> str:
     if layer == "org":
         return "전사"
     if layer == "team":
-        return f"채널:{channel_id}"
-    return f"개인:{user_id}"
+        return f"채널:{entity}"
+    return f"개인:{entity}"
 
 
 # ---------------------------------------------------------------------------

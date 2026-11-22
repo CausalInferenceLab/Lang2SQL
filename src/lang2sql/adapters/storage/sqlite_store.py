@@ -122,9 +122,13 @@ class SqliteStore:
         )
         self._conn.commit()
 
-    def kv_delete(self, scope: str, key: str) -> None:
-        self._conn.execute("DELETE FROM kv WHERE scope = ? AND key = ?", (scope, key))
+    def kv_delete(self, scope: str, key: str) -> bool:
+        """Delete one key and return whether a row was removed."""
+        cur = self._conn.execute(
+            "DELETE FROM kv WHERE scope = ? AND key = ?", (scope, key)
+        )
         self._conn.commit()
+        return cur.rowcount > 0
 
     @staticmethod
     def _escape_like(s: str) -> str:

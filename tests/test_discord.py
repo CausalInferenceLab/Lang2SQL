@@ -126,6 +126,38 @@ def test_term_custom_then_list() -> None:
     assert "logged in within 30 days" in shown_text
 
 
+def test_term_custom_remove_personal_definition_restores_team_definition() -> None:
+    handlers = CommandHandlers(ContextConcierge())
+    requester = to_identity(
+        InteractionContext(user_id="u1", guild_id="g1", channel_id="c1")
+    )
+    teammate = to_identity(
+        InteractionContext(user_id="u2", guild_id="g1", channel_id="c1")
+    )
+
+    async def scenario() -> None:
+        await handlers.term_custom(
+            requester, term="revenue", definition="환불 포함", layer="team"
+        )
+        await handlers.term_custom(
+            requester, term="revenue", definition="환불 제외", layer="user"
+        )
+        before = await handlers.term_custom(requester, list_all=True)
+        assert "환불 제외" in before.text
+
+        removed = await handlers.term_custom(
+            requester, term="revenue", layer="user", remove=True
+        )
+        assert "[개인:u1] 삭제" in removed.text
+
+        for identity in (requester, teammate):
+            shown = await handlers.term_custom(identity, list_all=True)
+            assert "환불 포함" in shown.text
+            assert "환불 제외" not in shown.text
+
+    asyncio.run(scenario())
+
+
 def test_term_custom_list_empty_scope() -> None:
     handlers = CommandHandlers(ContextConcierge())
     ident = to_identity(
