@@ -37,7 +37,7 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
             "tables with explore_schema. If search is unavailable, explore the schema directly."
         )
 
-    if ctx.explorer is not None:
+    elif ctx.explorer is not None:
         tables = await ctx.explorer.list_tables()
         if tables:
             scope = ctx.identity.kv_scope if ctx.store else None

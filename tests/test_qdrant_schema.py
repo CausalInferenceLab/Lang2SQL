@@ -111,3 +111,25 @@ async def test_refresh_publishes_current_tables_and_replaces_previous(
         conn.execute("drop table customers")
     assert await index.refresh("org", explorer) == 0
     assert collections == {aliases[alias]: []}
+
+
+@pytest.mark.asyncio
+async def test_indexed_agent_discovers_tables_on_demand(tmp_path, monkeypatch):
+    from lang2sql.harness.system_prompt import build_system_prompt
+    from lang2sql.tenancy.concierge import ContextConcierge
+
+    db = tmp_path / "catalog.sqlite"
+    with sqlite3.connect(db) as conn:
+        conn.execute("create table repeat_purchases(customer_id integer)")
+    monkeypatch.setenv("LANG2SQL_QDRANT_URL", "http://qdrant")
+    monkeypatch.setenv("LANG2SQL_EMBEDDING_URL", "http://encoder/v1/embeddings")
+    monkeypatch.setenv("LANG2SQL_EMBEDDING_MODEL", "test")
+    concierge = ContextConcierge(explorer=SqlAlchemyExplorer("sqlite:///" + str(db)))
+    try:
+        ctx = await concierge.build_context(Identity("reader", guild_id="org"))
+        prompt = await build_system_prompt(ctx)
+        assert "search_schema" in prompt and "repeat_purchases" not in prompt
+        result = await ctx.tools.dispatch("explore_schema", {}, ctx, "fallback")
+        assert "repeat_purchases" in result.content
+    finally:
+        concierge.store.close()
