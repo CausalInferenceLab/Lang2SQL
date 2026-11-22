@@ -1,0 +1,138 @@
+{
+  "model": "gpt-4.1-mini-2025-04-14",
+  "max_calls": 8,
+  "conditions": {
+    "text": {
+      "setup_seconds": 0.2041044170036912,
+      "records": [
+        {
+          "question": "2025년 9월 순매출은?",
+          "expected": 25,
+          "calls": 2,
+          "executed": false,
+          "correct_result": false,
+          "used_view": false,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms"
+          ],
+          "answer": "To calculate the 2025년 9월 순매출 (net sales for September 2025), the confirmed definition is the sum of the total amount of confirmed(POSTED) orders minus discounts and returns in Korean Won, based on the order date.\n\nI need to confirm the exact period for 2025년 9월. Should I consider the entire month from 2025-09-01 to 2025-10-01 (exclusive)? Also, is the order date field DAY in L2S_VIEW_OWNER.ORDERS?"
+        },
+        {
+          "question": "2025년 10월 순매출은?",
+          "expected": 118,
+          "calls": 2,
+          "executed": false,
+          "correct_result": false,
+          "used_view": false,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms"
+          ],
+          "answer": "\"순매출\"에 대해 구체적인 정의가 필요합니다. 예를 들어, 순매출이 매출총액에서 할인, 반품 등을 차감한 금액인지, 아니면 별도의 계산 방식이 있는지 알려주시기 바랍니다. 그리고 2025년 10월에 대해서는 달력 기준의 10월을 의미하는지 확인 부탁드립니다."
+        },
+        {
+          "question": "2025년 11월 순매출은?",
+          "expected": 10,
+          "calls": 4,
+          "executed": true,
+          "correct_result": true,
+          "used_view": true,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms",
+            "explore_schema",
+            "run_sql"
+          ],
+          "sql": "SELECT SUM(net_amount) AS total_net_sales\nFROM L2S_VIEW_OWNER.V_NET_SALES\nWHERE status = 'POSTED'\nAND booked_on >= DATE '2025-11-01'\nAND booked_on < DATE '2025-12-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "values": [
+            "10"
+          ],
+          "answer": "2025년 11월의 순매출은 10입니다."
+        },
+        {
+          "question": "2025년 12월 순매출은?",
+          "expected": null,
+          "calls": 4,
+          "executed": false,
+          "correct_result": false,
+          "used_view": false,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms",
+            "explore_schema",
+            "explore_schema"
+          ],
+          "answer": "The definition for \"순매출\" (net sales) is \"확정(POSTED) 주문의 총액에서 할인과 반품을 차감한 원화 합계. NULL 할인·반품은 0. 주문일 기준.\" This means the confirmed (POSTED) orders' total amount minus discounts and returns, based on the order date.\n\nWe have two relevant tables:\n- L2S_VIEW_OWNER.ORDERS with columns day (order date), gross (total amount), discount, returned, and status.\n- L2S_VIEW_OWNER.V_NET_SALES with columns booked_on (order date), net_amount, and status.\n\nThe definition aligns more closely with the ORDERS table, where net sales can be computed as gross - discount - returned for confirmed (POSTED) orders on the order date (day).\n\nCould you please confirm the exact date range for 2025년 12월 (December 2025)? Should I consider from 2025-12-01 to 2026-01-01 (exclusive)? Also, confirm that only orders with status 'POSTED' are included in the net sales calculation?"
+        }
+      ]
+    },
+    "bound": {
+      "setup_seconds": 0.4430103750200942,
+      "records": [
+        {
+          "question": "2025년 9월 순매출은?",
+          "expected": 25,
+          "calls": 3,
+          "executed": true,
+          "correct_result": true,
+          "used_view": true,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms",
+            "run_sql"
+          ],
+          "sql": "SELECT SUM(NET_AMOUNT) AS metric_value FROM L2S_VIEW_OWNER.V_NET_SALES WHERE BOOKED_ON >= :period_start AND BOOKED_ON < :period_end AND STATUS = :filter_0\nFETCH FIRST 1 ROWS ONLY",
+          "values": [
+            25
+          ],
+          "answer": "2025년 9월 순매출은 25입니다."
+        },
+        {
+          "question": "2025년 10월 순매출은?",
+          "expected": 118,
+          "calls": 2,
+          "executed": false,
+          "correct_result": false,
+          "used_view": false,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms"
+          ],
+          "answer": "\"순매출\"의 정확한 비즈니스 정의를 알려주시겠습니까? 예를 들어 \"순매출\"은 어떤 테이블과 컬럼을 기준으로 계산하는지, 할인, 반품 등을 어떻게 반영하는지 명확히 알려주셔야 합니다. 그리고 \"2025년 10월\"은 2025년 10월 1일부터 10월 31일까지의 달력을 의미하는지, 아니면 특정 회계 기간 방식을 따르는지도 확인 부탁드립니다."
+        },
+        {
+          "question": "2025년 11월 순매출은?",
+          "expected": 10,
+          "calls": 2,
+          "executed": false,
+          "correct_result": false,
+          "used_view": false,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms"
+          ],
+          "answer": "\"순매출\"의 정확한 정의와 범위를 알려주시겠어요? 예를 들어, 순매출이란 매출에서 어떤 항목이 제외되는지(예: 할인, 반품 등), 어떤 상태의 주문이 포함되는지, 그리고 2025년 11월 기간의 범위가 달력 기준인지 아니면 특정 회계 기간 기준인지 명확히 해주세요."
+        },
+        {
+          "question": "2025년 12월 순매출은?",
+          "expected": null,
+          "calls": 3,
+          "executed": true,
+          "correct_result": true,
+          "used_view": true,
+          "raw_table": false,
+          "tool_calls": [
+            "resolve_business_terms",
+            "run_sql"
+          ],
+          "sql": "SELECT SUM(NET_AMOUNT) AS metric_value FROM L2S_VIEW_OWNER.V_NET_SALES WHERE BOOKED_ON >= :period_start AND BOOKED_ON < :period_end AND STATUS = :filter_0\nFETCH FIRST 1 ROWS ONLY",
+          "values": [
+            null
+          ],
+          "answer": "2025년 12월의 순매출은 데이터에 없습니다 (NULL 값). 다른 문의사항이 있으신가요?"
+        }
+      ]
+    }
+  }
+}

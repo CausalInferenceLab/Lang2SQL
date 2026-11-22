@@ -13,9 +13,11 @@ from pathlib import Path
 from typing import Any
 
 from jsonschema import ValidationError, validate
+from sqlalchemy.exc import SQLAlchemyError
 
 from ...core.identity import Identity
 from ...tenancy.tool_runtime import build_tool_context
+from ...tools.bound_metric import bind_view
 
 logger = logging.getLogger(__name__)
 
@@ -43,6 +45,13 @@ def main(argv=None) -> int:
     parser.add_argument("--store", default=":memory:")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("list", help="Print tool names and JSON argument schemas")
+    bind = commands.add_parser(
+        "bind-oracle-view", help="Confirm a metric view for a registered definition"
+    )
+    bind.add_argument("--term", required=True)
+    bind.add_argument("--layer", required=True, choices=("org", "team", "user"))
+    bind.add_argument("--definition", required=True)
+    bind.add_argument("--contract", required=True, type=Path)
     call_parser = commands.add_parser("call", help="Invoke one tool")
     call_parser.add_argument("name")
     batch = commands.add_parser(
@@ -73,7 +82,18 @@ def main(argv=None) -> int:
             store_path=args.store,
         )
         specs = {spec.name: spec for spec in ctx.tools.specs()}
-        if args.command == "list":
+        if args.command == "bind-oracle-view":
+            output = asyncio.run(
+                bind_view(
+                    ctx,
+                    args.term,
+                    args.layer,
+                    args.definition,
+                    json.loads(args.contract.read_text()),
+                )
+            )
+            status = 0
+        elif args.command == "list":
             output = {
                 "tools": [
                     {
@@ -125,6 +145,22 @@ def main(argv=None) -> int:
             for call in calls:
                 if call["name"] not in specs:
                     raise ValueError(f"unknown tool: {call['name']}")
+                if call["name"] == "run_sql":
+                    validate(
+                        call["arguments"],
+                        {
+                            "oneOf": [
+                                {"required": ["sql"]},
+                                {
+                                    "required": [
+                                        "metric_term",
+                                        "period_start",
+                                        "period_end",
+                                    ]
+                                },
+                            ]
+                        },
+                    )
                 validate(
                     call["arguments"],
                     {**specs[call["name"]].parameters, "additionalProperties": False},
@@ -140,6 +176,13 @@ def main(argv=None) -> int:
                 }
             )
             status = 1 if any(result["is_error"] for result in results) else 0
+    except SQLAlchemyError as exc:
+        logger.error("oracle_binding_failed error_type=%s", type(exc).__name__)
+        output = {
+            "is_error": True,
+            "content": "Cannot verify the Oracle view with this connection and account.",
+        }
+        status = 2
     except (ValueError, OSError, ValidationError) as exc:
         logger.warning("cli_input_failed error_type=%s", type(exc).__name__)
         output = {"is_error": True, "content": str(exc)}

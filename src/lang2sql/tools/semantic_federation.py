@@ -19,7 +19,6 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
-
 from ..core.ports.tool import ToolPort, ToolResult, ToolSpec
 
 if TYPE_CHECKING:
@@ -45,6 +44,8 @@ def _validate_layer(
 
 from ..tools.enrich_schema import (
     _KV_PREFIX as _ENRICH_PREFIX,
+)
+from ..tools.enrich_schema import (
     _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
 )
 
@@ -83,11 +84,21 @@ class FedEntry:
     applies_to: str = ""  # 관련 테이블/컬럼 (예: users, orders.amount)
     tags: list[str] = field(default_factory=list)
 
+    oracle_view: dict[str, Any] | None = None
+
     def __post_init__(self) -> None:
         if not isinstance(self.synonyms, list):
             self.synonyms = _parse_synonyms(self.synonyms)
         if not isinstance(self.tags, list):
             self.tags = [t.strip() for t in str(self.tags).split(",") if t.strip()]
+
+    def save_text(self, store, scope):
+        """Text edits and imports must not silently replace a confirmed DB contract."""
+        key = _kv_key(self.term, self.layer, self.entity)
+        existing = store.kv_get(scope, key)
+        if existing and FedEntry.from_json(existing).oracle_view:
+            return False
+        return store.kv_compare_replace(scope, key, existing, self.to_json())
 
     def to_json(self) -> str:
         return json.dumps(
@@ -101,12 +112,13 @@ class FedEntry:
                 "kind": self.kind,
                 "applies_to": self.applies_to,
                 "tags": self.tags,
+                **({"oracle_view": self.oracle_view} if self.oracle_view else {}),
             },
             ensure_ascii=False,
         )
 
     @staticmethod
-    def from_json(raw: str) -> "FedEntry":
+    def from_json(raw: str) -> FedEntry:
         d = json.loads(raw)
         return FedEntry(
             term=d["term"],
@@ -118,6 +130,7 @@ class FedEntry:
             kind=d.get("kind", ""),
             applies_to=d.get("applies_to", ""),
             tags=d.get("tags", []),
+            oracle_view=d.get("oracle_view"),
         )
 
 
@@ -185,7 +198,7 @@ class SemanticFederationTool(ToolPort):
             },
         )
 
-    async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
+    async def run(self, args: dict[str, Any], ctx: HarnessContext) -> ToolResult:
         if ctx.store is None:
             return ToolResult(call_id="", content="❌ KV store 미설정", is_error=True)
 
@@ -258,7 +271,6 @@ class SemanticFederationTool(ToolPort):
             return ToolResult(call_id="", content=err, is_error=True)
 
         entity = "" if layer == "org" else (user_id if layer == "user" else channel_id)
-        key = _kv_key(term, layer, entity)
 
         definition = str(args.get("definition", "")).strip()
         if not definition:
@@ -285,7 +297,12 @@ class SemanticFederationTool(ToolPort):
             applies_to=applies_to,
             tags=tags,
         )
-        ctx.store.kv_set(scope, key, entry.to_json())
+        if not entry.save_text(ctx.store, scope):
+            return ToolResult(
+                call_id="",
+                is_error=True,
+                content="Definition is bound or changed concurrently. Review the current entry before replacing it.",
+            )
         if ctx.audit is not None:
             await ctx.audit.record(
                 AuditEvent(
@@ -478,6 +495,16 @@ def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) 
         if winner is None:
             continue
 
+        if winner.oracle_view:
+            contract = winner.oracle_view["contract"]
+            groups.setdefault(
+                winner.kind if winner.kind in _KIND_SQL_HINT else "", []
+            ).append(
+                _fmt_entry(winner, _tag_for(winner))
+                + f" — confirmed Oracle view {contract['owner']}.{contract['view']}; "
+                "use run_sql(metric_term, period_start, period_end) with an explicit half-open date range; never substitute free-form SQL."
+            )
+            continue
         others = [e for e in entries if e is not winner]
         k = winner.kind if winner.kind in _KIND_SQL_HINT else ""
 

@@ -142,3 +142,7 @@ schema discovery, SQL execution, blocked DDL, input errors, unavailable tools,
 metadata permission checks, team scoping, persistence and process-local notes.
 
 For direct command-line calls using the same runtime, see [tool CLI](tool_cli.md).
+
+### Oracle 뷰에 연결한 업무 지표
+
+운영자는 기존 용어와 확인한 Oracle 뷰를 `lang2sql-tools bind-oracle-view`로 연결할 수 있습니다. 같은 팀의 MCP 클라이언트는 정의 확인 후 기간을 전달해 해당 뷰로 조회합니다. [설정, 조회 예시 및 월 경계·권한 검증 결과](../bench/oracle_view/README.md)
