@@ -16,6 +16,7 @@ from bench.common.providers import Transport
 
 from .dataset import load_cases, load_manifest, prepare, verify_databases
 from .protocol import (
+    BASELINE,
     BUDGETS,
     CONDITIONS,
     DEFAULT_PROFILES,
@@ -53,7 +54,7 @@ async def generate(
     api_key: str,
     provider_version: str,
 ) -> dict:
-    verify_product()
+    product_commit = verify_product(args.product_commit)
     manifest = load_manifest(args.prepared)
     cases = load_cases(args.prepared, manifest)
     if not args.dry_run:
@@ -67,6 +68,7 @@ async def generate(
             condition=args.condition,
             profile=profile,
             mode="dry-run" if args.dry_run else "live",
+            product_commit=product_commit,
         ),
         "run_id": args.output.name,
     }
@@ -119,6 +121,11 @@ def parser() -> argparse.ArgumentParser:
     )
     run_cmd.add_argument("--prepared", type=Path, required=True)
     run_cmd.add_argument("--condition", choices=CONDITIONS, required=True)
+    run_cmd.add_argument(
+        "--product-commit",
+        default=BASELINE,
+        help="Git revision the loaded product source must match (default: recorded baseline)",
+    )
     run_cmd.add_argument("--profile", required=True, help="Model profile name")
     run_cmd.add_argument(
         "--profiles", type=Path, default=DEFAULT_PROFILES, help="Model profiles JSON"

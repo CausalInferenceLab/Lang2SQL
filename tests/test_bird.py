@@ -15,6 +15,7 @@ from bench.bird.dataset import load_cases, prepare, verify_databases
 from bench.bird.protocol import (
     BUDGETS,
     DEFAULT_PROFILES,
+    git,
     load_profile,
     question_order,
     settings,
@@ -115,6 +116,8 @@ def test_dry_run_cli_uses_scripted_transport_and_cannot_be_scored(
             [
                 "run",
                 "--dry-run",
+                "--product-commit",
+                "HEAD",
                 "--condition",
                 "B",
                 "--profile",
@@ -131,6 +134,7 @@ def test_dry_run_cli_uses_scripted_transport_and_cannot_be_scored(
     )
     snapshot = read_json(prepared.output / "settings.json")
     assert snapshot["mode"] == "dry-run"
+    assert snapshot["product_commit"] == git("rev-parse", "HEAD")
     assert snapshot["profile"]["model"] == "gemini/gemini-2.5-flash"
     assert read_json(prepared.output / "status.json")["completed"] == 2
     with pytest.raises(ProtocolError, match="cannot be scored"):

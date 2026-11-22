@@ -5,6 +5,8 @@ from __future__ import annotations
 import asyncio
 import json
 
+import pytest
+
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.frontends.discord.render import OutboundMessage
 from lang2sql.tools.semantic_federation import FedEntry, _kv_key, _render_effective
@@ -121,6 +123,96 @@ def test_term_custom_remove_emits_audit_event() -> None:
     )
 
 
+@pytest.mark.parametrize(
+    ("layer", "tag"), [("org", "전사"), ("team", "채널:c1"), ("user", "개인:u1")]
+)
+def test_term_custom_remove_audits_only_requested_layer(layer: str, tag: str) -> None:
+    from lang2sql.core.identity import Identity
+    from lang2sql.tenancy.concierge import ContextConcierge
+    from lang2sql.tools.semantic_federation import SemanticFederationTool
+
+    async def scenario() -> None:
+        concierge = ContextConcierge()
+        ident = Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=True)
+        ctx = await concierge.build_context(ident)
+        tool = SemanticFederationTool()
+        term = "revenue"
+        entities = {"org": "", "team": "c1", "user": "u1"}
+        for stored_layer in entities:
+            result = await tool.run(
+                {"term": term, "definition": stored_layer, "layer": stored_layer}, ctx
+            )
+            assert not result.is_error
+
+        args = {"term": term, "layer": f" {layer.upper()} ", "remove": True}
+        removed = await tool.run(args, ctx)
+        assert not removed.is_error
+        assert f"[{tag}] 삭제" in removed.content
+
+        missing = await tool.run(args, ctx)
+        assert not missing.is_error
+        assert f"[{tag}] — 등록된 정의가 없습니다." in missing.content
+
+        for stored_layer, entity in entities.items():
+            key = _kv_key(term, stored_layer, entity)
+            assert (concierge.store.kv_get(ident.kv_scope, key) is None) == (
+                stored_layer == layer
+            )
+
+        events = await concierge.store.query(ident.user_id)
+        assert [e.detail for e in events if e.action == "term_custom_remove"] == [
+            {"term": term, "layers": [tag]}
+        ]
+
+    asyncio.run(scenario())
+
+
+@pytest.mark.parametrize(
+    ("layer", "channel_id", "expected_error"),
+    [
+        ("org", "c1", "관리자"),
+        ("team", None, "채널 컨텍스트"),
+        ("invalid", "c1", "layer는"),
+    ],
+)
+def test_term_custom_remove_rejects_invalid_target_without_deleting(
+    layer: str, channel_id: str | None, expected_error: str
+) -> None:
+    from lang2sql.core.identity import Identity
+    from lang2sql.tenancy.concierge import ContextConcierge
+    from lang2sql.tools.semantic_federation import SemanticFederationTool
+
+    async def scenario() -> None:
+        concierge = ContextConcierge()
+        admin = Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=True)
+        admin_ctx = await concierge.build_context(admin)
+        tool = SemanticFederationTool()
+        for stored_layer in ("org", "team", "user"):
+            result = await tool.run(
+                {"term": "revenue", "definition": stored_layer, "layer": stored_layer},
+                admin_ctx,
+            )
+            assert not result.is_error
+
+        before = concierge.store.kv_list_prefix(admin.kv_scope, "cterm:revenue:")
+        requester = Identity(user_id="u1", guild_id="g1", channel_id=channel_id)
+        ctx = await concierge.build_context(requester)
+        removed = await tool.run(
+            {"term": "revenue", "layer": layer, "remove": True}, ctx
+        )
+
+        assert removed.is_error
+        assert expected_error in removed.content
+        assert (
+            concierge.store.kv_list_prefix(requester.kv_scope, "cterm:revenue:")
+            == before
+        )
+        events = await concierge.store.query(requester.user_id)
+        assert all(event.action != "term_custom_remove" for event in events)
+
+    asyncio.run(scenario())
+
+
 # -- guild layer admin guard ---------------------------------------------------
 
 
@@ -143,8 +235,7 @@ def test_guild_write_requires_admin() -> None:
     assert "관리자" in result.content
 
 
-def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
-    """Non-admin remove skips guild-layer entry but deletes their own member entry."""
+def test_remove_without_layer_preserves_legacy_non_admin_behavior() -> None:
     from lang2sql.core.identity import Identity
     from lang2sql.tenancy.concierge import ContextConcierge
     from lang2sql.tools.semantic_federation import SemanticFederationTool, _kv_key
@@ -164,7 +255,7 @@ def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
         )
     )
 
-    # Non-admin adds their own member-layer override
+    # Non-admin adds team and personal definitions
     member_ctx = asyncio.run(
         concierge.build_context(
             Identity(user_id="u1", guild_id="g1", channel_id="c1", is_admin=False)
@@ -176,14 +267,21 @@ def test_guild_remove_non_admin_skips_guild_keeps_own_entry() -> None:
             member_ctx,
         )
     )
+    asyncio.run(
+        SemanticFederationTool().run(
+            {"term": "revenue", "definition": "team revenue", "layer": "team"},
+            member_ctx,
+        )
+    )
 
-    # Non-admin removes — must keep guild entry, delete own member entry
+    # Non-admin removes the team and personal definitions
     asyncio.run(
         SemanticFederationTool().run({"term": "revenue", "remove": True}, member_ctx)
     )
 
     scope = "g1"
     assert member_ctx.store.kv_get(scope, _kv_key("revenue", "org", "")) is not None
+    assert member_ctx.store.kv_get(scope, _kv_key("revenue", "team", "c1")) is None
     assert member_ctx.store.kv_get(scope, _kv_key("revenue", "user", "u1")) is None
 
 

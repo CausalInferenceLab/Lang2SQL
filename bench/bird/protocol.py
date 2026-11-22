@@ -93,14 +93,21 @@ def git(*args: str) -> str:
     ).strip()
 
 
-def verify_product() -> None:
-    if git("diff", "--name-only", BASELINE, "--", "src/") or git(
+def verify_product(revision: str = BASELINE) -> str:
+    try:
+        commit = git(
+            "rev-parse", "--verify", "--end-of-options", f"{revision}^{{commit}}"
+        )
+    except subprocess.CalledProcessError:
+        raise ProtocolError(f"Unknown product revision: {revision}") from None
+    if git("diff", "--name-only", commit, "--", "src/") or git(
         "ls-files", "--others", "--exclude-standard", "--", "src/"
     ):
-        raise ProtocolError(f"Product source differs from {BASELINE}")
+        raise ProtocolError(f"Product source differs from {commit}")
     expected = REPO_ROOT / "src/lang2sql/__init__.py"
     if Path(lang2sql.__file__).resolve() != expected:
         raise ProtocolError("Imported Lang2SQL does not come from this worktree")
+    return commit
 
 
 def scoring_settings(budgets: Budgets) -> dict:
@@ -121,6 +128,7 @@ def settings(
     condition: str,
     profile: dict[str, str],
     mode: str = "live",
+    product_commit: str = BASELINE,
 ) -> dict:
     source_paths = sorted(
         path
@@ -133,7 +141,7 @@ def settings(
         "condition": condition,
         "profile": profile,
         "manifest_digest": json_digest(manifest),
-        "product_commit": BASELINE,
+        "product_commit": product_commit,
         "git_head": git("rev-parse", "HEAD"),
         "code_sha256": {
             path.relative_to(REPO_ROOT).as_posix(): digest(path)
