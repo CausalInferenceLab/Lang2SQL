@@ -73,14 +73,10 @@ def load_profile(path: Path, name: str) -> dict[str, str]:
             raise ProtocolError("Invalid model profile name")
         if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", profile["api_key_env"]):
             raise ProtocolError("Invalid API key environment variable name")
-        for option in ("api_base", "reasoning_effort"):
-            if option in item:
-                value = item[option]
-                if not isinstance(value, str) or not value.strip():
-                    raise ProtocolError(
-                        f"Model profile {option} must be a nonempty string"
-                    )
-                profile[option] = value
+        if "api_base" in item:
+            if not isinstance(item["api_base"], str) or not item["api_base"].strip():
+                raise ProtocolError("Model profile api_base must be a nonempty string")
+            profile["api_base"] = item["api_base"]
         if profile["name"] in profiles:
             raise ProtocolError("Duplicate model profile name")
         profiles[profile["name"]] = profile

@@ -37,12 +37,9 @@ A의 시스템 메시지에는 제품이 렌더링한 용어명과 범위 표기
 
 아래의 데이터 파일, DB 경로, DB 리비전을 준비한 뒤 저장소 루트에서 실행한다.
 `run`은 `--condition`과 `--profile`로 실행할 조합을 받는다. 기본
-[모델 프로필 파일](models.example.json)은 [PR #260의 프로필](https://github.com/CausalInferenceLab/Lang2SQL/blob/24cff8cb1126fc017d1c68389b76213858e3a2e6/bench/spider2/models.example.json)에
-`openai-gpt6-luna`를 추가한 구성이다. `--profiles`로 같은 형식의 다른 JSON을
-지정할 수 있다.
+[모델 프로필 파일](models.example.json)은 [PR #260의 프로필](https://github.com/CausalInferenceLab/Lang2SQL/blob/24cff8cb1126fc017d1c68389b76213858e3a2e6/bench/spider2/models.example.json)과
+같다. `--profiles`로 같은 형식의 다른 JSON을 지정할 수 있다.
 실제 모델을 실행할 때는 선택한 프로필의 `api_key_env` 환경 변수를 사용한다.
-Luna 프로필은 Chat Completions에서 함수 호출을 지원하는 모드인
-`reasoning_effort`의 `none`을 지정한다. [OpenAI Luna 모델 문서](https://developers.openai.com/api/docs/models/gpt-6-luna)
 
 ```bash
 uv sync --locked --extra benchmark

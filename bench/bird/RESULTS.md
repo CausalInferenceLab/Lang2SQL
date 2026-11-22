@@ -1,6 +1,6 @@
 # BIRD Mini-Dev SQLite evidence 평가
 
-2026년 11월 22일 · evidence가 있는 365문항 · SQLite DB 11개 · 모델 2개 × 조건 3개 · 총 2,190건
+2026년 11월 22일 · evidence가 있는 365문항 · SQLite DB 11개 · 모델 3개 × 조건 3개 · 총 3,285건
 
 ## 배경과 평가 조건
 
@@ -111,9 +111,91 @@ mini A−B에서 0.121, B−D에서 0.066이었다. 조건별 차이는 이 문�
 난이도별 결과는 문항 구성 확인용이다. `moderate`는 7문항이라 해당 구간의
 정확도 순위는 문항 한두 개에 크게 좌우된다.
 
+## GPT-6 Luna 추가 실행
+
+동일한 365문항·11개 SQLite DB와 제품 소스 `e0a7fb1`에서 A/B/D 1,095건을 추가로 평가했다.
+Chat Completions에서 `gpt-6-luna`의 함수 호출을 사용하기 위해 `reasoning_effort="none"`을
+지정했다. 문항별 입력, 도구, 모델 호출 및 채점 예산을 대조했다. 별도 문항 1건으로 도구 호출과
+최종 SQL 생성을 확인한 뒤 세 평가를 시작했다. API 응답의 모델 ID는 `gpt-6-luna`였다.
+[OpenAI Luna 모델 문서](https://developers.openai.com/api/docs/models/gpt-6-luna)
+
+| 조건 | 정답 / 365 | EX | mini 대비 EX | 컬럼 조회 / 365 | 도구 호출 | 모델 호출 | 문항 시간 p50 / p90 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| A · KV 등록 | 147 | 40.27% | +23.84%p | 365 | 1,818 | 1,897 | 6.81초 / 12.27초 |
+| B · 직접 첨부 | 140 | 38.36% | +16.99%p | 365 | 1,922 | 1,927 | 6.96초 / 11.44초 |
+| D · 질문만 | 128 | 35.07% | +18.90%p | 365 | 2,004 | 2,068 | 7.43초 / 11.94초 |
+
+| 조건 | 결과 불일치 | SQL 실행 오류 | 8회 소진 | SQL 블록 누락 | SQL 시간 초과 | 기타 |
+|---|---:|---:|---:|---:|---:|---:|
+| A | 188 | 0 | 30 | 0 | 0 | 0건 |
+| B | 187 | 0 | 38 | 0 | 0 | 0건 |
+| D | 183 | 0 | 54 | 0 | 0 | 0건 |
+
+- Luna의 A 조건 전체 365건에서 첫 시스템 메시지에 evidence 원문이 한 번씩 들어갔다. B 365건에서는 첫 사용자 메시지에 evidence 원문을 확인했고, D 365건은 힌트 없이 시작했다. 공통 시스템 메시지와 도구 정의의 해시는 기존 실행과 문항별로 일치했다.
+- 최종 SQL의 SQLite 실행 오류는 세 조건 모두 0건이었다. 결과 불일치 558건 중 행·열 수가 같고 값이 다른 경우는 404건, 행 수가 다른 경우는 83건, 열 수가 다른 경우는 43건, 빈 결과는 28건이었다.
+- 본 실행의 모델 호출은 5,892회였다. API 호출 실패는 0건이었다.
+
+### Luna의 문항별 조건 비교
+
+| 비교 | EX 차이 | 왼쪽만 정답 | 오른쪽만 정답 | p | Holm 보정 p |
+|---|---:|---:|---:|---:|---:|
+| A−B | +1.92%p | 41 | 34 | 0.489 | 0.523 |
+| B−D | +3.29%p | 54 | 42 | 0.261 | 0.523 |
+| A−D | +5.21%p | 55 | 36 | 0.059 | 0.176 |
+
+Luna의 A−B는 +1.92%p였고, A만 정답은 41건, B만 정답은 34건이었다. Luna 조건 비교 세 개의 Holm 보정 p는 0.523이며, 11개 DB 단위 재표집 95% 구간은 −2.15%p~+5.25%p였다.
+문항 단위 양측 정확 McNemar 검정으로 계산했다. 11개 DB는 복원 추출해 문항 수로 가중하는
+percentile bootstrap으로 100,000회 재표집했다. 각 모델·조건은 이 문항 집합에서 한 번 실행했다.
+
+### 토큰 사용량과 환산 비용
+
+| 조건 | 입력 토큰 | 캐시 읽기 | 캐시 쓰기 | 출력 토큰 | 캐시 미적용 환산 | 캐시 반영 추정 |
+|---|---:|---:|---:|---:|---:|---:|
+| A | 2,397,551 | 944,040 | 657,910 | 162,797 | $0.32 | $0.25 |
+| B | 2,346,214 | 877,150 | 644,766 | 161,943 | $0.32 | $0.25 |
+| D | 2,478,082 | 964,791 | 638,694 | 164,361 | $0.33 | $0.26 |
+| **합계** | 7,221,847 | 2,785,981 | 1,941,370 | 489,101 | $0.97 | $0.76 |
+
+| 모델 | 모델 호출 | 캐시 미적용 환산 | 캐시 반영 추정 |
+|---|---:|---:|---:|
+| GPT‑4.1 mini | 5,931 | $4.71 | $4.32 |
+| GPT‑4.1 | 1,095 | $3.13 | $3.13 |
+| GPT‑6 Luna | 5,892 | $0.97 | $0.76 |
+
+모델별 실제 토큰 수에 표준 API 요금을 적용했다. 캐시 반영 추정에는 공급자가 반환한 캐시 읽기
+및 쓰기 토큰을 반영했다. Luna의 100만 토큰당 USD 단가는 일반 입력 $0.10, 캐시 읽기 $0.01,
+캐시 쓰기 $0.125, 출력 $0.50이다. 비용표는 모델별 본 평가 1,095건을 기준으로 집계했다.
+[OpenAI API 가격](https://developers.openai.com/api/docs/pricing) · [프롬프트 캐싱 요금](https://developers.openai.com/api/docs/guides/prompt-caching)
+
+### Luna의 DB·난이도별 정답 건수
+
+| SQLite DB | 문항 수 | Luna A | Luna B | Luna D |
+|---|---:|---:|---:|---:|
+| california_schools | 40 | 10 | 10 | 14 |
+| card_games | 54 | 25 | 28 | 24 |
+| codebase_community | 18 | 7 | 6 | 8 |
+| debit_card_specializing | 8 | 0 | 2 | 1 |
+| european_football_2 | 17 | 8 | 7 | 7 |
+| financial | 34 | 13 | 10 | 12 |
+| formula_1 | 41 | 21 | 18 | 17 |
+| student_club | 24 | 13 | 12 | 14 |
+| superhero | 30 | 6 | 8 | 3 |
+| thrombosis_prediction | 73 | 35 | 31 | 24 |
+| toxicology | 26 | 9 | 8 | 4 |
+
+| 원본 난이도 | 문항 수 | Luna A | Luna B | Luna D |
+|---|---:|---:|---:|---:|
+| challenging | 358 | 145 | 139 | 127 |
+| moderate | 7 | 2 | 1 | 1 |
+
+각 조건의 점수와 최종 SQL은 [A 실행](results/sqlite365-v1/A-openai-gpt6-luna/),
+[B 실행](results/sqlite365-v1/B-openai-gpt6-luna/),
+[D 실행](results/sqlite365-v1/D-openai-gpt6-luna/)의 독립 파일에 있다.
+
 ## 재현
 
 1. 측정한 벤치마크는 `eb524e744260b04915cb1fb9ae77c9b7e18f7c7a`의 코드를 사용했다. 실행 당시 HEAD는 `5a86054`였고 평가 코드는 커밋 전이었다. 저장된 여섯 실행의 벤치마크 소스와 잠금 파일 SHA-256을 위 커밋에 대조했다. 재현은 해당 커밋을 별도 worktree로 체크아웃해 그 커밋의 README 순서를 따른다.
 2. [2026 주석 리비전](https://huggingface.co/datasets/birdsql/bird_mini_dev/commit/38818fcbc46038129592680c51b2c8b597aac27c)의 `data/mini_dev_sqlite.jsonl`과 [BIRD Dev SQLite 배포본](https://bird-bench.oss-cn-beijing.aliyuncs.com/dev.zip)의 `dev_databases.zip`을 사용했다. 내부 DB 압축의 SHA-256은 `8132aacfe61ecec7198a62e93cb8512dac89b1d6b9922fe3c7bb94b13f317d8f`이며 개별 DB 해시는 manifest에 있다.
-3. 각 조합의 `settings.json`은 모델 스냅샷, 문항 순서, 예산, Python·SQLite·SQLAlchemy·LiteLLM 버전과 코드 해시를 담고 있다. `scores.json`과 `summary.json`은 실행 원본을 그대로 보존했다. 최종 SQL 1,970개는 조합별 JSONL에 들어 있다.
+3. 각 조합의 `settings.json`은 모델 ID, 문항 순서, 예산, Python·SQLite·SQLAlchemy·LiteLLM 버전과 코드 해시를 담고 있다. `scores.json`과 `summary.json`은 실행 원본을 그대로 보존했다. 기존 모델의 최종 SQL 1,970개와 Luna의 973개는 조합별 JSONL에 들어 있다.
 4. `records.json`은 원본 문항 로그의 해시, evidence 위치·해시, 호출 사용량, 도구 요약과 일부 재현 진단을 보관한다. 전체 대화 로그, 도구 응답 원문, SQLite DB 및 열람용 ZIP은 로컬의 원본 실행 자료에 보관한다.
+5. Luna는 프로필 추가 커밋 `1f47f28`의 평가 코드와 잠금 파일, 제품 소스 `e0a7fb1`의 `src/`를 별도 작업 디렉터리에 배치했다. `--profile openai-gpt6-luna`로 A/B/D 각각을 실행했다. 기존 두 모델에는 OpenAI SDK `3.51.0`, Luna에는 `3.57.0`을 사용했다. LiteLLM `1.109.1`과 Python·SQLite·SQLAlchemy 버전은 일치했다. Luna 설정·원본 점수의 해시와 1,095개 문항 기록을 대조했다. [Luna 실행 코드](https://github.com/jhpark324/Lang2SQL/commit/1f47f28)
