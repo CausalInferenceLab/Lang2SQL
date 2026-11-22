@@ -12,9 +12,11 @@ from dataclasses import asdict
 from pathlib import Path
 from typing import Any
 
+from aiohttp import ClientError
 from jsonschema import ValidationError, validate
 
 from ...core.identity import Identity
+from ...tenancy.schema_search import schema_index
 from ...tenancy.tool_runtime import build_tool_context
 
 logger = logging.getLogger(__name__)
@@ -43,6 +45,9 @@ def main(argv=None) -> int:
     parser.add_argument("--store", default=":memory:")
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("list", help="Print tool names and JSON argument schemas")
+    commands.add_parser(
+        "index-schema", help="Refresh Qdrant for this organization and database"
+    )
     call_parser = commands.add_parser("call", help="Invoke one tool")
     call_parser.add_argument("name")
     batch = commands.add_parser(
@@ -73,7 +78,19 @@ def main(argv=None) -> int:
             store_path=args.store,
         )
         specs = {spec.name: spec for spec in ctx.tools.specs()}
-        if args.command == "list":
+        if args.command == "index-schema":
+            index = schema_index(ctx.explorer)
+            if not index or ctx.explorer is None:
+                raise ValueError(
+                    "Configure a persistent DB, Qdrant and an embedding endpoint"
+                )
+            output = {
+                "indexed_tables": asyncio.run(
+                    index.refresh(ctx.identity.kv_scope, ctx.explorer)
+                )
+            }
+            status = 0
+        elif args.command == "list":
             output = {
                 "tools": [
                     {
@@ -140,7 +157,7 @@ def main(argv=None) -> int:
                 }
             )
             status = 1 if any(result["is_error"] for result in results) else 0
-    except (ValueError, OSError, ValidationError) as exc:
+    except (ValueError, OSError, ValidationError, ClientError) as exc:
         logger.warning("cli_input_failed error_type=%s", type(exc).__name__)
         output = {"is_error": True, "content": str(exc)}
         status = 2
