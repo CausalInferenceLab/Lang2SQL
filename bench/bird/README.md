@@ -1,5 +1,7 @@
 # BIRD Mini-Dev SQLite에서 evidence가 제공된 365문항
 
+[실측 결과와 재현 절차](RESULTS.md)에서 2026년 11월 22일 평가를 확인할 수 있다.
+
 고정한 제품 소스에서 조건과 모델 프로필을 선택해 365문항을 평가한다.
 한 실행은 조건 하나와 모델 프로필 하나에 해당하며 문항당 한 번 응답한다.
 
@@ -24,7 +26,10 @@ A의 시스템 메시지에는 제품이 렌더링한 용어명과 범위 표기
   11개 DB를 확보하고 이미지 digest 또는 해당 아카이브 해시를 `--db-revision`에
   지정한다. `--db-dir` 안에 `<db_id>.sqlite` 또는 `<db_id>/<db_id>.sqlite` 구조로
   둔다. 준비 후 각 DB의 실제 바이트 해시로 식별한다.
-- `src/`는 `e0a7fb1`과 같아야 한다. PR [#260](https://github.com/CausalInferenceLab/Lang2SQL/pull/260)의
+- 기본 제품 기준은 `e0a7fb1`이다. 해당 평가를 재현할 때는 [실측에 사용한 커밋](RESULTS.md#재현)을
+  체크아웃한다. 다른 제품 버전을 평가할 때는 `run --product-commit HEAD`처럼
+  제품 커밋을 지정한다. 실행기는 현재 `src/`와 지정한 커밋을 대조하고 SHA를
+  `settings.json`에 저장한다. PR [#260](https://github.com/CausalInferenceLab/Lang2SQL/pull/260)의
   LiteLLM 계측, 단일 SQL 추출 및 읽기 전용 SQLite 구성을 `bench/common/`에
   가져왔다. `benchmark` extra로 #260의 LiteLLM 버전을 설치한다.
 
