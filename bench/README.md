@@ -37,3 +37,7 @@ The two headline pillars demonstrated are **★① safety** (Sections 0 + 3) and
   `gpt-4.1-mini`.
 - Federation state in Sections 1–2 lives in an in-memory `SemanticStore`; the
   SQLite-backed persistent store is wired through the concierge for the bot.
+
+## Evaluations
+
+[100-turn conversation evaluation](turn_retention/README.md) compares fresh and continuous sessions on the same 100 questions and measures use of a registered business definition. [Recorded results](turn_retention/RESULTS.md)

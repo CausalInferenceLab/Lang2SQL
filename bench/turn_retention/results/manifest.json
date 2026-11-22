@@ -1,0 +1,806 @@
+{
+  "definition": "결제상태가 PAID인 주문의 주문상품만 대상으로, 상품별 수량×단가에서 그 행의 할인액과 환불액을 각각 한 번씩 뺀 금액의 합계. 주문일 기준.",
+  "register_after": 10,
+  "cases": [
+    {
+      "turn": 1,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 부산인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-02-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 11,
+      "shadow": 10
+    },
+    {
+      "turn": 2,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 광주인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-03-%'",
+      "probe": false,
+      "primary": 21,
+      "shadow": 23
+    },
+    {
+      "turn": 3,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 광주인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-09-%'",
+      "probe": false,
+      "primary": 3320,
+      "shadow": 2606
+    },
+    {
+      "turn": 4,
+      "question": "2025년 8월 주문일 기준, 고객 지역이 광주인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-08-%'",
+      "probe": false,
+      "primary": 192,
+      "shadow": 191
+    },
+    {
+      "turn": 5,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 서울인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-02-%'",
+      "probe": false,
+      "primary": 20,
+      "shadow": 18
+    },
+    {
+      "turn": 6,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 부산인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-02-%'",
+      "probe": false,
+      "primary": 18,
+      "shadow": 19
+    },
+    {
+      "turn": 7,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 광주인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-11-%'",
+      "probe": false,
+      "primary": 4185,
+      "shadow": 4680
+    },
+    {
+      "turn": 8,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 서울인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 3400,
+      "shadow": 4080
+    },
+    {
+      "turn": 9,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 대구인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 24,
+      "shadow": 26
+    },
+    {
+      "turn": 10,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 부산인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-09-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 12
+    },
+    {
+      "turn": 11,
+      "question": "2025년 6월 주문일 기준, 고객 지역이 대구인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-06-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 13,
+      "shadow": 10
+    },
+    {
+      "turn": 12,
+      "question": "2025년 7월 주문일 기준, 고객 지역이 서울인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-07-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 14
+    },
+    {
+      "turn": 13,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 서울인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 24,
+      "shadow": 28
+    },
+    {
+      "turn": 14,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 대구인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-03-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 5,
+      "shadow": 12
+    },
+    {
+      "turn": 15,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 대구인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-01-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 20,
+      "shadow": 14
+    },
+    {
+      "turn": 16,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 광주인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 30,
+      "shadow": 23
+    },
+    {
+      "turn": 17,
+      "question": "2025년 7월 주문일 기준, 고객 지역이 대구인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-07-%'",
+      "probe": false,
+      "primary": 4705,
+      "shadow": 3340
+    },
+    {
+      "turn": 18,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 광주인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 17,
+      "shadow": 13
+    },
+    {
+      "turn": 19,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 부산인 주문상품의 할인·환불 전 총액(수량×단가 합계)은?",
+      "gold_sql": "SELECT SUM(qty*unit_price) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 528300,
+      "shadow": 1123200
+    },
+    {
+      "turn": 20,
+      "question": "2025년 12월 주문일 기준, 고객 지역이 서울인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-12-%'",
+      "probe": false,
+      "primary": 4575,
+      "shadow": 2950
+    },
+    {
+      "turn": 21,
+      "question": "2025년 12월 주문일 기준, 고객 지역이 광주인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-12-%'",
+      "probe": false,
+      "primary": 3020,
+      "shadow": 3749
+    },
+    {
+      "turn": 22,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 광주인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 1832,
+      "shadow": 2922
+    },
+    {
+      "turn": 23,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 서울인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 30,
+      "shadow": 24
+    },
+    {
+      "turn": 24,
+      "question": "2025년 6월 주문일 기준, 고객 지역이 부산인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-06-%'",
+      "probe": false,
+      "primary": 145,
+      "shadow": 180
+    },
+    {
+      "turn": 25,
+      "question": "2025년 8월 주문일 기준, 고객 지역이 서울인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-08-%'",
+      "probe": false,
+      "primary": 194,
+      "shadow": 170
+    },
+    {
+      "turn": 26,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 서울인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-09-%'",
+      "probe": false,
+      "primary": 26,
+      "shadow": 34
+    },
+    {
+      "turn": 27,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 광주인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-10-%'",
+      "probe": false,
+      "primary": 3655,
+      "shadow": 4390
+    },
+    {
+      "turn": 28,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 부산인 주문상품의 할인·환불 전 총액(수량×단가 합계)은?",
+      "gold_sql": "SELECT SUM(qty*unit_price) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 936600,
+      "shadow": 926700
+    },
+    {
+      "turn": 29,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 대구인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-09-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 8,
+      "shadow": 13
+    },
+    {
+      "turn": 30,
+      "question": "2025년 3월 전체 지역의 인정매출은 얼마인가요?",
+      "gold_sql": "SELECT SUM(qty*unit_price-discount_amount-refund_amount) FROM orders JOIN items USING(order_id) WHERE payment_status='PAID' AND order_date LIKE '2025-03-%'",
+      "probe": true,
+      "primary": 2182160,
+      "shadow": 1653964
+    },
+    {
+      "turn": 31,
+      "question": "2025년 8월 주문일 기준, 고객 지역이 부산인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-08-%'",
+      "probe": false,
+      "primary": 185,
+      "shadow": 188
+    },
+    {
+      "turn": 32,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 부산인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-03-%'",
+      "probe": false,
+      "primary": 15,
+      "shadow": 18
+    },
+    {
+      "turn": 33,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 서울인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 4965,
+      "shadow": 2670
+    },
+    {
+      "turn": 34,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 대구인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-11-%'",
+      "probe": false,
+      "primary": 2907,
+      "shadow": 2452
+    },
+    {
+      "turn": 35,
+      "question": "2025년 6월 주문일 기준, 고객 지역이 광주인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-06-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 21,
+      "shadow": 17
+    },
+    {
+      "turn": 36,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 부산인 주문상품의 할인·환불 전 총액(수량×단가 합계)은?",
+      "gold_sql": "SELECT SUM(qty*unit_price) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-10-%'",
+      "probe": false,
+      "primary": 924100,
+      "shadow": 822700
+    },
+    {
+      "turn": 37,
+      "question": "2025년 7월 주문일 기준, 고객 지역이 부산인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-07-%'",
+      "probe": false,
+      "primary": 2740,
+      "shadow": 4740
+    },
+    {
+      "turn": 38,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 부산인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-02-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 12,
+      "shadow": 9
+    },
+    {
+      "turn": 39,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 부산인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 119,
+      "shadow": 231
+    },
+    {
+      "turn": 40,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 광주인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 3160,
+      "shadow": 4150
+    },
+    {
+      "turn": 41,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 대구인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 3973,
+      "shadow": 3294
+    },
+    {
+      "turn": 42,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 서울인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 17
+    },
+    {
+      "turn": 43,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 대구인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 2854,
+      "shadow": 2591
+    },
+    {
+      "turn": 44,
+      "question": "2025년 12월 주문일 기준, 고객 지역이 대구인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-12-%'",
+      "probe": false,
+      "primary": 22,
+      "shadow": 20
+    },
+    {
+      "turn": 45,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 광주인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-02-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 10
+    },
+    {
+      "turn": 46,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 서울인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 234,
+      "shadow": 150
+    },
+    {
+      "turn": 47,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 서울인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-03-%'",
+      "probe": false,
+      "primary": 33,
+      "shadow": 24
+    },
+    {
+      "turn": 48,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 서울인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-01-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 17,
+      "shadow": 10
+    },
+    {
+      "turn": 49,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 광주인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 17,
+      "shadow": 28
+    },
+    {
+      "turn": 50,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 광주인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-02-%'",
+      "probe": false,
+      "primary": 4070,
+      "shadow": 2230
+    },
+    {
+      "turn": 51,
+      "question": "2025년 12월 주문일 기준, 고객 지역이 광주인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-12-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 15,
+      "shadow": 15
+    },
+    {
+      "turn": 52,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 광주인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-11-%'",
+      "probe": false,
+      "primary": 219,
+      "shadow": 225
+    },
+    {
+      "turn": 53,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 부산인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-01-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 12,
+      "shadow": 12
+    },
+    {
+      "turn": 54,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 서울인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 3323,
+      "shadow": 2698
+    },
+    {
+      "turn": 55,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 부산인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-03-%'",
+      "probe": false,
+      "primary": 5765,
+      "shadow": 5175
+    },
+    {
+      "turn": 56,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 서울인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-10-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 12,
+      "shadow": 12
+    },
+    {
+      "turn": 57,
+      "question": "2025년 6월 주문일 기준, 고객 지역이 부산인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-06-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 15,
+      "shadow": 16
+    },
+    {
+      "turn": 58,
+      "question": "2025년 12월 주문일 기준, 고객 지역이 대구인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-12-%'",
+      "probe": false,
+      "primary": 3755,
+      "shadow": 3450
+    },
+    {
+      "turn": 59,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 서울인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-05-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 13,
+      "shadow": 12
+    },
+    {
+      "turn": 60,
+      "question": "2025년 7월 전체 지역의 인정매출은 얼마인가요?",
+      "gold_sql": "SELECT SUM(qty*unit_price-discount_amount-refund_amount) FROM orders JOIN items USING(order_id) WHERE payment_status='PAID' AND order_date LIKE '2025-07-%'",
+      "probe": true,
+      "primary": 1627647,
+      "shadow": 1973709
+    },
+    {
+      "turn": 61,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 대구인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 164,
+      "shadow": 170
+    },
+    {
+      "turn": 62,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 광주인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-09-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 18,
+      "shadow": 14
+    },
+    {
+      "turn": 63,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 부산인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 209,
+      "shadow": 194
+    },
+    {
+      "turn": 64,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 대구인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-11-%'",
+      "probe": false,
+      "primary": 153,
+      "shadow": 148
+    },
+    {
+      "turn": 65,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 대구인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-03-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 9,
+      "shadow": 13
+    },
+    {
+      "turn": 66,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 대구인 주문상품의 할인·환불 전 총액(수량×단가 합계)은?",
+      "gold_sql": "SELECT SUM(qty*unit_price) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 877300,
+      "shadow": 921300
+    },
+    {
+      "turn": 67,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 대구인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-05-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 12,
+      "shadow": 17
+    },
+    {
+      "turn": 68,
+      "question": "2025년 6월 주문일 기준, 고객 지역이 대구인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-06-%'",
+      "probe": false,
+      "primary": 13,
+      "shadow": 14
+    },
+    {
+      "turn": 69,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 부산인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-09-%'",
+      "probe": false,
+      "primary": 17,
+      "shadow": 15
+    },
+    {
+      "turn": 70,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 부산인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-01-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 7
+    },
+    {
+      "turn": 71,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 대구인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-03-%'",
+      "probe": false,
+      "primary": 12,
+      "shadow": 15
+    },
+    {
+      "turn": 72,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 부산인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-11-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 17,
+      "shadow": 15
+    },
+    {
+      "turn": 73,
+      "question": "2025년 8월 주문일 기준, 고객 지역이 대구인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-08-%'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 16
+    },
+    {
+      "turn": 74,
+      "question": "2025년 9월 주문일 기준, 고객 지역이 대구인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-09-%'",
+      "probe": false,
+      "primary": 1664,
+      "shadow": 3320
+    },
+    {
+      "turn": 75,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 부산인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-10-%'",
+      "probe": false,
+      "primary": 20,
+      "shadow": 16
+    },
+    {
+      "turn": 76,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 부산인 주문상품의 할인액 합계는? 행별 할인액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(discount_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-02-%'",
+      "probe": false,
+      "primary": 2710,
+      "shadow": 1831
+    },
+    {
+      "turn": 77,
+      "question": "2025년 7월 주문일 기준, 고객 지역이 부산인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-07-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 9,
+      "shadow": 12
+    },
+    {
+      "turn": 78,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 서울인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-10-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 15,
+      "shadow": 16
+    },
+    {
+      "turn": 79,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 서울인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 27,
+      "shadow": 22
+    },
+    {
+      "turn": 80,
+      "question": "2025년 12월 주문일 기준, 고객 지역이 대구인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-12-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 14,
+      "shadow": 11
+    },
+    {
+      "turn": 81,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 서울인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-04-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 14
+    },
+    {
+      "turn": 82,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 부산인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-04-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 19,
+      "shadow": 17
+    },
+    {
+      "turn": 83,
+      "question": "2025년 7월 주문일 기준, 고객 지역이 부산인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-07-%'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 21
+    },
+    {
+      "turn": 84,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 부산인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='부산' AND order_date LIKE '2025-01-%'",
+      "probe": false,
+      "primary": 13,
+      "shadow": 16
+    },
+    {
+      "turn": 85,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 대구인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='대구' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 17,
+      "shadow": 15
+    },
+    {
+      "turn": 86,
+      "question": "2025년 6월 주문일 기준, 고객 지역이 대구인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-06-%'",
+      "probe": false,
+      "primary": 2460,
+      "shadow": 2245
+    },
+    {
+      "turn": 87,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 대구인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-10-%'",
+      "probe": false,
+      "primary": 174,
+      "shadow": 160
+    },
+    {
+      "turn": 88,
+      "question": "2025년 5월 주문일 기준, 고객 지역이 대구인 주문상품의 환불액 합계는? 행별 환불액을 한 번씩 더하세요.",
+      "gold_sql": "SELECT SUM(refund_amount) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-05-%'",
+      "probe": false,
+      "primary": 4650,
+      "shadow": 3760
+    },
+    {
+      "turn": 89,
+      "question": "2025년 8월 주문일 기준, 고객 지역이 광주인 주문한 서로 다른 고객 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.customer_id) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-08-%'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 16
+    },
+    {
+      "turn": 90,
+      "question": "2025년 11월 전체 지역의 인정매출은 얼마인가요?",
+      "gold_sql": "SELECT SUM(qty*unit_price-discount_amount-refund_amount) FROM orders JOIN items USING(order_id) WHERE payment_status='PAID' AND order_date LIKE '2025-11-%'",
+      "probe": true,
+      "primary": 1555578,
+      "shadow": 1527471
+    },
+    {
+      "turn": 91,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 광주인 주문상품의 할인·환불 전 총액(수량×단가 합계)은?",
+      "gold_sql": "SELECT SUM(qty*unit_price) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 517400,
+      "shadow": 795900
+    },
+    {
+      "turn": 92,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 광주인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='광주' AND order_date LIKE '2025-11-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 21,
+      "shadow": 16
+    },
+    {
+      "turn": 93,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 서울인 결제상태 PAID인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-04-%' AND payment_status='PAID'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 10
+    },
+    {
+      "turn": 94,
+      "question": "2025년 1월 주문일 기준, 고객 지역이 서울인 식품을 포함하는 서로 다른 주문 수는?",
+      "gold_sql": "SELECT COUNT(DISTINCT orders.order_id) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-01-%' AND product_group='식품'",
+      "probe": false,
+      "primary": 16,
+      "shadow": 17
+    },
+    {
+      "turn": 95,
+      "question": "2025년 11월 주문일 기준, 고객 지역이 서울인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='서울' AND order_date LIKE '2025-11-%'",
+      "probe": false,
+      "primary": 26,
+      "shadow": 23
+    },
+    {
+      "turn": 96,
+      "question": "2025년 7월 주문일 기준, 고객 지역이 부산인 주문상품의 할인·환불 전 총액(수량×단가 합계)은?",
+      "gold_sql": "SELECT SUM(qty*unit_price) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-07-%'",
+      "probe": false,
+      "primary": 687500,
+      "shadow": 891800
+    },
+    {
+      "turn": 97,
+      "question": "2025년 4월 주문일 기준, 고객 지역이 서울인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='서울' AND order_date LIKE '2025-04-%'",
+      "probe": false,
+      "primary": 217,
+      "shadow": 162
+    },
+    {
+      "turn": 98,
+      "question": "2025년 10월 주문일 기준, 고객 지역이 광주인 주문 건수는?",
+      "gold_sql": "SELECT COUNT(*) FROM orders JOIN customers USING(customer_id) WHERE region='광주' AND order_date LIKE '2025-10-%'",
+      "probe": false,
+      "primary": 23,
+      "shadow": 30
+    },
+    {
+      "turn": 99,
+      "question": "2025년 3월 주문일 기준, 고객 지역이 대구인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='대구' AND order_date LIKE '2025-03-%'",
+      "probe": false,
+      "primary": 109,
+      "shadow": 110
+    },
+    {
+      "turn": 100,
+      "question": "2025년 2월 주문일 기준, 고객 지역이 부산인 주문에 포함된 모든 상품 수량의 합은?",
+      "gold_sql": "SELECT SUM(qty) FROM orders JOIN customers USING(customer_id) JOIN items USING(order_id) WHERE region='부산' AND order_date LIKE '2025-02-%'",
+      "probe": false,
+      "primary": 136,
+      "shadow": 125
+    }
+  ]
+}
