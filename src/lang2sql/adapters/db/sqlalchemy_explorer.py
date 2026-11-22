@@ -26,6 +26,21 @@ class SqlAlchemyExplorer:
         self._schema = schema
         self._engine: Any = None  # created lazily
 
+    @property
+    def dialect(self) -> str:
+        from sqlalchemy.engine import make_url
+
+        return make_url(self.url).get_backend_name()
+
+    async def oracle_metric(self, contract, *, stamp=None, sql=None, params=None):
+        from .oracle_view import inspect_or_query
+
+        if self.dialect != "oracle":
+            raise ValueError("The confirmed view requires an Oracle connection")
+        return await asyncio.to_thread(
+            lambda: inspect_or_query(self._get_engine(), contract, stamp, sql, params)
+        )
+
     def _get_engine(self) -> Any:
         if self._engine is None:
             from sqlalchemy import create_engine  # imported here = lazy driver load
@@ -73,6 +88,8 @@ class SqlAlchemyExplorer:
         from sqlalchemy import inspect
 
         insp = inspect(self._get_engine())
+        if self._schema and name.upper().startswith(self._schema.upper() + "."):
+            name = name[len(self._schema) + 1 :]
         cols = [
             Column(
                 name=c["name"],
