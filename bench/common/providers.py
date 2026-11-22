@@ -47,6 +47,7 @@ class MeasuredLLM:
         transport: Transport,
         observe_first_request: Callable[[list[dict], list[dict]], None],
         save_attempt: Callable[[list[dict]], None],
+        reasoning_effort: str | None = None,
     ):
         self.model = model
         self.api_base = api_base
@@ -54,6 +55,7 @@ class MeasuredLLM:
         self.timeout = timeout
         self.max_calls = max_calls
         self.max_output_tokens = max_output_tokens
+        self.reasoning_effort = reasoning_effort
         self.transport = transport
         self.observe_first_request = observe_first_request
         self.save_attempt = save_attempt
@@ -86,6 +88,8 @@ class MeasuredLLM:
         }
         if self.api_base:
             kwargs["api_base"] = self.api_base
+        if self.reasoning_effort is not None:
+            kwargs["reasoning_effort"] = self.reasoning_effort
         if specs:
             kwargs["tools"] = specs
         entry = {"status": "started", "usage": None}

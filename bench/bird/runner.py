@@ -158,6 +158,7 @@ async def run_case(
         transport=transport,
         observe_first_request=observe,
         save_attempt=save_attempt,
+        reasoning_effort=profile.get("reasoning_effort"),
     )
 
     async def generate() -> str:

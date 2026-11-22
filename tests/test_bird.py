@@ -257,7 +257,7 @@ async def test_call_budget_and_writable_tool_isolation(prepared):
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize(
-    "condition,profile_name,role,bad_submit,failure",
+    "condition,profile_name,role,bad_submit,failure,reasoning_effort",
     [
         (
             "A",
@@ -265,19 +265,29 @@ async def test_call_budget_and_writable_tool_isolation(prepared):
             "system",
             "```sql\nSELECT y FROM fixture\n```",
             "result_mismatch",
+            None,
         ),
-        ("D", "openai-gpt41", None, "Which value?", "missing_sql"),
+        ("D", "openai-gpt41", None, "Which value?", "missing_sql", None),
         (
             "B",
             "anthropic-sonnet45",
             "user",
             "```sql\nSELECT missing FROM fixture\n```",
             "sql_error",
+            None,
+        ),
+        (
+            "A",
+            "openai-gpt6-luna",
+            "system",
+            "```sql\nSELECT y FROM fixture\n```",
+            "result_mismatch",
+            "none",
         ),
     ],
 )
 async def test_scores_one_condition_and_model_in_isolation(
-    prepared, condition, profile_name, role, bad_submit, failure
+    prepared, condition, profile_name, role, bad_submit, failure, reasoning_effort
 ):
     requests = []
     profile = load_profile(DEFAULT_PROFILES, profile_name)
@@ -311,6 +321,8 @@ async def test_scores_one_condition_and_model_in_isolation(
     assert all(
         request["model"] == profile["model"]
         and "api_base" not in request
+        and request.get("reasoning_effort") == reasoning_effort
+        and ("reasoning_effort" in request) == (reasoning_effort is not None)
         and request["num_retries"] == 0
         and request["max_tokens"] == 4096
         for request in requests
