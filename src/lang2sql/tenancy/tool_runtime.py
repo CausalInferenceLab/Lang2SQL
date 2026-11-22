@@ -16,6 +16,7 @@ from ..tools.recall_memory import RecallMemory
 from ..tools.remember import Remember
 from ..tools.run_sql import RunSQL
 from ..tools.semantic_federation import SemanticFederationTool
+from .schema_search import register_schema_search
 
 
 class ExternalAgentLLM:
@@ -46,6 +47,7 @@ def build_tool_context(
             RecallMemory(memory),
         ]
     )
+    register_schema_search(registry, database)
     return HarnessContext(
         identity=identity,
         llm=ExternalAgentLLM(),

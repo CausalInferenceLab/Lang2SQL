@@ -30,6 +30,12 @@ Clarification rule:
 
 async def build_system_prompt(ctx: HarnessContext) -> str:
     parts: list[str] = [_BASE]
+    if any(tool.name == "search_schema" for tool in ctx.tools.specs()):
+        parts.append(
+            "If the question does not identify the concrete database tables, first call "
+            "search_schema with the question to find candidates. Then verify the relevant "
+            "tables with explore_schema. If search is unavailable, explore the schema directly."
+        )
 
     if ctx.explorer is not None:
         tables = await ctx.explorer.list_tables()

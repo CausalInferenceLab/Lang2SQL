@@ -26,6 +26,10 @@ class SqlAlchemyExplorer:
         self._schema = schema
         self._engine: Any = None  # created lazily
 
+    @property
+    def schema(self) -> str | None:
+        return self._schema
+
     def _get_engine(self) -> Any:
         if self._engine is None:
             from sqlalchemy import create_engine  # imported here = lazy driver load

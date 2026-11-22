@@ -33,6 +33,7 @@ from ..memory import InjectAllRecall, InMemoryStore, ManualExtractor, MemoryServ
 from ..safety.pipeline import SafetyPipeline
 from ..tools import build_default_tools
 from .encrypted_secrets import EncryptedSecrets
+from .schema_search import register_schema_search
 
 # DSN used for the V1 explorer stub when a scope has registered none yet.
 _DEFAULT_DSN = "postgresql://stub/v1"
@@ -129,12 +130,15 @@ class ContextConcierge:
             )
         )
 
+        explorer = await self._explorer_for(identity)
+        register_schema_search(tools, explorer)
+
         return HarnessContext(
             identity=identity,
             llm=self._llm,
             tools=tools,
             session=session,
-            explorer=await self._explorer_for(identity),
+            explorer=explorer,
             safety=self._safety,
             audit=self._audit,
             store=self._store,
