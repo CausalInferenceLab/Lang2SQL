@@ -9,13 +9,15 @@ from __future__ import annotations
 
 import asyncio
 
+from lang2sql.adapters.db.postgres_explorer import PostgresExplorer
 from lang2sql.adapters.llm.fake import FakeLLM
 from lang2sql.core.identity import Identity
-from lang2sql.core.types import Role
+from lang2sql.core.types import Completion, Role, ToolCall
 from lang2sql.harness.context import HarnessContext
 from lang2sql.harness.loop import agent_loop
 from lang2sql.harness.session import Session
 from lang2sql.harness.tool_registry import ToolRegistry
+from lang2sql.tools.explore_schema import ExploreSchema
 from lang2sql.tools.ping import Ping
 
 
@@ -48,6 +50,43 @@ def test_tool_call_id_is_stamped():
     asyncio.run(agent_loop(ctx, "hello"))
     tool_msgs = [m for m in ctx.session.history() if m.role == Role.TOOL]
     assert tool_msgs and tool_msgs[0].tool_call_id
+
+
+def test_schema_batch_uses_the_catalog_from_the_system_prompt():
+    class CountingExplorer(PostgresExplorer):
+        catalog_reads = 0
+
+        async def list_tables(self):
+            self.catalog_reads += 1
+            return await super().list_tables()
+
+    class SchemaLLM:
+        async def complete(self, messages, tools=()):
+            if messages[-1].role == Role.TOOL:
+                assert "- amount: numeric" in messages[-1].content
+                assert "- email: text" in messages[-1].content
+                return Completion(content="Found both tables.")
+            assert "## Known tables\npublic.orders, public.users" in messages[0].content
+            return Completion(
+                tool_calls=[
+                    ToolCall(
+                        id="schema",
+                        name="explore_schema",
+                        arguments={"tables": ["public.orders", "public.users"]},
+                    )
+                ]
+            )
+
+    ctx = _ctx()
+    explorer = CountingExplorer("postgresql://ignored")
+    ctx.explorer = explorer
+    ctx.llm = SchemaLLM()
+    ctx.tools = ToolRegistry([ExploreSchema()])
+
+    assert asyncio.run(agent_loop(ctx, "Show the schema for orders and users.")) == (
+        "Found both tables."
+    )
+    assert explorer.catalog_reads == 1
 
 
 def test_scope_chain_orders_narrow_to_wide():

@@ -55,6 +55,9 @@ def fixture_db(tmp_path):
 @pytest.mark.asyncio
 async def test_stdio_schema_sql_memory_and_errors(tmp_path):
     db = fixture_db(tmp_path)
+    with sqlite3.connect(db) as conn:
+        conn.execute("CREATE TABLE customers (email TEXT NOT NULL)")
+        conn.execute("CREATE VIEW paid_orders AS SELECT amount FROM orders")
     async with connected(db, tmp_path / "metadata.db") as client:
         tools = (await client.list_tools()).tools
         assert {t.name for t in tools} == {
@@ -66,6 +69,17 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
         }
         schema = await client.call_tool("explore_schema", {})
         assert not schema.isError and "orders" in schema.content[0].text
+        assert "paid_orders" not in schema.content[0].text
+        view = await client.call_tool("explore_schema", {"table": "paid_orders"})
+        assert not view.isError
+        assert "paid_orders\n- amount: INTEGER" in view.content[0].text
+        columns = await client.call_tool(
+            "explore_schema", {"tables": ["ORDERS", "customers", "paid_orders"]}
+        )
+        assert not columns.isError
+        assert "ORDERS\n- amount: INTEGER" in columns.content[0].text
+        assert "customers\n- email: TEXT NOT NULL" in columns.content[0].text
+        assert view.content[0].text in columns.content[0].text
         result = await client.call_tool(
             "run_sql", {"sql": "SELECT SUM(amount) AS total FROM orders"}
         )

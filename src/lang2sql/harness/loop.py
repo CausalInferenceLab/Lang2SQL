@@ -8,6 +8,8 @@ can recover rather than crashing the loop.
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 from ..core.types import Message, Role
 from .context import HarnessContext
 from .system_prompt import build_system_prompt
@@ -17,6 +19,8 @@ async def agent_loop(ctx: HarnessContext, user_text: str) -> str:
     """Run one user turn to completion; return the final assistant text."""
     ctx.session.add(Message(role=Role.USER, content=user_text))
 
+    if ctx.explorer is not None:
+        ctx = replace(ctx, known_tables=await ctx.explorer.list_tables())
     system = await build_system_prompt(ctx)
     specs = ctx.tools.specs()
 
