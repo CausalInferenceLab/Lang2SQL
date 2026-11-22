@@ -95,6 +95,19 @@ def test_sqlalchemy_explorer_introspect_and_execute(tmp_path):
     assert len(sample) == 1
 
 
+def test_sqlalchemy_explorer_describes_names_in_its_configured_schema(tmp_path):
+    db = tmp_path / "demo.db"
+    _seed_sqlite(str(db))
+    exp = SqlAlchemyExplorer(f"sqlite:///{db}", schema="main")
+
+    qualified = asyncio.run(exp.describe_table("main.users"))
+    bare = asyncio.run(exp.describe_table("users"))
+
+    assert qualified == bare
+    assert qualified.qualified == "main.users"
+    assert [column.name for column in qualified.columns] == ["id", "email"]
+
+
 # --- D1 explorer with mocked HTTP transport --------------------------------
 
 

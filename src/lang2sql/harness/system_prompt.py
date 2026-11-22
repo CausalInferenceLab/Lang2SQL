@@ -19,6 +19,8 @@ Rules:
 - Only ever read data. Never modify the database.
 - When you need data, call the run_sql tool with a single SELECT/WITH query.
 - Discover schema with explore_schema before guessing table or column names.
+  For multiple tables, select names from Known tables and request their columns
+  together with the tables argument.
 - Prefer definitions from the semantic layer below over your own assumptions.
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
 
@@ -32,7 +34,9 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
     parts: list[str] = [_BASE]
 
     if ctx.explorer is not None:
-        tables = await ctx.explorer.list_tables()
+        tables = ctx.known_tables
+        if tables is None:
+            tables = await ctx.explorer.list_tables()
         if tables:
             scope = ctx.identity.kv_scope if ctx.store else None
             has_enrichment = bool(

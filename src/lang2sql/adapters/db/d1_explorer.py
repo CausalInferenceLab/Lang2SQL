@@ -60,6 +60,8 @@ class D1Explorer:
 
     async def describe_table(self, name: str) -> Table:
         rows = await self._query(f"PRAGMA table_info({_ident(name)})")
+        if not rows:
+            raise KeyError(f"unknown table: {name}")
         cols = [
             Column(
                 name=r["name"], type=r["type"] or "", nullable=not bool(r["notnull"])
