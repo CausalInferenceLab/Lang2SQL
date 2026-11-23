@@ -64,6 +64,7 @@ async def _describe_tables(
         )
 
     sections: list[str] = []
+    tables_with_columns: list[str] = []
     seen: set[str] = set()
     has_error = False
     for name in dict.fromkeys(name.strip() for name in names):
@@ -79,11 +80,18 @@ async def _describe_tables(
             described = await explorer.describe_table(name)
             if described.qualified not in seen:
                 sections.append(_format_columns(described, ctx))
+                if described.columns:
+                    tables_with_columns.append(described.qualified)
             seen.update((name, described.qualified))
         except Exception as exc:
             sections.append(f"{name}: {type(exc).__name__}: {exc}")
             has_error = True
-    return ToolResult(call_id="", content="\n\n".join(sections), is_error=has_error)
+    return ToolResult(
+        call_id="",
+        content="\n\n".join(sections),
+        is_error=has_error,
+        tables_with_columns=tuple(tables_with_columns),
+    )
 
 
 class ExploreSchema:
@@ -146,4 +154,8 @@ class ExploreSchema:
             return ToolResult(call_id="", content="Tables:\n" + listed)
 
         described = await explorer.describe_table(table)
-        return ToolResult(call_id="", content=_format_columns(described, ctx))
+        return ToolResult(
+            call_id="",
+            content=_format_columns(described, ctx),
+            tables_with_columns=(described.qualified,) if described.columns else (),
+        )

@@ -77,8 +77,11 @@ def test_explore_schema_batch_preserves_column_details_and_partial_results():
         explore({"tables": ["public.orders", "missing", "orders", " users "]})
     )
     assert listed.content == "Tables:\n- public.orders\n- public.users"
+    assert listed.tables_with_columns == ()
     assert not single.is_error
+    assert single.tables_with_columns == ("public.orders",)
     assert batch.is_error
+    assert batch.tables_with_columns == ("public.orders", "public.users")
     assert batch.content.startswith(single.content + "\n\n")
     assert batch.content.count("public.orders\n") == 1
     assert "missing: KeyError: 'unknown table: missing'" in batch.content
@@ -103,6 +106,7 @@ def test_explore_schema_d1_batch_reports_missing_table_and_preserves_columns():
         )
 
     assert result.is_error
+    assert result.tables_with_columns == ("orders",)
     assert "missing: KeyError: 'unknown table: missing'" in result.content
     assert "orders\n- amount: INTEGER NOT NULL" in result.content
 
@@ -135,6 +139,7 @@ def test_explore_schema_batch_preserves_qualified_names_and_rejects_ambiguity():
     )
 
     assert result.is_error
+    assert result.tables_with_columns == ("sales.orders", "archive.orders")
     assert result.content.split("\n\n") == [
         "sales.orders\n- sold_at: date",
         "orders: ambiguous table. Include its schema name.",
@@ -155,6 +160,7 @@ def test_explore_schema_rejects_invalid_batch_input(args):
     _, ctx = _ctx()
     result = asyncio.run(ctx.tools.dispatch("explore_schema", args, ctx, "schema"))
     assert result.is_error
+    assert result.tables_with_columns == ()
 
 
 def test_term_custom_is_scope_local():

@@ -26,7 +26,13 @@ async def execute(ctx, calls):
         call_id = uuid.uuid4().hex
         logger.info("cli_tool_start tool=%s call_id=%s", call["name"], call_id)
         result = await ctx.tools.dispatch(call["name"], call["arguments"], ctx, call_id)
-        results.append(asdict(result))
+        results.append(
+            {
+                "call_id": result.call_id,
+                "content": result.content,
+                "is_error": result.is_error,
+            }
+        )
         if result.is_error:
             logger.warning("cli_tool_failed tool=%s call_id=%s", call["name"], call_id)
             break
