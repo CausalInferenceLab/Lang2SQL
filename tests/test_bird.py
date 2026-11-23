@@ -303,9 +303,11 @@ async def test_scores_one_condition_and_model_in_isolation(
             )
         user = messages[1]["content"]
         return response(
-            "```sql\nSELECT DISTINCT x FROM fixture ORDER BY x DESC\n```"
-            if "first" in user
-            else bad_submit,
+            (
+                "```sql\nSELECT DISTINCT x FROM fixture ORDER BY x DESC\n```"
+                if "first" in user
+                else bad_submit
+            ),
             model="provider-returned-id",
         )
 
@@ -358,7 +360,7 @@ async def test_resume_preserves_completed_and_interrupted_requests(prepared):
     async def answer(**kwargs):
         nonlocal calls
         calls += 1
-        return response("```sql\nSELECT x FROM fixture\n```")
+        return response("```sql\nSELECT 1\n```")
 
     first = await config(prepared, pause, stop)
     assert first["status"] == "interrupted" and first["completed"] == calls == 1
@@ -387,9 +389,13 @@ async def test_resume_preserves_completed_and_interrupted_requests(prepared):
                 snapshot={**snapshot, **change},
             )
     completed = await config(prepared, answer, asyncio.Event(), resume=True)
-    assert completed["completed"] == 2 and calls == 1
+    assert completed["completed"] == 2 and calls == 2
     assert existing.record_path.read_bytes() == original
-    assert orphan.read_result()["failure"]["reason"] == "interrupted"
+    assert orphan.read_result()["status"] == "predicted"
+    interrupted = read_json(
+        prepared.output / "interruptions" / str(second_id) / "1.json"
+    )
+    assert interrupted["calls"] == [{"status": "started", "usage": None}]
     assert not orphan.attempt_path.exists()
     await config(prepared, answer, asyncio.Event(), resume=True)
-    assert calls == 1
+    assert calls == 2
