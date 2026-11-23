@@ -7,6 +7,7 @@ import asyncio
 import json
 import os
 import signal
+from dotenv import load_dotenv
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from types import SimpleNamespace
@@ -120,6 +121,7 @@ def parser() -> argparse.ArgumentParser:
         "--db-revision", required=True, help="SQLite archive hash or image digest"
     )
     run_cmd.add_argument("--prepared", type=Path, required=True)
+    run_cmd.add_argument("--env-file", type=Path)
     run_cmd.add_argument("--condition", choices=CONDITIONS, required=True)
     run_cmd.add_argument(
         "--product-commit",
@@ -160,6 +162,8 @@ def main(argv: list[str] | None = None) -> int:
                     generate(args, profile, dry_run_transport, "", "scripted")
                 )
             else:
+                if args.env_file:
+                    load_dotenv(args.env_file, override=False)
                 key_env = profile["api_key_env"]
                 key = os.environ.get(key_env, "").strip()
                 if not key:

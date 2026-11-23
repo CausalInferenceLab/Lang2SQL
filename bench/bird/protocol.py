@@ -15,7 +15,8 @@ import lang2sql
 from bench.common.io import ProtocolError, digest, json_digest, read_json
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-BASELINE = "e0a7fb197558dd8845377ab9fd95222d595e8978"
+BASELINE = "fb1f36e9b0980c5e593d2fddb5ecc6607cd101d7"
+EVALUATOR_SOURCE = "1f47f2821559992717aeb23e1cd34ca489142300"
 CONDITIONS = ("A", "D", "B")
 DEFAULT_PROFILES = Path(__file__).with_name("models.example.json")
 TOOLS = ("run_sql", "explore_schema")
@@ -147,6 +148,7 @@ def settings(
         "manifest_digest": json_digest(manifest),
         "product_commit": product_commit,
         "git_head": git("rev-parse", "HEAD"),
+        "evaluator_source": EVALUATOR_SOURCE,
         "code_sha256": {
             path.relative_to(REPO_ROOT).as_posix(): digest(path)
             for path in source_paths
@@ -157,6 +159,7 @@ def settings(
             "sqlite": sqlite3.sqlite_version,
             "sqlalchemy": version("sqlalchemy"),
             "litellm": provider_version,
+            "openai": version("openai") if mode == "live" else None,
         },
         "provider_options": {"num_retries": 0},
         "budgets": asdict(budgets),

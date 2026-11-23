@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import time
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 from cryptography.fernet import Fernet
@@ -41,6 +42,8 @@ from .protocol import (
     check_settings,
     user_text,
 )
+from bench.common.recovery import RecoveryTrace
+
 from .records import CaseFiles
 
 
@@ -64,17 +67,6 @@ class CaseStore(SqliteStore):
     def kv_delete_prefix(self, scope: str, prefix: str) -> int:
         self._check_write()
         return super().kv_delete_prefix(scope, prefix)
-
-
-class RecordedTools(ToolRegistry):
-    def __init__(self):
-        super().__init__([RunSQL(), ExploreSchema()])
-        self.events: list[dict] = []
-
-    async def dispatch(self, name, args, ctx, call_id):
-        result = await super().dispatch(name, args, ctx, call_id)
-        self.events.append({"name": name, "arguments": args, **asdict(result)})
-        return result
 
 
 def prompt_evidence(
@@ -131,13 +123,16 @@ async def run_case(
     api_key: str,
 ) -> dict:
     started = time.monotonic()
+    started_at = datetime.now(timezone.utc).isoformat()
     condition = files.condition
     trace: dict = {}
     answer: str | None = None
     transcript: list[dict] = []
-    tools = RecordedTools()
+    tools = ToolRegistry([RunSQL(), ExploreSchema()])
     store = CaseStore()
     explorer = ReadOnlyExplorer(db, budgets.sql_timeout)
+    recovery = RecoveryTrace(explorer)
+    recovery.attach(tools)
     empty_section = seeded_section = ""
 
     def observe(wire: list[dict], specs: list[dict]) -> None:
@@ -146,8 +141,9 @@ async def run_case(
         )
 
     def save_attempt(calls: list[dict]) -> None:
-        files.save_attempt(trace, calls)
+        files.save_attempt(trace, calls, started_at=started_at)
 
+    save_attempt([])
     llm = MeasuredLLM(
         model=profile["model"],
         api_base=profile.get("api_base"),
@@ -201,7 +197,7 @@ async def run_case(
         ctx.tools = tools
         try:
             return await agent_loop(
-                ctx, user_text(case.question, case.evidence, condition)
+                ctx, user_text(case.question, case.evidence, condition), extract_final_sql=final_sql
             )
         finally:
             transcript.extend(asdict(message) for message in ctx.session.history())
@@ -209,6 +205,14 @@ async def run_case(
     result = {"status": "failed"}
     try:
         answer = await asyncio.wait_for(generate(), timeout=budgets.case_timeout)
+        if answer.startswith("(SQL withheld:"):
+            failed_call = next((call for call in reversed(llm.calls) if call["status"] == "error"), None)
+            if "model request failed" in answer and failed_call is not None:
+                raise ModelCallError(
+                    failed_call["error_reason"], failed_call["error_type"], failed_call["status_code"]
+                )
+            if len(llm.calls) >= budgets.max_calls:
+                raise CallBudgetExhausted
         if answer == "(reached max turns without a final answer)":
             raise CallBudgetExhausted
         result.update(status="predicted", sql=final_sql(answer))
@@ -233,12 +237,16 @@ async def run_case(
         store.close()
         await asyncio.to_thread(explorer.close)
     result.update(
+        started_at=started_at,
         first_request=trace or None,
         calls=llm.calls,
         seconds=time.monotonic() - started,
         answer=answer,
         transcript=transcript,
-        tools=tools.events,
+        tools=recovery.dispatches,
+        recovery=recovery.summarize(
+            llm.calls, transcript, final_sql, submitted=result["status"] == "predicted"
+        ),
     )
     return files.finish(result)
 
@@ -259,13 +267,15 @@ async def run_evaluation(
     output.mkdir(parents=True, exist_ok=resume)
     with lock_output(output):
         if resume:
+            original = read_json(output / "settings.json")
             if (
                 read_json(output / "manifest.json") != manifest
-                or read_json(output / "settings.json") != snapshot
+                or {**original, "git_head": snapshot["git_head"]} != snapshot
             ):
                 raise ProtocolError(
                     "Resume requires the original manifest and settings"
                 )
+            snapshot = original
             if (output / "status.json").exists() and read_json(output / "status.json")[
                 "status"
             ] == "blocked":
@@ -339,7 +349,7 @@ async def run_evaluation(
         pilot, rest = order[: budgets.pilot_questions], order[budgets.pilot_questions :]
         status("running")
         await batch(pilot)
-        if not stop.is_set() and not any(
+        if pilot and not stop.is_set() and not any(
             call["status"] == "ok"
             for question_id in pilot
             for call in records[question_id]["calls"]

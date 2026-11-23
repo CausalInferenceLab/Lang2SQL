@@ -14,6 +14,8 @@ from lang2sql.adapters.llm.openai_ import (
 )
 from lang2sql.core.types import Completion, Message, ToolSpec
 
+from .recovery import response_fields, tool_choice
+
 
 class ProviderResponse(Protocol):
     def model_dump(self) -> dict[str, Any]: ...
@@ -65,6 +67,16 @@ class MeasuredLLM:
     async def complete(
         self, messages: Sequence[Message], tools: Sequence[ToolSpec] = ()
     ) -> Completion:
+        return await self._complete(messages, tools)
+
+    async def complete_with_required_tool(
+        self, messages: Sequence[Message], tools: Sequence[ToolSpec], tool_name: str
+    ) -> Completion:
+        return await self._complete(messages, tools, required_tool=tool_name)
+
+    async def _complete(
+        self, messages: Sequence[Message], tools: Sequence[ToolSpec], *, required_tool=None
+    ) -> Completion:
         if len(self.calls) >= self.max_calls:
             raise CallBudgetExhausted
         wire = []
@@ -74,7 +86,8 @@ class MeasuredLLM:
                 if message.tool_calls
                 else None
             )
-            wire.append(saved if saved is not None else _encode_message(message))
+            encoded = _encode_message(message)
+            wire.append({**saved, "content": encoded["content"]} if saved else encoded)
         specs = [_encode_tool(tool) for tool in tools]
         if not self.calls:
             self.observe_first_request(wire, specs)
@@ -92,7 +105,11 @@ class MeasuredLLM:
             kwargs["reasoning_effort"] = self.reasoning_effort
         if specs:
             kwargs["tools"] = specs
-        entry = {"status": "started", "usage": None}
+            kwargs["tool_choice"] = tool_choice(required_tool)
+        entry = {
+            "status": "started", "usage": None, "tool_choice": kwargs.get("tool_choice"),
+            "harness": {"explore_schema", "run_sql"} <= {tool.name for tool in tools},
+        }
         self.calls.append(entry)
         self.save_attempt(self.calls)
         started = time.monotonic()
@@ -107,7 +124,7 @@ class MeasuredLLM:
                 usage=raw.get("usage"),
             )
             completion = _decode_completion(raw)
-            entry.update(status="ok", finish_reason=completion.finish_reason)
+            entry.update(status="ok", **response_fields(completion, tools))
             provider_message = raw["choices"][0]["message"]
             for call in completion.tool_calls:
                 self._provider_messages[call.id] = {
@@ -127,7 +144,7 @@ class MeasuredLLM:
             reason = "provider_timeout" if is_timeout else "provider_error"
             failure = ModelCallError(reason, type(error).__name__, status_code)
             entry.update(
-                status="error", error_type=failure.error_type, status_code=status_code
+                status="error", error_type=failure.error_type, status_code=status_code, error_reason=reason
             )
             raise failure from None
         finally:

@@ -44,10 +44,10 @@ class CaseFiles:
             raise ProtocolError(f"Record is incomplete: {self.record_path}")
         return record
 
-    def save_attempt(self, first_request: dict, calls: list[dict]) -> None:
+    def save_attempt(self, first_request: dict, calls: list[dict], *, started_at: str | None = None) -> None:
         write_json(
             self.attempt_path,
-            {**self.identity(), "first_request": first_request, "calls": calls},
+            {**self.identity(), "first_request": first_request, "calls": calls, "started_at": started_at},
         )
 
     def finish(self, record: dict) -> dict:
@@ -60,13 +60,11 @@ class CaseFiles:
         if self.record_path.exists():
             return self.read_result()
         if self.attempt_path.exists():
-            attempt = self._load(self.attempt_path)
-            return self.finish(
-                {
-                    **attempt,
-                    "status": "failed",
-                    "failure": {"stage": "generation", "reason": "interrupted"},
-                    "seconds": None,
-                }
-            )
+            self._load(self.attempt_path)
+            archive = self.root / "interruptions" / str(self.question_id)
+            archive.mkdir(parents=True, exist_ok=True)
+            number = 1
+            while (archive / f"{number}.json").exists():
+                number += 1
+            self.attempt_path.replace(archive / f"{number}.json")
         return None
