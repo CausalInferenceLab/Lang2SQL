@@ -23,3 +23,15 @@ class LLMPort(Protocol):
     ) -> Completion:
         """Run one completion. May return tool calls, a final answer, or both."""
         ...
+
+
+@runtime_checkable
+class RequiredToolLLMPort(LLMPort, Protocol):
+    """An LLM adapter that can require a specific tool on one request."""
+
+    async def complete_with_required_tool(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSpec],
+        tool_name: str,
+    ) -> Completion: ...

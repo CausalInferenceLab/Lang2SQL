@@ -71,8 +71,19 @@ class SqlAlchemyExplorer:
 
     def _describe_table_sync(self, name: str) -> Table:
         from sqlalchemy import inspect
+        from sqlalchemy.exc import NoSuchTableError
 
         insp = inspect(self._get_engine())
+        schema = self._schema
+        table_name = name.removeprefix(f"{schema}.") if schema else name
+        try:
+            columns = insp.get_columns(table_name, schema=schema)
+        except NoSuchTableError:
+            if table_name == name:
+                raise
+            # An identifier can also literally start with the schema prefix.
+            table_name = name
+            columns = insp.get_columns(table_name, schema=schema)
         cols = [
             Column(
                 name=c["name"],
@@ -80,9 +91,9 @@ class SqlAlchemyExplorer:
                 nullable=bool(c.get("nullable", True)),
                 description=c.get("comment") or "",
             )
-            for c in insp.get_columns(name, schema=self._schema)
+            for c in columns
         ]
-        return Table(name=name, schema=self._schema or "", columns=cols)
+        return Table(name=table_name, schema=schema or "", columns=cols)
 
     def _execute_sync(self, sql: str, limit: int) -> list[dict]:
         from sqlalchemy import text

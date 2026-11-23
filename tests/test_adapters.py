@@ -1,8 +1,4 @@
-"""Adapter tests — SqliteStore round trips, OpenAILLM offline behaviour, stub.
-
-No network: OpenAI is only checked for construction + the no-key RuntimeError.
-Async port methods are driven with ``asyncio.run``.
-"""
+"""Offline tests for SqliteStore, OpenAILLM, and the PostgreSQL stub."""
 
 from __future__ import annotations
 
@@ -15,7 +11,7 @@ from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.core.identity import Identity
 from lang2sql.core.ports.audit import AuditEvent
 from lang2sql.core.ports.explorer import ExplorerPort
-from lang2sql.core.types import Message, Role, ToolCall
+from lang2sql.core.types import Message, Role, ToolCall, ToolSpec
 from lang2sql.harness.session import Session
 
 
@@ -150,3 +146,31 @@ def test_openai_complete_without_key_raises() -> None:
     finally:
         if saved is not None:
             os.environ["OPENAI_API_KEY"] = saved
+
+
+def test_openai_requires_a_tool_on_one_request(monkeypatch) -> None:
+    requests = []
+
+    def post(payload):
+        requests.append(payload)
+        return {"choices": [{"message": {"content": "ok"}}]}
+
+    llm = OpenAILLM(api_key="test")
+    monkeypatch.setattr(llm, "_post", post)
+    messages = [Message(role=Role.USER, content="Show order amounts")]
+    tools = [ToolSpec(name="explore_schema", description="Show table columns")]
+
+    async def complete():
+        await llm.complete(messages, tools)
+        await llm.complete_with_required_tool(messages, tools, "explore_schema")
+        await llm.complete(messages)
+
+    asyncio.run(complete())
+    ordinary, forced, auxiliary = requests
+    assert "tool_choice" not in ordinary
+    assert ordinary["tools"] == forced["tools"]
+    assert forced["tool_choice"] == {
+        "type": "function",
+        "function": {"name": "explore_schema"},
+    }
+    assert "tool_choice" not in auxiliary and "tools" not in auxiliary
