@@ -9,8 +9,15 @@ HarnessContext.
 from __future__ import annotations
 
 import asyncio
+import sqlite3
+from contextlib import closing
 
+import pytest
+
+from lang2sql.adapters.db.d1_explorer import D1Explorer
+from lang2sql.adapters.db.postgres_explorer import PostgresExplorer
 from lang2sql.core.identity import Identity
+from lang2sql.core.ports.explorer import Column, Table
 from lang2sql.core.ports.safety import SafetyContext, Verdict
 from lang2sql.tenancy.concierge import ContextConcierge
 from lang2sql.tools.run_sql import RunSQL
@@ -56,6 +63,104 @@ def test_run_sql_tolerates_bad_limit():
     _, ctx = _ctx()
     res = asyncio.run(RunSQL().run({"sql": "SELECT 1", "limit": "demo"}, ctx))
     assert not res.is_error  # malformed limit must not crash the tool
+
+
+def test_explore_schema_batch_preserves_column_details_and_partial_results():
+    _, ctx = _ctx()
+
+    async def explore(args):
+        return await ctx.tools.dispatch("explore_schema", args, ctx, "schema")
+
+    listed = asyncio.run(explore({}))
+    single = asyncio.run(explore({"table": "orders"}))
+    batch = asyncio.run(
+        explore({"tables": ["public.orders", "missing", "orders", " users "]})
+    )
+    assert listed.content == "Tables:\n- public.orders\n- public.users"
+    assert listed.tables_with_columns == ()
+    assert not single.is_error
+    assert single.tables_with_columns == ("public.orders",)
+    assert batch.is_error
+    assert batch.tables_with_columns == ("public.orders", "public.users")
+    assert batch.content.startswith(single.content + "\n\n")
+    assert batch.content.count("public.orders\n") == 1
+    assert "missing: KeyError: 'unknown table: missing'" in batch.content
+    assert "public.users\n" in batch.content
+
+
+def test_explore_schema_d1_batch_reports_missing_table_and_preserves_columns():
+    _, ctx = _ctx()
+    with closing(sqlite3.connect(":memory:", check_same_thread=False)) as conn:
+        conn.execute("CREATE TABLE orders (amount INTEGER NOT NULL)")
+        conn.row_factory = sqlite3.Row
+
+        def transport(sql, params):
+            rows = [dict(row) for row in conn.execute(sql, params)]
+            return {"success": True, "result": [{"results": rows}]}
+
+        ctx.explorer = D1Explorer("acct", "db", transport=transport)
+        result = asyncio.run(
+            ctx.tools.dispatch(
+                "explore_schema", {"tables": ["missing", "orders"]}, ctx, "schema"
+            )
+        )
+
+    assert result.is_error
+    assert result.tables_with_columns == ("orders",)
+    assert "missing: KeyError: 'unknown table: missing'" in result.content
+    assert "orders\n- amount: INTEGER NOT NULL" in result.content
+
+
+def test_explore_schema_batch_preserves_qualified_names_and_rejects_ambiguity():
+    class MultiSchemaExplorer(PostgresExplorer):
+        tables = {
+            "sales.orders": Table("orders", "sales", [Column("sold_at", "date")]),
+            "archive.orders": Table(
+                "orders", "archive", [Column("archived_at", "date")]
+            ),
+        }
+
+        async def list_tables(self):
+            return list(self.tables.values())
+
+        async def describe_table(self, name):
+            return self.tables["sales.orders" if name == "orders" else name]
+
+    _, ctx = _ctx()
+    ctx.explorer = MultiSchemaExplorer("postgresql://ignored")
+
+    result = asyncio.run(
+        ctx.tools.dispatch(
+            "explore_schema",
+            {"tables": ["sales.orders", "orders", "archive.orders"]},
+            ctx,
+            "schema",
+        )
+    )
+
+    assert result.is_error
+    assert result.tables_with_columns == ("sales.orders", "archive.orders")
+    assert result.content.split("\n\n") == [
+        "sales.orders\n- sold_at: date",
+        "orders: ambiguous table. Include its schema name.",
+        "archive.orders\n- archived_at: date",
+    ]
+
+
+@pytest.mark.parametrize(
+    "args",
+    [
+        {"tables": []},
+        {"tables": "orders"},
+        {"tables": ["orders", " "]},
+        {"tables": ["orders"], "table": "users"},
+    ],
+)
+def test_explore_schema_rejects_invalid_batch_input(args):
+    _, ctx = _ctx()
+    result = asyncio.run(ctx.tools.dispatch("explore_schema", args, ctx, "schema"))
+    assert result.is_error
+    assert result.tables_with_columns == ()
 
 
 def test_term_custom_is_scope_local():

@@ -44,9 +44,23 @@ def test_catalog_and_real_sql(tmp_path):
     assert status == 0
     assert "run_sql" in {tool["name"] for tool in result["tools"]}
     status, result = invoke(
-        tmp_path, "call", "run_sql", "--args", '{"sql":"SELECT 42 AS answer"}'
+        tmp_path,
+        "call",
+        "run_sql",
+        "--args",
+        '{"sql":"SELECT COUNT(*) AS answer FROM orders"}',
     )
-    assert status == 0 and "42" in result["content"]
+    assert status == 0 and "answer\n---\n0" in result["content"]
+
+
+def test_explore_schema_preserves_its_public_result_shape(tmp_path):
+    status, result = invoke(
+        tmp_path, "call", "explore_schema", "--args", '{"tables":["orders"]}'
+    )
+    assert status == 0
+    assert set(result) == {"call_id", "content", "is_error"}
+    assert not result["is_error"]
+    assert result["content"] == "orders\n- amount: INTEGER"
 
 
 @pytest.mark.parametrize(
