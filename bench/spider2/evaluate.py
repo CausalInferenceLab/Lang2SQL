@@ -6,6 +6,11 @@ import asyncio
 import csv
 from collections import Counter
 import hashlib
+from contextlib import closing, contextmanager
+from datetime import datetime, timezone
+from importlib.metadata import version
+import platform
+import signal
 import importlib.util
 import json
 import logging
@@ -19,15 +24,18 @@ import sys
 import time
 from dataclasses import asdict
 
+import lang2sql
 from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 from lang2sql.core.identity import Identity
 from lang2sql.harness.loop import agent_loop
 from lang2sql.tenancy.concierge import ContextConcierge
 from .providers import MeasuredLLM
+from .recovery import RecoveryTrace
 
 logger = logging.getLogger(__name__)
 UPSTREAM_COMMIT = "cafb867313aab4e674652054198f383cf4018943"
-BASELINE_COMMIT = "e0a7fb1"
+BASELINE_COMMIT = "fb1f36e9b0980c5e593d2fddb5ecc6607cd101d7"
+EVALUATOR_SOURCE = "24cff8cb1126fc017d1c68389b76213858e3a2e6"
 INSTRUCTION = "\nReturn your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available."
 
 
@@ -158,10 +166,19 @@ def export_result(db: Path, sql: str, output: Path, timeout: float, max_rows: in
 
 
 async def run_case(case, root, db_dir, directory, profile, key, args):
+    ident = case["instance_id"]
+    attempt = directory / "attempts" / f"{ident}.json"
+    record_path = directory / "records" / f"{ident}.json"
+    started_at = datetime.now(timezone.utc).isoformat()
+
+    def save_attempt(calls):
+        write_json(attempt, {"instance_id": ident, "started_at": started_at, "calls": calls})
+
+    save_attempt([])
     from sqlalchemy import event
 
     started = time.monotonic()
-    llm = MeasuredLLM(profile, key, args.call_timeout, args.max_calls)
+    llm = MeasuredLLM(profile, key, args.call_timeout, args.max_calls, save_attempt=save_attempt)
     db = db_dir / (case["db"] + ".sqlite")
     explorer = SqlAlchemyExplorer("sqlite://")
     # Existing adapter/harness, but benchmark DB connections are physically read-only.
@@ -187,6 +204,8 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             user_id="benchmark", guild_id=case["instance_id"], channel_id="baseline"
         )
     )
+    recovery = RecoveryTrace(explorer)
+    recovery.attach(ctx.tools)
     prompt = case["question"]
     if case.get("external_knowledge"):
         prompt += (
@@ -201,12 +220,21 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
         profile=profile["name"],
         model=profile["model"],
         status="started",
+        started_at=started_at,
+        final_db_executions=0,
     )
+    stage = "generation"
     try:
-        answer = await asyncio.wait_for(agent_loop(ctx, prompt), args.case_timeout)
+        answer = await asyncio.wait_for(
+            agent_loop(ctx, prompt, extract_final_sql=final_sql), args.case_timeout
+        )
+        stage = "submission"
         record["answer"] = answer
         sql = final_sql(answer)
+        record["sql"] = sql
+        stage = "scoring"
         (directory / "sql" / f"{case['instance_id']}.sql").write_text(sql + "\n")
+        record["final_db_executions"] += 1
         record["rows"] = await asyncio.to_thread(
             export_result,
             db,
@@ -215,10 +243,25 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             args.sql_timeout,
             args.max_rows,
         )
-        record.update(status="predicted", sql=sql)
+        record.update(status="predicted")
     except Exception as exc:
         # Error text from providers may contain request secrets. Persist type only.
-        record.update(status="failed", error_type=type(exc).__name__)
+        sqlite_code = getattr(exc, "sqlite_errorname", None)
+        provider_error = any(call["status"] == "error" for call in llm.calls)
+        if stage == "scoring":
+            reason = "sql_timeout" if sqlite_code == "SQLITE_INTERRUPT" else "sql_error"
+        elif stage == "generation":
+            reason = "case_timeout" if isinstance(exc, TimeoutError) and not provider_error else "provider_error"
+        elif provider_error and "model request failed" in record.get("answer", ""):
+            stage, reason = "generation", "provider_error"
+        elif len(llm.calls) == args.max_calls and record.get("answer", "").startswith(("(SQL withheld:", "(reached max turns")):
+            stage, reason = "generation", "call_budget_exhausted"
+        else:
+            reason = "invalid_sql_format" if record.get("answer", "").strip() else "missing_sql"
+        record.update(
+            status="failed", error_type=type(exc).__name__,
+            failure={"stage": stage, "reason": reason, "sqlite_errorname": sqlite_code},
+        )
         logger.error(
             "case failed model=%s id=%s error=%s",
             profile["name"],
@@ -231,9 +274,14 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             calls=llm.calls,
             transcript=[asdict(m) for m in ctx.session.history()],
         )
-        write_json(directory / "records" / f"{case['instance_id']}.json", record)
+        record["tools"] = recovery.dispatches
+        record["recovery"] = recovery.summarize(
+            llm.calls, record["transcript"], final_sql, submitted="sql" in record
+        )
         concierge.store.close()
         await asyncio.to_thread(explorer._engine.dispose)
+    write_json(record_path, record)
+    attempt.unlink(missing_ok=True)
     logger.info(
         "case finished model=%s id=%s status=%s",
         profile["name"],
@@ -243,11 +291,19 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
 
 
 def validate_manifest(manifest, root, db_dir):
+    if subprocess.check_output(["git", "-C", str(root), "rev-parse", "HEAD"], text=True).strip() != UPSTREAM_COMMIT:
+        raise ValueError("Spider2 checkout does not match pinned commit")
     lite = root / "spider2-lite"
     if digest(lite / "spider2-lite.jsonl") != manifest["question_file_sha256"]:
         raise ValueError("Question file changed")
     if digest(lite / "evaluation_suite/evaluate.py") != manifest["evaluator_sha256"]:
         raise ValueError("Official evaluator changed")
+    gold = lite / "evaluation_suite/gold"
+    if digest(gold / "spider2lite_eval.jsonl") != manifest["gold_config_sha256"]:
+        raise ValueError("Gold evaluation settings changed")
+    for name, sha in manifest["gold_sha256"].items():
+        if digest(gold / "exec_result" / name) != sha:
+            raise ValueError("Gold result changed: " + name)
     for db, sha in manifest["db_sha256"].items():
         if digest(db_dir / (db + ".sqlite")) != sha:
             raise ValueError("Database hash changed: " + db)
@@ -273,46 +329,98 @@ def validate_manifest(manifest, root, db_dir):
             raise ValueError("Document hash changed")
 
 
+@contextmanager
+def lock_output(output):
+    with closing(sqlite3.connect(output / ".writer.sqlite", timeout=0)) as connection:
+        connection.execute("BEGIN IMMEDIATE")
+        yield
+
+
+def archive_attempts(directory):
+    for attempt in (directory / "attempts").glob("*.json"):
+        if (directory / "records" / attempt.name).exists():
+            attempt.unlink()
+            continue
+        archive = directory / "interruptions" / attempt.stem
+        archive.mkdir(parents=True, exist_ok=True)
+        number = 1
+        while (archive / f"{number}.json").exists():
+            number += 1
+        attempt.replace(archive / f"{number}.json")
+
+
 async def run(args, env: dict[str, str]):
     manifest = json.loads(args.manifest.read_text())
     profiles = json.loads(args.profiles.read_text())
     names = [p["name"] for p in profiles]
     if len(set(names)) != len(names):
         raise ValueError("Duplicate model profile names")
-    if subprocess.check_output(["git", "diff", BASELINE_COMMIT, "--", "src"]):
-        raise ValueError("Product source differs from the pinned baseline")
+    worktree = Path(__file__).resolve().parents[2]
+    if (
+        subprocess.check_output(["git", "diff", BASELINE_COMMIT, "--", "src/"])
+        or subprocess.check_output(["git", "ls-files", "--others", "--exclude-standard", "--", "src/"])
+        or Path(lang2sql.__file__).resolve() != worktree / "src/lang2sql/__init__.py"
+    ):
+        raise ValueError("Product source differs from the pinned worktree")
     validate_manifest(manifest, args.root, args.db_dir)
-    if args.output.exists():
-        raise ValueError(
-            "Output directory already exists; use a new run ID to prevent mixed results"
-        )
-    args.output.mkdir(parents=True)
-    write_json(args.output / "manifest.json", manifest)
-    write_json(
-        args.output / "settings.json",
-        dict(
-            profiles=profiles,
-            max_calls=args.max_calls,
-            call_timeout=args.call_timeout,
-            case_timeout=args.case_timeout,
-            sql_timeout=args.sql_timeout,
-            max_rows=args.max_rows,
-            concurrency=args.concurrency,
-            instruction=INSTRUCTION,
-            max_output_tokens=4096,
-            runner_sha256=digest(Path(__file__)),
-            provider_sha256=digest(Path(__file__).with_name("providers.py")),
-            git_commit=subprocess.check_output(
-                ["git", "rev-parse", "HEAD"], text=True
-            ).strip(),
-        ),
+    args.output.mkdir(parents=True, exist_ok=args.resume)
+    settings = dict(
+        profiles=profiles,
+        max_calls=args.max_calls,
+        call_timeout=args.call_timeout,
+        case_timeout=args.case_timeout,
+        sql_timeout=args.sql_timeout,
+        max_rows=args.max_rows,
+        concurrency=args.concurrency,
+        instruction=INSTRUCTION,
+        max_output_tokens=4096,
+        provider_options={"num_retries": 0},
+        runner_sha256=digest(Path(__file__)),
+        provider_sha256=digest(Path(__file__).with_name("providers.py")),
+        recovery_sha256=digest(Path(__file__).with_name("recovery.py")),
+        manifest_sha256=digest(args.manifest),
+        product_commit=BASELINE_COMMIT,
+        evaluator_source=EVALUATOR_SOURCE,
+        git_commit=subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
+        runtime={
+            "python": platform.python_version(), "sqlite": sqlite3.sqlite_version,
+            **{name: version(name) for name in ("litellm", "openai", "sqlalchemy")},
+        },
     )
+    with lock_output(args.output):
+        if args.resume:
+            original = json.loads((args.output / "settings.json").read_text())
+            if (
+                {**original, "git_commit": settings["git_commit"]} != settings
+                or json.loads((args.output / "manifest.json").read_text()) != manifest
+            ):
+                raise ValueError("Resume requires the original manifest, runtime and evaluator")
+        else:
+            write_json(args.output / "manifest.json", manifest)
+            write_json(args.output / "settings.json", settings)
+        loop = asyncio.get_running_loop()
+        stop = asyncio.Event()
+        for signum in (signal.SIGINT, signal.SIGTERM):
+            loop.add_signal_handler(signum, stop.set)
+        try:
+            await run_profiles(args, env, manifest, profiles, stop)
+        finally:
+            for signum in (signal.SIGINT, signal.SIGTERM):
+                loop.remove_signal_handler(signum)
+
+
+async def run_profiles(args, env, manifest, profiles, stop):
     for profile in profiles:
         if not re.fullmatch(r"[A-Za-z0-9_-]+", profile["name"]):
             raise ValueError("Unsafe profile name")
         directory = args.output / profile["name"]
-        for sub in ("sql", "csv", "records"):
-            (directory / sub).mkdir(parents=True)
+        for sub in ("sql", "csv", "records", "attempts"):
+            (directory / sub).mkdir(parents=True, exist_ok=True)
+        archive_attempts(directory)
+        status_path = directory / "status.json"
+        previous = json.loads(status_path.read_text()) if status_path.exists() else {}
+        if previous.get("status") == "completed":
+            continue
         key = env.get(profile["api_key_env"])
         if not key:
             write_json(
@@ -325,20 +433,30 @@ async def run(args, env: dict[str, str]):
                 profile["api_key_env"],
             )
             continue
-        semaphore = asyncio.Semaphore(args.concurrency)
-
-        async def bounded(case):
-            async with semaphore:
-                await run_case(
-                    case, args.root, args.db_dir, directory, profile, key, args
-                )
-
-        model_started = time.monotonic()
-        await asyncio.gather(*(bounded(case) for case in manifest["cases"]))
-        write_json(
-            directory / "status.json",
-            dict(status="completed", wall_seconds=time.monotonic() - model_started),
+        remaining = iter(
+            case for case in manifest["cases"]
+            if not (directory / "records" / f"{case['instance_id']}.json").exists()
         )
+        model_started = time.monotonic()
+        write_json(status_path, dict(status="running"))
+
+        async def worker():
+            while not stop.is_set() and (case := next(remaining, None)) is not None:
+                await run_case(case, args.root, args.db_dir, directory, profile, key, args)
+
+        await asyncio.gather(*(worker() for _ in range(args.concurrency)))
+        completed = sum(1 for _ in (directory / "records").glob("*.json"))
+        write_json(
+            status_path,
+            dict(
+                status="completed" if completed == len(manifest["cases"]) else "interrupted",
+                expected=len(manifest["cases"]),
+                completed=completed,
+                wall_seconds=previous.get("wall_seconds", 0) + time.monotonic() - model_started,
+            ),
+        )
+        if stop.is_set():
+            break
 
 
 def score(root: Path, output: Path):
@@ -448,7 +566,8 @@ def main():
             p.add_argument("--manifest", type=Path, required=True)
             p.add_argument("--profiles", type=Path, required=True)
             p.add_argument("--max-calls", type=int, default=8)
-            p.add_argument("--concurrency", type=int, default=2)
+            p.add_argument("--concurrency", type=int, default=4)
+            p.add_argument("--resume", action="store_true")
             p.add_argument("--call-timeout", type=float, default=120)
             p.add_argument("--case-timeout", type=float, default=480)
             p.add_argument("--sql-timeout", type=float, default=30)
