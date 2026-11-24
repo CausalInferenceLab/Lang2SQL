@@ -18,34 +18,55 @@ from .semantic_review import InvalidReview, review_sql
 from .sql_candidate import sql_from_answer
 
 
-async def check_final_sql(ctx: HarnessContext, candidate: str) -> str | None:
-    """Return actionable feedback, or None when the DB accepts the query."""
-    if ctx.explorer is None or ctx.safety is None:
-        return "Final SQL validation requires a DB connection and safety pipeline."
+@dataclass(frozen=True)
+class SubmissionCheck:
+    action: Literal["accept", "revise", "clarify", "withhold"]
+    detail: str = ""
 
-    policy = query_context(ctx.explorer)
-    decision = ctx.safety.evaluate(candidate, policy)
+
+async def check_final_sql(
+    ctx: HarnessContext, candidate: str
+) -> SubmissionCheck | None:
+    """Audit the DB check and return a repairable or terminal failure."""
     checked_sql = None
-    error = None
-    if decision.verdict is Verdict.BLOCK:
-        error = f"BLOCKED by {decision.layer}: {decision.reason}"
-    elif decision.verdict is Verdict.CONFIRM:
-        error = f"Needs confirmation: {decision.confirm_prompt}"
-    elif decision.verdict is Verdict.REWRITE and decision.sql != candidate:
-        error = f"The safety policy requires a revised submission: {decision.sql}"
+    failure = None
+    if (
+        ctx.explorer is None
+        or ctx.safety is None
+        or not getattr(ctx.explorer, "supports_query_validation", True)
+    ):
+        failure = SubmissionCheck(
+            "withhold",
+            "Final SQL validation requires a connected DB and safety pipeline.",
+        )
     else:
-        # The protective row cap is for the DB check only. SQLite prepares a
-        # plan without scanning the result set. Other explorers use a bounded read.
-        checked_sql = decision.sql
-        if policy.extras["dialect"] == "sqlite":
-            first = next(tokens(checked_sql, "sqlite"))
-            if first[0].upper() != "EXPLAIN":
-                checked_sql = "EXPLAIN QUERY PLAN " + checked_sql
-        try:
-            await ctx.explorer.execute(checked_sql, limit=1)
-        except Exception as exc:
-            # SQLAlchemy's orig is the driver's error without the statement echo.
-            error = f"{type(exc).__name__}: {getattr(exc, 'orig', exc)}"
+        policy = query_context(ctx.explorer)
+        decision = ctx.safety.evaluate(candidate, policy)
+        if decision.verdict is Verdict.BLOCK:
+            failure = SubmissionCheck(
+                "revise", f"BLOCKED by {decision.layer}: {decision.reason}"
+            )
+        elif decision.verdict is Verdict.CONFIRM:
+            failure = SubmissionCheck(
+                "revise", f"Needs confirmation: {decision.confirm_prompt}"
+            )
+        elif decision.verdict is Verdict.REWRITE and decision.sql != candidate:
+            failure = SubmissionCheck(
+                "revise",
+                f"The safety policy requires a revised submission: {decision.sql}",
+            )
+        else:
+            checked_sql = decision.sql
+            if policy.extras["dialect"] == "sqlite":
+                first = next(tokens(checked_sql, "sqlite"))
+                if first[0].upper() != "EXPLAIN":
+                    checked_sql = "EXPLAIN QUERY PLAN " + checked_sql
+            try:
+                await ctx.explorer.execute(checked_sql, limit=1)
+            except Exception as exc:
+                failure = SubmissionCheck(
+                    "revise", f"{type(exc).__name__}: {getattr(exc, 'orig', exc)}"
+                )
 
     if ctx.audit is not None:
         await ctx.audit.record(
@@ -56,11 +77,11 @@ async def check_final_sql(ctx: HarnessContext, candidate: str) -> str | None:
                 detail={
                     "candidate_sql": candidate,
                     "checked_sql": checked_sql,
-                    "error": error,
+                    "error": failure.detail if failure else None,
                 },
             )
         )
-    return error
+    return failure
 
 
 @dataclass
@@ -68,7 +89,7 @@ class SQLSubmission:
     """One proposed final query, owned by a single agent_loop invocation."""
 
     candidate_sql: str
-    output: Literal["sql", "result"]
+    output: Literal["sql", "result"] | None
     sql_answer: str
     execution: SQLExecution | None = None
 
@@ -77,17 +98,25 @@ class SQLSubmission:
             return self.sql_answer
         if self.execution is None:
             raise RuntimeError("result submission has no execution")
-        return self.execution.render(self.candidate_sql)
+        return self.execution.render()
 
 
 def read_submission(
     content: str,
     extract_final_sql: Callable[[str], str] | None,
 ) -> SQLSubmission | None:
+    if extract_final_sql is not None:
+        sql = extract_final_sql(content)
+        if not sql.strip():
+            raise ValueError("expected a complete final SQL query")
+        return SQLSubmission(sql, "sql", content)
+
     text = content.strip()
-    if text.startswith("```json") and text.endswith("```"):
-        text = text.removeprefix("```json").removesuffix("```").strip()
-    if extract_final_sql is None and text.startswith("{"):
+    if text.lower().startswith("```json"):
+        if not text.endswith("```"):
+            raise ValueError("incomplete JSON submission")
+        text = text[len("```json") : -len("```")].strip()
+    if text.startswith("{"):
         try:
             obj = json.loads(text)
         except ValueError as error:
@@ -104,25 +133,18 @@ def read_submission(
             raise ValueError("expected sql text and output of sql or result")
         return SQLSubmission(sql.strip(), output, sql.strip())
 
-    # A caller-supplied extractor owns the output format (e.g. BIRD's fenced SQL).
-    # Also preserve standalone SQL answers from existing model integrations.
-    sql = sql_from_answer(content, extract_final_sql)
-    return SQLSubmission(sql, "sql", content) if sql is not None else None
-
-
-@dataclass(frozen=True)
-class SubmissionCheck:
-    action: Literal["accept", "revise", "clarify", "withhold"]
-    detail: str = ""
+    # A draft by itself does not specify the output the user requested.
+    draft = sql_from_answer(content)
+    return SQLSubmission(draft, None, draft) if draft is not None else None
 
 
 async def check_submission(
     ctx: HarnessContext, question: str, context: list[str], submission: SQLSubmission
 ) -> SubmissionCheck:
     candidate = submission.candidate_sql
-    error = await check_final_sql(ctx, candidate)
-    if error is not None:
-        return SubmissionCheck("revise", error)
+    failure = await check_final_sql(ctx, candidate)
+    if failure is not None:
+        return failure
 
     try:
         review = await review_sql(ctx.llm, question, context, candidate)

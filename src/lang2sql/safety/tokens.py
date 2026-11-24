@@ -39,7 +39,7 @@ def tokens(sql: str, dialect: str = "") -> Iterator[re.Match[str]]:
                     value.startswith("--") and len(value) > 2 and not value[2].isspace()
                 )
                 or (token.lastgroup == "word" and re.search(r"\$\w*\$", value))
-                or value == "#"
+                or (value == "#" and dialect != "postgresql")
             ):
                 raise ValueError("unsupported SQL delimiter")
         if token.lastgroup != "trivia":

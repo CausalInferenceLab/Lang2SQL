@@ -211,7 +211,10 @@ async def test_run_sql_caps_rows_and_blocks_before_db(tmp_path, monkeypatch):
     sql = "SELECT 1 AS n UNION ALL SELECT 2 ORDER BY n; -- tail"
     result = await ctx.tools.dispatch("run_sql", {"sql": sql, "limit": 1}, ctx, "cap")
     capped = "SELECT 1 AS n UNION ALL SELECT 2 ORDER BY n\nLIMIT 1; -- tail"
-    assert result.content == f"1 row(s):\nn\n---\n1\nSQL: {capped}"
+    assert (
+        result.content
+        == f"1 row(s) fetched (row limit of 1 reached):\nn\n---\n1\nSQL: {capped}"
+    )
 
     async def unexpected_execute(*args):
         pytest.fail("blocked SQL reached the DB")

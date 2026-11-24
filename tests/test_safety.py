@@ -195,3 +195,20 @@ def test_row_limit_ignores_keywords_in_quoted_text_and_comments():
 def test_unterminated_tokens_block():
     for sql in ("SELECT 'unfinished", 'SELECT "unfinished', "SELECT 1 /* unfinished"):
         assert _verdict(sql) is Verdict.BLOCK
+
+
+def test_postgresql_json_path_operators_keep_statement_and_row_checks():
+    pipeline = SafetyPipeline()
+    postgres = SafetyContext(extras={"dialect": "postgresql"})
+    for operator in ("#>", "#>>"):
+        sql = f"SELECT payload {operator} '{{order,id}}' FROM events"
+        decision = pipeline.evaluate(sql, postgres)
+        assert decision.verdict is Verdict.PASS and decision.sql == sql + "\nLIMIT 1000"
+        assert pipeline.evaluate(sql + "; SELECT 1", postgres).verdict is Verdict.BLOCK
+        for dialect in ("mysql", ""):
+            assert (
+                pipeline.evaluate(
+                    sql, SafetyContext(extras={"dialect": dialect})
+                ).verdict
+                is Verdict.BLOCK
+            )

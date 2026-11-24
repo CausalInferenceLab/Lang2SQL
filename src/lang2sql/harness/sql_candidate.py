@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import re
-from typing import Callable
 
 _SQL_FENCE = re.compile(r"```sql[ \t]*\r?\n(.*?)```", re.IGNORECASE | re.DOTALL)
 _SQL_LABEL = re.compile(
-    r"^(?:\*\*)?(?:final\s+sql|최종\s*sql|sql)(?:\*\*)?\s*:(?:\*\*)?\s*",
+    r"^[ \t]*(?:#{1,6}[ \t]+)?(?:\*\*)?(?:final\s+sql|최종\s*sql|sql)(?:\*\*)?\s*:(?:\*\*)?\s*",
     re.IGNORECASE | re.MULTILINE,
 )
 _SENTENCE_END = re.compile(r"(?:[!?。！？]|(?<!\d)\.)$")
@@ -71,37 +70,36 @@ def is_database_query(sql: object) -> bool:
     return False
 
 
-def sql_from_answer(
-    answer: str, extract_final_sql: Callable[[str], str] | None
-) -> str | None:
-    """Extract a candidate from a standalone, optionally labeled SQL answer."""
-    if extract_final_sql is not None:
-        try:
-            return extract_final_sql(answer)
-        except ValueError:
-            return None
-
+def sql_from_answer(answer: str) -> str | None:
+    """Recognize draft SQL and reject malformed submissions marked as final."""
     answer = answer.strip()
-    label = _SQL_LABEL.search(answer)
-    if label and label.start():
-        # A label in prose introduces a fenced submission. Leave label-like
-        # text inside the submitted SQL (including multiline literals) intact.
-        if "```" in answer[: label.start()] or not _SQL_FENCE.fullmatch(
-            answer[label.end() :]
-        ):
-            label = None
-    if label:
-        answer = answer[label.end() :]
-    if block := _SQL_FENCE.fullmatch(answer):
-        return block[1].strip() if "```" not in block[1] else None
-    if "```" in answer:
-        return None
-    if label:
-        return answer
     bare = _query_shape(answer)
+    if _READ_QUERY.match(bare) and not _SENTENCE_END.search(bare):
+        return answer
+
+    # A label inside a fenced example is part of the example.
+    label = next(
+        (
+            m
+            for m in _SQL_LABEL.finditer(answer)
+            if answer[: m.start()].count("```") % 2 == 0
+        ),
+        None,
+    )
+    if label:
+        answer = answer[label.end() :].strip()
+    if label or re.match(r"^```sql\b", answer, re.IGNORECASE):
+        if block := _SQL_FENCE.fullmatch(answer):
+            sql = block[1].strip()
+            if sql and "```" not in sql:
+                return sql
+        elif answer and "```" not in answer:
+            return answer
+        raise ValueError("expected one complete final SQL submission")
+
     if _SENTENCE_END.search(bare):
         return None
-    if _READ_QUERY.match(bare) or re.match(
+    if re.match(
         r"^(?:INSERT\s+INTO|UPDATE\s+\S+\s+SET|DELETE\s+FROM|DROP\s+TABLE|"
         r"CREATE\s+TABLE|ALTER\s+TABLE|EXPLAIN)\b",
         bare,

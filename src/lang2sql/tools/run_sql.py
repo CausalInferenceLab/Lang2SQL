@@ -62,9 +62,10 @@ class RunSQL:
 class SQLExecution:
     executed_sql: str
     rows: list[dict]
+    row_limit: int
 
-    def render(self, display_sql: str | None = None) -> str:
-        sql = self.executed_sql if display_sql is None else display_sql
+    def render(self) -> str:
+        sql = self.executed_sql
         rows = self.rows
         if not rows:
             return f"(0 rows)\nSQL: {sql}"
@@ -72,8 +73,12 @@ class SQLExecution:
         lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
         for r in rows[:50]:
             lines.append(" | ".join(str(r.get(h, "")) for h in headers))
-        suffix = f"\n… ({len(rows)} rows total)" if len(rows) > 50 else ""
-        return f"{len(rows)} row(s):\n" + "\n".join(lines) + suffix + f"\nSQL: {sql}"
+        if len(rows) > 50:
+            lines.append("… (showing the first 50 rows)")
+        count = f"{len(rows)} row(s)"
+        if len(rows) >= self.row_limit:
+            count += f" fetched (row limit of {self.row_limit} reached)"
+        return f"{count}:\n" + "\n".join(lines) + f"\nSQL: {sql}"
 
 
 async def execute_read_query(
@@ -119,4 +124,4 @@ async def execute_read_query(
             )
         )
 
-    return SQLExecution(decision.sql, rows)
+    return SQLExecution(decision.sql, rows, limit)

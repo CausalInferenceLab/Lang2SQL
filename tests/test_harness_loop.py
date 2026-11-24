@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+import sqlite3
 
 import pytest
 
@@ -100,6 +101,9 @@ def test_scope_chain_orders_narrow_to_wide():
 
 
 class RecordingExplorer(PostgresExplorer):
+    # Simulate a connected explorer for tests of the model/tool call sequence.
+    supports_query_validation = True
+
     def __init__(self):
         super().__init__("postgresql://ignored")
         self.described = []
@@ -198,7 +202,7 @@ def test_run_sql_waits_for_columns_before_executing():
     ctx = _context_for(llm)
 
     answer = asyncio.run(agent_loop(ctx, "Show order amounts"))
-    assert "2 row(s):" in answer and answer.endswith("SQL: " + _SQL)
+    assert "2 row(s):" in answer and answer.endswith("SQL: " + _SQL + "\nLIMIT 1000")
     assert _choices(llm) == [None, _FORCED, None, None, None, None]
     assert "SQL withheld" in _tool_results(llm.requests[1])["sql"]
     assert "- amount: numeric" in _tool_results(llm.requests[2])["columns"]
@@ -210,16 +214,15 @@ def test_run_sql_waits_for_columns_before_executing():
 )
 def test_final_sql_is_withheld_until_the_model_has_columns(output):
     draft = output.format(sql=_STALE_SQL)
-    revised = output.format(sql=_SQL)
     llm = ScriptedOpenAI(
         _answer(draft),
         _calls(_SCHEMA),
-        _answer(revised),
+        _submission(_SQL, "sql"),
         _ACCEPT,
     )
     ctx = _context_for(llm)
 
-    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == revised
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
     assert _choices(llm) == [None, _FORCED, None, None]
     assert llm.requests[1]["messages"][-1] == {"role": "assistant", "content": draft}
     assert not any(_STALE_SQL in message.content for message in ctx.session.history())
@@ -269,10 +272,10 @@ def test_evaluator_uses_its_sql_output_contract():
 @pytest.mark.parametrize("schema_first", [True, False])
 def test_schema_and_sql_in_the_same_response_use_the_same_model_context(schema_first):
     batch = [_SCHEMA, _EXECUTE] if schema_first else [_EXECUTE, _SCHEMA]
-    llm = ScriptedOpenAI((_STALE_SQL, batch), _answer(_SQL), _ACCEPT)
+    llm = ScriptedOpenAI((_STALE_SQL, batch), _submission(_SQL, "sql"), _ACCEPT)
     ctx = _context_for(llm)
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
     assert _choices(llm) == [None, None, None]
     assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"]
     results = _tool_results(llm.requests[1])
@@ -281,7 +284,7 @@ def test_schema_and_sql_in_the_same_response_use_the_same_model_context(schema_f
     assert "SQL withheld" in results["sql"]
     ctx.session.compress()
     assert [message.content for message in ctx.session.history()] == [
-        "Show order amounts",
+        "Write the order amounts query",
         _SQL,
     ]
 
@@ -295,12 +298,12 @@ def test_recovery_rejects_list_only_legacy_and_empty_calls_and_uses_partial_succ
         _calls(("empty", "explore_schema", {"tables": []})),
         _calls(("failed", "explore_schema", {"tables": ["missing"]})),
         _calls(("partial", "explore_schema", {"tables": ["missing", "public.orders"]})),
-        _answer(_SQL),
+        _submission(_SQL, "sql"),
         _ACCEPT,
     )
     ctx = _context_for(llm, max_turns=9)
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
     assert _choices(llm) == [None, None, *([_FORCED] * 5), None, None]
     list_result, draft = llm.requests[2]["messages"][-2:]
     assert list_result["tool_call_id"] == "list"
@@ -328,7 +331,7 @@ def test_recovery_respects_existing_turn_budget(tables, reason):
         _answer(_STALE_SQL), _calls(("retry", "explore_schema", {"tables": tables}))
     )
     ctx = _context_for(llm, max_turns=2)
-    answer = asyncio.run(agent_loop(ctx, "Show order amounts"))
+    answer = asyncio.run(agent_loop(ctx, "Write the order amounts query"))
 
     assert reason in answer
     assert _STALE_SQL not in answer
@@ -343,7 +346,7 @@ def test_legacy_adapter_returns_reason_when_required_tool_choice_is_unavailable(
             return Completion(content=_STALE_SQL)
 
     ctx = _context_for(LegacyLLM())
-    answer = asyncio.run(agent_loop(ctx, "Show order amounts"))
+    answer = asyncio.run(agent_loop(ctx, "Write the order amounts query"))
 
     assert "model adapter cannot require schema lookup" in answer
     assert ctx.session.history()[-1].content == answer
@@ -361,12 +364,12 @@ def test_nested_table_sources_trigger_recovery(sql):
     llm = ScriptedOpenAI(
         _calls(("draft", "run_sql", {"sql": sql})),
         _calls(_SCHEMA),
-        _answer(_SQL),
+        _submission(_SQL, "sql"),
         _ACCEPT,
     )
     ctx = _context_for(llm)
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
     assert _choices(llm) == [None, _FORCED, None, None]
     assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"]
 
@@ -382,25 +385,25 @@ def test_schema_response_without_columns_requires_recovery():
         _calls(("empty", "explore_schema", {"table": "empty"})),
         _answer(_STALE_SQL),
         _calls(_SCHEMA),
-        _answer(_SQL),
+        _submission(_SQL, "sql"),
         _ACCEPT,
     )
     ctx = _context_for(llm)
     ctx.explorer = EmptyTableExplorer()
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
     assert "(no columns)" in _tool_results(llm.requests[1])["empty"]
     assert _choices(llm) == [None, None, _FORCED, None, None]
 
 
 def test_prompt_with_actual_columns_allows_sql_on_the_first_call():
     llm = ScriptedOpenAI(
-        _calls(("sql", "run_sql", {"sql": _SQL})), _answer(_SQL), _ACCEPT
+        _calls(("sql", "run_sql", {"sql": _SQL})), _submission(_SQL, "sql"), _ACCEPT
     )
     ctx = _context_for(llm)
     ctx.store.kv_set(ctx.identity.kv_scope, "schema_relationships", '["orders"]')
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
     assert _choices(llm) == [None, None, None]
     assert "- amount" in llm.requests[0]["messages"][0]["content"]
     assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"] * 2
@@ -409,17 +412,17 @@ def test_prompt_with_actual_columns_allows_sql_on_the_first_call():
 def test_column_results_are_scoped_to_the_current_user_turn():
     llm = ScriptedOpenAI(
         _calls(_SCHEMA),
-        _answer(_SQL),
+        _submission(_SQL, "sql"),
         _ACCEPT,
         _answer(_STALE_SQL),
         _calls(("next-turn-columns", "explore_schema", {"tables": ["orders"]})),
-        _answer(_SQL),
+        _submission(_SQL, "sql"),
         _ACCEPT,
     )
     ctx = _context_for(llm)
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
-    assert asyncio.run(agent_loop(ctx, "Show order amounts again")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query")) == _SQL
+    assert asyncio.run(agent_loop(ctx, "Write the order amounts query again")) == _SQL
     assert _choices(llm) == [None, None, None, None, _FORCED, None, None]
 
 
@@ -429,6 +432,7 @@ def test_column_results_are_scoped_to_the_current_user_turn():
         "Hello. How can I help?",
         "Which definition of revenue should I use?",
         f"For example, you can write:\n```sql\n{_SQL}\n```",
+        "Example output format:\n```text\nFinal SQL:\nSELECT 1\n```",
         "Select a date from the list.",
         "SELECT 'FROM orders' AS example",
         "SELECT EXTRACT(YEAR FROM CURRENT_DATE)",
@@ -438,11 +442,12 @@ def test_column_results_are_scoped_to_the_current_user_turn():
 )
 def test_general_answers_remain_automatic(answer):
     sql_answer = answer.startswith("SELECT ")
-    llm = ScriptedOpenAI(_answer(answer), _ACCEPT)
+    replies = [_submission(answer, "sql"), _ACCEPT] if sql_answer else []
+    llm = ScriptedOpenAI(_answer(answer), *replies)
     ctx = _context_for(llm)
 
     assert asyncio.run(agent_loop(ctx, "Help me understand my options")) == answer
-    assert len(llm.requests) == (2 if sql_answer else 1)
+    assert len(llm.requests) == (3 if sql_answer else 1)
     assert all("tool_choice" not in request for request in llm.requests)
 
 
@@ -454,7 +459,7 @@ def test_run_sql_allows_queries_without_table_sources():
     ctx = _context_for(llm)
 
     answer = asyncio.run(agent_loop(ctx, "Read the current year"))
-    assert answer == f"1 row(s):\nresult\n---\n1\nSQL: {sql}"
+    assert answer == f"1 row(s):\nresult\n---\n1\nSQL: {sql}\nLIMIT 1000"
     assert _choices(llm) == [None, None, None]
     assert ctx.explorer.executed == [sql + "\nLIMIT 1000"] * 3
 
@@ -489,24 +494,27 @@ def test_term_custom_and_enrich_keep_their_existing_calls():
 
 def test_cli_and_discord_natural_language_use_schema_recovery(monkeypatch, capsys):
     cli_model = ScriptedOpenAI(
-        _answer(_STALE_SQL), _calls(_SCHEMA), _answer(_SQL), _ACCEPT
+        _answer(_STALE_SQL), _calls(_SCHEMA), _submission(_SQL, "sql"), _ACCEPT
     )
     cli_concierge = ContextConcierge(llm=cli_model, explorer=RecordingExplorer())
     monkeypatch.setattr(app, "ContextConcierge", lambda: cli_concierge)
-    assert app.main(["Show", "order", "amounts"]) == 0
+    assert app.main(["Write", "the", "order", "amounts", "query"]) == 0
     assert capsys.readouterr().out == f"{_SQL}\n"
     assert _choices(cli_model) == [None, _FORCED, None, None]
-    assert cli_model.requests[0]["messages"][-1]["content"] == "Show order amounts"
+    assert (
+        cli_model.requests[0]["messages"][-1]["content"]
+        == "Write the order amounts query"
+    )
 
     discord_model = ScriptedOpenAI(
-        _answer(_STALE_SQL), _calls(_SCHEMA), _answer(_SQL), _ACCEPT
+        _answer(_STALE_SQL), _calls(_SCHEMA), _submission(_SQL, "sql"), _ACCEPT
     )
     concierge = ContextConcierge(llm=discord_model, explorer=RecordingExplorer())
     identity = Identity(user_id="tester", guild_id="shop", channel_id="analytics")
 
     async def run_discord():
         response = await CommandHandlers(concierge).query(
-            identity, "Show order amounts"
+            identity, "Write the order amounts query"
         )
         session = await concierge.store.load(identity.session_key())
         return response, session
@@ -515,14 +523,12 @@ def test_cli_and_discord_natural_language_use_schema_recovery(monkeypatch, capsy
     assert response.text == _SQL
     assert _choices(discord_model) == [None, _FORCED, None, None]
     assert [message.content for message in session.history()] == [
-        "Show order amounts",
+        "Write the order amounts query",
         _SQL,
     ]
 
 
 def _sqlite_context(tmp_path, llm, *, max_turns=8):
-    import sqlite3
-
     from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 
     path = tmp_path / "orders.db"
@@ -538,13 +544,18 @@ def test_final_db_error_allows_exploration_then_rechecks_the_revision(tmp_path):
     columns = _calls(("lookup", "explore_schema", {"tables": ["orders"]}))
     probe = _calls(("probe", "run_sql", {"sql": "SELECT DISTINCT status FROM orders"}))
     llm = ScriptedOpenAI(
-        columns, _answer(_STALE_SQL), columns, probe, _answer(_SQL), _ACCEPT
+        columns,
+        _submission(_STALE_SQL, "sql"),
+        columns,
+        probe,
+        _submission(_SQL, "sql"),
+        _ACCEPT,
     )
     ctx = _sqlite_context(tmp_path, llm)
 
     assert asyncio.run(agent_loop(ctx, "List the order amounts")) == _SQL
     feedback = llm.requests[2]["messages"][-2:]
-    assert feedback[0]["content"] == _STALE_SQL
+    assert json.loads(feedback[0]["content"])["sql"] == _STALE_SQL
     assert "no such column: guessed_amount" in feedback[1]["content"]
     assert {"run_sql", "explore_schema"} <= {
         tool["function"]["name"] for tool in llm.requests[2]["tools"]
@@ -564,7 +575,9 @@ def test_final_db_error_allows_exploration_then_rechecks_the_revision(tmp_path):
 
 
 def test_revised_sql_is_withheld_if_it_still_fails(tmp_path):
-    llm = ScriptedOpenAI(_answer("SELECT missing"), _answer("SELECT missing_again"))
+    llm = ScriptedOpenAI(
+        _submission("SELECT missing", "sql"), _answer("SELECT missing_again")
+    )
     ctx = _sqlite_context(tmp_path, llm)
     answer = asyncio.run(agent_loop(ctx, "Get an amount"))
     assert answer.startswith("(SQL withheld: revised SQL failed validation")
@@ -573,7 +586,7 @@ def test_revised_sql_is_withheld_if_it_still_fails(tmp_path):
 
 
 def test_no_calls_left_for_db_repair(tmp_path):
-    llm = ScriptedOpenAI(_answer("SELECT missing"))
+    llm = ScriptedOpenAI(_submission("SELECT missing", "sql"))
     ctx = _sqlite_context(tmp_path, llm, max_turns=1)
     answer = asyncio.run(agent_loop(ctx, "Get an amount"))
     assert "call budget exhausted" in answer
@@ -582,7 +595,7 @@ def test_no_calls_left_for_db_repair(tmp_path):
 
 def test_unsafe_submission_fails_before_db(tmp_path):
     llm = ScriptedOpenAI(
-        _answer("SQL: DROP TABLE orders"), _answer("SELECT 1"), _ACCEPT
+        _submission("DROP TABLE orders", "sql"), _submission("SELECT 1", "sql"), _ACCEPT
     )
     ctx = _sqlite_context(tmp_path, llm)
     assert asyncio.run(agent_loop(ctx, "Show one")) == "SELECT 1"
@@ -612,7 +625,9 @@ def test_semantic_review_requests_one_grounded_rewrite(tmp_path):
     revised = _SQL + " WHERE status = 'paid'"
     columns = _calls(("schema", "explore_schema", {"tables": ["orders"]}))
     final = f"```sql\n{revised}\n```"
-    llm = ScriptedOpenAI(columns, _answer(_SQL), _REVISE, _answer(final), _ACCEPT)
+    llm = ScriptedOpenAI(
+        columns, _submission(_SQL, "sql"), _REVISE, _answer(final), _ACCEPT
+    )
     ctx = _sqlite_context(tmp_path, llm, max_turns=5)
     asyncio.run(
         ctx.tools.dispatch(
@@ -628,7 +643,7 @@ def test_semantic_review_requests_one_grounded_rewrite(tmp_path):
     )
 
     answer = asyncio.run(agent_loop(ctx, question))
-    assert answer == final == ctx.session.history()[-1].content
+    assert answer == revised == ctx.session.history()[-1].content
     for request, sql in [(llm.requests[2], _SQL), (llm.requests[4], revised)]:
         assert "tools" not in request
         system, user = request["messages"]
@@ -639,7 +654,10 @@ def test_semantic_review_requests_one_grounded_rewrite(tmp_path):
         context = "\n".join(inputs["schema_and_definitions"])
         assert "paid orders only" in context and "- status: TEXT" in context
     rewrite = llm.requests[3]["messages"]
-    assert "missing WHERE" in rewrite[-1]["content"] and rewrite[-2]["content"] == _SQL
+    assert (
+        "missing WHERE" in rewrite[-1]["content"]
+        and json.loads(rewrite[-2]["content"])["sql"] == _SQL
+    )
     events = asyncio.run(ctx.audit.query("analyst"))
     assert {
         e.detail["candidate_sql"] for e in events if e.action == "check_final_sql"
@@ -657,10 +675,10 @@ def test_reviewer_can_request_schema_lookup_before_new_submission(tmp_path):
         )
     )
     llm = ScriptedOpenAI(
-        _answer("SELECT 1"),
+        _submission("SELECT 1", "sql"),
         needs_schema,
         _calls(("columns", "explore_schema", {"tables": ["orders"]})),
-        _answer(_SQL),
+        _submission(_SQL, "sql"),
         _ACCEPT,
     )
     ctx = _sqlite_context(tmp_path, llm, max_turns=5)
@@ -682,7 +700,9 @@ def test_reviewer_can_request_schema_lookup_before_new_submission(tmp_path):
     ],
 )
 def test_shared_review_and_rewrite_budget(tmp_path, budget, reason):
-    llm = ScriptedOpenAI(_answer("SELECT 1"), _REVISE, _answer("SELECT 2"))
+    llm = ScriptedOpenAI(
+        _submission("SELECT 1", "sql"), _REVISE, _submission("SELECT 2", "sql")
+    )
     ctx = _sqlite_context(tmp_path, llm, max_turns=budget)
     answer = asyncio.run(agent_loop(ctx, "Show a paid amount"))
     assert "SQL withheld: call budget exhausted" in answer and reason in answer
@@ -690,7 +710,9 @@ def test_shared_review_and_rewrite_budget(tmp_path, budget, reason):
 
 
 def test_one_rewrite_shared_across_db_and_semantic_checks(tmp_path):
-    llm = ScriptedOpenAI(_answer("SELECT missing"), _answer("SELECT 2"), _REVISE)
+    llm = ScriptedOpenAI(
+        _submission("SELECT missing", "sql"), _submission("SELECT 2", "sql"), _REVISE
+    )
     ctx = _sqlite_context(tmp_path, llm)
     answer = asyncio.run(agent_loop(ctx, "Show a paid amount"))
     assert answer.startswith("(SQL withheld: revised SQL failed validation")
@@ -707,7 +729,7 @@ def test_one_rewrite_shared_across_db_and_semantic_checks(tmp_path):
     ],
 )
 def test_malformed_review_withholds_sql(tmp_path, review):
-    llm = ScriptedOpenAI(_answer("SELECT 1"), review)
+    llm = ScriptedOpenAI(_submission("SELECT 1", "sql"), review)
     ctx = _sqlite_context(tmp_path, llm)
     answer = asyncio.run(agent_loop(ctx, "Show one"))
     assert answer.startswith("(SQL withheld: incomplete semantic review")
@@ -721,7 +743,7 @@ def test_review_provider_failure_withholds_sql(tmp_path):
                 raise RuntimeError("provider unavailable")
             return super()._post(payload)
 
-    ctx = _sqlite_context(tmp_path, FailingReview(_answer("SELECT 1")))
+    ctx = _sqlite_context(tmp_path, FailingReview(_submission("SELECT 1", "sql")))
     answer = asyncio.run(agent_loop(ctx, "Show one"))
     assert "model request failed during semantic review" in answer
 
@@ -729,7 +751,7 @@ def test_review_provider_failure_withholds_sql(tmp_path):
 def test_review_asks_for_one_missing_business_definition(tmp_path):
     question = "Which statuses count as recognized revenue?"
     llm = ScriptedOpenAI(
-        _answer("SELECT 1"),
+        _submission("SELECT 1", "sql"),
         _answer(json.dumps({"status": "clarify", "question": question})),
     )
     ctx = _sqlite_context(tmp_path, llm)
@@ -743,7 +765,7 @@ def test_auxiliary_tool_model_calls_share_review_budget(tmp_path):
     llm = ScriptedOpenAI(
         _calls(("enrich", "enrich_schema", {})),
         _answer('{"columns": {}, "relationships": []}'),
-        _answer("SELECT 1"),
+        _submission("SELECT 1", "sql"),
     )
     ctx = _sqlite_context(tmp_path, llm, max_turns=3)
     answer = asyncio.run(agent_loop(ctx, "Inspect the schema then show one"))
@@ -756,10 +778,10 @@ def test_answer_to_review_clarification_reaches_next_review(tmp_path):
     question = "Which statuses count as recognized?"
     definition = "Only paid orders."
     llm = ScriptedOpenAI(
-        _answer("SELECT 1"),
+        _submission("SELECT 1", "sql"),
         _answer(json.dumps({"status": "clarify", "question": question})),
         _calls(("schema", "explore_schema", {"tables": ["orders"]})),
-        _answer("SELECT sum(amount) FROM orders WHERE status = 'paid'"),
+        _submission("SELECT sum(amount) FROM orders WHERE status = 'paid'", "sql"),
         _ACCEPT,
     )
     ctx = _sqlite_context(tmp_path, llm)
@@ -775,10 +797,15 @@ def test_answer_to_review_clarification_reaches_next_review(tmp_path):
 
 def test_sql_labeled_after_prose_is_checked(tmp_path):
     submitted = "Here is the result.\n\nFinal SQL:\n```sql\nSELECT missing\n```"
-    llm = ScriptedOpenAI(_answer(submitted), _answer("SELECT 1"), _ACCEPT)
+    llm = ScriptedOpenAI(
+        _answer(submitted),
+        _submission("SELECT missing", "result"),
+        _submission("SELECT 1"),
+        _ACCEPT,
+    )
     ctx = _sqlite_context(tmp_path, llm)
-    assert asyncio.run(agent_loop(ctx, "Show one")) == "SELECT 1"
-    assert "no such column: missing" in llm.requests[1]["messages"][-1]["content"]
+    assert "\n1\nSQL: SELECT 1" in asyncio.run(agent_loop(ctx, "Show one"))
+    assert "no such column: missing" in llm.requests[2]["messages"][-1]["content"]
 
 
 def test_result_belongs_to_reviewed_sql_not_probe_or_rejected_draft(tmp_path):
@@ -795,7 +822,7 @@ def test_result_belongs_to_reviewed_sql_not_probe_or_rejected_draft(tmp_path):
     )
     ctx = _sqlite_context(tmp_path, llm)
     answer = asyncio.run(agent_loop(ctx, "Show the total"))
-    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}"
+    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}\nLIMIT 1000"
     assert ctx.session.history()[-1].content == answer
     assert [
         json.loads(llm.requests[i]["messages"][-1]["content"])["sql"] for i in (3, 5)
@@ -815,7 +842,7 @@ def test_failed_result_execution_uses_same_repair_and_output_mode(tmp_path):
     ctx = _sqlite_context(tmp_path, llm)
     answer = asyncio.run(agent_loop(ctx, "Show the total"))
     assert "integer overflow" in llm.requests[2]["messages"][-1]["content"]
-    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}"
+    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}\nLIMIT 1000"
 
 
 def test_sql_only_and_result_state_are_scoped_to_one_request(tmp_path):
@@ -829,7 +856,10 @@ def test_sql_only_and_result_state_are_scoped_to_one_request(tmp_path):
     )
     ctx = _sqlite_context(tmp_path, llm)
     assert asyncio.run(agent_loop(ctx, "Write the query")) == sql
-    assert asyncio.run(agent_loop(ctx, "Show the rows")) == f"(0 rows)\nSQL: {next_sql}"
+    assert (
+        asyncio.run(agent_loop(ctx, "Show the rows"))
+        == f"(0 rows)\nSQL: {next_sql}\nLIMIT 1000"
+    )
     events = asyncio.run(ctx.audit.query("analyst"))
     assert [e.detail["sql"] for e in events if e.action == "run_sql"] == [
         next_sql + "\nLIMIT 1000"
@@ -869,7 +899,7 @@ def test_discord_displays_only_the_result_from_the_accepted_candidate():
     answer = asyncio.run(
         CommandHandlers(concierge).query(Identity(user_id="tester"), "Get the total")
     )
-    assert answer.text == f"1 row(s):\ntotal\n---\n42\nSQL: {final}"
+    assert answer.text == f"1 row(s):\ntotal\n---\n42\nSQL: {final}\nLIMIT 1000"
 
 
 def test_malformed_submission_requests_correction_before_using_results(tmp_path):
@@ -878,12 +908,21 @@ def test_malformed_submission_requests_correction_before_using_results(tmp_path)
     ctx = _sqlite_context(tmp_path, llm)
     assert (
         asyncio.run(agent_loop(ctx, "Get the count"))
-        == f"1 row(s):\nn\n---\n7\nSQL: {sql}"
+        == f"1 row(s):\nn\n---\n7\nSQL: {sql}\nLIMIT 1000"
     )
     assert "expected sql text" in llm.requests[1]["messages"][-1]["content"]
 
 
-def test_truncated_sql_draft_cannot_select_the_output_mode(tmp_path):
+@pytest.mark.parametrize(
+    "draft",
+    [
+        "SELECT 9",
+        "최종 SQL:\n```sql\nSELECT missing",
+        "```sql\nSELECT missing",
+        "다음과 같습니다.\n```sql\nSELECT missing",
+    ],
+)
+def test_truncated_sql_draft_cannot_select_the_output_mode(tmp_path, draft):
     class TruncatedFirstReply(ScriptedOpenAI):
         def _post(self, payload):
             response = super()._post(payload)
@@ -892,11 +931,135 @@ def test_truncated_sql_draft_cannot_select_the_output_mode(tmp_path):
             return response
 
     sql = "SELECT 42 AS total"
-    llm = TruncatedFirstReply(_answer("SELECT 9"), _submission(sql), _ACCEPT)
+    llm = TruncatedFirstReply(_answer(draft), _submission(sql), _ACCEPT)
     ctx = _sqlite_context(tmp_path, llm)
     answer = asyncio.run(agent_loop(ctx, "Show the total"))
-    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {sql}"
+    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {sql}\nLIMIT 1000"
     events = asyncio.run(ctx.audit.query("analyst"))
     assert [
         e.detail["candidate_sql"] for e in events if e.action == "check_final_sql"
     ] == [sql]
+
+
+@pytest.mark.parametrize(
+    "draft",
+    [
+        "최종 SQL:\n```sql\nSELECT missing\n```\n설명 한 줄.",
+        "설명입니다.\n  Final SQL:\n```sql\nSELECT missing",
+        "## Final SQL:\n```sql\nSELECT missing\n```\nOne more line.",
+    ],
+)
+def test_malformed_final_sql_requires_resubmission(tmp_path, draft):
+    llm = ScriptedOpenAI(
+        _answer(draft), _answer("Done."), _submission("SELECT 42"), _ACCEPT
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    answer = asyncio.run(agent_loop(ctx, "결과를 보여줘"))
+    assert (
+        "expected one complete final SQL submission"
+        in llm.requests[1]["messages"][-1]["content"]
+    )
+    assert answer == "1 row(s):\n42\n---\n42\nSQL: SELECT 42\nLIMIT 1000"
+    assert draft not in [m.content for m in ctx.session.history()]
+    events = asyncio.run(ctx.audit.query("analyst"))
+    assert [
+        e.detail["candidate_sql"] for e in events if e.action == "check_final_sql"
+    ] == ["SELECT 42"]
+    assert [e.detail["candidate_sql"] for e in events if e.action == "review_sql"] == [
+        "SELECT 42"
+    ]
+
+
+def test_budget_exhausted_on_malformed_first_submission(tmp_path):
+    draft = "최종 SQL:\n```sql\nSELECT missing"
+    ctx = _sqlite_context(tmp_path, ScriptedOpenAI(_answer(draft)), max_turns=1)
+    answer = asyncio.run(agent_loop(ctx, "결과를 보여줘"))
+    assert "SQL withheld" in answer and "SELECT missing" not in answer
+    assert asyncio.run(ctx.audit.query("analyst")) == []
+
+
+@pytest.mark.parametrize("output", ["result", "sql"])
+def test_labeled_query_after_probe_requires_output_mode(tmp_path, output):
+    final = "SELECT 42 AS total"
+    draft = f"합계는 9입니다.\nFinal SQL:\n```sql\n{final}\n```"
+    llm = ScriptedOpenAI(
+        _calls(("probe", "run_sql", {"sql": "SELECT 9"})),
+        _answer(draft),
+        _submission(final, output),
+        _ACCEPT,
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    question = "합계를 보여줘" if output == "result" else "합계를 구하는 SQL만 줘"
+    answer = asyncio.run(agent_loop(ctx, question))
+    feedback = llm.requests[2]["messages"][-1]["content"]
+    assert '"output":"sql"' in feedback and '"output":"result"' in feedback
+    review = json.loads(llm.requests[3]["messages"][-1]["content"])
+    assert review["question"] == question and review["sql"] == final
+    events = asyncio.run(ctx.audit.query("analyst"))
+    executed = [e.detail["sql"] for e in events if e.action == "run_sql"]
+    if output == "result":
+        assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}\nLIMIT 1000"
+        assert executed == [final + "\nLIMIT 1000", "SELECT 9\nLIMIT 1000"]
+    else:
+        assert answer == final
+        assert executed == ["SELECT 9\nLIMIT 1000"]
+
+
+def test_disconnected_concierge_withholds_sql_and_records_failed_check(monkeypatch):
+    monkeypatch.setattr("lang2sql.tenancy.concierge.explorer_from_env", lambda: None)
+    llm = ScriptedOpenAI(_submission("SELECT nonexistent_column"))
+    ctx = asyncio.run(
+        ContextConcierge(llm=llm).build_context(Identity(user_id="analyst"))
+    )
+    answer = asyncio.run(agent_loop(ctx, "결과를 보여줘"))
+    assert "SQL withheld" in answer and "connected DB" in answer
+    events = asyncio.run(ctx.audit.query("analyst"))
+    assert [e.action for e in events] == ["check_final_sql"]
+    assert events[0].detail["checked_sql"] is None
+    assert "connected DB" in events[0].detail["error"]
+    assert len(llm.requests) == 1
+
+
+def test_ask_user_before_sql_preserves_request_through_session_storage(tmp_path):
+    original = "지역별 주문 금액의 합계"
+    clarify = "어떤 결제 상태를 포함할까요?"
+    definition = "결제 완료만"
+    llm = ScriptedOpenAI(
+        _calls(("ask", "ask_user", {"question": clarify})),
+        _submission("SELECT 42"),
+        _ACCEPT,
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    assert asyncio.run(agent_loop(ctx, original)) == f"❓ Awaiting user: {clarify}"
+    ctx.session.compress()
+    asyncio.run(ctx.store.save(ctx.identity.session_key(), ctx.session))
+    ctx.session = asyncio.run(ctx.store.load(ctx.identity.session_key()))
+    asyncio.run(agent_loop(ctx, definition))
+    inputs = json.loads(llm.requests[-1]["messages"][-1]["content"])
+    assert inputs["question"] == original
+    assert any(
+        clarify in item and definition in item
+        for item in inputs["schema_and_definitions"]
+    )
+
+
+@pytest.mark.parametrize("limit_clause", ["", " LIMIT 1200"])
+def test_result_reports_executed_sql_and_fetch_limit(tmp_path, limit_clause):
+    sql = "SELECT amount FROM orders" + limit_clause
+    llm = ScriptedOpenAI(
+        _calls(("cols", "explore_schema", {"tables": ["orders"]})),
+        _submission(sql),
+        _ACCEPT,
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    with sqlite3.connect(tmp_path / "orders.db") as db:
+        db.executemany(
+            "INSERT INTO orders(amount) VALUES (?)", ((n,) for n in range(1500))
+        )
+    answer = asyncio.run(agent_loop(ctx, "금액 목록을 보여줘"))
+    events = asyncio.run(ctx.audit.query("analyst"))
+    executed = next(e.detail["sql"] for e in events if e.action == "run_sql")
+    assert executed == (sql if limit_clause else sql + "\nLIMIT 1000")
+    assert answer.endswith("SQL: " + executed)
+    assert "1000 row(s) fetched (row limit of 1000 reached)" in answer
+    assert "showing the first 50 rows" in answer and "rows total" not in answer

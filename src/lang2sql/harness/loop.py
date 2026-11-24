@@ -86,6 +86,11 @@ async def agent_loop(
 
     submission: SQLSubmission | None = None
     submission_required = False
+    submission_instruction = (
+        SUBMIT_SQL
+        if extract_final_sql is None
+        else "Resubmit in the requested SQL format."
+    )
 
     while model.remaining > 0:
         # Every tool call in this response was authored with the same context.
@@ -133,13 +138,16 @@ async def agent_loop(
                 history.extend(
                     [
                         assistant,
-                        Message(role=Role.USER, content=str(exc) + ". " + SUBMIT_SQL),
+                        Message(
+                            role=Role.USER,
+                            content=str(exc) + ". " + submission_instruction,
+                        ),
                     ]
                 )
                 continue
             if completion.finish_reason == "length" and (
                 proposed is not None
-                or submission is not None
+                or "```sql" in completion.content.lower()
                 or sql_withheld
                 or submission_required
             ):
@@ -154,24 +162,20 @@ async def agent_loop(
                 )
                 continue
             if proposed is not None:
-                if submission is not None:
+                if submission is not None and submission.output is not None:
                     # Rewriting SQL cannot change what this request should return.
                     proposed.output = submission.output
                 submission = proposed
+                submission_required = True
             candidate = proposed.candidate_sql if proposed else None
             if not model_has_columns and is_database_query(candidate):
                 sql_withheld = True
                 history.append(assistant)
                 continue
-            if proposed is None and (
-                submission_required
-                or submission is not None
-                or (sql_withheld and extract_final_sql is not None)
-            ):
-                if extract_final_sql is None:
-                    history.extend(
-                        [assistant, Message(role=Role.USER, content=SUBMIT_SQL)]
-                    )
+            if submission_required and (proposed is None or proposed.output is None):
+                history.extend(
+                    [assistant, Message(role=Role.USER, content=submission_instruction)]
+                )
                 continue
             if proposed is not None:
                 check = await check_submission(
@@ -241,7 +245,6 @@ async def agent_loop(
                 call.name == "ask_user"
                 and not result.is_error
                 and extract_final_sql is None
-                and (submission_required or submission is not None)
             ):
                 clarification = result.content
             tables_with_columns.update(result.tables_with_columns)

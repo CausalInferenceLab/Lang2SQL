@@ -18,7 +18,7 @@ SUBMIT_SQL = (
     '{"sql":"...", "output":"result"}. Use "output":"sql" if the user asks for '
     "the SQL itself. Use run_sql for exploration. The harness will review the "
     "submitted query and return the requested output. Answer general questions "
-    "normally and use ask_user if you need clarification after exploring."
+    "normally and use ask_user if you need clarification."
 )
 
 
