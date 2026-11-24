@@ -23,9 +23,10 @@ from typing import TYPE_CHECKING, Any
 from ..core.ports.tool import ToolPort
 from ..core.types import Message, Role, ToolResult, ToolSpec
 from .semantic_federation import (
-    FedEntry,
     _KV_PREFIX as _SEMFED_PREFIX,
-    _kv_key as _semfed_kv_key,
+)
+from .semantic_federation import (
+    FedEntry,
     _parse_synonyms,
 )
 
@@ -101,7 +102,7 @@ class OrgSetupTool(ToolPort):
             },
         )
 
-    async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
+    async def run(self, args: dict[str, Any], ctx: HarnessContext) -> ToolResult:
         if ctx.store is None:
             return ToolResult(call_id="", content="❌ KV store 미설정", is_error=True)
 
@@ -242,8 +243,8 @@ class OrgSetupTool(ToolPort):
                 synonyms=synonyms,
                 inferred=True,
             )
-            kv_key = _semfed_kv_key(term, layer, entity)
-            ctx.store.kv_set(scope, kv_key, entry.to_json())
+            if not entry.save_text(ctx.store, scope):
+                continue
             syn_str = f" (= {', '.join(synonyms)})" if synonyms else ""
             saved_terms.append(f"- **{term}**{syn_str}: {definition} 🤖")
 

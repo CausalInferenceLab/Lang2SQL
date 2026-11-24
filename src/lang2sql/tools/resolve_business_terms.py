@@ -9,8 +9,9 @@ from dataclasses import asdict
 
 from ..core.ports.audit import AuditEvent
 from ..core.types import ToolResult, ToolSpec
+from .bound_metric import query_metric
 from .run_sql import RunSQL
-from .semantic_federation import _load_all, _resolve_entry
+from .semantic_federation import FedEntry, _load_all, _resolve_entry
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +120,7 @@ class ResolveBusinessTerms:
                 {
                     "definition_check_id": token,
                     "definitions": definitions,
-                    "instruction": "Use these exact definitions. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.",
+                    "instruction": "For oracle_view use run_sql with period_start and exclusive period_end only; ask if the period is unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.",
                 },
                 ensure_ascii=False,
             ),
@@ -141,16 +142,21 @@ class DefinitionCheckedSQL:
             name=original.name,
             description=(
                 "Execute SQL only after resolve_business_terms returned exact confirmed definitions. "
+                "For an oracle_view definition omit sql and provide period_start and exclusive period_end (YYYY-MM-DD). "
                 "Use the returned definition_check_id; never guess a missing definition. "
                 + original.description
             ),
             parameters={
                 **params,
                 "properties": {
-                    **params["properties"],
+                    **{
+                        k: v
+                        for k, v in params["properties"].items()
+                        if k != "metric_term"
+                    },
                     "definition_check_id": {"type": "string"},
                 },
-                "required": [*params["required"], "definition_check_id"],
+                "required": ["definition_check_id"],
             },
         )
 
@@ -170,6 +176,14 @@ class DefinitionCheckedSQL:
             return await self.resolver.reject(
                 ctx, "Definitions or identity changed; resolve again"
             )
+        if any(d.get("oracle_view") for d in definitions):
+            if len(definitions) != 1:
+                return await self.resolver.reject(
+                    ctx, "Query one bound metric at a time"
+                )
+            return await query_metric(ctx, FedEntry(**definitions[0]), args)
+        if not args.get("sql") or "period_start" in args or "period_end" in args:
+            return await self.resolver.reject(ctx, "Text definitions require SQL")
         return await self.sql.run(
             {k: v for k, v in args.items() if k != "definition_check_id"}, ctx
         )

@@ -13,7 +13,7 @@ from typing import TYPE_CHECKING, Any
 from ..core.ports.ingestion import CandidateKind, SemanticCandidate
 from ..core.types import ToolResult, ToolSpec
 from ..tools.ingest_doc import PENDING_PREFIX
-from ..tools.semantic_federation import FedEntry, _kv_key, _validate_layer
+from ..tools.semantic_federation import FedEntry, _validate_layer
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -67,7 +67,7 @@ class ConfirmIngest:
             },
         )
 
-    async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
+    async def run(self, args: dict[str, Any], ctx: HarnessContext) -> ToolResult:
         ref = (args.get("ref") or "").strip()
         accept = (args.get("accept") or "all").strip()
         layer_raw = (args.get("layer") or "team").strip()
@@ -127,12 +127,8 @@ class ConfirmIngest:
                 kind=cand.kind.value,
                 applies_to=cand.applies_to,
             )
-            ctx.store.kv_set(
-                kv_scope,
-                _kv_key(entry.term, entry.layer, entry.entity),
-                entry.to_json(),
-            )
-            registered.append(entry.term)
+            if entry.save_text(ctx.store, kv_scope):
+                registered.append(entry.term)
 
         ctx.store.kv_delete(kv_scope, pending_key)
 

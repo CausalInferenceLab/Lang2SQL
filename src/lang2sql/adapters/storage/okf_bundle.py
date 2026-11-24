@@ -44,9 +44,8 @@ from typing import TYPE_CHECKING
 import yaml
 
 from ...tools.semantic_federation import (
-    FedEntry,
     _KV_PREFIX,
-    _kv_key,
+    FedEntry,
 )
 
 if TYPE_CHECKING:
@@ -71,7 +70,7 @@ class OkfBundle:
     # Public API
     # ------------------------------------------------------------------
 
-    def export(self, store: "SqliteStore", kv_scope: str) -> int:
+    def export(self, store: SqliteStore, kv_scope: str) -> int:
         """KV에서 모든 FedEntry를 읽어 .md 파일로 저장. 저장된 파일 수 반환."""
         raw = store.kv_list_prefix(kv_scope, _KV_PREFIX + ":")
         count = 0
@@ -86,7 +85,7 @@ class OkfBundle:
             count += 1
         return count
 
-    def import_(self, store: "SqliteStore", kv_scope: str) -> int:
+    def import_(self, store: SqliteStore, kv_scope: str) -> int:
         """번들의 .md 파일을 읽어 KV로 복원. 로드된 항목 수 반환."""
         count = 0
         for md_file in self.base_dir.rglob("*.md"):
@@ -95,9 +94,8 @@ class OkfBundle:
             entry = _md_to_entry(md_file)
             if entry is None:
                 continue
-            key = _kv_key(entry.term, entry.layer, entry.entity)
-            store.kv_set(kv_scope, key, entry.to_json())
-            count += 1
+            if entry.save_text(store, kv_scope):
+                count += 1
         return count
 
     # ------------------------------------------------------------------
