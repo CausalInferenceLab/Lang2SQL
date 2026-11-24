@@ -881,3 +881,22 @@ def test_malformed_submission_requests_correction_before_using_results(tmp_path)
         == f"1 row(s):\nn\n---\n7\nSQL: {sql}"
     )
     assert "expected sql text" in llm.requests[1]["messages"][-1]["content"]
+
+
+def test_truncated_sql_draft_cannot_select_the_output_mode(tmp_path):
+    class TruncatedFirstReply(ScriptedOpenAI):
+        def _post(self, payload):
+            response = super()._post(payload)
+            if len(self.requests) == 1:
+                response["choices"][0]["finish_reason"] = "length"
+            return response
+
+    sql = "SELECT 42 AS total"
+    llm = TruncatedFirstReply(_answer("SELECT 9"), _submission(sql), _ACCEPT)
+    ctx = _sqlite_context(tmp_path, llm)
+    answer = asyncio.run(agent_loop(ctx, "Show the total"))
+    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {sql}"
+    events = asyncio.run(ctx.audit.query("analyst"))
+    assert [
+        e.detail["candidate_sql"] for e in events if e.action == "check_final_sql"
+    ] == [sql]

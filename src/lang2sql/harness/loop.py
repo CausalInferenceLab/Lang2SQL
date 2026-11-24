@@ -137,6 +137,22 @@ async def agent_loop(
                     ]
                 )
                 continue
+            if completion.finish_reason == "length" and (
+                proposed is not None
+                or submission is not None
+                or sql_withheld
+                or submission_required
+            ):
+                submission_required = True
+                history.append(
+                    Message(
+                        role=Role.USER,
+                        content=(
+                            "The response was truncated. Submit the complete query in the requested format."
+                        ),
+                    )
+                )
+                continue
             if proposed is not None:
                 if submission is not None:
                     # Rewriting SQL cannot change what this request should return.
@@ -146,10 +162,6 @@ async def agent_loop(
             if not model_has_columns and is_database_query(candidate):
                 sql_withheld = True
                 history.append(assistant)
-                continue
-            if (sql_withheld or submission_required or submission is not None) and (
-                completion.finish_reason == "length" or not completion.content.strip()
-            ):
                 continue
             if proposed is None and (
                 submission_required

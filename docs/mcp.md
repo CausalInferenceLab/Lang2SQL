@@ -3,12 +3,9 @@
 Codex or Claude Code owns the conversation and tool-calling loop. This optional
 stdio server forwards calls to Lang2SQL's existing tool registry; it does not run
 `agent_loop`, instantiate an LLM provider, or require an OpenAI API key.
-The host keeps the original question, candidate SQL and requested output together
-for each task. It reviews the candidate against the schema and business definitions.
-For a data answer, the host sends that SQL to `run_sql` and associates the returned
-rows with the matching tool call. For a SQL-only answer, it returns the reviewed
-candidate. Exploratory calls have their own results. The server's per-call log ID
-identifies a single invocation.
+The CLI/Discord harness, core ports, SQL safety pipeline and existing tools are
+unchanged. `HarnessContext` is reused with an inert session and an LLM that raises
+if called. Concrete dependencies are assembled separately under `tenancy/tool_runtime.py`.
 
 ## Install and connect
 
