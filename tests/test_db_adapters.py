@@ -158,3 +158,20 @@ def test_d1_rejects_unsafe_identifier():
     exp = D1Explorer("acct", "db", token="t", transport=_d1_transport)
     with pytest.raises(ValueError, match="unsafe table identifier"):
         asyncio.run(exp.describe_table("users; DROP TABLE x"))
+
+
+@pytest.mark.asyncio
+async def test_view_discovery_and_qualified_columns(tmp_path):
+    from sqlalchemy import create_engine, text
+
+    db = tmp_path / "views.db"
+    engine = create_engine(f"sqlite:///{db}")
+    with engine.begin() as conn:
+        conn.execute(text("CREATE TABLE orders (amount INTEGER)"))
+        conn.execute(text("CREATE VIEW net_sales AS SELECT amount FROM orders"))
+    exp = SqlAlchemyExplorer(f"sqlite:///{db}", schema="main")
+    objects = {t.name: t for t in await exp.list_tables()}
+    assert objects["orders"].kind == "table"
+    assert objects["net_sales"].kind == "view"
+    view = await exp.describe_table("main.net_sales")
+    assert view.kind == "view" and [c.name for c in view.columns] == ["amount"]

@@ -70,6 +70,12 @@ async def bind_view(ctx, term, layer, definition, raw):
     await audit(
         ctx, "oracle_binding_saved", {"term": term, "layer": layer, **entry.oracle_view}
     )
+    logger.info(
+        "oracle_binding_saved term=%s layer=%s actor=%s",
+        term,
+        layer,
+        ctx.identity.user_id,
+    )
     return entry.oracle_view
 
 
@@ -119,6 +125,9 @@ async def query_metric(ctx, entry, args):
             content=f"Oracle metric unavailable: {reason}. Reconfirm the view and period; do not substitute raw-table SQL.",
         )
     await audit(ctx, "oracle_metric_query", detail)
+    logger.info(
+        "oracle_metric_query term=%s scope=%s", entry.term, ctx.identity.session_key()
+    )
     return ToolResult(
         call_id="",
         content=json.dumps({**detail, "rows": rows}, ensure_ascii=False, default=str),

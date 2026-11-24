@@ -29,6 +29,7 @@ class Table:
     schema: str = "public"
     columns: list[Column] = field(default_factory=list)
     description: str = ""
+    kind: str = "table"
 
     @property
     def qualified(self) -> str:

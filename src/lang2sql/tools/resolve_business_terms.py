@@ -120,7 +120,7 @@ class ResolveBusinessTerms:
                 {
                     "definition_check_id": token,
                     "definitions": definitions,
-                    "instruction": "For oracle_view use run_sql with period_start and exclusive period_end only; ask if the period is unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.",
+                    "instruction": "For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.",
                 },
                 ensure_ascii=False,
             ),

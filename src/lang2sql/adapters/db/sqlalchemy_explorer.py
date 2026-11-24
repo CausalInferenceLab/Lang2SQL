@@ -87,8 +87,12 @@ class SqlAlchemyExplorer:
             "" if (not self._schema or self._schema == default) else effective
         )
         return [
-            Table(name=t, schema=display_schema)
-            for t in insp.get_table_names(schema=self._schema)
+            Table(name=name, schema=display_schema, kind=kind)
+            for kind, names in (
+                ("table", insp.get_table_names(schema=self._schema)),
+                ("view", insp.get_view_names(schema=self._schema)),
+            )
+            for name in sorted(names)
         ]
 
     def _describe_table_sync(self, name: str) -> Table:
@@ -97,6 +101,9 @@ class SqlAlchemyExplorer:
         insp = inspect(self._get_engine())
         if self._schema and name.upper().startswith(self._schema.upper() + "."):
             name = name[len(self._schema) + 1 :]
+        if self.dialect == "oracle":
+            name = self._get_engine().dialect.normalize_name(name)
+        kind = "view" if name in insp.get_view_names(schema=self._schema) else "table"
         cols = [
             Column(
                 name=c["name"],
@@ -106,7 +113,7 @@ class SqlAlchemyExplorer:
             )
             for c in insp.get_columns(name, schema=self._schema)
         ]
-        return Table(name=name, schema=self._schema or "", columns=cols)
+        return Table(name=name, schema=self._schema or "", columns=cols, kind=kind)
 
     def _execute_sync(self, sql: str, limit: int) -> list[dict]:
         from sqlalchemy import text
