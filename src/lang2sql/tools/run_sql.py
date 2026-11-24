@@ -11,8 +11,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
-from ..core.ports.safety import SafetyContext, Verdict
+from ..core.ports.safety import Verdict
 from ..core.types import ToolResult, ToolSpec
+from ..safety.pipeline import query_context
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -65,10 +66,7 @@ class RunSQL:
 
         if limit <= 0:
             limit = 1000
-        safety_ctx = SafetyContext(
-            row_limit=limit, extras={"dialect": getattr(ctx.explorer, "dialect_name", "")}
-        )
-        decision = ctx.safety.evaluate(sql, safety_ctx)
+        decision = ctx.safety.evaluate(sql, query_context(ctx.explorer, limit))
         if decision.verdict == Verdict.BLOCK:
             return ToolResult(
                 call_id="",

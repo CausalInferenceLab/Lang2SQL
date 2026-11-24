@@ -14,6 +14,7 @@ from typing import Callable
 from ..core.ports.llm import RequiredToolLLMPort
 from ..core.types import Message, Role, ToolResult, ToolSpec
 from .context import HarnessContext
+from .final_sql import check_final_sql
 from .sql_candidate import is_database_query, sql_from_answer
 from .system_prompt import build_system_prompt
 
@@ -71,8 +72,11 @@ async def agent_loop(
     schema_spec = next((spec for spec in specs if spec.name == _SCHEMA_TOOL), None)
     tables_with_columns = system.tables_with_columns
     sql_withheld = False
-    deferred_answer: tuple[int, Message] | None = None
+    history = (
+        ctx.session.history()
+    )  # Includes transient validation feedback for this turn.
     failure: str | None = None
+    revision_requested = False
 
     for _ in range(ctx.max_turns):
         # Every tool call in this response was authored with the same context.
@@ -83,11 +87,6 @@ async def agent_loop(
             prompt += "\n\n" + (
                 f"{_SQL_WITHHELD} {_NEEDS_SCHEMA}" if needs_recovery else _REWRITE_SQL
             )
-        history = ctx.session.history()
-        if deferred_answer is not None:
-            # Keep the rejected draft available to the model for schema selection.
-            index, draft = deferred_answer
-            history.insert(index, draft)
         messages = [Message(role=Role.SYSTEM, content=prompt), *history]
 
         try:
@@ -104,7 +103,7 @@ async def agent_loop(
             else:
                 completion = await ctx.llm.complete(messages, specs)
         except Exception as exc:
-            if not sql_withheld:
+            if not sql_withheld and not revision_requested:
                 raise
             step = "schema lookup" if needs_recovery else "SQL rewrite"
             failure = f"model request failed during {step}: {type(exc).__name__}"
@@ -118,25 +117,40 @@ async def agent_loop(
         if not completion.tool_calls:
             if needs_recovery:
                 continue
-            if not model_has_columns and is_database_query(
-                sql_from_answer(completion.content, extract_final_sql)
-            ):
+            candidate = sql_from_answer(completion.content, extract_final_sql)
+            if not model_has_columns and is_database_query(candidate):
                 sql_withheld = True
-                deferred_answer = (len(history), assistant)
+                history.append(assistant)
                 continue
-            if sql_withheld and (
+            if (sql_withheld or revision_requested) and (
                 completion.finish_reason == "length"
                 or not completion.content.strip()
                 or (
-                    extract_final_sql is not None
-                    and sql_from_answer(completion.content, extract_final_sql) is None
+                    (revision_requested or extract_final_sql is not None)
+                    and candidate is None
                 )
             ):
                 continue
+            if candidate is not None:
+                error = await check_final_sql(ctx, candidate)
+                if error is not None:
+                    if revision_requested:
+                        failure = f"revised SQL failed validation: {error}"
+                        break
+                    repair_feedback = (
+                        f"Final SQL failed validation: {error}\n"
+                        "Use explore_schema or run_sql if needed, then submit one corrected query."
+                    )
+                    revision_requested = True
+                    history.extend(
+                        [assistant, Message(role=Role.USER, content=repair_feedback)]
+                    )
+                    continue
             ctx.session.add(assistant)
             return completion.content
 
         ctx.session.add(assistant)
+        history.append(assistant)
         for call in completion.tool_calls:
             if needs_recovery and (
                 call.name != _SCHEMA_TOOL
@@ -164,16 +178,18 @@ async def agent_loop(
                     call.name, call.arguments, ctx, call.id
                 )
             tables_with_columns.update(result.tables_with_columns)
-            ctx.session.add(
-                Message(
-                    role=Role.TOOL,
-                    content=result.content,
-                    tool_call_id=result.call_id,
-                    name=call.name,
-                )
+            tool_message = Message(
+                role=Role.TOOL,
+                content=result.content,
+                tool_call_id=result.call_id,
+                name=call.name,
             )
+            ctx.session.add(tool_message)
+            history.append(tool_message)
 
-    if not sql_withheld:
+    if revision_requested and failure is None:
+        failure = "call budget exhausted before receiving a validated revision"
+    if not sql_withheld and failure is None:
         return "(reached max turns without a final answer)"
     if failure is None:
         failure = (

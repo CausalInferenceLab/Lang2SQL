@@ -24,6 +24,7 @@ from ...core.identity import Identity
 from ...core.ports.frontend import OutboundMessage
 from ...core.types import Role
 from ...harness.loop import agent_loop
+from ...harness.sql_candidate import sql_from_answer
 from ...tenancy.concierge import ContextConcierge
 from .render import render_answer
 
@@ -70,7 +71,16 @@ class CommandHandlers:
         await self._concierge.store.save(identity.session_key(), ctx.session)
 
         suffix = ""
-        if sql_queries:
+        final_sql = sql_from_answer(answer, None)
+        if answer.startswith("(SQL withheld:"):
+            return render_answer(answer)
+        if final_sql is not None:
+            sql_results = [
+                result.rsplit("\nSQL: ", 1)[0]
+                for sql, result in zip(sql_queries, sql_results)
+                if sql == final_sql
+            ][-1:]
+        elif sql_queries:
             suffix += "\n\n**SQL:**\n```sql\n" + "\n\n".join(sql_queries) + "\n```"
         if sql_results:
             suffix += "\n\n**결과:**\n```\n" + "\n\n".join(sql_results) + "\n```"

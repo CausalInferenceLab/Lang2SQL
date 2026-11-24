@@ -103,7 +103,12 @@ class SqlAlchemyExplorer:
         from sqlalchemy import text
 
         with self._get_engine().connect() as conn:
-            result = conn.execute(text(sql))
+            # SQLite receives the literal candidate, including colon-prefixed
+            # text inside strings which text() would interpret as bound parameters.
+            if self.dialect_name == "sqlite":
+                result = conn.exec_driver_sql(sql)
+            else:
+                result = conn.execute(text(sql))
             if not result.returns_rows:
                 return []
             rows = result.mappings().fetchmany(limit)

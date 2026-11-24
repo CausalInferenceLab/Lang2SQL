@@ -31,18 +31,21 @@ _TABLE_SOURCE = re.compile(
 )
 
 
-def is_database_query(sql: object) -> bool:
-    """Recognize a table source in a read query without resolving SQL names."""
-    if not isinstance(sql, str):
-        return False
-
+def _query_shape(sql: str) -> str:
     def mask(match: re.Match[str]) -> str:
         token = match[0]
         if token.startswith(("--", "/*", "'")):
             return " "
         return " identifier "
 
-    bare = _COMMENTS_AND_QUOTES.sub(mask, sql).strip()
+    return _COMMENTS_AND_QUOTES.sub(mask, sql).strip()
+
+
+def is_database_query(sql: object) -> bool:
+    """Recognize a table source in a read query without resolving SQL names."""
+    if not isinstance(sql, str):
+        return False
+    bare = _query_shape(sql)
     if not _READ_QUERY.match(bare):
         return False
 
@@ -78,9 +81,21 @@ def sql_from_answer(
         except ValueError:
             return None
 
-    answer = _SQL_LABEL.sub("", answer.strip(), count=1)
+    answer, labeled = _SQL_LABEL.subn("", answer.strip(), count=1)
     if block := _SQL_FENCE.fullmatch(answer):
         return block[1].strip() if "```" not in block[1] else None
-    if "```" in answer or _SENTENCE_END.search(answer):
+    if "```" in answer:
         return None
-    return answer
+    if labeled:
+        return answer
+    bare = _query_shape(answer)
+    if _SENTENCE_END.search(bare):
+        return None
+    if _READ_QUERY.match(bare) or re.match(
+        r"^(?:INSERT\s+INTO|UPDATE\s+\S+\s+SET|DELETE\s+FROM|DROP\s+TABLE|"
+        r"CREATE\s+TABLE|ALTER\s+TABLE|EXPLAIN)\b",
+        bare,
+        re.IGNORECASE,
+    ):
+        return answer
+    return None

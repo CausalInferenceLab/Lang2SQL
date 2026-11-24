@@ -268,7 +268,7 @@ def test_schema_and_sql_in_the_same_response_use_the_same_model_context(schema_f
 
     assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
     assert _choices(llm) == [None, None]
-    assert ctx.explorer.executed == []
+    assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"]
     results = _tool_results(llm.requests[1])
     assert list(results) == [call[0] for call in batch]
     assert "- amount: numeric" in results["columns"]
@@ -358,7 +358,7 @@ def test_nested_table_sources_trigger_recovery(sql):
 
     assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
     assert _choices(llm) == [None, _FORCED, None]
-    assert ctx.explorer.executed == []
+    assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"]
 
 
 def test_schema_response_without_columns_requires_recovery():
@@ -390,7 +390,7 @@ def test_prompt_with_actual_columns_allows_sql_on_the_first_call():
     assert asyncio.run(agent_loop(ctx, "Show order amounts")) == _SQL
     assert _choices(llm) == [None, None]
     assert "- amount" in llm.requests[0]["messages"][0]["content"]
-    assert len(ctx.explorer.executed) == 1
+    assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"] * 2
 
 
 def test_column_results_are_scoped_to_the_current_user_turn():
@@ -497,3 +497,74 @@ def test_cli_and_discord_natural_language_use_schema_recovery(monkeypatch, capsy
         "Show order amounts",
         _SQL,
     ]
+
+
+def _sqlite_context(tmp_path, llm, *, max_turns=8):
+    import sqlite3
+
+    from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
+
+    path = tmp_path / "orders.db"
+    with sqlite3.connect(path) as db:
+        db.execute("CREATE TABLE orders(amount INTEGER, status TEXT)")
+    explorer = SqlAlchemyExplorer(f"sqlite:///file:{path}?mode=ro&uri=true")
+    concierge = ContextConcierge(llm=llm, explorer=explorer, max_turns=max_turns)
+    ctx = asyncio.run(concierge.build_context(Identity(user_id="analyst")))
+    return ctx
+
+
+def test_final_db_error_allows_exploration_then_rechecks_the_revision(tmp_path):
+    columns = _calls(("lookup", "explore_schema", {"tables": ["orders"]}))
+    probe = _calls(("probe", "run_sql", {"sql": "SELECT DISTINCT status FROM orders"}))
+    llm = ScriptedOpenAI(columns, _answer(_STALE_SQL), columns, probe, _answer(_SQL))
+    ctx = _sqlite_context(tmp_path, llm)
+
+    assert asyncio.run(agent_loop(ctx, "List the order amounts")) == _SQL
+    feedback = llm.requests[2]["messages"][-2:]
+    assert feedback[0]["content"] == _STALE_SQL
+    assert "no such column: guessed_amount" in feedback[1]["content"]
+    assert {"run_sql", "explore_schema"} <= {
+        tool["function"]["name"] for tool in llm.requests[2]["tools"]
+    }
+    events = asyncio.run(ctx.audit.query("analyst"))
+    checks = [event.detail for event in events if event.action == "check_final_sql"]
+    assert len(checks) == 2
+    assert any(
+        check["error"] and check["candidate_sql"] == _STALE_SQL for check in checks
+    )
+    assert any(
+        check["checked_sql"] == f"EXPLAIN QUERY PLAN {_SQL}\nLIMIT 1000"
+        and check["error"] is None
+        for check in checks
+    )
+    assert ctx.session.history()[-1].content == _SQL
+
+
+def test_revised_sql_is_withheld_if_it_still_fails(tmp_path):
+    llm = ScriptedOpenAI(_answer("SELECT missing"), _answer("SELECT missing_again"))
+    ctx = _sqlite_context(tmp_path, llm)
+    answer = asyncio.run(agent_loop(ctx, "Get an amount"))
+    assert answer.startswith("(SQL withheld: revised SQL failed validation")
+    assert "no such column" in answer
+    assert len(llm.requests) == 2
+
+
+def test_no_calls_left_for_db_repair(tmp_path):
+    llm = ScriptedOpenAI(_answer("SELECT missing"))
+    ctx = _sqlite_context(tmp_path, llm, max_turns=1)
+    answer = asyncio.run(agent_loop(ctx, "Get an amount"))
+    assert "call budget exhausted" in answer
+    assert len(llm.requests) == 1
+
+
+def test_unsafe_submission_fails_before_db(tmp_path):
+    llm = ScriptedOpenAI(_answer("SQL: DROP TABLE orders"), _answer("SELECT 1"))
+    ctx = _sqlite_context(tmp_path, llm)
+    assert asyncio.run(agent_loop(ctx, "Show one")) == "SELECT 1"
+    assert "BLOCKED by whitelist" in llm.requests[1]["messages"][-1]["content"]
+    checks = asyncio.run(ctx.audit.query("analyst"))
+    assert any(
+        e.detail["candidate_sql"] == "DROP TABLE orders"
+        and e.detail["checked_sql"] is None
+        for e in checks
+    )

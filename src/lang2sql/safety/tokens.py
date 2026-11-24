@@ -16,7 +16,9 @@ _COMMON = r"""
   | (?P<symbol>.)
 """
 _FLAGS = re.DOTALL | re.VERBOSE
-_SQLITE = re.compile(_COMMON.format(bracket=r"|\[[^\]]*\]", unclosed_bracket=r"|\["), _FLAGS)
+_SQLITE = re.compile(
+    _COMMON.format(bracket=r"|\[[^\]]*\]", unclosed_bracket=r"|\["), _FLAGS
+)
 _STANDARD = re.compile(_COMMON.format(bracket="", unclosed_bracket=""), _FLAGS)
 
 
@@ -33,7 +35,9 @@ def tokens(sql: str, dialect: str = "") -> Iterator[re.Match[str]]:
                 (token.lastgroup == "quoted" and re.search(r"""\\['"`]""", value))
                 or value.startswith(("/*!", "/*M!"))
                 or (value.startswith("/*") and "/*" in value[2:])
-                or (value.startswith("--") and len(value) > 2 and not value[2].isspace())
+                or (
+                    value.startswith("--") and len(value) > 2 and not value[2].isspace()
+                )
                 or (token.lastgroup == "word" and re.search(r"\$\w*\$", value))
                 or value == "#"
             ):

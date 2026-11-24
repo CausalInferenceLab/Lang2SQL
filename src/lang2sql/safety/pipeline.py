@@ -12,6 +12,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
+from ..core.ports.explorer import ExplorerPort
 from ..core.ports.safety import (
     SafetyContext,
     SafetyDecision,
@@ -19,6 +20,12 @@ from ..core.ports.safety import (
     Verdict,
 )
 from .layers import RowLimitLayer, TimeoutLayer, WhitelistLayer
+
+
+def query_context(explorer: ExplorerPort, row_limit: int = 1000) -> SafetyContext:
+    return SafetyContext(
+        row_limit=row_limit, extras={"dialect": getattr(explorer, "dialect_name", "")}
+    )
 
 
 def _default_layers() -> list[SafetyLayerPort]:

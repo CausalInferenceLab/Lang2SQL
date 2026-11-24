@@ -187,6 +187,7 @@ def test_d1_rejects_unsafe_identifier():
         """SELECT 'it''s -- ; /* ( LIMIT 2' AS "a"";b"; /* tail */""",
         "SELECT 3 AS [);]; -- (",
         "SELECT 2 AS `(;)` -- LIMIT 1",
+        "SELECT ':paid' AS status",
     ],
 )
 async def test_run_sql_preserves_sqlite_results(tmp_path, sql):
