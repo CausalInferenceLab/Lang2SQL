@@ -37,3 +37,7 @@ The two headline pillars demonstrated are **★① safety** (Sections 0 + 3) and
   `gpt-4.1-mini`.
 - Federation state in Sections 1–2 lives in an in-memory `SemanticStore`; the
   SQLite-backed persistent store is wired through the concierge for the bot.
+
+## Oracle 데모
+
+실제 Oracle의 부서별 매출·되묻기·권한 차단 시연: [재현 절차](../docs/oracle_demo.md).

@@ -11,6 +11,10 @@ from dataclasses import dataclass, field
 from typing import Protocol, runtime_checkable
 
 
+class DataAccessError(RuntimeError):
+    """Requested data is unavailable to this DB identity; do not probe alternatives."""
+
+
 @dataclass
 class Column:
     name: str
@@ -33,7 +37,11 @@ class Table:
 
 @runtime_checkable
 class ExplorerPort(Protocol):
-    """Introspect a connected database, read-only."""
+    """Introspect a connected database, read-only.
+
+    Adapters may expose a non-I/O ``dialect`` string (e.g. ``oracle``) for
+    prompt and row-limit syntax. Legacy implementations default to LIMIT SQL.
+    """
 
     async def list_tables(self) -> list[Table]:
         """Tables visible to the connection (columns may be unpopulated)."""

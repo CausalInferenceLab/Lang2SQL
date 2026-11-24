@@ -15,7 +15,9 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from ...core.ports.explorer import Column, Table
+from ...core.ports.explorer import Column, DataAccessError, Table
+
+_ORACLE_ACCESS_ERRORS = frozenset({942, 1031})
 
 
 class SqlAlchemyExplorer:
@@ -28,6 +30,7 @@ class SqlAlchemyExplorer:
 
     @property
     def dialect(self) -> str:
+        """SQL dialect hint without importing a driver or opening a connection."""
         from sqlalchemy.engine import make_url
 
         return make_url(self.url).get_backend_name()
@@ -57,10 +60,14 @@ class SqlAlchemyExplorer:
         return await asyncio.to_thread(self._describe_table_sync, name)
 
     async def sample_rows(self, name: str, limit: int = 5) -> list[dict]:
-        # Bind the limit; quote the identifier via the dialect's preparer.
-        eng = self._get_engine()
-        qname = eng.dialect.identifier_preparer.quote(name)
-        return await self.execute(f"SELECT * FROM {qname}", limit=limit)
+        return await asyncio.to_thread(self._sample_rows_sync, name, limit)
+
+    def _sample_rows_sync(self, name: str, limit: int) -> list[dict]:
+        preparer = self._get_engine().dialect.identifier_preparer
+        qname = preparer.quote(name)
+        if self._schema:
+            qname = f"{preparer.quote_schema(self._schema)}.{qname}"
+        return self._execute_sync(f"SELECT * FROM {qname}", limit)
 
     async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
         return await asyncio.to_thread(self._execute_sync, sql, int(limit))
@@ -103,9 +110,25 @@ class SqlAlchemyExplorer:
 
     def _execute_sync(self, sql: str, limit: int) -> list[dict]:
         from sqlalchemy import text
+        from sqlalchemy.exc import DBAPIError
 
         with self._get_engine().connect() as conn:
-            result = conn.execute(text(sql))
+            try:
+                result = conn.execute(text(sql))
+            except DBAPIError as exc:
+                code = (
+                    getattr(exc.orig.args[0], "code", None)
+                    if exc.orig is not None and exc.orig.args
+                    else None
+                )
+                if self.dialect == "oracle" and code in _ORACLE_ACCESS_ERRORS:
+                    # ORA-00942 deliberately does not distinguish a missing table
+                    # from one hidden by privileges. Do not assert either cause.
+                    raise DataAccessError(
+                        f"ORA-{code:05d}: requested table is unavailable to this account "
+                        "(missing table or insufficient privileges)"
+                    ) from exc
+                raise
             if not result.returns_rows:
                 return []
             rows = result.mappings().fetchmany(limit)

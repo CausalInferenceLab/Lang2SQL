@@ -20,6 +20,10 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
 from ..core.ports.tool import ToolPort, ToolResult, ToolSpec
+from ..tools.enrich_schema import (
+    _KV_PREFIX as _ENRICH_PREFIX,
+    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
+)
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -49,13 +53,6 @@ def _validate_layer(
         )
     return layer, None
 
-
-from ..tools.enrich_schema import (
-    _KV_PREFIX as _ENRICH_PREFIX,
-)
-from ..tools.enrich_schema import (
-    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
-)
 
 _AMBIGUITY_SIGNALS: dict[str, str] = {
     r"(^|_)(created|registered|joined|signup)(_at|_date)?$": "신규/최초 가입 기준 용어",

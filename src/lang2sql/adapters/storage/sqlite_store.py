@@ -127,7 +127,8 @@ class SqliteStore:
     ) -> bool:
         if expected is None:
             cur = self._conn.execute(
-                "INSERT OR IGNORE INTO kv(scope,key,value) VALUES(?,?,?)", (scope, key, value)
+                "INSERT OR IGNORE INTO kv(scope,key,value) VALUES(?,?,?)",
+                (scope, key, value),
             )
         else:
             cur = self._conn.execute(
