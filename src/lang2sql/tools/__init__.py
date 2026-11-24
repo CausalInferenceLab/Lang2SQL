@@ -41,7 +41,7 @@ def build_default_tools(
     memory: MemoryService,
     ingestion: IngestionPipeline,
     source: SourcePort,
-    extractor: DocExtractorPort,
+    extractor: DocExtractorPort | None = None,
 ) -> list[ToolPort]:
     """The V1 tools."""
     return [

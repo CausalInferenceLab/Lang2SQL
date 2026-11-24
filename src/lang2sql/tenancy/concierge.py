@@ -28,7 +28,7 @@ from ..core.ports.secrets import SecretsPort
 from ..harness.context import HarnessContext
 from ..harness.session import Session
 from ..harness.tool_registry import ToolRegistry
-from ..ingestion import FileSource, IngestionPipeline, LLMExtractor
+from ..ingestion import FileSource, IngestionPipeline
 from ..memory import InjectAllRecall, InMemoryStore, ManualExtractor, MemoryService
 from ..safety.pipeline import SafetyPipeline
 from ..tools import build_default_tools
@@ -71,7 +71,6 @@ class ContextConcierge:
         )
         self._ingestion = IngestionPipeline()
         self._source = FileSource()
-        self._extractor = LLMExtractor(self._llm)
 
         # Per-scope explorer cache. /setup stores a DSN under the guild scope;
         # the next build_context for that scope materialises an explorer from
@@ -125,7 +124,6 @@ class ContextConcierge:
                 memory=self._memory,
                 ingestion=self._ingestion,
                 source=self._source,
-                extractor=self._extractor,
             )
         )
 

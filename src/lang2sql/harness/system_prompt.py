@@ -35,6 +35,7 @@ Clarification rule:
 class SystemPrompt:
     content: str
     tables_with_columns: set[str]
+    schema_and_definitions: str
 
 
 async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
@@ -102,4 +103,4 @@ async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
         if semfed_section:
             parts.append(semfed_section)
 
-    return SystemPrompt("\n\n".join(parts), tables_with_columns)
+    return SystemPrompt("\n\n".join(parts), tables_with_columns, "\n\n".join(parts[1:]))

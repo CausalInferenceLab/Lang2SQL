@@ -8,7 +8,7 @@ from typing import Callable
 _SQL_FENCE = re.compile(r"```sql[ \t]*\r?\n(.*?)```", re.IGNORECASE | re.DOTALL)
 _SQL_LABEL = re.compile(
     r"^(?:\*\*)?(?:final\s+sql|최종\s*sql|sql)(?:\*\*)?\s*:(?:\*\*)?\s*",
-    re.IGNORECASE,
+    re.IGNORECASE | re.MULTILINE,
 )
 _SENTENCE_END = re.compile(r"(?:[!?。！？]|(?<!\d)\.)$")
 _COMMENTS_AND_QUOTES = re.compile(
@@ -81,12 +81,22 @@ def sql_from_answer(
         except ValueError:
             return None
 
-    answer, labeled = _SQL_LABEL.subn("", answer.strip(), count=1)
+    answer = answer.strip()
+    label = _SQL_LABEL.search(answer)
+    if label and label.start():
+        # A label in prose introduces a fenced submission. Leave label-like
+        # text inside the submitted SQL (including multiline literals) intact.
+        if "```" in answer[: label.start()] or not _SQL_FENCE.fullmatch(
+            answer[label.end() :]
+        ):
+            label = None
+    if label:
+        answer = answer[label.end() :]
     if block := _SQL_FENCE.fullmatch(answer):
         return block[1].strip() if "```" not in block[1] else None
     if "```" in answer:
         return None
-    if labeled:
+    if label:
         return answer
     bare = _query_shape(answer)
     if _SENTENCE_END.search(bare):

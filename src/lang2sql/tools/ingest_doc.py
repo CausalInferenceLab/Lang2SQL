@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 
 from ..core.ports.ingestion import DocExtractorPort, SemanticCandidate, SourcePort
 from ..core.types import ToolResult, ToolSpec
+from ..ingestion.extractors import LLMExtractor
 from ..ingestion.pipeline import IngestionPipeline
 
 if TYPE_CHECKING:
@@ -36,7 +37,7 @@ class IngestDoc:
         self,
         pipeline: IngestionPipeline,
         source: SourcePort,
-        extractor: DocExtractorPort,
+        extractor: DocExtractorPort | None = None,
     ) -> None:
         self._pipeline = pipeline
         self._source = source
@@ -82,7 +83,7 @@ class IngestDoc:
             ref = "inline:" + hashlib.md5(blob or b"").hexdigest()[:8]
 
         candidates = await self._pipeline.ingest(
-            self._source, self._extractor, ref, blob
+            self._source, self._extractor or LLMExtractor(ctx.llm), ref, blob
         )
         if not candidates:
             return ToolResult(

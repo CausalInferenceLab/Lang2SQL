@@ -11,10 +11,11 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import Callable
 
-from ..core.ports.llm import RequiredToolLLMPort
 from ..core.types import Message, Role, ToolResult, ToolSpec
+from .call_budget import SchemaLookupUnavailable, TurnModel
 from .context import HarnessContext
-from .final_sql import check_final_sql
+from .final_sql import check_submission
+from .semantic_review import question_with_clarifications
 from .sql_candidate import is_database_query, sql_from_answer
 from .system_prompt import build_system_prompt
 
@@ -65,20 +66,25 @@ async def agent_loop(
     """
     ctx.session.add(Message(role=Role.USER, content=user_text))
 
-    if ctx.explorer is not None:
-        ctx = replace(ctx, known_tables=await ctx.explorer.list_tables())
+    model = TurnModel(ctx.llm, ctx.max_turns)
+    tables = await ctx.explorer.list_tables() if ctx.explorer is not None else None
+    ctx = replace(ctx, llm=model, known_tables=tables)
     system = await build_system_prompt(ctx)
     specs = ctx.tools.specs()
     schema_spec = next((spec for spec in specs if spec.name == _SCHEMA_TOOL), None)
     tables_with_columns = system.tables_with_columns
     sql_withheld = False
-    history = (
-        ctx.session.history()
-    )  # Includes transient validation feedback for this turn.
+    # Rejected drafts/feedback belong to this turn only.
+    history = ctx.session.history()
+    review_context = (
+        [system.schema_and_definitions] if system.schema_and_definitions else []
+    )
     failure: str | None = None
     revision_requested = False
+    review_question, definitions = question_with_clarifications(history)
+    review_context.extend(definitions)
 
-    for _ in range(ctx.max_turns):
+    while model.remaining > 0:
         # Every tool call in this response was authored with the same context.
         model_has_columns = bool(tables_with_columns)
         needs_recovery = sql_withheld and not model_has_columns
@@ -94,14 +100,14 @@ async def agent_loop(
                 if schema_spec is None or ctx.explorer is None:
                     failure = "schema lookup is unavailable"
                     break
-                if not isinstance(ctx.llm, RequiredToolLLMPort):
-                    failure = "the model adapter cannot require schema lookup"
-                    break
-                completion = await ctx.llm.complete_with_required_tool(
+                completion = await model.require_tool(
                     messages, _recovery_specs(specs, schema_spec), _SCHEMA_TOOL
                 )
             else:
                 completion = await ctx.llm.complete(messages, specs)
+        except SchemaLookupUnavailable as exc:
+            failure = str(exc)
+            break
         except Exception as exc:
             if not sql_withheld and not revision_requested:
                 raise
@@ -132,13 +138,21 @@ async def agent_loop(
             ):
                 continue
             if candidate is not None:
-                error = await check_final_sql(ctx, candidate)
-                if error is not None:
+                check = await check_submission(
+                    ctx, review_question, review_context, candidate
+                )
+                if check.action == "withhold":
+                    failure = check.detail
+                    break
+                if check.action == "clarify":
+                    assistant.content = f"❓ Awaiting user: {check.detail}"
+                    assistant.name = "clarify_definition"
+                if check.action == "revise":
                     if revision_requested:
-                        failure = f"revised SQL failed validation: {error}"
+                        failure = f"revised SQL failed validation: {check.detail}"
                         break
                     repair_feedback = (
-                        f"Final SQL failed validation: {error}\n"
+                        f"Final SQL failed validation: {check.detail}\n"
                         "Use explore_schema or run_sql if needed, then submit one corrected query."
                     )
                     revision_requested = True
@@ -147,7 +161,7 @@ async def agent_loop(
                     )
                     continue
             ctx.session.add(assistant)
-            return completion.content
+            return assistant.content
 
         ctx.session.add(assistant)
         history.append(assistant)
@@ -177,6 +191,11 @@ async def agent_loop(
                 result = await ctx.tools.dispatch(
                     call.name, call.arguments, ctx, call.id
                 )
+            if result.tables_with_columns or (
+                call.name in {"term_custom", "recall_memory", "enrich_schema"}
+                and not result.is_error
+            ):
+                review_context.append(result.content)
             tables_with_columns.update(result.tables_with_columns)
             tool_message = Message(
                 role=Role.TOOL,
@@ -197,6 +216,8 @@ async def agent_loop(
             if tables_with_columns
             else "no table columns obtained before reaching max turns"
         )
-    answer = f"(SQL withheld: {failure})"
+    # A diagnostic can quote model text. Keep fenced SQL out of a non-submission.
+    reason = failure.replace("```", "`")
+    answer = f"(SQL withheld: {reason})"
     ctx.session.add(Message(role=Role.ASSISTANT, content=answer))
     return answer

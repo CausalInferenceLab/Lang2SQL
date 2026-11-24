@@ -72,7 +72,7 @@ class CommandHandlers:
 
         suffix = ""
         final_sql = sql_from_answer(answer, None)
-        if answer.startswith("(SQL withheld:"):
+        if answer.startswith(("(SQL withheld:", "❓ Awaiting user:")):
             return render_answer(answer)
         if final_sql is not None:
             sql_results = [

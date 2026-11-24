@@ -2,11 +2,17 @@
 
 from __future__ import annotations
 
+import json
+from dataclasses import dataclass
+from typing import Literal
+
 from ..core.ports.audit import AuditEvent
 from ..core.ports.safety import Verdict
 from ..safety.pipeline import query_context
 from ..safety.tokens import tokens
+from .call_budget import CallBudgetExhausted
 from .context import HarnessContext
+from .semantic_review import InvalidReview, review_sql
 
 
 async def check_final_sql(ctx: HarnessContext, candidate: str) -> str | None:
@@ -52,3 +58,53 @@ async def check_final_sql(ctx: HarnessContext, candidate: str) -> str | None:
             )
         )
     return error
+
+
+@dataclass(frozen=True)
+class SubmissionCheck:
+    action: Literal["accept", "revise", "clarify", "withhold"]
+    detail: str = ""
+
+
+async def check_submission(
+    ctx: HarnessContext, question: str, context: list[str], candidate: str
+) -> SubmissionCheck:
+    error = await check_final_sql(ctx, candidate)
+    if error is not None:
+        return SubmissionCheck("revise", error)
+
+    try:
+        review = await review_sql(ctx.llm, question, context, candidate)
+    except CallBudgetExhausted:
+        return SubmissionCheck(
+            "withhold", "call budget exhausted before semantic review"
+        )
+    except InvalidReview as exc:
+        return SubmissionCheck("withhold", f"incomplete semantic review: {exc}")
+    except Exception as exc:
+        return SubmissionCheck(
+            "withhold",
+            f"model request failed during semantic review: {type(exc).__name__}",
+        )
+
+    if ctx.audit is not None:
+        await ctx.audit.record(
+            AuditEvent(
+                actor=ctx.identity.user_id,
+                scope=ctx.identity.session_key(),
+                action="review_sql",
+                detail={
+                    "candidate_sql": candidate,
+                    "status": review.status,
+                    **review.details,
+                },
+            )
+        )
+    if review.status == "accept":
+        return SubmissionCheck("accept")
+    if review.status == "clarify":
+        return SubmissionCheck("clarify", review.details["question"])
+    return SubmissionCheck(
+        "revise",
+        json.dumps({"status": review.status, **review.details}, ensure_ascii=False),
+    )
