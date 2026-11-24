@@ -15,6 +15,7 @@ from ...core.ports.safety import (
     SafetyDecision,
     Verdict,
 )
+from ..tokens import tokens
 
 # Statement keywords that mutate state. If any of these appears as a *statement*
 # keyword anywhere (including inside a CTE body), we block fail-closed.
@@ -29,37 +30,15 @@ _DML_DDL = frozenset(
         "TRUNCATE",
         "GRANT",
         "COPY",
+        "INTO",
+        "MERGE",
     }
 )
 
 # Statements we allow to *start* a query.
 _ALLOWED_START = ("SELECT", "WITH")
 
-# A line comment runs to end-of-line; a block comment is /* ... */ (non-greedy,
-# spanning newlines).
-_LINE_COMMENT = re.compile(r"--[^\n]*")
-_BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
-
-# Word-boundary keyword match, case-insensitive. Used to scan for mutating
-# keywords as standalone words (so "created_at" never matches "CREATE").
 _WORD = re.compile(r"[A-Za-z_][A-Za-z_0-9]*")
-
-
-def _strip_comments(sql: str) -> str:
-    """Remove line and block comments, then collapse surrounding whitespace."""
-    no_block = _BLOCK_COMMENT.sub(" ", sql)
-    no_line = _LINE_COMMENT.sub(" ", no_block)
-    return no_line.strip()
-
-
-def _split_statements(sql: str) -> list[str]:
-    """Split on ``;`` into non-empty trimmed statements.
-
-    String/identifier-quote awareness is V1.5 AST work; for V1 a bare ``;``
-    separator is enough to detect multi-statement payloads fail-closed.
-    """
-    parts = [p.strip() for p in sql.split(";")]
-    return [p for p in parts if p]
 
 
 class WhitelistLayer:
@@ -70,29 +49,22 @@ class WhitelistLayer:
         return "whitelist"
 
     def check(self, sql: str, ctx: SafetyContext) -> SafetyDecision:
-        cleaned = _strip_comments(sql)
-
-        # Empty / blank (or comment-only) input → cannot parse anything.
-        if not cleaned:
-            return SafetyDecision(
-                verdict=Verdict.BLOCK,
-                sql=sql,
-                reason="parse_error",
-                layer=self.name,
-            )
-
-        statements = _split_statements(cleaned)
-
-        # Multi-statement payloads (e.g. ``; DELETE FROM t; --``) are blocked.
-        if len(statements) != 1:
-            return SafetyDecision(
-                verdict=Verdict.BLOCK,
-                sql=sql,
-                reason="multi_statement",
-                layer=self.name,
-            )
-
-        statement = statements[0]
+        try:
+            # Keep a placeholder for each literal/identifier so that a quoted
+            # leading keyword cannot become the start of a statement.
+            parts = [
+                "?" if token.lastgroup == "quoted" else token[0]
+                for token in tokens(sql, ctx.extras.get("dialect", ""))
+            ]
+        except ValueError:
+            return SafetyDecision(Verdict.BLOCK, sql, "parse_error", self.name)
+        if parts and parts[-1] == ";":
+            parts.pop()
+        if not parts:
+            return SafetyDecision(Verdict.BLOCK, sql, "parse_error", self.name)
+        if ";" in parts:
+            return SafetyDecision(Verdict.BLOCK, sql, "multi_statement", self.name)
+        statement = " ".join(parts)
 
         # An EXPLAIN wrapper is allowed only when it fronts a read-only query.
         # Strip a leading EXPLAIN (and EXPLAIN ANALYZE / EXPLAIN VERBOSE etc.)
@@ -111,7 +83,7 @@ class WhitelistLayer:
                 # Consume leading bare option words (ANALYZE, VERBOSE, ...).
                 while True:
                     m = re.match(
-                        r"(?i)^(ANALYZE|VERBOSE|COSTS|BUFFERS)\b\s*(.*)$", body
+                        r"(?i)^(ANALYZE|VERBOSE|COSTS|BUFFERS|QUERY\s+PLAN)\b\s*(.*)$", body
                     )
                     if m is None:
                         break

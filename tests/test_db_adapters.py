@@ -9,8 +9,12 @@ handling is tested with no network.
 from __future__ import annotations
 
 import asyncio
+import sqlite3
 
 import pytest
+
+from lang2sql.core.identity import Identity
+from lang2sql.tenancy.tool_runtime import build_tool_context
 
 from lang2sql.adapters.db import (
     D1Explorer,
@@ -171,3 +175,47 @@ def test_d1_rejects_unsafe_identifier():
     exp = D1Explorer("acct", "db", token="t", transport=_d1_transport)
     with pytest.raises(ValueError, match="unsafe table identifier"):
         asyncio.run(exp.describe_table("users; DROP TABLE x"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "SELECT '(' AS label LIMIT 1;",
+        "SELECT 1 AS value; -- sample",
+        "SELECT ';' AS separator LIMIT 1",
+        """SELECT 'it''s -- ; /* ( LIMIT 2' AS "a"";b"; /* tail */""",
+        "SELECT 3 AS [);]; -- (",
+        "SELECT 2 AS `(;)` -- LIMIT 1",
+    ],
+)
+async def test_run_sql_preserves_sqlite_results(tmp_path, sql):
+    db = tmp_path / "data.db"
+    with sqlite3.connect(db) as conn:
+        cursor = conn.execute(sql)
+        header = cursor.description[0][0]
+        (value,) = cursor.fetchone()
+    ctx = build_tool_context(
+        Identity(user_id="test"), explorer=SqlAlchemyExplorer(f"sqlite:///{db}")
+    )
+    result = await ctx.tools.dispatch("run_sql", {"sql": sql}, ctx, "query")
+    assert not result.is_error
+    assert result.content.startswith(f"1 row(s):\n{header}\n---\n{value}\nSQL:")
+
+
+@pytest.mark.asyncio
+async def test_run_sql_caps_rows_and_blocks_before_db(tmp_path, monkeypatch):
+    db = SqlAlchemyExplorer(f"sqlite:///{tmp_path / 'data.db'}")
+    ctx = build_tool_context(Identity(user_id="test"), explorer=db)
+    sql = "SELECT 1 AS n UNION ALL SELECT 2 ORDER BY n; -- tail"
+    result = await ctx.tools.dispatch("run_sql", {"sql": sql, "limit": 1}, ctx, "cap")
+    capped = "SELECT 1 AS n UNION ALL SELECT 2 ORDER BY n\nLIMIT 1; -- tail"
+    assert result.content == f"1 row(s):\nn\n---\n1\nSQL: {capped}"
+
+    async def unexpected_execute(*args):
+        pytest.fail("blocked SQL reached the DB")
+
+    monkeypatch.setattr(db, "execute", unexpected_execute)
+    for sql in ("SELECT ';'; /* split */ SELECT 2", "DELETE FROM orders"):
+        result = await ctx.tools.dispatch("run_sql", {"sql": sql}, ctx, "blocked")
+        assert result.is_error and "BLOCKED" in result.content

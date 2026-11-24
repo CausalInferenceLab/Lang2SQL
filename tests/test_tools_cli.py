@@ -17,6 +17,7 @@ def invoke(tmp_path, *args):
         connection.execute("CREATE TABLE IF NOT EXISTS orders (amount INTEGER)")
     env = {**os.environ, "LANG2SQL_DB_URL": f"sqlite:///{db}"}
     env.pop("LANG2SQL_DB_SCHEMA", None)
+    env.pop("OPENAI_API_KEY", None)
     result = subprocess.run(
         [
             sys.executable,
@@ -51,6 +52,14 @@ def test_catalog_and_real_sql(tmp_path):
         '{"sql":"SELECT COUNT(*) AS answer FROM orders"}',
     )
     assert status == 0 and "answer\n---\n0" in result["content"]
+
+
+def test_sqlite_error_reaches_cli(tmp_path):
+    status, result = invoke(
+        tmp_path, "call", "run_sql", "--args", '{"sql":"SELECT missing FROM orders"}'
+    )
+    assert status == 1 and result["is_error"]
+    assert "no such column: missing" in result["content"]
 
 
 def test_explore_schema_preserves_its_public_result_shape(tmp_path):

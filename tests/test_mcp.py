@@ -20,6 +20,7 @@ async def connected(db, store, *, team="finance"):
     env = dict(os.environ)
     env["LANG2SQL_DB_URL"] = f"sqlite:///{db}"
     env.pop("LANG2SQL_DB_SCHEMA", None)
+    env.pop("OPENAI_API_KEY", None)
     parameters = StdioServerParameters(
         command=sys.executable,
         args=[
@@ -86,6 +87,8 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
         assert not result.isError and "30" in result.content[0].text
         blocked = await client.call_tool("run_sql", {"sql": "DROP TABLE orders"})
         assert blocked.isError and "BLOCKED" in blocked.content[0].text
+        db_error = await client.call_tool("run_sql", {"sql": "SELECT missing FROM orders"})
+        assert db_error.isError and "no such column: missing" in db_error.content[0].text
         malformed = await client.call_tool("run_sql", {"sql": 123})
         assert malformed.isError
         spoof = await client.call_tool("term_custom", {"list": True, "is_admin": True})

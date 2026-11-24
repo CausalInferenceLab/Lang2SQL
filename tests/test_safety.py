@@ -178,3 +178,20 @@ def test_case_08_huge_table_gets_limit():
     decision = SafetyPipeline().evaluate("SELECT * FROM huge_table", ctx)
     assert decision.verdict is Verdict.PASS
     assert "LIMIT 1000" in decision.sql.upper()
+
+
+def test_row_limit_preserves_top_level_expression_and_trailing_comments():
+    sql = "SELECT ');' AS label LIMIT /* amount */ (1 + 2); -- tail"
+    assert _decision(sql).sql == sql
+
+
+def test_row_limit_ignores_keywords_in_quoted_text_and_comments():
+    sql = """SELECT 'LIMIT 20' AS "DROP" /* LIMIT 30 */; -- LIMIT 40"""
+    decision = _decision(sql)
+    assert decision.verdict is Verdict.PASS
+    assert decision.sql == sql.replace(" /* LIMIT 30", "\nLIMIT 1000 /* LIMIT 30")
+
+
+def test_unterminated_tokens_block():
+    for sql in ("SELECT 'unfinished", 'SELECT "unfinished', "SELECT 1 /* unfinished"):
+        assert _verdict(sql) is Verdict.BLOCK

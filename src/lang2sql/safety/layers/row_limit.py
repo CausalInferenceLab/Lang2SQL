@@ -6,24 +6,8 @@ Returns PASS (not REWRITE) so the rewritten SQL flows into the next layer
 
 from __future__ import annotations
 
-import re
-
 from ...core.ports.safety import SafetyContext, SafetyDecision, Verdict
-
-_LIMIT_RE = re.compile(r"\bLIMIT\s+\d+", re.IGNORECASE)
-
-
-def _has_top_level_limit(sql: str) -> bool:
-    """True if a LIMIT clause exists at parenthesis depth 0."""
-    depth = 0
-    for part in re.split(r"(\(|\))", sql):
-        if part == "(":
-            depth += 1
-        elif part == ")":
-            depth -= 1
-        elif depth == 0 and _LIMIT_RE.search(part):
-            return True
-    return False
+from ..tokens import tokens
 
 
 class RowLimitLayer:
@@ -34,8 +18,18 @@ class RowLimitLayer:
         return "row_limit"
 
     def check(self, sql: str, ctx: SafetyContext) -> SafetyDecision:
-        if _has_top_level_limit(sql):
-            return SafetyDecision(verdict=Verdict.PASS, sql=sql, layer=self.name)
-        limit = ctx.row_limit if ctx.row_limit and ctx.row_limit > 0 else 1000
-        rewritten = sql.rstrip().rstrip(";") + f"\nLIMIT {limit}"
+        depth = end = 0
+        for token in tokens(sql, ctx.extras.get("dialect", "")):
+            value = token[0]
+            if value == "(":
+                depth += 1
+            elif value == ")":
+                depth -= 1
+            elif depth == 0 and value.upper() == "LIMIT":
+                return SafetyDecision(verdict=Verdict.PASS, sql=sql, layer=self.name)
+            if value != ";":
+                end = token.end()
+
+        limit = ctx.row_limit if ctx.row_limit > 0 else 1000
+        rewritten = sql[:end] + f"\nLIMIT {limit}" + sql[end:]
         return SafetyDecision(verdict=Verdict.PASS, sql=rewritten, layer=self.name)

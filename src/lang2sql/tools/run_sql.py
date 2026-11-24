@@ -63,7 +63,12 @@ class RunSQL:
                 is_error=True,
             )
 
-        decision = ctx.safety.evaluate(sql, SafetyContext(row_limit=limit))
+        if limit <= 0:
+            limit = 1000
+        safety_ctx = SafetyContext(
+            row_limit=limit, extras={"dialect": getattr(ctx.explorer, "dialect_name", "")}
+        )
+        decision = ctx.safety.evaluate(sql, safety_ctx)
         if decision.verdict == Verdict.BLOCK:
             return ToolResult(
                 call_id="",

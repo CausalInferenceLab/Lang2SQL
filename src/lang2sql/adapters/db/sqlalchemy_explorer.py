@@ -26,6 +26,10 @@ class SqlAlchemyExplorer:
         self._schema = schema
         self._engine: Any = None  # created lazily
 
+    @property
+    def dialect_name(self) -> str:
+        return self.url.partition(":")[0].partition("+")[0]
+
     def _get_engine(self) -> Any:
         if self._engine is None:
             from sqlalchemy import create_engine  # imported here = lazy driver load

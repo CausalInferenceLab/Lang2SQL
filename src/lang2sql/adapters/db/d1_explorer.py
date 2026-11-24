@@ -32,6 +32,8 @@ Transport = Callable[[str, list], dict]
 class D1Explorer:
     """ExplorerPort backed by Cloudflare D1's HTTP query API."""
 
+    dialect_name = "sqlite"
+
     def __init__(
         self,
         account_id: str,
