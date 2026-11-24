@@ -1,5 +1,6 @@
 """Exercise the actual stdio protocol against the tool-only composition."""
 
+import asyncio
 import os
 import sqlite3
 import sys
@@ -154,3 +155,23 @@ def test_no_connection_does_not_silently_use_stub(monkeypatch):
 async def test_internal_llm_is_disabled():
     with pytest.raises(RuntimeError, match="internal LLM"):
         await ExternalAgentLLM().complete([])
+
+
+@pytest.mark.asyncio
+async def test_concurrent_sql_calls_return_their_own_query_and_rows(tmp_path):
+    queries = [
+        "SELECT COUNT(*) AS n FROM orders",
+        "SELECT SUM(amount) AS total FROM orders",
+    ]
+    async with connected(fixture_db(tmp_path), tmp_path / "metadata.db") as client:
+        count, total = await asyncio.gather(
+            *(client.call_tool("run_sql", {"sql": sql}) for sql in queries)
+        )
+    assert not count.isError and not total.isError
+    assert (
+        count.content[0].text == f"1 row(s):\nn\n---\n2\nSQL: {queries[0]}\nLIMIT 1000"
+    )
+    assert (
+        total.content[0].text
+        == f"1 row(s):\ntotal\n---\n30\nSQL: {queries[1]}\nLIMIT 1000"
+    )

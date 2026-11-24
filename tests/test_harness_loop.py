@@ -155,6 +155,10 @@ def _answer(text):
     return text, ()
 
 
+def _submission(sql, output="result"):
+    return _answer(json.dumps({"sql": sql, "output": output}))
+
+
 _ACCEPT = _answer('{"status":"accept"}')
 _FORCED = {"type": "function", "function": {"name": "explore_schema"}}
 _SQL = "SELECT amount FROM orders"
@@ -188,18 +192,17 @@ def test_run_sql_waits_for_columns_before_executing():
         _calls(_SCHEMA),
         _calls(("rewritten", "run_sql", {"sql": _SQL})),
         _answer("Order totals are available."),
+        _submission(_SQL),
+        _ACCEPT,
     )
     ctx = _context_for(llm)
 
-    assert asyncio.run(agent_loop(ctx, "Show order amounts")) == (
-        "Order totals are available."
-    )
-    assert _choices(llm) == [None, _FORCED, None, None]
+    answer = asyncio.run(agent_loop(ctx, "Show order amounts"))
+    assert "2 row(s):" in answer and answer.endswith("SQL: " + _SQL)
+    assert _choices(llm) == [None, _FORCED, None, None, None, None]
     assert "SQL withheld" in _tool_results(llm.requests[1])["sql"]
     assert "- amount: numeric" in _tool_results(llm.requests[2])["columns"]
-    assert len(ctx.explorer.executed) == 1
-    assert _SQL in ctx.explorer.executed[0]
-    assert "guessed_amount" not in ctx.explorer.executed[0]
+    assert ctx.explorer.executed == [_SQL + "\nLIMIT 1000"] * 3
 
 
 @pytest.mark.parametrize(
@@ -446,14 +449,14 @@ def test_general_answers_remain_automatic(answer):
 def test_run_sql_allows_queries_without_table_sources():
     sql = "SELECT EXTRACT(YEAR FROM CURRENT_DATE)"
     llm = ScriptedOpenAI(
-        _calls(("current-year", "run_sql", {"sql": sql})), _answer("Current year.")
+        _calls(("current-year", "run_sql", {"sql": sql})), _submission(sql), _ACCEPT
     )
     ctx = _context_for(llm)
 
-    assert asyncio.run(agent_loop(ctx, "Read the current year")) == "Current year."
-    assert _choices(llm) == [None, None]
-    assert len(ctx.explorer.executed) == 1
-    assert sql in ctx.explorer.executed[0]
+    answer = asyncio.run(agent_loop(ctx, "Read the current year"))
+    assert answer == f"1 row(s):\nresult\n---\n1\nSQL: {sql}"
+    assert _choices(llm) == [None, None, None]
+    assert ctx.explorer.executed == [sql + "\nLIMIT 1000"] * 3
 
 
 def test_term_custom_and_enrich_keep_their_existing_calls():
@@ -776,3 +779,105 @@ def test_sql_labeled_after_prose_is_checked(tmp_path):
     ctx = _sqlite_context(tmp_path, llm)
     assert asyncio.run(agent_loop(ctx, "Show one")) == "SELECT 1"
     assert "no such column: missing" in llm.requests[1]["messages"][-1]["content"]
+
+
+def test_result_belongs_to_reviewed_sql_not_probe_or_rejected_draft(tmp_path):
+    probe = "SELECT 9 AS probe"
+    draft = "SELECT 10 AS draft"
+    final = "SELECT 42 AS total"
+    llm = ScriptedOpenAI(
+        _calls(("probe", "run_sql", {"sql": probe})),
+        _answer("The total is 9."),
+        _submission(draft),
+        _REVISE,
+        _submission(final),
+        _ACCEPT,
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    answer = asyncio.run(agent_loop(ctx, "Show the total"))
+    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}"
+    assert ctx.session.history()[-1].content == answer
+    assert [
+        json.loads(llm.requests[i]["messages"][-1]["content"])["sql"] for i in (3, 5)
+    ] == [draft, final]
+    events = asyncio.run(ctx.audit.query("analyst"))
+    assert [event.detail["sql"] for event in events if event.action == "run_sql"] == [
+        final + "\nLIMIT 1000",
+        probe + "\nLIMIT 1000",
+    ]
+
+
+def test_failed_result_execution_uses_same_repair_and_output_mode(tmp_path):
+    # This constant expression prepares on SQLite but fails when evaluated.
+    sql = "SELECT abs(-9223372036854775808)"
+    final = "SELECT 42 AS total"
+    llm = ScriptedOpenAI(_submission(sql), _ACCEPT, _submission(final, "sql"), _ACCEPT)
+    ctx = _sqlite_context(tmp_path, llm)
+    answer = asyncio.run(agent_loop(ctx, "Show the total"))
+    assert "integer overflow" in llm.requests[2]["messages"][-1]["content"]
+    assert answer == f"1 row(s):\ntotal\n---\n42\nSQL: {final}"
+
+
+def test_sql_only_and_result_state_are_scoped_to_one_request(tmp_path):
+    sql = "SELECT abs(-9223372036854775808)"
+    next_sql = "SELECT 3 AS n WHERE 0"
+    llm = ScriptedOpenAI(
+        _submission(sql, "sql"),
+        _ACCEPT,
+        _answer(json.dumps({"sql": next_sql})),
+        _ACCEPT,
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    assert asyncio.run(agent_loop(ctx, "Write the query")) == sql
+    assert asyncio.run(agent_loop(ctx, "Show the rows")) == f"(0 rows)\nSQL: {next_sql}"
+    events = asyncio.run(ctx.audit.query("analyst"))
+    assert [e.detail["sql"] for e in events if e.action == "run_sql"] == [
+        next_sql + "\nLIMIT 1000"
+    ]
+
+
+def test_probe_alone_cannot_become_the_answer(tmp_path):
+    llm = ScriptedOpenAI(
+        _calls(("probe", "run_sql", {"sql": "SELECT 9"})), _answer("It was 9.")
+    )
+    ctx = _sqlite_context(tmp_path, llm, max_turns=2)
+    answer = asyncio.run(agent_loop(ctx, "Show the total"))
+    assert answer.startswith("(SQL withheld:") and "final SQL submission" in answer
+
+
+def test_clarification_after_a_probe_is_returned_without_probe_rows(tmp_path):
+    llm = ScriptedOpenAI(
+        _calls(("probe", "run_sql", {"sql": "SELECT 9"})),
+        _calls(("clarify", "ask_user", {"question": "Which year?"})),
+    )
+    ctx = _sqlite_context(tmp_path, llm)
+    assert (
+        asyncio.run(agent_loop(ctx, "Show the total"))
+        == "❓ Awaiting user: Which year?"
+    )
+
+
+def test_discord_displays_only_the_result_from_the_accepted_candidate():
+    probe = "SELECT 999 AS probe"
+    final = "SELECT 42 AS total"
+    from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
+
+    llm = ScriptedOpenAI(
+        _calls(("probe", "run_sql", {"sql": probe})), _submission(final), _ACCEPT
+    )
+    concierge = ContextConcierge(llm=llm, explorer=SqlAlchemyExplorer("sqlite://"))
+    answer = asyncio.run(
+        CommandHandlers(concierge).query(Identity(user_id="tester"), "Get the total")
+    )
+    assert answer.text == f"1 row(s):\ntotal\n---\n42\nSQL: {final}"
+
+
+def test_malformed_submission_requests_correction_before_using_results(tmp_path):
+    sql = "SELECT 7 AS n"
+    llm = ScriptedOpenAI(_answer('{"sql": null}'), _submission(sql), _ACCEPT)
+    ctx = _sqlite_context(tmp_path, llm)
+    assert (
+        asyncio.run(agent_loop(ctx, "Get the count"))
+        == f"1 row(s):\nn\n---\n7\nSQL: {sql}"
+    )
+    assert "expected sql text" in llm.requests[1]["messages"][-1]["content"]

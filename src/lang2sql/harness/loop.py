@@ -14,10 +14,10 @@ from typing import Callable
 from ..core.types import Message, Role, ToolResult, ToolSpec
 from .call_budget import SchemaLookupUnavailable, TurnModel
 from .context import HarnessContext
-from .final_sql import check_submission
+from .final_sql import SQLSubmission, check_submission, read_submission
 from .semantic_review import question_with_clarifications
-from .sql_candidate import is_database_query, sql_from_answer
-from .system_prompt import build_system_prompt
+from .sql_candidate import is_database_query
+from .system_prompt import SUBMIT_SQL, build_system_prompt
 
 _SCHEMA_TOOL = "explore_schema"
 _SQL_WITHHELD = (
@@ -69,7 +69,7 @@ async def agent_loop(
     model = TurnModel(ctx.llm, ctx.max_turns)
     tables = await ctx.explorer.list_tables() if ctx.explorer is not None else None
     ctx = replace(ctx, llm=model, known_tables=tables)
-    system = await build_system_prompt(ctx)
+    system = await build_system_prompt(ctx, structured_sql=extract_final_sql is None)
     specs = ctx.tools.specs()
     schema_spec = next((spec for spec in specs if spec.name == _SCHEMA_TOOL), None)
     tables_with_columns = system.tables_with_columns
@@ -83,6 +83,9 @@ async def agent_loop(
     revision_requested = False
     review_question, definitions = question_with_clarifications(history)
     review_context.extend(definitions)
+
+    submission: SQLSubmission | None = None
+    submission_required = False
 
     while model.remaining > 0:
         # Every tool call in this response was authored with the same context.
@@ -109,7 +112,7 @@ async def agent_loop(
             failure = str(exc)
             break
         except Exception as exc:
-            if not sql_withheld and not revision_requested:
+            if not (sql_withheld or revision_requested or submission_required):
                 raise
             step = "schema lookup" if needs_recovery else "SQL rewrite"
             failure = f"model request failed during {step}: {type(exc).__name__}"
@@ -123,24 +126,47 @@ async def agent_loop(
         if not completion.tool_calls:
             if needs_recovery:
                 continue
-            candidate = sql_from_answer(completion.content, extract_final_sql)
+            try:
+                proposed = read_submission(completion.content, extract_final_sql)
+            except ValueError as exc:
+                submission_required = True
+                history.extend(
+                    [
+                        assistant,
+                        Message(role=Role.USER, content=str(exc) + ". " + SUBMIT_SQL),
+                    ]
+                )
+                continue
+            if proposed is not None:
+                if submission is not None:
+                    # Rewriting SQL cannot change what this request should return.
+                    proposed.output = submission.output
+                submission = proposed
+            candidate = proposed.candidate_sql if proposed else None
             if not model_has_columns and is_database_query(candidate):
                 sql_withheld = True
                 history.append(assistant)
                 continue
-            if (sql_withheld or revision_requested) and (
-                completion.finish_reason == "length"
-                or not completion.content.strip()
-                or (
-                    (revision_requested or extract_final_sql is not None)
-                    and candidate is None
-                )
+            if (sql_withheld or submission_required or submission is not None) and (
+                completion.finish_reason == "length" or not completion.content.strip()
             ):
                 continue
-            if candidate is not None:
+            if proposed is None and (
+                submission_required
+                or submission is not None
+                or (sql_withheld and extract_final_sql is not None)
+            ):
+                if extract_final_sql is None:
+                    history.extend(
+                        [assistant, Message(role=Role.USER, content=SUBMIT_SQL)]
+                    )
+                continue
+            if proposed is not None:
                 check = await check_submission(
-                    ctx, review_question, review_context, candidate
+                    ctx, review_question, review_context, proposed
                 )
+                if check.action == "accept":
+                    assistant.content = proposed.answer()
                 if check.action == "withhold":
                     failure = check.detail
                     break
@@ -165,7 +191,10 @@ async def agent_loop(
 
         ctx.session.add(assistant)
         history.append(assistant)
+        clarification = None
         for call in completion.tool_calls:
+            if call.name == "run_sql" and extract_final_sql is None:
+                submission_required = True
             if needs_recovery and (
                 call.name != _SCHEMA_TOOL
                 or not isinstance(call.arguments, dict)
@@ -196,6 +225,13 @@ async def agent_loop(
                 and not result.is_error
             ):
                 review_context.append(result.content)
+            if (
+                call.name == "ask_user"
+                and not result.is_error
+                and extract_final_sql is None
+                and (submission_required or submission is not None)
+            ):
+                clarification = result.content
             tables_with_columns.update(result.tables_with_columns)
             tool_message = Message(
                 role=Role.TOOL,
@@ -206,6 +242,18 @@ async def agent_loop(
             ctx.session.add(tool_message)
             history.append(tool_message)
 
+        if clarification is not None:
+            ctx.session.add(
+                Message(
+                    role=Role.ASSISTANT,
+                    content=clarification,
+                    name="clarify_definition",
+                )
+            )
+            return clarification
+
+    if submission_required and not (failure or revision_requested or sql_withheld):
+        failure = "call budget exhausted before receiving a final SQL submission"
     if revision_requested and failure is None:
         failure = "call budget exhausted before receiving a validated revision"
     if not sql_withheld and failure is None:

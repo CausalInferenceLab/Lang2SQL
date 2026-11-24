@@ -8,6 +8,7 @@ explanation the model can act on; PASS/REWRITE proceed to
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
@@ -51,54 +52,71 @@ class RunSQL:
         except (TypeError, ValueError):
             limit = 1000  # tolerate a malformed limit from the model
 
-        if ctx.safety is None:
-            return ToolResult(
-                call_id="",
-                content="run_sql unavailable: no safety pipeline wired",
-                is_error=True,
+        result = await execute_read_query(ctx, sql, limit)
+        if isinstance(result, ToolResult):
+            return result
+        return ToolResult(call_id="", content=result.render())
+
+
+@dataclass
+class SQLExecution:
+    executed_sql: str
+    rows: list[dict]
+
+    def render(self, display_sql: str | None = None) -> str:
+        sql = self.executed_sql if display_sql is None else display_sql
+        rows = self.rows
+        if not rows:
+            return f"(0 rows)\nSQL: {sql}"
+        headers = list(rows[0].keys())
+        lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
+        for r in rows[:50]:
+            lines.append(" | ".join(str(r.get(h, "")) for h in headers))
+        suffix = f"\n… ({len(rows)} rows total)" if len(rows) > 50 else ""
+        return f"{len(rows)} row(s):\n" + "\n".join(lines) + suffix + f"\nSQL: {sql}"
+
+
+async def execute_read_query(
+    ctx: HarnessContext, sql: str, limit: int = 1000
+) -> SQLExecution | ToolResult:
+    """Execute through the same safety and audit path for exploration and final answers."""
+    if ctx.safety is None:
+        return ToolResult(
+            call_id="",
+            content="run_sql unavailable: no safety pipeline wired",
+            is_error=True,
+        )
+    if ctx.explorer is None:
+        return ToolResult(
+            call_id="",
+            content="run_sql unavailable: no DB connected (use /connect)",
+            is_error=True,
+        )
+
+    if limit <= 0:
+        limit = 1000
+    decision = ctx.safety.evaluate(sql, query_context(ctx.explorer, limit))
+    if decision.verdict == Verdict.BLOCK:
+        return ToolResult(
+            call_id="",
+            content=f"BLOCKED by {decision.layer}: {decision.reason}",
+            is_error=True,
+        )
+    if decision.verdict == Verdict.CONFIRM:
+        return ToolResult(
+            call_id="", content=f"NEEDS CONFIRMATION: {decision.confirm_prompt}"
+        )
+
+    rows = await ctx.explorer.execute(decision.sql, limit)
+
+    if ctx.audit is not None:
+        await ctx.audit.record(
+            AuditEvent(
+                actor=ctx.identity.user_id,
+                action="run_sql",
+                scope=ctx.identity.session_key(),
+                detail={"sql": decision.sql},
             )
-        if ctx.explorer is None:
-            return ToolResult(
-                call_id="",
-                content="run_sql unavailable: no DB connected (use /connect)",
-                is_error=True,
-            )
+        )
 
-        if limit <= 0:
-            limit = 1000
-        decision = ctx.safety.evaluate(sql, query_context(ctx.explorer, limit))
-        if decision.verdict == Verdict.BLOCK:
-            return ToolResult(
-                call_id="",
-                content=f"BLOCKED by {decision.layer}: {decision.reason}",
-                is_error=True,
-            )
-        if decision.verdict == Verdict.CONFIRM:
-            return ToolResult(
-                call_id="", content=f"NEEDS CONFIRMATION: {decision.confirm_prompt}"
-            )
-
-        rows = await ctx.explorer.execute(decision.sql, limit)
-
-        if ctx.audit is not None:
-            await ctx.audit.record(
-                AuditEvent(
-                    actor=ctx.identity.user_id,
-                    action="run_sql",
-                    scope=ctx.identity.session_key(),
-                    detail={"sql": decision.sql},
-                )
-            )
-
-        return ToolResult(call_id="", content=_render_rows(decision.sql, rows))
-
-
-def _render_rows(sql: str, rows: list[dict]) -> str:
-    if not rows:
-        return f"(0 rows)\nSQL: {sql}"
-    headers = list(rows[0].keys())
-    lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
-    for r in rows[:50]:
-        lines.append(" | ".join(str(r.get(h, "")) for h in headers))
-    suffix = f"\n… ({len(rows)} rows total)" if len(rows) > 50 else ""
-    return f"{len(rows)} row(s):\n" + "\n".join(lines) + suffix + f"\nSQL: {sql}"
+    return SQLExecution(decision.sql, rows)

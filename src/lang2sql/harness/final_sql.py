@@ -4,15 +4,18 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import Literal
+from typing import Callable, Literal
 
 from ..core.ports.audit import AuditEvent
 from ..core.ports.safety import Verdict
+from ..core.types import ToolResult
 from ..safety.pipeline import query_context
 from ..safety.tokens import tokens
+from ..tools.run_sql import SQLExecution, execute_read_query
 from .call_budget import CallBudgetExhausted
 from .context import HarnessContext
 from .semantic_review import InvalidReview, review_sql
+from .sql_candidate import sql_from_answer
 
 
 async def check_final_sql(ctx: HarnessContext, candidate: str) -> str | None:
@@ -60,6 +63,53 @@ async def check_final_sql(ctx: HarnessContext, candidate: str) -> str | None:
     return error
 
 
+@dataclass
+class SQLSubmission:
+    """One proposed final query, owned by a single agent_loop invocation."""
+
+    candidate_sql: str
+    output: Literal["sql", "result"]
+    sql_answer: str
+    execution: SQLExecution | None = None
+
+    def answer(self) -> str:
+        if self.output == "sql":
+            return self.sql_answer
+        if self.execution is None:
+            raise RuntimeError("result submission has no execution")
+        return self.execution.render(self.candidate_sql)
+
+
+def read_submission(
+    content: str,
+    extract_final_sql: Callable[[str], str] | None,
+) -> SQLSubmission | None:
+    text = content.strip()
+    if text.startswith("```json") and text.endswith("```"):
+        text = text.removeprefix("```json").removesuffix("```").strip()
+    if extract_final_sql is None and text.startswith("{"):
+        try:
+            obj = json.loads(text)
+        except ValueError as error:
+            raise ValueError("invalid submission JSON") from error
+        if "sql" not in obj and "output" not in obj:
+            return None
+        sql = obj.get("sql")
+        output = obj.get("output", "result")
+        if (
+            not isinstance(sql, str)
+            or not sql.strip()
+            or output not in ("sql", "result")
+        ):
+            raise ValueError("expected sql text and output of sql or result")
+        return SQLSubmission(sql.strip(), output, sql.strip())
+
+    # A caller-supplied extractor owns the output format (e.g. BIRD's fenced SQL).
+    # Also preserve standalone SQL answers from existing model integrations.
+    sql = sql_from_answer(content, extract_final_sql)
+    return SQLSubmission(sql, "sql", content) if sql is not None else None
+
+
 @dataclass(frozen=True)
 class SubmissionCheck:
     action: Literal["accept", "revise", "clarify", "withhold"]
@@ -67,8 +117,9 @@ class SubmissionCheck:
 
 
 async def check_submission(
-    ctx: HarnessContext, question: str, context: list[str], candidate: str
+    ctx: HarnessContext, question: str, context: list[str], submission: SQLSubmission
 ) -> SubmissionCheck:
+    candidate = submission.candidate_sql
     error = await check_final_sql(ctx, candidate)
     if error is not None:
         return SubmissionCheck("revise", error)
@@ -101,6 +152,16 @@ async def check_submission(
             )
         )
     if review.status == "accept":
+        if submission.output == "result":
+            try:
+                result = await execute_read_query(ctx, candidate)
+            except Exception as exc:
+                return SubmissionCheck(
+                    "revise", f"Execution failed: {getattr(exc, 'orig', exc)}"
+                )
+            if isinstance(result, ToolResult):
+                return SubmissionCheck("revise", result.content)
+            submission.execution = result
         return SubmissionCheck("accept")
     if review.status == "clarify":
         return SubmissionCheck("clarify", review.details["question"])

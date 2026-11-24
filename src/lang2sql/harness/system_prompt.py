@@ -13,17 +13,26 @@ from dataclasses import dataclass
 
 from .context import HarnessContext
 
+SUBMIT_SQL = (
+    "For a database answer, submit the exact final query as a JSON object "
+    '{"sql":"...", "output":"result"}. Use "output":"sql" if the user asks for '
+    "the SQL itself. Use run_sql for exploration. The harness will review the "
+    "submitted query and return the requested output. Answer general questions "
+    "normally and use ask_user if you need clarification after exploring."
+)
+
+
 _BASE = """\
 You are Lang2SQL, a read-only data analytics agent.
 
 Rules:
 - Only ever read data. Never modify the database.
-- When you need data, call the run_sql tool with a single SELECT/WITH query.
+- {data_instruction}
 - Before writing a database query, use explore_schema(tables=[...]) for
   relevant tables whose columns are missing from your context. Choose table
   names from Known tables. A list of table names does not provide columns.
 - Prefer definitions from the semantic layer below over your own assumptions.
-- Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
+- {answer_instruction}
 
 Clarification rule:
 - If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.
@@ -38,8 +47,22 @@ class SystemPrompt:
     schema_and_definitions: str
 
 
-async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
-    parts: list[str] = [_BASE]
+async def build_system_prompt(
+    ctx: HarnessContext, *, structured_sql: bool = False
+) -> SystemPrompt:
+    if structured_sql:
+        data_instruction = "Use run_sql with a single SELECT/WITH query when you need to explore values."
+        answer_instruction = SUBMIT_SQL
+    else:
+        data_instruction = (
+            "When you need data, call the run_sql tool with a single SELECT/WITH query."
+        )
+        answer_instruction = "Answer concisely. Show only the final successful SQL you ran, not intermediate attempts."
+    parts = [
+        _BASE.format(
+            data_instruction=data_instruction, answer_instruction=answer_instruction
+        )
+    ]
     tables_with_columns: set[str] = set()
 
     if ctx.explorer is not None:
