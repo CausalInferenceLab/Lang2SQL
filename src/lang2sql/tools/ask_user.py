@@ -1,10 +1,8 @@
 """ask_user — request a clarification from the human.
 
-The agent calls this when a question is ambiguous. V1 returns the question as
-the tool result; the frontend surfaces it and the user's reply arrives as the
-next turn. (A suspend/resume round-trip is a v1.5 frontend concern; the loop
-contract here is simply that the model gets its question echoed back so it
-stops guessing.)
+The harness treats a successful clarification as a turn boundary. Any other
+calls in that completion are cancelled, and only a new user turn can resume.
+
 """
 
 from __future__ import annotations
@@ -34,4 +32,6 @@ class AskUser:
         question = (args.get("question") or "").strip()
         if not question:
             return ToolResult(call_id="", content="no question provided", is_error=True)
-        return ToolResult(call_id="", content=f"❓ Awaiting user: {question}")
+        return ToolResult(
+            call_id="", content=f"❓ Awaiting user: {question}", stop_turn=True
+        )

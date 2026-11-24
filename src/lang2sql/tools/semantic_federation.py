@@ -19,8 +19,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
-
 from ..core.ports.tool import ToolPort, ToolResult, ToolSpec
+from ..tools.enrich_schema import (
+    _KV_PREFIX as _ENRICH_PREFIX,
+    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
+)
 
 if TYPE_CHECKING:
     from ..harness.context import HarnessContext
@@ -50,11 +53,6 @@ def _validate_layer(
         )
     return layer, None
 
-
-from ..tools.enrich_schema import (
-    _KV_PREFIX as _ENRICH_PREFIX,
-    _KV_RELATIONSHIPS as _ENRICH_RELATIONSHIPS,
-)
 
 _AMBIGUITY_SIGNALS: dict[str, str] = {
     r"(^|_)(created|registered|joined|signup)(_at|_date)?$": "신규/최초 가입 기준 용어",
@@ -91,11 +89,21 @@ class FedEntry:
     applies_to: str = ""  # 관련 테이블/컬럼 (예: users, orders.amount)
     tags: list[str] = field(default_factory=list)
 
+    oracle_view: dict[str, Any] | None = None
+
     def __post_init__(self) -> None:
         if not isinstance(self.synonyms, list):
             self.synonyms = _parse_synonyms(self.synonyms)
         if not isinstance(self.tags, list):
             self.tags = [t.strip() for t in str(self.tags).split(",") if t.strip()]
+
+    def save_text(self, store, scope):
+        """Text edits and imports must not silently replace a confirmed DB contract."""
+        key = _kv_key(self.term, self.layer, self.entity)
+        existing = store.kv_get(scope, key)
+        if existing and FedEntry.from_json(existing).oracle_view:
+            return False
+        return store.kv_compare_replace(scope, key, existing, self.to_json())
 
     def to_json(self) -> str:
         return json.dumps(
@@ -109,12 +117,13 @@ class FedEntry:
                 "kind": self.kind,
                 "applies_to": self.applies_to,
                 "tags": self.tags,
+                **({"oracle_view": self.oracle_view} if self.oracle_view else {}),
             },
             ensure_ascii=False,
         )
 
     @staticmethod
-    def from_json(raw: str) -> "FedEntry":
+    def from_json(raw: str) -> FedEntry:
         d = json.loads(raw)
         return FedEntry(
             term=d["term"],
@@ -126,6 +135,7 @@ class FedEntry:
             kind=d.get("kind", ""),
             applies_to=d.get("applies_to", ""),
             tags=d.get("tags", []),
+            oracle_view=d.get("oracle_view"),
         )
 
 
@@ -199,7 +209,7 @@ class SemanticFederationTool(ToolPort):
             },
         )
 
-    async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
+    async def run(self, args: dict[str, Any], ctx: HarnessContext) -> ToolResult:
         if ctx.store is None:
             return ToolResult(call_id="", content="❌ KV store 미설정", is_error=True)
 
@@ -310,7 +320,12 @@ class SemanticFederationTool(ToolPort):
             applies_to=applies_to,
             tags=tags,
         )
-        ctx.store.kv_set(scope, key, entry.to_json())
+        if not entry.save_text(ctx.store, scope):
+            return ToolResult(
+                call_id="",
+                is_error=True,
+                content="Definition is bound or changed concurrently. Review the current entry before replacing it.",
+            )
         if ctx.audit is not None:
             await ctx.audit.record(
                 AuditEvent(
@@ -434,11 +449,11 @@ _KIND_ORDER = ["metric", "dimension", "rule", "table"]
 _AMBIGUOUS_TERM_POLICY = """\
 ## Ambiguous Term Policy
 사전에 없는 주관적/모호한 표현을 발견하면:
-1. DB 스키마 기준으로 가장 합리적인 해석으로 SQL을 실행한다.
-2. 실행 후 사용한 해석을 명시하고, kind(metric/rule/dimension/table)와 범위(org/team/user)를 사용자에게 묻는다.
-   예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. metric/rule/dimension/table 중 어느 종류이며, 어느 범위로 등록할까요?"
-3. 사용자가 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
-4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.\
+1. SQL을 작성하거나 실행하기 전에 사용자에게 정확한 업무 정의를 묻고 답변을 기다린다.
+2. 스키마나 통상적인 관행으로 정의를 추측하지 않는다. inferred=true인 임시 정의도 확인 전에는 사용하지 않는다.
+3. 사용자에게 정의와 적용 범위(org/team/user), 종류(metric/rule/dimension/table)를 확인한 후에만 term_custom으로 저장한다.
+4. 사용자가 명시적으로 제공하거나 확인한 정의만 inferred=false로 저장한다. 실행 차단을 피하려고 스스로 정의를 만들어 등록하지 않는다.
+5. 다음 질문에서는 저장된 범위별 정의를 확인하고 그대로 적용한다. 정의가 없으면 다시 묻는다.\
 """
 
 
@@ -503,6 +518,16 @@ def build_prompt_section(store: Any, scope: str, channel_id: str, user_id: str) 
         if winner is None:
             continue
 
+        if winner.oracle_view:
+            contract = winner.oracle_view["contract"]
+            groups.setdefault(
+                winner.kind if winner.kind in _KIND_SQL_HINT else "", []
+            ).append(
+                _fmt_entry(winner, _tag_for(winner))
+                + f" — confirmed Oracle view {contract['owner']}.{contract['view']}; "
+                "use run_sql(metric_term, period_start, period_end) with an explicit half-open date range; never substitute free-form SQL."
+            )
+            continue
         others = [e for e in entries if e is not winner]
         k = winner.kind if winner.kind in _KIND_SQL_HINT else ""
 

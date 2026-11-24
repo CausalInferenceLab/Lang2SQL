@@ -1,5 +1,6 @@
 """Exercise the actual stdio protocol against the tool-only composition."""
 
+import json
 import os
 import sqlite3
 import sys
@@ -44,6 +45,17 @@ async def connected(db, store, *, team="finance"):
         yield client
 
 
+async def checked_sql(client, sql):
+    saved = await client.call_tool(
+        "term_custom",
+        {"term": "order_total", "definition": "SUM(orders.amount)", "layer": "team"},
+    )
+    assert not saved.isError
+    check = await client.call_tool("resolve_business_terms", {"terms": ["order_total"]})
+    token = json.loads(check.content[0].text)["definition_check_id"]
+    return await client.call_tool("run_sql", {"sql": sql, "definition_check_id": token})
+
+
 def fixture_db(tmp_path):
     db = tmp_path / "data.db"
     with sqlite3.connect(db) as conn:
@@ -63,14 +75,13 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
             "term_custom",
             "remember",
             "recall_memory",
+            "resolve_business_terms",
         }
         schema = await client.call_tool("explore_schema", {})
         assert not schema.isError and "orders" in schema.content[0].text
-        result = await client.call_tool(
-            "run_sql", {"sql": "SELECT SUM(amount) AS total FROM orders"}
-        )
+        result = await checked_sql(client, "SELECT SUM(amount) AS total FROM orders")
         assert not result.isError and "30" in result.content[0].text
-        blocked = await client.call_tool("run_sql", {"sql": "DROP TABLE orders"})
+        blocked = await checked_sql(client, "DROP TABLE orders")
         assert blocked.isError and "BLOCKED" in blocked.content[0].text
         malformed = await client.call_tool("run_sql", {"sql": 123})
         assert malformed.isError
@@ -133,3 +144,92 @@ def test_no_connection_does_not_silently_use_stub(monkeypatch):
 async def test_internal_llm_is_disabled():
     with pytest.raises(RuntimeError, match="internal LLM"):
         await ExternalAgentLLM().complete([])
+
+
+@pytest.mark.asyncio
+async def test_missing_definition_never_reaches_database(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "metadata.db"
+    async with connected(db, store) as client:
+        direct = await client.call_tool("run_sql", {"sql": "SELECT * FROM orders"})
+        assert direct.isError
+        check = await client.call_tool(
+            "resolve_business_terms", {"terms": ["loyal_customer"]}
+        )
+        assert check.isError and "DEFINITION_REQUIRED" in check.content[0].text
+        guessed = await client.call_tool(
+            "run_sql",
+            {"sql": "SELECT * FROM orders", "definition_check_id": "fabricated"},
+        )
+        assert guessed.isError and "NOT executed" in guessed.content[0].text
+        empty = await client.call_tool("resolve_business_terms", {"terms": []})
+        assert empty.isError
+    with sqlite3.connect(store) as conn:
+        assert (
+            conn.execute(
+                "SELECT count(*) FROM audit WHERE action LIKE 'run_sql%'"
+            ).fetchone()[0]
+            == 0
+        )
+
+
+@pytest.mark.asyncio
+async def test_check_scope_inferred_mutation_and_single_use(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "metadata.db"
+    async with connected(db, store) as client:
+
+        async def save(definition, inferred=False):
+            result = await client.call_tool(
+                "term_custom",
+                {
+                    "term": "revenue",
+                    "definition": definition,
+                    "layer": "team",
+                    "inferred": inferred,
+                },
+            )
+            assert not result.isError
+
+        async def resolve():
+            return await client.call_tool(
+                "resolve_business_terms", {"terms": ["revenue"]}
+            )
+
+        async def execute(token):
+            return await client.call_tool(
+                "run_sql",
+                {"sql": "SELECT SUM(amount) FROM orders", "definition_check_id": token},
+            )
+
+        await save("SUM(amount)", True)
+        assert (await resolve()).isError
+        await save("SUM(amount)")
+        token = json.loads((await resolve()).content[0].text)["definition_check_id"]
+        await save("SUM(amount) - 5")
+        assert (await execute(token)).isError
+        await save("SUM(amount)")
+        token = json.loads((await resolve()).content[0].text)["definition_check_id"]
+        result = await execute(token)
+        assert not result.isError and "30" in result.content[0].text
+        assert (await execute(token)).isError
+        token = json.loads((await resolve()).content[0].text)["definition_check_id"]
+        assert (
+            await client.call_tool(
+                "resolve_business_terms", {"terms": ["revenue", "missing"]}
+            )
+        ).isError
+        assert (await execute(token)).isError
+    async with connected(db, store) as client:
+        assert (
+            await client.call_tool(
+                "run_sql", {"sql": "SELECT * FROM orders", "definition_check_id": token}
+            )
+        ).isError
+        assert not (
+            await client.call_tool("resolve_business_terms", {"terms": ["revenue"]})
+        ).isError
+    async with connected(db, store, team="sales") as client:
+        assert (
+            await client.call_tool("resolve_business_terms", {"terms": ["revenue"]})
+        ).isError

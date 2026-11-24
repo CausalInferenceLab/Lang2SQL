@@ -122,6 +122,22 @@ class SqliteStore:
         )
         self._conn.commit()
 
+    def kv_compare_replace(
+        self, scope: str, key: str, expected: str | None, value: str
+    ) -> bool:
+        if expected is None:
+            cur = self._conn.execute(
+                "INSERT OR IGNORE INTO kv(scope,key,value) VALUES(?,?,?)",
+                (scope, key, value),
+            )
+        else:
+            cur = self._conn.execute(
+                "UPDATE kv SET value=? WHERE scope=? AND key=? AND value=?",
+                (value, scope, key, expected),
+            )
+        self._conn.commit()
+        return cur.rowcount == 1
+
     def kv_delete(self, scope: str, key: str) -> bool:
         """Delete one key and return whether a row was removed."""
         cur = self._conn.execute(

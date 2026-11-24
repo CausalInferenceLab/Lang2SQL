@@ -32,6 +32,16 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
     parts: list[str] = [_BASE]
 
     if ctx.explorer is not None:
+        dialect = getattr(ctx.explorer, "dialect", "")
+        if dialect:
+            parts.append(f"## SQL dialect\n{dialect}")
+        if dialect == "oracle":
+            parts.append(
+                "Use Oracle SQL: DATE 'YYYY-MM-DD' literals and FETCH FIRST n ROWS ONLY, "
+                "not LIMIT. Preserve schema-qualified table names. "
+                "On a permission denial, explain the denial without changing credentials "
+                "or searching other tables for the denied data."
+            )
         tables = await ctx.explorer.list_tables()
         if tables:
             scope = ctx.identity.kv_scope if ctx.store else None

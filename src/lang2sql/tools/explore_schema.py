@@ -38,7 +38,7 @@ class ExploreSchema:
     def spec(self) -> ToolSpec:
         return ToolSpec(
             name="explore_schema",
-            description="List tables, or describe one table's columns. Call before writing SQL.",
+            description="List tables and views, or describe one object's columns. Call before writing SQL.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -59,7 +59,13 @@ class ExploreSchema:
         table = (args.get("table") or "").strip()
         if not table:
             tables = await ctx.explorer.list_tables()
-            names = "\n".join(f"- {t.qualified}" for t in tables) or "(no tables)"
+            names = (
+                "\n".join(
+                    f"- {t.qualified}" + (" [view]" if t.kind == "view" else "")
+                    for t in tables
+                )
+                or "(no tables or views)"
+            )
             return ToolResult(call_id="", content="Tables:\n" + names)
 
         t = await ctx.explorer.describe_table(table)
@@ -72,4 +78,4 @@ class ExploreSchema:
             )
             or "(no columns)"
         )
-        return ToolResult(call_id="", content=f"{t.qualified}\n{cols}")
+        return ToolResult(call_id="", content=f"{t.qualified} ({t.kind})\n{cols}")

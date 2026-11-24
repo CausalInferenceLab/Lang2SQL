@@ -1,0 +1,345 @@
+{
+  "mode": "live_llm",
+  "model": "gpt-4.1-mini",
+  "timestamp": "2026-11-11T14:28:57.034595+00:00",
+  "cases": [
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 2,000,000원입니다.",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount) AS total_sales_202610 FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "total_sales_202610": 2000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "revenue",
+      "team": "finance",
+      "db_user": "L2S_DEMO_FINANCE",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 1,700,000원입니다.",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS 매출\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "매출": 1700000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "clarification",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 충성고객 매출을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "❓ Awaiting user: 충성고객의 기준이 무엇인가요? 구매 횟수와 누적 구매액 중 어떤 기준을 쓸까요?",
+      "executions": [],
+      "tool_calls": [
+        "ask_user"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "salary",
+      "team": "hr",
+      "db_user": "L2S_DEMO_HR",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": null,
+      "passed": true,
+      "permission_probe": null,
+      "answer": "부서별 급여 평균은 finance 부서가 4,000,000이고 sales 부서가 3,000,000입니다.",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS average_salary FROM l2s_demo_owner.salaries GROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "department": "finance",
+              "average_salary": 4000000
+            },
+            {
+              "department": "sales",
+              "average_salary": 3000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 1,
+      "case": "denied",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": "ORA-00942",
+      "answer": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "error": "ORA-00942"
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 2,
+      "case": "revenue",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 2,000,000원입니다.",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount) AS total_sales FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "total_sales": 2000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 2,
+      "case": "revenue",
+      "team": "finance",
+      "db_user": "L2S_DEMO_FINANCE",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 원 단위로 1,700,000원입니다.",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS 매출\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "매출": 1700000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 2,
+      "case": "clarification",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 충성고객 매출을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "❓ Awaiting user: 충성고객의 기준이 무엇인가요? 예를 들어, 구매 횟수 또는 누적 구매액 중 어떤 기준을 사용할까요?",
+      "executions": [],
+      "tool_calls": [
+        "ask_user"
+      ]
+    },
+    {
+      "repeat": 2,
+      "case": "salary",
+      "team": "hr",
+      "db_user": "L2S_DEMO_HR",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": null,
+      "passed": true,
+      "permission_probe": null,
+      "answer": "부서별 급여 평균은 finance 부서가 4,000,000이고 sales 부서가 3,000,000입니다.",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "department": "finance",
+              "avg_salary": 4000000
+            },
+            {
+              "department": "sales",
+              "avg_salary": 3000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 2,
+      "case": "denied",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": "ORA-00942",
+      "answer": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary FROM l2s_demo_owner.salaries GROUP BY department ORDER BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "error": "ORA-00942"
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 3,
+      "case": "revenue",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 2,000,000원입니다.",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount) AS total_revenue FROM l2s_demo_owner.orders WHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "total_revenue": 2000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 3,
+      "case": "revenue",
+      "team": "finance",
+      "db_user": "L2S_DEMO_FINANCE",
+      "question": "2026년 10월 매출 얼마야? 원 단위로 알려줘.",
+      "definition": "순매출 SUM(gross_amount - discount_amount - return_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "2026년 10월 매출은 1,700,000원입니다.",
+      "executions": [
+        {
+          "sql": "SELECT SUM(gross_amount - discount_amount - return_amount) AS 매출\nFROM l2s_demo_owner.orders\nWHERE ordered_at >= DATE '2026-10-01' AND ordered_at < DATE '2026-11-01'\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "매출": 1700000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 3,
+      "case": "clarification",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "2026년 10월 충성고객 매출을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": null,
+      "answer": "❓ Awaiting user: 충성고객의 기준이 무엇인가요? 예: 구매 횟수, 누적 구매액, 최근 구매일 등",
+      "executions": [],
+      "tool_calls": [
+        "ask_user"
+      ]
+    },
+    {
+      "repeat": 3,
+      "case": "salary",
+      "team": "hr",
+      "db_user": "L2S_DEMO_HR",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": null,
+      "passed": true,
+      "permission_probe": null,
+      "answer": "부서별 급여 평균은 다음과 같습니다.\n- finance: 4,000,000\n- sales: 3,000,000",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS average_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "rows": [
+            {
+              "department": "finance",
+              "average_salary": 4000000
+            },
+            {
+              "department": "sales",
+              "average_salary": 3000000
+            }
+          ]
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    },
+    {
+      "repeat": 3,
+      "case": "denied",
+      "team": "sales",
+      "db_user": "L2S_DEMO_SALES",
+      "question": "부서별 급여 평균을 알려줘.",
+      "definition": "주문 금액 합계 SUM(gross_amount). 테이블 l2s_demo_owner.orders. 원 단위. 날짜는 ordered_at.",
+      "passed": true,
+      "permission_probe": "ORA-00942",
+      "answer": "요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+      "executions": [
+        {
+          "sql": "SELECT department, AVG(salary) AS avg_salary\nFROM l2s_demo_owner.salaries\nGROUP BY department\nORDER BY department\nFETCH FIRST 1000 ROWS ONLY",
+          "error": "ORA-00942"
+        }
+      ],
+      "tool_calls": [
+        "run_sql"
+      ]
+    }
+  ],
+  "database": "Oracle Database 23ai Free Release 23.0.0.0.0 - Develop, Learn, and Run for Free",
+  "passed": true
+}
