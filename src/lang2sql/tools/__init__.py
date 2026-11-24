@@ -19,12 +19,14 @@ from .explore_schema import ExploreSchema
 from .ingest_doc import IngestDoc
 from .org_setup import OrgSetupTool
 from .remember import Remember
+from .review_sql import ReviewSQL
 from .run_sql import RunSQL
 from .semantic_federation import SemanticFederationTool
 
 __all__ = [
     "build_default_tools",
     "RunSQL",
+    "ReviewSQL",
     "ExploreSchema",
     "EnrichSchema",
     "SemanticFederationTool",
@@ -46,6 +48,7 @@ def build_default_tools(
     """The V1 tools."""
     return [
         RunSQL(),
+        ReviewSQL(),
         ExploreSchema(),
         EnrichSchema(),
         SemanticFederationTool(),

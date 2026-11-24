@@ -223,3 +223,53 @@ async def test_run_sql_caps_rows_and_blocks_before_db(tmp_path, monkeypatch):
     for sql in ("SELECT ';'; /* split */ SELECT 2", "DELETE FROM orders"):
         result = await ctx.tools.dispatch("run_sql", {"sql": sql}, ctx, "blocked")
         assert result.is_error and "BLOCKED" in result.content
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("suffix", ["", " LIMIT 1200"])
+async def test_fetched_rows_report_driver_cap_and_actual_sql(tmp_path, suffix):
+    path = tmp_path / "amounts.db"
+    with sqlite3.connect(path) as connection:
+        connection.execute("CREATE TABLE amounts(n INTEGER)")
+        connection.executemany(
+            "INSERT INTO amounts VALUES (?)", ((n,) for n in range(1500))
+        )
+    ctx = build_tool_context(
+        Identity(user_id="test"), explorer=SqlAlchemyExplorer(f"sqlite:///{path}")
+    )
+    sql = "SELECT n FROM amounts" + suffix
+    result = await ctx.tools.dispatch("run_sql", {"sql": sql}, ctx, "rows")
+    assert not result.is_error
+    assert "1000 row(s) fetched (row limit of 1000 reached)" in result.content
+    assert (
+        "showing the first 50 rows" in result.content
+        and "rows total" not in result.content
+    )
+    assert result.content.endswith("SQL: " + (sql if suffix else sql + "\nLIMIT 1000"))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("dialect", "sql", "message"),
+    [
+        ("postgresql", "EXPLAIN ANALYZE SELECT 1", "underlying SELECT"),
+        ("mysql", "SELECT 1", "unavailable for this dialect"),
+    ],
+)
+async def test_review_never_falls_back_to_executing_sql(
+    monkeypatch, dialect, sql, message
+):
+    explorer = SqlAlchemyExplorer(f"{dialect}://")
+
+    async def unexpected(*args, **kwargs):
+        pytest.fail("review attempted to execute the draft")
+
+    monkeypatch.setattr(explorer, "execute", unexpected)
+    ctx = build_tool_context(Identity(user_id="test"), explorer=explorer)
+    result = await ctx.tools.dispatch(
+        "review_sql",
+        {"sql": sql, "context": "Return SQL for the constant one."},
+        ctx,
+        "review",
+    )
+    assert not result.is_error and message in result.content

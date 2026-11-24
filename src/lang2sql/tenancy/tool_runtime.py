@@ -14,6 +14,7 @@ from ..safety.pipeline import SafetyPipeline
 from ..tools.explore_schema import ExploreSchema
 from ..tools.recall_memory import RecallMemory
 from ..tools.remember import Remember
+from ..tools.review_sql import ReviewSQL
 from ..tools.run_sql import RunSQL
 from ..tools.semantic_federation import SemanticFederationTool
 
@@ -40,6 +41,7 @@ def build_tool_context(
     registry = ToolRegistry(
         [
             RunSQL(),
+            ReviewSQL(),
             ExploreSchema(),
             SemanticFederationTool(),
             Remember(memory),

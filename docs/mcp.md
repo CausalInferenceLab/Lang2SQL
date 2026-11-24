@@ -63,6 +63,7 @@ retain the existing federation semantics across teams within an organization.
 | Name | Behavior |
 |---|---|
 | `explore_schema` | List tables or describe a table, including cached descriptions. |
+| `review_sql(sql, context)` | Checks the read-only policy and requests a query plan on SQLite and PostgreSQL. The caller supplies its assessment of the SQL against the question, schema and business definitions. Returns the SQL, that context and technical feedback. |
 | `run_sql` | Existing SQL validation, execution, audit and text result formatting. |
 | `term_custom` | Existing org/team/user definitions; `list=true` reads effective definitions; registration/removal retains existing permissions. |
 | `remember` | Save a note in this server process for the configured user. |

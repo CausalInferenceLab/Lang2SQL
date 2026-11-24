@@ -1,4 +1,4 @@
-"""One model-call allowance shared by generation, tools and final review."""
+"""One model-call allowance shared by the agent loop and its tools."""
 
 from collections.abc import Sequence
 

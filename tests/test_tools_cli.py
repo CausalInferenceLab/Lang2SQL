@@ -127,3 +127,12 @@ def test_batch_validates_before_writes(tmp_path):
     assert status == 2
     status, result = invoke(tmp_path, "call", "term_custom", "--args", '{"list":true}')
     assert "gross" not in result["content"]
+
+
+def test_review_returns_draft_and_feedback_without_model_key(tmp_path):
+    args = {"sql": "SELECT amount FROM orders", "context": "Return each order amount."}
+    status, result = invoke(tmp_path, "call", "review_sql", "--args", json.dumps(args))
+    assert status == 0
+    review = json.loads(result["content"])
+    assert review["sql"] == args["sql"] and review["context"] == args["context"]
+    assert "plan checks passed" in review["feedback"]

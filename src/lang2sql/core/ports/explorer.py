@@ -35,8 +35,7 @@ class Table:
 class ExplorerPort(Protocol):
     """Introspect a connected database, read-only.
 
-    An explorer that returns simulated data must set supports_query_validation
-    to False so the harness can withhold answers that need a live database.
+    Explorers serving simulated data set uses_sample_data to True.
     """
 
     async def list_tables(self) -> list[Table]:

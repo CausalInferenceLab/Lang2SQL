@@ -1,6 +1,6 @@
 # Direct tool CLI for coding agents
 
-`lang2sql-tools` exposes the same five tools as the MCP adapter without MCP,
+`lang2sql-tools` exposes the same six tools as the MCP adapter without MCP,
 an internal LLM, or an API key. The original `lang2sql "question"` command is
 unchanged. Both adapters share `tenancy/tool_runtime.py` and the existing tools.
 
@@ -10,6 +10,8 @@ export LANG2SQL_DB_URL=sqlite:////absolute/path/analytics.db
 
 lang2sql-tools --user-id analyst --org-id demo list
 lang2sql-tools --user-id analyst --org-id demo call explore_schema
+lang2sql-tools --user-id analyst --org-id demo call review_sql \
+  --args '{"sql":"SELECT COUNT(*) AS n FROM orders","context":"Count all orders. Each row is one order."}'
 lang2sql-tools --user-id analyst --org-id demo call run_sql \
   --args '{"sql":"SELECT COUNT(*) AS n FROM orders"}'
 ```

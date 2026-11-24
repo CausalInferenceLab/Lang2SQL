@@ -22,7 +22,9 @@ from ..core.ports.safety import (
 from .layers import RowLimitLayer, TimeoutLayer, WhitelistLayer
 
 
-def query_context(explorer: ExplorerPort, row_limit: int = 1000) -> SafetyContext:
+def query_context(
+    explorer: ExplorerPort | None, row_limit: int = 1000
+) -> SafetyContext:
     return SafetyContext(
         row_limit=row_limit, extras={"dialect": getattr(explorer, "dialect_name", "")}
     )

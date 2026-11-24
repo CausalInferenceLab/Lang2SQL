@@ -110,7 +110,7 @@ The bot exits loudly if `DISCORD_BOT_TOKEN` is unset. Full setup and hosting:
   `term_custom` registers definitions per scope (KV-backed);
   `kind`(metric/table/rule/dimension) · `applies_to` · `tags` 필드 지원.
 - Safety pipeline with the V1 layers (whitelist + timeout), gating every query.
-- Agent loop with nine tools: `run_sql`, `explore_schema`, `enrich_schema`,
+- Agent loop with ten tools: `review_sql`, `run_sql`, `explore_schema`, `enrich_schema`,
   `term_custom`, `org_setup`, `ingest_doc`, `confirm_ingest`, `remember`, `ask_user`.
 - Memory service (in-memory store + inject-all recall + manual `/remember`).
 - Discord frontend (bot, commands, session router, render).

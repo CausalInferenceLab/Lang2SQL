@@ -13,26 +13,20 @@ from dataclasses import dataclass
 
 from .context import HarnessContext
 
-SUBMIT_SQL = (
-    "For a database answer, submit the exact final query as a JSON object "
-    '{"sql":"...", "output":"result"}. Use "output":"sql" if the user asks for '
-    "the SQL itself. Use run_sql for exploration. The harness will review the "
-    "submitted query and return the requested output. Answer general questions "
-    "normally and use ask_user if you need clarification."
-)
-
-
 _BASE = """\
 You are Lang2SQL, a read-only data analytics agent.
 
 Rules:
 - Only ever read data. Never modify the database.
-- {data_instruction}
+- Review SQL drafts with review_sql(sql, context). Use the original request,
+  schema and business definitions to explain how the query meets the request
+  or where it needs revision. Use the feedback to choose your next step.
 - Before writing a database query, use explore_schema(tables=[...]) for
   relevant tables whose columns are missing from your context. Choose table
   names from Known tables. A list of table names does not provide columns.
 - Prefer definitions from the semantic layer below over your own assumptions.
-- {answer_instruction}
+- If the user wants SQL, return the query in the requested format. If they want
+  data, call run_sql with the final query and answer from its returned rows.
 
 Clarification rule:
 - If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.
@@ -44,25 +38,10 @@ Clarification rule:
 class SystemPrompt:
     content: str
     tables_with_columns: set[str]
-    schema_and_definitions: str
 
 
-async def build_system_prompt(
-    ctx: HarnessContext, *, structured_sql: bool = False
-) -> SystemPrompt:
-    if structured_sql:
-        data_instruction = "Use run_sql with a single SELECT/WITH query when you need to explore values."
-        answer_instruction = SUBMIT_SQL
-    else:
-        data_instruction = (
-            "When you need data, call the run_sql tool with a single SELECT/WITH query."
-        )
-        answer_instruction = "Answer concisely. Show only the final successful SQL you ran, not intermediate attempts."
-    parts = [
-        _BASE.format(
-            data_instruction=data_instruction, answer_instruction=answer_instruction
-        )
-    ]
+async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
+    parts: list[str] = [_BASE]
     tables_with_columns: set[str] = set()
 
     if ctx.explorer is not None:
@@ -126,4 +105,4 @@ async def build_system_prompt(
         if semfed_section:
             parts.append(semfed_section)
 
-    return SystemPrompt("\n\n".join(parts), tables_with_columns, "\n\n".join(parts[1:]))
+    return SystemPrompt("\n\n".join(parts), tables_with_columns)

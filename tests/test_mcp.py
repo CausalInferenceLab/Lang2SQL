@@ -1,5 +1,6 @@
 """Exercise the actual stdio protocol against the tool-only composition."""
 
+import json
 import os
 import sqlite3
 import sys
@@ -63,6 +64,7 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
         tools = (await client.list_tools()).tools
         assert {t.name for t in tools} == {
             "run_sql",
+            "review_sql",
             "explore_schema",
             "term_custom",
             "remember",
@@ -154,3 +156,31 @@ def test_no_connection_does_not_silently_use_stub(monkeypatch):
 async def test_internal_llm_is_disabled():
     with pytest.raises(RuntimeError, match="internal LLM"):
         await ExternalAgentLLM().complete([])
+
+
+@pytest.mark.asyncio
+async def test_stdio_review_without_model_or_result_execution(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "audit.db"
+    # SQLite can plan this expression, but evaluating it would raise integer overflow.
+    sql = "SELECT abs(-9223372036854775808)"
+    context = "The request is for the SQL only. Review the absolute-value expression."
+    async with connected(db, store) as client:
+        review = await client.call_tool("review_sql", {"sql": sql, "context": context})
+        assert not review.isError
+        report = json.loads(review.content[0].text)
+        assert report["sql"] == sql and report["context"] == context
+        assert "plan checks passed" in report["feedback"]
+        for draft, reason in [
+            ("SELECT missing FROM orders", "no such column"),
+            ("DROP TABLE orders", "Blocked"),
+        ]:
+            issue = await client.call_tool(
+                "review_sql", {"sql": draft, "context": context}
+            )
+            assert issue.isError
+            assert reason in json.loads(issue.content[0].text)["feedback"]
+    with sqlite3.connect(store) as conn:
+        assert conn.execute(
+            "SELECT action, COUNT(*) FROM audit GROUP BY action"
+        ).fetchall() == [("review_sql", 3)]

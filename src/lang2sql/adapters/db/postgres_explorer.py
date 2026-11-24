@@ -68,7 +68,7 @@ def _resolve_key(name: str) -> str:
 class PostgresExplorer:
     """Read-only schema introspection — canned data in V1."""
 
-    supports_query_validation = False
+    uses_sample_data = True
 
     def __init__(self, dsn: str) -> None:
         self.dsn = dsn  # stored for the v1.5 psycopg impl; no connection in V1.

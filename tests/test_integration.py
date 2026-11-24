@@ -1,7 +1,7 @@
 """Week-2 integration: the ContextConcierge wires a working agent.
 
 Exercises the assembled stack (tools + safety + scope resolver + explorer stub
-+ sqlite) without network, using the offline FakeLLM. Locks in that the six V1
++ sqlite) without network, using the offline FakeLLM. Locks in that the V1
 tools are registered and that run_sql/define_metric behave through the live
 HarnessContext.
 """
@@ -16,6 +16,7 @@ import pytest
 
 from lang2sql.adapters.db.d1_explorer import D1Explorer
 from lang2sql.adapters.db.postgres_explorer import PostgresExplorer
+from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 from lang2sql.core.identity import Identity
 from lang2sql.core.ports.explorer import Column, Table
 from lang2sql.core.ports.safety import SafetyContext, Verdict
@@ -35,6 +36,7 @@ def test_v1_tools_registered():
     names = {s.name for s in ctx.tools.specs()}
     assert names == {
         "run_sql",
+        "review_sql",
         "explore_schema",
         "enrich_schema",
         "term_custom",
@@ -48,7 +50,8 @@ def test_v1_tools_registered():
 
 def test_run_sql_passes_gate_and_returns_rows():
     _, ctx = _ctx()
-    res = asyncio.run(RunSQL().run({"sql": "SELECT * FROM orders", "limit": 10}, ctx))
+    ctx.explorer = SqlAlchemyExplorer("sqlite://")
+    res = asyncio.run(RunSQL().run({"sql": "SELECT 1", "limit": 10}, ctx))
     assert not res.is_error
     assert "row" in res.content.lower()
 
@@ -61,6 +64,7 @@ def test_run_sql_blocks_ddl():
 
 def test_run_sql_tolerates_bad_limit():
     _, ctx = _ctx()
+    ctx.explorer = SqlAlchemyExplorer("sqlite://")
     res = asyncio.run(RunSQL().run({"sql": "SELECT 1", "limit": "demo"}, ctx))
     assert not res.is_error  # malformed limit must not crash the tool
 
@@ -199,3 +203,21 @@ def test_term_custom_emits_audit_event():
 def test_safety_pipeline_on_context():
     _, ctx = _ctx()
     assert ctx.safety.evaluate("SELECT 1", SafetyContext()).verdict == Verdict.PASS
+
+
+def test_demo_cannot_claim_a_db_plan_or_supply_query_results(monkeypatch):
+    monkeypatch.setattr("lang2sql.tenancy.concierge.explorer_from_env", lambda: None)
+    _, ctx = _ctx()
+    draft = {
+        "sql": "SELECT nonexistent_column",
+        "context": "Check the requested column.",
+    }
+    report = asyncio.run(ctx.tools.dispatch("review_sql", draft, ctx, "review"))
+    result = asyncio.run(
+        ctx.tools.dispatch("run_sql", {"sql": draft["sql"]}, ctx, "rows")
+    )
+    assert report.is_error and "live DB" in report.content
+    assert result.is_error and "live DB" in result.content
+    assert [e.action for e in asyncio.run(ctx.audit.query(ctx.identity.user_id))] == [
+        "review_sql"
+    ]
