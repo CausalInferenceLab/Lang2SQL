@@ -67,6 +67,7 @@ async def agent_loop(
     if ctx.explorer is not None:
         ctx = replace(ctx, known_tables=await ctx.explorer.list_tables())
     system = await build_system_prompt(ctx)
+    ctx = replace(ctx, review_database_context=system.database_context)
     specs = ctx.tools.specs()
     schema_spec = next((spec for spec in specs if spec.name == _SCHEMA_TOOL), None)
     tables_with_columns = system.tables_with_columns

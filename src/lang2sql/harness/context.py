@@ -36,3 +36,4 @@ class HarnessContext:
     okf_bundle_dir: str | None = None
     max_turns: int = 8
     known_tables: list[Table] | None = None
+    review_database_context: str = ""

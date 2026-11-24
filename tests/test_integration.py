@@ -35,6 +35,7 @@ def test_v1_tools_registered():
     names = {s.name for s in ctx.tools.specs()}
     assert names == {
         "run_sql",
+        "review_sql",
         "explore_schema",
         "enrich_schema",
         "term_custom",

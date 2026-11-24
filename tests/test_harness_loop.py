@@ -13,7 +13,7 @@ from lang2sql.adapters.llm.fake import FakeLLM
 from lang2sql.adapters.llm.openai_ import OpenAILLM
 from lang2sql.core.identity import Identity
 from lang2sql.core.ports.explorer import Table
-from lang2sql.core.types import Completion, Role, ToolCall
+from lang2sql.core.types import Completion, Message, Role, ToolCall
 from lang2sql.frontends.cli import app
 from lang2sql.frontends.discord.commands import CommandHandlers
 from lang2sql.harness.context import HarnessContext
@@ -179,6 +179,113 @@ def _tool_results(request):
         for message in request["messages"]
         if message["role"] == "tool"
     }
+
+
+def test_reviewed_candidate_is_executed_and_submitted_as_sql():
+    question = "Calculate total sales and return the SQL."
+    sql = "SELECT SUM(amount) AS total FROM orders"
+    answer = f"```sql\n{sql}\n```"
+    review = {"verdict": "pass", "reason": "SUM(amount) gives total sales."}
+    llm = ScriptedOpenAI(
+        _calls(_SCHEMA),
+        _calls(("review", "review_sql", {"sql": sql, "context": "Use all dates."})),
+        _answer(json.dumps(review)),
+        _calls(("execute", "run_sql", {"sql": sql})),
+        _answer(answer),
+    )
+    ctx = _context_for(llm)
+    definition = asyncio.run(
+        ctx.tools.dispatch(
+            "term_custom",
+            {"term": "sales", "definition": "Sum orders.amount", "layer": "user"},
+            ctx,
+            "define-sales",
+        )
+    )
+    assert not definition.is_error
+    ctx.session.add(Message(role=Role.USER, content="Earlier question"))
+    ctx.session.add(
+        Message(role=Role.ASSISTANT, tool_calls=[ToolCall("prior", "explore_schema")])
+    )
+    ctx.session.add(
+        Message(
+            role=Role.TOOL,
+            content="Unrelated prior schema",
+            tool_call_id="prior",
+            name="explore_schema",
+        )
+    )
+    ctx.session.add(Message(role=Role.ASSISTANT, content="Earlier answer"))
+    assert asyncio.run(agent_loop(ctx, question)) == answer
+
+    first_request, _, review_request, execution_request, final_request = llm.requests
+    workflow = first_request["messages"][0]["content"]
+    assert "call review_sql with the candidate" in workflow
+    assert "calls in separate turns" in workflow
+    assert "fenced code block tagged `sql`" in workflow
+    assert "review_sql" in {tool["function"]["name"] for tool in first_request["tools"]}
+    assert "tools" not in review_request
+    instructions, inputs = review_request["messages"]
+    assert instructions["role"] == "system"
+    assert "aggregation grain" in instructions["content"]
+    payload = json.loads(inputs["content"])
+    assert payload["question"] == question
+    assert payload["sql"] == sql
+    assert "Sum orders.amount" in payload["database_context"]
+    assert len(payload["schema_results"]) == 1
+    assert "- amount: numeric" in payload["schema_results"][0]
+    assert payload["additional_context"] == "Use all dates."
+    assert json.loads(_tool_results(execution_request)["review"]) == review
+    assert "row(s):" in _tool_results(final_request)["execute"]
+    assert len(ctx.explorer.executed) == 1
+    assert sql in ctx.explorer.executed[0]
+
+
+def test_review_requests_revision_then_reviews_the_corrected_query():
+    draft = "SELECT SUM(amount) AS total_sales FROM orders"
+    sql = (
+        "SELECT (SELECT SUM(amount) FROM orders) AS total_sales, "
+        "(SELECT COUNT(*) FROM users) AS registered_users"
+    )
+    reason = "The SELECT list omits the requested number of registered users."
+    llm = ScriptedOpenAI(
+        _calls(_SCHEMA),
+        _calls(("draft", "review_sql", {"sql": draft})),
+        _answer(json.dumps({"verdict": "revise", "reason": reason})),
+        _calls(("details", "explore_schema", {"tables": ["public.users"]})),
+        _calls(("revised", "review_sql", {"sql": sql})),
+        _answer(
+            '```json\n{"verdict":"pass","reason":"Both requested totals are present."}\n```'
+        ),
+        _calls(("execute", "run_sql", {"sql": sql})),
+        _answer("Total sales and registered users calculated."),
+    )
+    ctx = _context_for(llm)
+
+    question = "What are total sales and the number of registered users?"
+    assert asyncio.run(agent_loop(ctx, question)) == (
+        "Total sales and registered users calculated."
+    )
+    revision = json.loads(_tool_results(llm.requests[3])["draft"])
+    assert revision == {"verdict": "revise", "reason": reason}
+    revised_input = json.loads(llm.requests[5]["messages"][-1]["content"])
+    assert revised_input["sql"] == sql
+    assert "- email: text" in revised_input["schema_results"][1]
+    assert json.loads(_tool_results(llm.requests[6])["revised"])["verdict"] == "pass"
+    assert len(ctx.explorer.executed) == 1
+    assert sql in ctx.explorer.executed[0]
+
+
+def test_invalid_review_returns_an_error_instead_of_a_verdict():
+    llm = ScriptedOpenAI(_answer('{"verdict":"pass","reason":""}'))
+    ctx = _context_for(llm)
+    ctx.session.add(Message(role=Role.USER, content="Show order amounts"))
+
+    result = asyncio.run(ctx.tools.dispatch("review_sql", {"sql": _SQL}, ctx, "review"))
+
+    assert result.call_id == "review"
+    assert result.is_error and "no valid verdict" in result.content
+    assert ctx.explorer.executed == []
 
 
 def test_run_sql_waits_for_columns_before_executing():

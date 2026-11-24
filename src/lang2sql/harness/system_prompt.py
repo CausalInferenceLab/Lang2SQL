@@ -18,11 +18,11 @@ You are Lang2SQL, a read-only data analytics agent.
 
 Rules:
 - Only ever read data. Never modify the database.
-- When you need data, call the run_sql tool with a single SELECT/WITH query.
 - Before writing a database query, use explore_schema(tables=[...]) for
   relevant tables whose columns are missing from your context. Choose table
   names from Known tables. A list of table names does not provide columns.
 - Prefer definitions from the semantic layer below over your own assumptions.
+{sql_workflow}
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
 
 Clarification rule:
@@ -30,15 +30,33 @@ Clarification rule:
 - After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: "이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다."
 """
 
+_DIRECT_SQL = "- When you need data, call run_sql with a single SELECT/WITH query."
+_REVIEW_SQL = """\
+- Before executing the single SELECT/WITH query you intend to use for the final
+  answer, call review_sql with the candidate. Include any relevant earlier
+  requirements or clarifications from the conversation in its context argument.
+- Read the review result before calling run_sql for that candidate. Make these
+  calls in separate turns. If the verdict is revise, address the reason, using
+  explore_schema for any missing schema, then submit the revised SQL for review.
+  If review fails to give a verdict, retry the review.
+- After a pass verdict, call run_sql with the exact reviewed SQL and answer using
+  the returned data. Review any changes to the candidate again before running it.
+- If a SQL submission is required, put that same successfully executed candidate
+  in a final fenced code block tagged `sql`."""
+
 
 @dataclass
 class SystemPrompt:
     content: str
     tables_with_columns: set[str]
+    database_context: str
 
 
 async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
-    parts: list[str] = [_BASE]
+    tool_names = {spec.name for spec in ctx.tools.specs()}
+    workflow = _REVIEW_SQL if {"review_sql", "run_sql"} <= tool_names else _DIRECT_SQL
+    base = _BASE.format(sql_workflow=workflow)
+    parts: list[str] = []
     tables_with_columns: set[str] = set()
 
     if ctx.explorer is not None:
@@ -102,4 +120,8 @@ async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
         if semfed_section:
             parts.append(semfed_section)
 
-    return SystemPrompt("\n\n".join(parts), tables_with_columns)
+    return SystemPrompt(
+        content="\n\n".join([base, *parts]),
+        tables_with_columns=tables_with_columns,
+        database_context="\n\n".join(parts),
+    )
