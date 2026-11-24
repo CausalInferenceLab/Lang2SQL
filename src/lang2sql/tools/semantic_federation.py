@@ -434,11 +434,11 @@ _KIND_ORDER = ["metric", "dimension", "rule", "table"]
 _AMBIGUOUS_TERM_POLICY = """\
 ## Ambiguous Term Policy
 사전에 없는 주관적/모호한 표현을 발견하면:
-1. DB 스키마 기준으로 가장 합리적인 해석으로 SQL을 실행한다.
-2. 실행 후 사용한 해석을 명시하고, kind(metric/rule/dimension/table)와 범위(org/team/user)를 사용자에게 묻는다.
-   예: "'신규고객'을 'users.created_at >= NOW()-30일'로 해석했습니다. metric/rule/dimension/table 중 어느 종류이며, 어느 범위로 등록할까요?"
-3. 사용자가 지정하면 term_custom 툴로 즉시 등록한다 (inferred=true).
-4. inferred=true 엔트리가 이미 있으면 해당 정의를 우선 사용하되, 사용자에게 확정 여부를 확인한다.\
+1. SQL을 작성하거나 실행하기 전에 사용자에게 정확한 업무 정의를 묻고 답변을 기다린다.
+2. 스키마나 통상적인 관행으로 정의를 추측하지 않는다. inferred=true인 임시 정의도 확인 전에는 사용하지 않는다.
+3. 사용자에게 정의와 적용 범위(org/team/user), 종류(metric/rule/dimension/table)를 확인한 후에만 term_custom으로 저장한다.
+4. 사용자가 명시적으로 제공하거나 확인한 정의만 inferred=false로 저장한다. 실행 차단을 피하려고 스스로 정의를 만들어 등록하지 않는다.
+5. 다음 질문에서는 저장된 범위별 정의를 확인하고 그대로 적용한다. 정의가 없으면 다시 묻는다.\
 """
 
 
