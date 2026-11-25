@@ -19,7 +19,7 @@ def result_fixture(directory):
             "elapsed_seconds": 1,
             "events": [
                 {"type": "thread.started", "thread_id": "conversation"},
-                {"type": "turn.completed", "usage": {"input_tokens": 10}},
+                {"type": "turn.completed", "usage": {"input_tokens": 10 * i}},
             ],
             "evidence": [
                 {
@@ -51,7 +51,8 @@ def test_auditor_counts_usage_and_continuity(tmp_path):
     result_fixture(tmp_path)
     report = summarize(tmp_path, 2)
     assert report["passed"]
-    assert report["usage_sum"]["input_tokens"] == 20
+    assert report["session_usage"]["input_tokens"] == 20
+    assert [t["input_tokens"] for t in report["per_turn_usage_deltas"]] == [10, 10]
 
 
 @pytest.mark.parametrize("corruption", ["end_date", "baseline_session"])
