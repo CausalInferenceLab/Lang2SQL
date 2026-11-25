@@ -3,13 +3,36 @@
 import argparse
 import json
 import os
-from pathlib import Path
 import sqlite3
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 READ_TOOLS = ["resolve_business_terms", "explore_schema", "run_sql"]
+
+
+def mcp_settings(server_args, *, tools=READ_TOOLS, extra_env=()):
+    """Invocation-local tools and approvals shared by the Codex demo runners."""
+    settings = {
+        "approval_policy": "never",
+        "sandbox_mode": "read-only",
+        "mcp_servers.lang2sql.command": sys.executable,
+        "mcp_servers.lang2sql.args": [
+            "-m",
+            "lang2sql.frontends.mcp.server",
+            *server_args,
+        ],
+        "mcp_servers.lang2sql.env_vars": [
+            "LANG2SQL_DB_URL",
+            "LANG2SQL_DB_SCHEMA",
+            *extra_env,
+        ],
+        "mcp_servers.lang2sql.enabled_tools": tools,
+    }
+    for tool in tools:
+        settings[f"mcp_servers.lang2sql.tools.{tool}.approval_mode"] = "approve"
+    return settings
 
 
 def main():
@@ -36,12 +59,8 @@ def main():
     if not os.environ.get("LANG2SQL_DB_URL"):
         parser.error("Set LANG2SQL_DB_URL for the dedicated read-only fixture account")
     expected_value = json.loads(args.expect_value) if args.expect_value else None
-    settings = {
-        "approval_policy": "never",
-        "mcp_servers.lang2sql.command": sys.executable,
-        "mcp_servers.lang2sql.args": [
-            "-m",
-            "lang2sql.frontends.mcp.server",
+    settings = mcp_settings(
+        [
             "--store",
             str(args.store.resolve()),
             "--org-id",
@@ -50,14 +69,8 @@ def main():
             args.user,
             "--team-id",
             args.team,
-        ],
-        "mcp_servers.lang2sql.env_vars": ["LANG2SQL_DB_URL", "LANG2SQL_DB_SCHEMA"],
-        "mcp_servers.lang2sql.enabled_tools": READ_TOOLS,
-    }
-    # Invocation-local approval for exactly the requested demo read tools. Do not
-    # relax global Codex settings or expose metadata writes in this test client.
-    for tool in READ_TOOLS:
-        settings[f"mcp_servers.lang2sql.tools.{tool}.approval_mode"] = "approve"
+        ]
+    )
     command = [
         "codex",
         "exec",
@@ -84,6 +97,7 @@ def main():
     with tempfile.TemporaryDirectory(prefix="lang2sql-codex-") as cwd:
         result = subprocess.run(
             command,
+            check=False,
             cwd=cwd,
             stdin=subprocess.DEVNULL,
             capture_output=True,
@@ -126,7 +140,9 @@ def main():
                 isinstance(evidence, dict)
                 and evidence.get("object") == "L2S_VIEW_OWNER.V_NET_SALES"
             ):
-                values.extend(list(row.values())[0] for row in evidence.get("rows", []))
+                values.extend(
+                    next(iter(row.values())) for row in evidence.get("rows", [])
+                )
     with sqlite3.connect(args.store) as conn:
         after = conn.execute(
             "SELECT count(*) FROM audit WHERE action IN ('run_sql','oracle_metric_query') AND actor=?",

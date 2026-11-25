@@ -14,7 +14,7 @@ from typing import TYPE_CHECKING
 from ..core.identity import Identity
 
 if TYPE_CHECKING:
-    from ..adapters.storage.sqlite_store import SqliteStore
+    from ..core.ports.metadata import MetadataStorePort
 from ..core.ports.audit import AuditPort
 from ..core.ports.explorer import ExplorerPort
 from ..core.ports.llm import LLMPort
@@ -32,6 +32,6 @@ class HarnessContext:
     explorer: ExplorerPort | None = None
     safety: SafetyPipelinePort | None = None
     audit: AuditPort | None = None
-    store: SqliteStore | None = None
+    store: MetadataStorePort | None = None
     okf_bundle_dir: str | None = None
     max_turns: int = 8

@@ -105,3 +105,27 @@ def test_batch_validates_before_writes(tmp_path):
     assert status == 2
     status, result = invoke(tmp_path, "call", "term_custom", "--args", '{"list":true}')
     assert "gross" not in result["content"]
+
+
+def test_missing_metadata_url_does_not_fall_back(tmp_path, monkeypatch):
+    monkeypatch.delenv("LANG2SQL_TEST_UNSET_METADATA_URL", raising=False)
+    result = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "lang2sql.frontends.cli.tools",
+            "--org-id",
+            "o",
+            "--user-id",
+            "u",
+            "--metadata-url-env",
+            "LANG2SQL_TEST_UNSET_METADATA_URL",
+            "list",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+        timeout=20,
+    )
+    assert result.returncode == 2
+    assert "Metadata URL environment variable is missing" in result.stderr

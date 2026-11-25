@@ -223,3 +223,10 @@ With a file-backed `--store`, `remember` notes survive server/CLI restarts.
 Notes are isolated by organization, team and user. `:memory:` remains ephemeral.
 The harness/Discord memory configuration is unchanged. Notes are not approved metric definitions.
 See [Oracle meeting readiness](docs/oracle-meeting-readiness.md) for implementation boundaries.
+
+### Oracle metadata and reviewed conversation context
+
+The tool runtime can store definitions, notes, candidates and audit in Oracle using
+`--metadata-url-env LANG2SQL_METADATA_URL`. Conversation-derived candidates remain
+pending until an operator uses `decide-context`. See the [meeting demo guide](bench/oracle_meeting/README.md)
+for account separation, Codex configuration, team-specific queries and real multi-turn evaluation.

@@ -122,9 +122,67 @@ def inspect_or_query(engine, contract, stamp, sql, params):
                 engine.url.database,
                 sorted(engine.url.query.items()),
             ]
-            fingerprint = json.dumps(
-                [route, identity, tuple(row), definition, sorted(columns.items())]
-            )
+            components = [
+                route,
+                identity,
+                tuple(row),
+                definition,
+                sorted(columns.items()),
+            ]
+            dependencies = conn.execute(
+                text(
+                    "SELECT DISTINCT referenced_owner, referenced_name, referenced_type "
+                    "FROM all_dependencies WHERE referenced_type IN ('FUNCTION','PACKAGE','PROCEDURE') "
+                    "START WITH owner=:owner AND name=:name AND type='VIEW' "
+                    "CONNECT BY NOCYCLE PRIOR referenced_owner=owner AND PRIOR referenced_name=name AND (PRIOR referenced_type=type OR (PRIOR referenced_type='PACKAGE' AND type='PACKAGE BODY'))"
+                ),
+                obj,
+            ).all()
+            procedural = []
+            for dep_owner, dep_name, dep_type in sorted(dependencies):
+                if dep_owner == "SYS":
+                    continue
+                objects = conn.execute(
+                    text(
+                        "SELECT object_type, status, TO_CHAR(last_ddl_time,'YYYYMMDDHH24MISS') "
+                        "FROM all_objects WHERE owner=:owner AND object_name=:name "
+                        "AND object_type IN ('FUNCTION','PROCEDURE','PACKAGE','PACKAGE BODY') ORDER BY object_type"
+                    ),
+                    {"owner": dep_owner, "name": dep_name},
+                ).all()
+                source = conn.execute(
+                    text(
+                        "SELECT type,line,text FROM all_source WHERE owner=:owner AND name=:name ORDER BY type,line"
+                    ),
+                    {"owner": dep_owner, "name": dep_name},
+                ).all()
+                if dep_type == "PACKAGE" and (
+                    not any(item[0] == "PACKAGE BODY" for item in objects)
+                    or not any(item[0] == "PACKAGE BODY" for item in source)
+                ):
+                    raise ValueError(
+                        "Package body metadata is not visible; use an account with visibility before binding"
+                    )
+                if (
+                    not objects
+                    or any(item[1] != "VALID" for item in objects)
+                    or not source
+                ):
+                    raise ValueError(
+                        "View function/package dependency is unavailable or invalid"
+                    )
+                procedural.append(
+                    [
+                        dep_owner,
+                        dep_name,
+                        dep_type,
+                        [tuple(item) for item in objects],
+                        [tuple(item) for item in source],
+                    ]
+                )
+            if procedural:
+                components.append(procedural)
+            fingerprint = json.dumps(components)
             return hashlib.sha256(fingerprint.encode()).hexdigest()
 
         current = snapshot()

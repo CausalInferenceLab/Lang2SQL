@@ -7,11 +7,11 @@ import json
 from dataclasses import asdict
 
 from ...core.ports.memory import Fact
-from .sqlite_store import SqliteStore
+from ...core.ports.metadata import MetadataStorePort
 
 
 class PersistentMemoryStore:
-    def __init__(self, store: SqliteStore, org: str | None, team: str | None):
+    def __init__(self, store: MetadataStorePort, org: str | None, team: str | None):
         self._store = store
         self._scope = "memory:" + json.dumps([org, team], ensure_ascii=False)
 
