@@ -47,6 +47,23 @@ class OpenAILLM:
         messages: Sequence[Message],
         tools: Sequence[ToolSpec] = (),
     ) -> Completion:
+        return await self._complete(messages, tools)
+
+    async def complete_with_required_tool(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSpec],
+        tool_name: str,
+    ) -> Completion:
+        return await self._complete(messages, tools, required_tool=tool_name)
+
+    async def _complete(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSpec],
+        *,
+        required_tool: str | None = None,
+    ) -> Completion:
         if not self._api_key:
             raise RuntimeError("OPENAI_API_KEY not set")
 
@@ -56,6 +73,11 @@ class OpenAILLM:
         }
         if tools:
             payload["tools"] = [_encode_tool(t) for t in tools]
+        if required_tool is not None:
+            payload["tool_choice"] = {
+                "type": "function",
+                "function": {"name": required_tool},
+            }
 
         raw = await asyncio.to_thread(self._post, payload)
         return _decode_completion(raw)

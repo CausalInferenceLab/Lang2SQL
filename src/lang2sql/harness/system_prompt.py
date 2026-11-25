@@ -9,6 +9,7 @@ loop. Sections are suppressed when empty.
 from __future__ import annotations
 
 import json
+from dataclasses import dataclass
 
 from .context import HarnessContext
 
@@ -18,8 +19,15 @@ You are Lang2SQL, a read-only data analytics agent.
 Rules:
 - Only ever read data. Never modify the database.
 - When you need data, call the run_sql tool with a single SELECT/WITH query.
-- Discover schema with explore_schema before guessing table or column names.
+- Before writing a database query, use explore_schema(tables=[...]) for
+  relevant tables whose columns are missing from your context. Choose table
+  names from Known tables. A list of table names does not provide columns.
 - Prefer definitions from the semantic layer below over your own assumptions.
+- After `run_sql` succeeds, compare the original question, the executed SQL,
+  and the returned rows before answering. Check that the filters, date field,
+  and aggregation match the request. Ground the answer's values and units in
+  the returned data, distinguishing a zero aggregate from no returned rows.
+  If you find a concrete mismatch in the SQL, correct it and run the query again.
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
 
 Clarification rule:
@@ -28,11 +36,20 @@ Clarification rule:
 """
 
 
-async def build_system_prompt(ctx: HarnessContext) -> str:
+@dataclass
+class SystemPrompt:
+    content: str
+    tables_with_columns: set[str]
+
+
+async def build_system_prompt(ctx: HarnessContext) -> SystemPrompt:
     parts: list[str] = [_BASE]
+    tables_with_columns: set[str] = set()
 
     if ctx.explorer is not None:
-        tables = await ctx.explorer.list_tables()
+        tables = ctx.known_tables
+        if tables is None:
+            tables = await ctx.explorer.list_tables()
         if tables:
             scope = ctx.identity.kv_scope if ctx.store else None
             has_enrichment = bool(
@@ -43,7 +60,7 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
                 schema_lines: list[str] = []
                 for tbl in tables:
                     try:
-                        described = await ctx.explorer.describe_table(tbl.name)
+                        described = await ctx.explorer.describe_table(tbl.qualified)
                     except Exception:
                         schema_lines.append(f"- {tbl.qualified}")
                         continue
@@ -58,6 +75,8 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
                         )
                         col_lines.append(f"  - {col.name}{': ' + desc if desc else ''}")
                     schema_lines.append(f"- {tbl.qualified}\n" + "\n".join(col_lines))
+                    if col_lines:
+                        tables_with_columns.add(tbl.qualified)
                 parts.append(
                     "## Known tables (with column descriptions)\n"
                     + "\n".join(schema_lines)
@@ -88,4 +107,4 @@ async def build_system_prompt(ctx: HarnessContext) -> str:
         if semfed_section:
             parts.append(semfed_section)
 
-    return "\n\n".join(parts)
+    return SystemPrompt("\n\n".join(parts), tables_with_columns)

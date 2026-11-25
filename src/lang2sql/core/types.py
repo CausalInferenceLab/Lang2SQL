@@ -36,11 +36,12 @@ class ToolCall:
 
 @dataclass
 class ToolResult:
-    """Outcome of running a :class:`ToolCall`, fed back to the model."""
+    """Tool response text and the tables whose columns appear in that text."""
 
     call_id: str
     content: str
     is_error: bool = False
+    tables_with_columns: tuple[str, ...] = ()
 
 
 @dataclass

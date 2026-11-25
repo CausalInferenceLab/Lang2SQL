@@ -16,7 +16,7 @@ from ..core.identity import Identity
 if TYPE_CHECKING:
     from ..adapters.storage.sqlite_store import SqliteStore
 from ..core.ports.audit import AuditPort
-from ..core.ports.explorer import ExplorerPort
+from ..core.ports.explorer import ExplorerPort, Table
 from ..core.ports.llm import LLMPort
 from ..core.ports.safety import SafetyPipelinePort
 from .session import Session
@@ -35,3 +35,4 @@ class HarnessContext:
     store: SqliteStore | None = None
     okf_bundle_dir: str | None = None
     max_turns: int = 8
+    known_tables: list[Table] | None = None
