@@ -1,0 +1,174 @@
+"""Measured LLMPort following the provider adapter from the Spider2 benchmark."""
+
+from __future__ import annotations
+
+import asyncio
+import time
+from collections.abc import Awaitable, Callable, Sequence
+from typing import Any, Protocol
+
+from lang2sql.adapters.llm.openai_ import (
+    _decode_completion,
+    _encode_message,
+    _encode_tool,
+)
+from lang2sql.core.types import Completion, Message, ToolSpec
+
+from .io import ProtocolError
+
+
+class ProviderResponse(Protocol):
+    def model_dump(self) -> dict[str, Any]: ...
+
+
+Transport = Callable[..., Awaitable[ProviderResponse]]
+
+
+class CallBudgetExhausted(RuntimeError):
+    pass
+
+
+class ModelCallError(RuntimeError):
+    def __init__(self, reason: str, error_type: str, status_code: int | None = None):
+        self.reason = reason
+        self.error_type = error_type
+        self.status_code = status_code
+        super().__init__(reason)
+
+
+class MeasuredLLM:
+    def __init__(
+        self,
+        *,
+        model: str,
+        response_model: str,
+        api_base: str,
+        timeout: float,
+        max_calls: int,
+        max_output_tokens: int,
+        transport: Transport,
+        observe_first_request: Callable[[list[dict], list[dict]], None],
+        save_attempt: Callable[[list[dict]], None],
+        reasoning_effort: str | None = None,
+    ):
+        self.model = model
+        self.response_model = response_model
+        self.api_base = api_base
+        self.timeout = timeout
+        self.max_calls = max_calls
+        self.max_output_tokens = max_output_tokens
+        self.reasoning_effort = reasoning_effort
+        self.transport = transport
+        self.observe_first_request = observe_first_request
+        self.save_attempt = save_attempt
+        self.calls: list[dict] = []
+        self._provider_messages: dict[str, dict] = {}
+
+    async def complete(
+        self, messages: Sequence[Message], tools: Sequence[ToolSpec] = ()
+    ) -> Completion:
+        return await self._complete(messages, tools)
+
+    async def complete_with_required_tool(
+        self, messages: Sequence[Message], tools: Sequence[ToolSpec], tool_name: str
+    ) -> Completion:
+        return await self._complete(messages, tools, required_tool=tool_name)
+
+    async def _complete(
+        self,
+        messages: Sequence[Message],
+        tools: Sequence[ToolSpec],
+        *,
+        required_tool: str | None = None,
+    ) -> Completion:
+        if len(self.calls) >= self.max_calls:
+            raise CallBudgetExhausted
+        wire = []
+        for message in messages:
+            saved = (
+                self._provider_messages.get(message.tool_calls[0].id)
+                if message.tool_calls
+                else None
+            )
+            encoded = _encode_message(message)
+            wire.append(
+                {**saved, "role": encoded["role"], "content": encoded["content"]}
+                if saved
+                else encoded
+            )
+        specs = [_encode_tool(tool) for tool in tools]
+        if not self.calls:
+            self.observe_first_request(wire, specs)
+        kwargs = {
+            "model": self.model,
+            "api_base": self.api_base,
+            "messages": wire,
+            "timeout": self.timeout,
+            "num_retries": 0,
+            "max_tokens": self.max_output_tokens,
+        }
+        if self.reasoning_effort is not None:
+            kwargs["reasoning_effort"] = self.reasoning_effort
+        if specs:
+            kwargs["tools"] = specs
+            kwargs["tool_choice"] = (
+                {"type": "function", "function": {"name": required_tool}}
+                if required_tool
+                else "auto"
+            )
+        entry = {
+            "status": "started",
+            "usage": None,
+            "tool_choice": kwargs.get("tool_choice"),
+        }
+        self.calls.append(entry)
+        self.save_attempt(self.calls)
+        started = time.monotonic()
+        try:
+            response = await asyncio.wait_for(
+                self.transport(**kwargs), timeout=self.timeout
+            )
+            raw = response.model_dump()
+            entry.update(
+                request_id=raw.get("id"),
+                response_model=raw.get("model"),
+                system_fingerprint=raw.get("system_fingerprint"),
+                usage=raw.get("usage"),
+            )
+            if raw.get("model") != self.response_model:
+                raise ProtocolError(
+                    f"Provider model {raw.get('model')!r} differs from {self.response_model}"
+                )
+            completion = _decode_completion(raw)
+            entry.update(status="ok", finish_reason=completion.finish_reason)
+            provider_message = raw["choices"][0]["message"]
+            for call in completion.tool_calls:
+                self._provider_messages[call.id] = {
+                    key: value
+                    for key, value in provider_message.items()
+                    if value is not None
+                }
+            return completion
+        except ProtocolError:
+            entry.update(status="error", error_reason="model_identity_mismatch")
+            raise
+        except asyncio.CancelledError:
+            entry["status"] = "cancelled"
+            raise
+        except Exception as error:  # noqa: BLE001 - do not persist raw provider errors
+            status_code = getattr(error, "status_code", None)
+            if not isinstance(status_code, int):
+                status_code = None
+            is_timeout = isinstance(error, (asyncio.TimeoutError, TimeoutError))
+            reason = "provider_timeout" if is_timeout else "provider_error"
+            failure = ModelCallError(reason, type(error).__name__, status_code)
+            entry.update(
+                status="error",
+                error_type=failure.error_type,
+                status_code=status_code,
+                error_reason=reason,
+            )
+            raise failure from None
+        finally:
+            entry["seconds"] = time.monotonic() - started
+            self.save_attempt(self.calls)

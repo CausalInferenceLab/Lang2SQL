@@ -1,5 +1,7 @@
 # bench/ — runnable demo
 
+For product revision comparisons, see the [BIRD Mini-Dev SQLite benchmark](bird/README.md).
+
 A self-contained walkthrough of Lang2SQL V1's headline value, with **no Discord
 token and no live database**. It runs the real shipped modules against the
 canned Postgres stub and the offline `FakeLLM`.
