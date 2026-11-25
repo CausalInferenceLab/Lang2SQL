@@ -216,3 +216,10 @@ See [MCP setup and limitations](docs/mcp.md).
 
 For direct shell tool calls without MCP or an internal LLM, see the
 [`lang2sql-tools` CLI](docs/tool_cli.md).
+
+### MCP / tool CLI memory persistence
+
+With a file-backed `--store`, `remember` notes survive server/CLI restarts.
+Notes are isolated by organization, team and user. `:memory:` remains ephemeral.
+The harness/Discord memory configuration is unchanged. Notes are not approved metric definitions.
+See [Oracle meeting readiness](docs/oracle-meeting-readiness.md) for implementation boundaries.
