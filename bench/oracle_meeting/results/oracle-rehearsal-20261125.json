@@ -1,0 +1,76 @@
+{
+  "scope": "meeting-a653ade533c3498eb7cf521d80ad790e",
+  "cases": [
+    {
+      "team": "marketing",
+      "expected": 3,
+      "result": {
+        "term": "활성고객",
+        "layer": "team",
+        "entity": "marketing",
+        "definition": "조회 월 로그인 기록이 있는 고객. ACTIVITY_DAY는 최종 로그인일, CUSTOMER_COUNT는 고객당 1이며 고객별 한 행이므로 SUM으로 중복 없이 인원수를 계산",
+        "object": "L2S_VIEW_OWNER.V_MARKETING_ACTIVE",
+        "sql": "SELECT SUM(CUSTOMER_COUNT) AS metric_value FROM L2S_VIEW_OWNER.V_MARKETING_ACTIVE WHERE ACTIVITY_DAY >= :period_start AND ACTIVITY_DAY < :period_end\nFETCH FIRST 1 ROWS ONLY",
+        "params": {
+          "period_start": "2025-10-01",
+          "period_end": "2025-11-01"
+        },
+        "rows": [
+          {
+            "metric_value": 3
+          }
+        ]
+      },
+      "candidate": "53f38be5a0874db796f7c46dc7b84ddb",
+      "restart_verified": true
+    },
+    {
+      "team": "finance",
+      "expected": 2,
+      "result": {
+        "term": "활성고객",
+        "layer": "team",
+        "entity": "finance",
+        "definition": "2025년 10월 스냅샷에서 결제 중인 고객. SNAPSHOT_DAY는 집계 월, CUSTOMER_COUNT는 고객당 1이며 고객별 한 행이므로 SUM으로 인원수를 계산",
+        "object": "L2S_VIEW_OWNER.V_FINANCE_ACTIVE",
+        "sql": "SELECT SUM(CUSTOMER_COUNT) AS metric_value FROM L2S_VIEW_OWNER.V_FINANCE_ACTIVE WHERE SNAPSHOT_DAY >= :period_start AND SNAPSHOT_DAY < :period_end\nFETCH FIRST 1 ROWS ONLY",
+        "params": {
+          "period_start": "2025-10-01",
+          "period_end": "2025-11-01"
+        },
+        "rows": [
+          {
+            "metric_value": 2
+          }
+        ]
+      },
+      "candidate": "2bd45373387e4c5eb57ac7a61e6c8990",
+      "restart_verified": true
+    },
+    {
+      "team": "package",
+      "expected": 118,
+      "result": {
+        "term": "순매출",
+        "layer": "team",
+        "entity": "package",
+        "definition": "POSTED 주문에서 패키지의 할인·반품 계산을 적용",
+        "object": "L2S_VIEW_OWNER.V_PACKAGE_NET",
+        "sql": "SELECT SUM(NET_AMOUNT) AS metric_value FROM L2S_VIEW_OWNER.V_PACKAGE_NET WHERE BOOKED_ON >= :period_start AND BOOKED_ON < :period_end AND STATUS = :filter_0\nFETCH FIRST 1 ROWS ONLY",
+        "params": {
+          "period_start": "2025-10-01",
+          "period_end": "2025-11-01",
+          "filter_0": "POSTED"
+        },
+        "rows": [
+          {
+            "metric_value": 118
+          }
+        ]
+      },
+      "candidate": "c51eec25c3b040768428861705debacd",
+      "restart_verified": true
+    }
+  ],
+  "passed": true
+}

@@ -1,0 +1,103 @@
+{
+  "cases": [
+    {
+      "case": "candidate",
+      "passed": true,
+      "answers": [
+        "말씀하신 정의를 그대로 우리 팀의 검토 후보로 등록하겠습니다.",
+        "우리 팀의 **데모확정매출** 정의를 “확정 주문의 할인·반품 차감액 합계”로 등록했습니다.\n\n후보 ID는 `87bfcccd759741c0ae7abd00a5a57721`이며, 운영자 검토를 기다리고 있습니다. 운영자가 승인한 뒤 조회에 적용할 수 있습니다."
+      ],
+      "tool_names": [
+        "context_candidates"
+      ],
+      "sql_results": []
+    },
+    {
+      "case": "fresh_session_reuse",
+      "passed": true,
+      "answers": [
+        "Lang2SQL에서 데모확정매출의 저장된 정의와 적용 범위를 확인하겠습니다.",
+        "Lang2SQL에 저장된 **데모확정매출**의 정확한 정의는 **“확정 주문의 할인·반품 차감액 합계”**입니다.\n\n팀 범위(`team`)의 `sales` 엔터티에 등록되어 있습니다. 세부 적용 범위(`applies_to`)는 비어 있으며, 연결된 Oracle 뷰도 없습니다."
+      ],
+      "tool_names": [
+        "resolve_business_terms"
+      ],
+      "sql_results": []
+    },
+    {
+      "case": "marketing",
+      "passed": true,
+      "answers": [
+        "Lang2SQL에서 활성고객의 팀 기준을 확인하고, 승인된 정의가 있으면 2025년 10월 인원을 조회하겠습니다.",
+        "2025년 10월 활성고객은 **3명**입니다.\n\n- **마케팅팀 승인 기준** — 조회 월에 로그인 기록이 있는 고객을 한 명씩 집계합니다. 뷰의 `ACTIVITY_DAY`는 최종 로그인일이며, 고객마다 한 행에 `CUSTOMER_COUNT`가 1로 기록됩니다.\n- **조회 기간** — 2025년 10월 1일 이상, 11월 1일 미만\n- **Oracle 뷰** — `L2S_VIEW_OWNER.V_MARKETING_ACTIVE`\n\n```sql\nSELECT SUM(CUSTOMER_COUNT) AS metric_value\nFROM L2S_VIEW_OWNER.V_MARKETING_ACTIVE\nWHERE ACTIVITY_DAY >= :period_start AND ACTIVITY_DAY < :period_end\nFETCH FIRST 1 ROWS ONLY\n```"
+      ],
+      "tool_names": [
+        "resolve_business_terms",
+        "run_sql"
+      ],
+      "sql_results": [
+        {
+          "term": "활성고객",
+          "layer": "team",
+          "entity": "marketing",
+          "definition": "조회 월 로그인 기록이 있는 고객. ACTIVITY_DAY는 최종 로그인일, CUSTOMER_COUNT는 고객당 1이며 고객별 한 행이므로 SUM으로 중복 없이 인원수를 계산",
+          "object": "L2S_VIEW_OWNER.V_MARKETING_ACTIVE",
+          "sql": "SELECT SUM(CUSTOMER_COUNT) AS metric_value FROM L2S_VIEW_OWNER.V_MARKETING_ACTIVE WHERE ACTIVITY_DAY >= :period_start AND ACTIVITY_DAY < :period_end\nFETCH FIRST 1 ROWS ONLY",
+          "params": {
+            "period_start": "2025-10-01",
+            "period_end": "2025-11-01"
+          },
+          "rows": [
+            {
+              "metric_value": 3
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "finance",
+      "passed": true,
+      "answers": [
+        "Lang2SQL에서 활성고객의 팀 기준을 확인하고, 승인된 정의가 있으면 2025년 10월 인원을 조회하겠습니다.",
+        "2025년 10월 활성고객은 **2명**입니다.\n\n- **재무팀 기준** — 2025년 10월 스냅샷에서 결제 중인 고객입니다. 고객당 한 행이며, 고객별 `CUSTOMER_COUNT`가 1이므로 합계로 인원수를 집계합니다.\n- **조회 기간** — 2025년 10월 1일 이상, 11월 1일 미만\n- **Oracle 뷰** — `L2S_VIEW_OWNER.V_FINANCE_ACTIVE`\n\n```sql\nSELECT SUM(CUSTOMER_COUNT) AS metric_value\nFROM L2S_VIEW_OWNER.V_FINANCE_ACTIVE\nWHERE SNAPSHOT_DAY >= :period_start AND SNAPSHOT_DAY < :period_end\nFETCH FIRST 1 ROWS ONLY\n```"
+      ],
+      "tool_names": [
+        "resolve_business_terms",
+        "run_sql"
+      ],
+      "sql_results": [
+        {
+          "term": "활성고객",
+          "layer": "team",
+          "entity": "finance",
+          "definition": "2025년 10월 스냅샷에서 결제 중인 고객. SNAPSHOT_DAY는 집계 월, CUSTOMER_COUNT는 고객당 1이며 고객별 한 행이므로 SUM으로 인원수를 계산",
+          "object": "L2S_VIEW_OWNER.V_FINANCE_ACTIVE",
+          "sql": "SELECT SUM(CUSTOMER_COUNT) AS metric_value FROM L2S_VIEW_OWNER.V_FINANCE_ACTIVE WHERE SNAPSHOT_DAY >= :period_start AND SNAPSHOT_DAY < :period_end\nFETCH FIRST 1 ROWS ONLY",
+          "params": {
+            "period_start": "2025-10-01",
+            "period_end": "2025-11-01"
+          },
+          "rows": [
+            {
+              "metric_value": 2
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "case": "unknown",
+      "passed": true,
+      "answers": [
+        "Lang2SQL에서 저장된 팀 기준을 확인하고, 승인된 정의가 있으면 2025년 10월 활성고객 수를 조회하겠습니다.",
+        "현재 팀 범위에 승인된 ‘활성고객’ 정의가 없어 2025년 10월 집계를 실행하지 않았습니다. 어느 팀의 기준을 적용해야 하며, 고객이 ‘활성’으로 집계되려면 어떤 조건을 충족해야 하나요?"
+      ],
+      "tool_names": [
+        "resolve_business_terms"
+      ],
+      "sql_results": []
+    }
+  ],
+  "requested_model": null
+}

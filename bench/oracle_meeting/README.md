@@ -13,7 +13,7 @@ Codex → Lang2SQL MCP → Oracle 업무 조회 계정. 같은 MCP가 별도의 
 3. `uv sync --extra oracle --extra mcp --extra tools` 후 아래 초기화를 한 번 수행한다.
 
 ```sh
-uv run --env-file .env lang2sql-tools --org-id demo --team-id sales --user-id speaker \
+uv run --env-file .env lang2sql-tools --org-id demo --team-id sales --user-id presenter \
   --metadata-url-env LANG2SQL_METADATA_URL --initialize-metadata list
 ```
 
@@ -28,7 +28,7 @@ Codex MCP 설정의 서버 command는 `uv`, args는 다음과 같이 구성한�
 ```toml
 [mcp_servers.lang2sql-meeting]
 command = "uv"
-args = ["run", "--project", "/absolute/Lang2SQL", "--env-file", "/absolute/demo.env", "lang2sql-mcp", "--org-id", "demo", "--team-id", "sales", "--user-id", "speaker", "--metadata-url-env", "LANG2SQL_METADATA_URL"]
+args = ["run", "--project", "/absolute/Lang2SQL", "--env-file", "/absolute/demo.env", "lang2sql-mcp", "--org-id", "demo", "--team-id", "sales", "--user-id", "presenter", "--metadata-url-env", "LANG2SQL_METADATA_URL"]
 ```
 
 MCP 연결만으로 모든 클라이언트가 대화 내용을 자동 저장하지는 않는다. 이 데모는 `codex/AGENTS.md`의 대화 지침도 함께 사용한다. Codex에서 해당 폴더를 열거나 `codex -C /absolute/Lang2SQL/bench/oracle_meeting/codex`로 시작한다. 일반 업무 정의 발언에도 후보 추출을 수행하도록 명시한 클라이언트 설정이며, 모든 Codex 세션에 전역 적용하지 않는다.
@@ -36,7 +36,7 @@ MCP 연결만으로 모든 클라이언트가 대화 내용을 자동 저장하�
 대화 예시: “우리 팀 순매출은 확정 주문에서 할인·반품을 차감한 합계야. 다음 대화에서도 쓸 수 있게 남겨줘.” MCP 지침에 따라 Codex는 `context_candidates`에 용어·정의·원문 근거를 제안한다. 후보 ID와 내용을 확인한 운영자가 동일 조직/팀/사용자 범위로 실행한다.
 
 ```sh
-uv run --env-file .env lang2sql-tools --org-id demo --team-id sales --user-id speaker \
+uv run --env-file .env lang2sql-tools --org-id demo --team-id sales --user-id presenter \
   --metadata-url-env LANG2SQL_METADATA_URL decide-context CANDIDATE_ID --approve
 # 잘못된 후보는 동일 명령에서 --reject
 ```
