@@ -31,6 +31,8 @@ command = "uv"
 args = ["run", "--project", "/absolute/Lang2SQL", "--env-file", "/absolute/demo.env", "lang2sql-mcp", "--org-id", "demo", "--team-id", "sales", "--user-id", "speaker", "--metadata-url-env", "LANG2SQL_METADATA_URL"]
 ```
 
+MCP 연결만으로 모든 클라이언트가 대화 내용을 자동 저장하지는 않는다. 이 데모는 `codex/AGENTS.md`의 대화 지침도 함께 사용한다. Codex에서 해당 폴더를 열거나 `codex -C /absolute/Lang2SQL/bench/oracle_meeting/codex`로 시작한다. 일반 업무 정의 발언에도 후보 추출을 수행하도록 명시한 클라이언트 설정이며, 모든 Codex 세션에 전역 적용하지 않는다.
+
 대화 예시: “우리 팀 순매출은 확정 주문에서 할인·반품을 차감한 합계야. 다음 대화에서도 쓸 수 있게 남겨줘.” MCP 지침에 따라 Codex는 `context_candidates`에 용어·정의·원문 근거를 제안한다. 후보 ID와 내용을 확인한 운영자가 동일 조직/팀/사용자 범위로 실행한다.
 
 ```sh
@@ -70,3 +72,14 @@ uv run --env-file .env python bench/oracle_view/long_context.py \
 ## 데이터 전달·권한
 
 Codex에는 도구 설명, 사용자 발언, 해당 요청에서 반환한 정의·스키마·조회 결과가 전달된다. 비밀번호는 환경 파일로만 주입한다. MCP identity는 운영자 설정이며 최종 사용자 인증을 구현한 것은 아니다. 조직별 서버/계정 분리와 DB 권한을 먼저 적용한다. 이 데모는 합성 데이터만 사용한다.
+
+## 실제 Codex 시연 재현
+
+`rehearse.py`가 만든 JSON을 입력으로 실제 모델을 호출한다. 자동 후보 추출은 위 Codex 작업 폴더 지침을 임시 평가 폴더에 동일하게 적용한다. 자동 승인은 제품 기능이 아니라, 고정된 합성 정의와 정확히 일치하는 후보만 승인하는 평가 코드다.
+
+```sh
+uv run --env-file .env python bench/oracle_meeting/codex_rehearse.py \
+  --rehearsal /tmp/meeting-evidence.json --output /tmp/codex-meeting-result
+```
+
+패키지 변경 차단을 확인하려면 전용 fixture 컨테이너와 패키지 본문 가시성 계정을 사용해 `package_fault.py --container NAME --output NEW.json`을 실행한다. 테스트는 MEETING_RULES 본문을 변경한 뒤 finally에서 복원한다.

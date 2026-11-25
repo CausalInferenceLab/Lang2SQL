@@ -4,12 +4,11 @@ import argparse
 import hashlib
 import json
 import subprocess
-import sys
 import tempfile
 import time
 from pathlib import Path
 
-from codex_demo import READ_TOOLS
+from codex_demo import mcp_settings
 
 
 def run_turn(settings, cwd, question, thread, timeout, model):
@@ -63,13 +62,8 @@ def main():
     if args.output.exists() or not args.store.is_file() or args.turns < 1:
         p.error("Use existing store, new output directory, positive turn count")
     args.output.mkdir(parents=True)
-    settings = {
-        "approval_policy": "never",
-        "sandbox_mode": "read-only",
-        "mcp_servers.lang2sql.command": sys.executable,
-        "mcp_servers.lang2sql.args": [
-            "-m",
-            "lang2sql.frontends.mcp.server",
+    settings = mcp_settings(
+        [
             "--store",
             str(args.store.resolve()),
             "--org-id",
@@ -78,12 +72,8 @@ def main():
             "sales",
             "--user-id",
             "long-context-evaluator",
-        ],
-        "mcp_servers.lang2sql.env_vars": ["LANG2SQL_DB_URL", "LANG2SQL_DB_SCHEMA"],
-        "mcp_servers.lang2sql.enabled_tools": READ_TOOLS,
-    }
-    for tool in READ_TOOLS:
-        settings[f"mcp_servers.lang2sql.tools.{tool}.approval_mode"] = "approve"
+        ]
+    )
     cases = []
     for i in range(args.turns):
         month = 9 + i % 3

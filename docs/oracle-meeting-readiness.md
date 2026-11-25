@@ -6,7 +6,7 @@
 |---|---|---|
 | Codex MCP → Oracle | 기존 자체 MCP + Oracle adapter | 실제 Codex 조회 |
 | 미정의 용어는 추측하지 않고 재질문 | resolve_business_terms + receipt guard | 미정의 팀 SQL 미실행 |
-| 대화에서 업무 맥락 추출 | Codex가 context_candidates에 정의·원문 근거 제안 | 실제 Codex 후보 생성 |
+| 대화에서 업무 맥락 추출 | Codex 작업 폴더 지침 + context_candidates에 정의·원문 근거 제안 | 실제 Codex 후보 생성 |
 | 확인한 맥락 축적 | 운영자 decide-context 승인/거절 → 기존 federation 저장 | 미승인 후보는 조회 기준으로 사용되지 않음 |
 | 다음 대화 재사용 | Oracle/SQLite에 저장, 새 MCP 프로세스에서 읽기 | 실제 새 Codex 세션에서 승인 정의 조회 |
 | Semantic Layer를 해당 DB에 저장 | --metadata-url-env로 Oracle KV·audit·기억·후보 저장 | Oracle 실DB 한글·긴 JSON·CAS·재시작·감사 |
@@ -19,7 +19,7 @@
 
 ## 발표 표현
 
-“사용자가 확인한 정의를 Oracle에 구조화해 저장하고 새 대화에서 재사용합니다. 추출은 Codex가 수행하며, 후보는 운영자가 승인합니다.”
+“사용자가 확인한 정의를 Oracle에 구조화해 저장하고 새 대화에서 재사용합니다. 대화 지침을 설정한 Codex가 후보를 추출하며, 운영자가 승인합니다.”
 
 Oracle 저장은 CLOB에 직렬화한 JSON이며 JSON-B라고 부르지 않는다. 자동 가중치 학습/시간에 따른 정확도 향상을 주장하지 않는다. 함수는 승인된 뷰를 통해 사용하며 임의 PL/SQL 실행 도구가 아니다. 패키지 본문 가시성이 없는 계정은 연결을 거부한다.
 
