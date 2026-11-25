@@ -36,6 +36,7 @@ def main():
     settings = {
         "sandbox_mode": "read-only",
         "approval_policy": "never",
+        "check_for_update_on_startup": False,
         **(
             {
                 f"mcp_servers.{name}.enabled": False
