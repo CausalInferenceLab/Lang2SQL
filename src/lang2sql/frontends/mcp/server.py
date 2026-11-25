@@ -5,7 +5,6 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
-import os
 import threading
 import uuid
 
@@ -17,6 +16,7 @@ from ...core.identity import Identity
 from ...harness.context import HarnessContext
 from ...tenancy.tool_runtime import build_tool_context
 from ...tools.resolve_business_terms import DefinitionCheckedSQL, ResolveBusinessTerms
+from ..metadata_options import parse_metadata_args
 
 logger = logging.getLogger(__name__)
 
@@ -103,26 +103,10 @@ def main() -> None:
     parser.add_argument(
         "--store", default=":memory:", help="SQLite metadata/audit path"
     )
-    parser.add_argument(
-        "--metadata-url-env",
-        help="Environment variable containing the Oracle metadata URL",
-    )
-    parser.add_argument(
-        "--initialize-metadata",
-        action="store_true",
-        help="Create metadata tables with the metadata account",
-    )
-    args = parser.parse_args()
+    args = parse_metadata_args(parser)
     if any(not value.strip() for value in (args.user_id, args.org_id)):
         parser.error("user and org IDs must not be blank")
     logging.basicConfig(level=logging.INFO)
-    metadata_url = (
-        os.environ.get(args.metadata_url_env) if args.metadata_url_env else None
-    )
-    if args.metadata_url_env and not metadata_url:
-        parser.error("Metadata URL environment variable is missing")
-    if args.initialize_metadata and not metadata_url:
-        parser.error("--initialize-metadata requires --metadata-url-env")
     # Composition reads the existing DB environment; no model/API key is needed.
     ctx = build_tool_context(
         Identity(
@@ -132,7 +116,7 @@ def main() -> None:
             is_admin=args.admin,
         ),
         store_path=args.store,
-        metadata_url=metadata_url,
+        metadata_url=args.metadata_url,
         initialize_metadata=args.initialize_metadata,
     )
     try:

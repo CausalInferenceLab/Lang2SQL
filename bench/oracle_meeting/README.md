@@ -65,7 +65,7 @@ uv run --env-file .env python bench/oracle_view/long_context.py \
   --store /absolute/registered-demo.db --turns 100 --output /tmp/long-context-result
 ```
 
-기존 SQLite 데모 저장소에 순매출 뷰가 등록된 상태에서 실행한다. 실제 Codex 대화를 resume하며 다음 달 지시어가 포함된 100개 질문을 순서대로 보낸다. 정답은 프롬프트에 넣지 않는다. 1·10·50·100턴의 명시적 질문을 새 세션에서도 비교한다. 도구가 반환한 값과 기간을 채점하며 원문 응답·도구 호출·사용량 이벤트·소요 시간을 보존한다. 요청 모델, Codex 버전, 질문셋 해시를 기록한다.
+기존 SQLite 데모 저장소에 순매출 뷰가 등록된 상태에서 실행한다. 실제 Codex 대화를 resume하며 9·10·11월의 세 질문 패턴을 반복하며 다음 달 지시어가 포함된 100턴을 순서대로 보낸다. 정답은 프롬프트에 넣지 않는다. 1·10·50·100턴의 명시적 질문을 새 세션에서도 비교한다. 도구가 반환한 값과 기간을 채점하며 원문 응답·도구 호출·사용량 이벤트·소요 시간을 보존한다. 요청 모델, Codex 버전, 질문셋 해시를 기록한다.
 
 이것은 합성 데이터 한 시나리오의 재현 평가다. #267 전체의 독립 질문 100개 통계 평가나 #268의 모든 후속 질문 유형을 대신하지 않는다. 100턴 전체 통과도 정확도 향상이나 자동 학습을 의미하지 않는다. 기준/집계 변경, 결과 참조 등의 새로운 질문셋을 추가할 수 있으며 운영 데이터의 일반화 평가는 별도다.
 
@@ -83,3 +83,5 @@ uv run --env-file .env python bench/oracle_meeting/codex_rehearse.py \
 ```
 
 패키지 변경 차단을 확인하려면 전용 fixture 컨테이너와 패키지 본문 가시성 계정을 사용해 `package_fault.py --container NAME --output NEW.json`을 실행한다. 테스트는 MEETING_RULES 본문을 변경한 뒤 finally에서 복원한다.
+
+Oracle 메타데이터로 같은 평가를 실행하려면 `long_context.py --metadata-url-env LANG2SQL_METADATA_URL --org-id ORG --team-id TEAM --turns 100 --output NEW_DIR`을 사용한다. 해당 팀에 순매출과 기본 fixture 뷰 계약이 먼저 등록되어 있어야 한다. 완료 후 `summarize_context.py --run NEW_DIR --expected-turns 100 --output NEW_REPORT.json`으로 시작·종료일, 실제 값, 동일 세션 유지와 새 세션 비교를 독립적으로 재검사한다.

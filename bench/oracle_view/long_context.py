@@ -3,6 +3,7 @@
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import tempfile
 import time
@@ -53,26 +54,41 @@ def run_turn(settings, cwd, question, thread, timeout, model):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument("--store", type=Path, required=True)
+    backend = p.add_mutually_exclusive_group(required=True)
+    backend.add_argument("--store", type=Path)
+    backend.add_argument("--metadata-url-env")
+    p.add_argument("--org-id", default="demo")
+    p.add_argument("--team-id", default="sales")
     p.add_argument("--output", type=Path, required=True)
     p.add_argument("--turns", type=int, default=100)
     p.add_argument("--timeout", type=int, default=240)
     p.add_argument("--model")
     args = p.parse_args()
-    if args.output.exists() or not args.store.is_file() or args.turns < 1:
+    if (
+        args.output.exists()
+        or (args.store and not args.store.is_file())
+        or args.turns < 1
+    ):
         p.error("Use existing store, new output directory, positive turn count")
     args.output.mkdir(parents=True)
+    if args.metadata_url_env and not os.environ.get(args.metadata_url_env):
+        p.error("Metadata environment variable missing")
+    storage_args = (
+        ["--store", str(args.store.resolve())]
+        if args.store
+        else ["--metadata-url-env", args.metadata_url_env]
+    )
     settings = mcp_settings(
         [
-            "--store",
-            str(args.store.resolve()),
+            *storage_args,
             "--org-id",
-            "demo",
+            args.org_id,
             "--team-id",
-            "sales",
+            args.team_id,
             "--user-id",
             "long-context-evaluator",
-        ]
+        ],
+        extra_env=[args.metadata_url_env] if args.metadata_url_env else [],
     )
     cases = []
     for i in range(args.turns):
@@ -93,6 +109,7 @@ def main():
             ["codex", "--version"], text=True
         ).strip(),
         "requested_model": args.model,
+        "metadata_backend": "oracle" if args.metadata_url_env else "sqlite",
         "dataset_sha256": hashlib.sha256(
             json.dumps(cases, sort_keys=True).encode()
         ).hexdigest(),

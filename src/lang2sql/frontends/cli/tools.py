@@ -6,7 +6,6 @@ import argparse
 import asyncio
 import json
 import logging
-import os
 import sys
 import uuid
 from dataclasses import asdict
@@ -20,6 +19,7 @@ from ...core.identity import Identity
 from ...tenancy.tool_runtime import build_tool_context
 from ...tools.bound_metric import bind_view
 from ...tools.context_candidates import decide_candidate
+from ..metadata_options import parse_metadata_args
 
 logger = logging.getLogger(__name__)
 
@@ -74,24 +74,8 @@ def main(argv=None) -> int:
         source.add_argument(
             "--args-file", help="Read JSON from a file; '-' reads stdin"
         )
-    parser.add_argument(
-        "--metadata-url-env",
-        help="Environment variable containing the Oracle metadata URL",
-    )
-    parser.add_argument(
-        "--initialize-metadata",
-        action="store_true",
-        help="Create metadata tables with the metadata account",
-    )
-    args = parser.parse_args(argv)
+    args = parse_metadata_args(parser, argv)
     logging.basicConfig(level=logging.INFO)
-    metadata_url = (
-        os.environ.get(args.metadata_url_env) if args.metadata_url_env else None
-    )
-    if args.metadata_url_env and not metadata_url:
-        parser.error("Metadata URL environment variable is missing")
-    if args.initialize_metadata and not metadata_url:
-        parser.error("--initialize-metadata requires --metadata-url-env")
     ctx = None
     output: dict[str, Any]
     try:
@@ -105,7 +89,7 @@ def main(argv=None) -> int:
                 is_admin=args.admin,
             ),
             store_path=args.store,
-            metadata_url=metadata_url,
+            metadata_url=args.metadata_url,
             initialize_metadata=args.initialize_metadata,
         )
         specs = {spec.name: spec for spec in ctx.tools.specs()}
