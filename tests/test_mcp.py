@@ -118,12 +118,12 @@ async def test_metadata_persists_and_team_scope_is_preserved(tmp_path):
             {"term": "net_revenue", "definition": "Not allowed", "layer": "org"},
         )
         assert denied.isError
-        await client.call_tool("remember", {"text": "Ephemeral note"})
+        await client.call_tool("remember", {"text": "Persistent note"})
     async with connected(db, store) as client:
         terms = await client.call_tool("term_custom", {"list": True})
         assert "Exclude refunds" in terms.content[0].text
         notes = await client.call_tool("recall_memory", {"query": "note"})
-        assert "Ephemeral note" not in notes.content[0].text
+        assert "Persistent note" in notes.content[0].text
     async with connected(db, store, team="sales") as client:
         terms = await client.call_tool("term_custom", {"list": True})
         assert "Exclude refunds" not in terms.content[0].text
@@ -233,3 +233,20 @@ async def test_check_scope_inferred_mutation_and_single_use(tmp_path):
         assert (
             await client.call_tool("resolve_business_terms", {"terms": ["revenue"]})
         ).isError
+
+
+@pytest.mark.asyncio
+async def test_memory_survives_stdio_restart_and_isolates_team(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "metadata.db"
+    async with connected(db, store, team="sales") as client:
+        result = await client.call_tool(
+            "remember", {"text": "October cutoff is October 31"}
+        )
+        assert not result.isError
+    async with connected(db, store, team="sales") as client:
+        result = await client.call_tool("recall_memory", {"query": "cutoff"})
+        assert "October cutoff is October 31" in result.content[0].text
+    async with connected(db, store, team="finance") as client:
+        result = await client.call_tool("recall_memory", {"query": "cutoff"})
+        assert "No remembered notes" in result.content[0].text

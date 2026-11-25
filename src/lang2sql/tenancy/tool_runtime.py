@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 from ..adapters.db.factory import explorer_from_env
+from ..adapters.storage.persistent_memory import PersistentMemoryStore
 from ..adapters.storage.sqlite_store import SqliteStore
 from ..core.identity import Identity
 from ..core.ports.explorer import ExplorerPort
 from ..harness.context import HarnessContext
 from ..harness.session import Session
 from ..harness.tool_registry import ToolRegistry
-from ..memory import InjectAllRecall, InMemoryStore, ManualExtractor, MemoryService
+from ..memory import InjectAllRecall, ManualExtractor, MemoryService
 from ..safety.pipeline import SafetyPipeline
 from ..tools.explore_schema import ExploreSchema
 from ..tools.recall_memory import RecallMemory
@@ -36,7 +37,11 @@ def build_tool_context(
             "Configure LANG2SQL_DB_URL or the existing D1 environment settings"
         )
     store = SqliteStore(store_path)
-    memory = MemoryService(InMemoryStore(), InjectAllRecall(), ManualExtractor())
+    memory = MemoryService(
+        PersistentMemoryStore(store, identity.guild_id, identity.channel_id),
+        InjectAllRecall(),
+        ManualExtractor(),
+    )
     registry = ToolRegistry(
         [
             RunSQL(),

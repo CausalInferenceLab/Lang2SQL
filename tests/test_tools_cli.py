@@ -79,7 +79,8 @@ def test_batch_retains_memory_and_stops_on_failure(tmp_path):
     status, result = invoke(
         tmp_path, "call", "recall_memory", "--args", '{"query":"refund"}'
     )
-    assert status == 0 and result["content"] == "No remembered notes."
+    assert status == 0 and "exclude refunds" in result["content"]
+    assert "must not execute" not in result["content"]
 
 
 def test_batch_validates_before_writes(tmp_path):
