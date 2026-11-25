@@ -74,25 +74,12 @@ class MeasuredLLM:
     ) -> Completion:
         return await self._complete(messages, tools, required_tool=tool_name)
 
-    async def complete_with_json_schema(
-        self, messages: Sequence[Message], *, name: str, schema: dict
-    ) -> Completion:
-        return await self._complete(
-            messages,
-            (),
-            response_format={
-                "type": "json_schema",
-                "json_schema": {"name": name, "schema": schema, "strict": True},
-            },
-        )
-
     async def _complete(
         self,
         messages: Sequence[Message],
         tools: Sequence[ToolSpec],
         *,
         required_tool: str | None = None,
-        response_format: dict | None = None,
     ) -> Completion:
         if len(self.calls) >= self.max_calls:
             raise CallBudgetExhausted
@@ -129,13 +116,10 @@ class MeasuredLLM:
                 if required_tool
                 else "auto"
             )
-        if response_format is not None:
-            kwargs["response_format"] = response_format
         entry = {
             "status": "started",
             "usage": None,
             "tool_choice": kwargs.get("tool_choice"),
-            "response_format": response_format,
         }
         self.calls.append(entry)
         self.save_attempt(self.calls)

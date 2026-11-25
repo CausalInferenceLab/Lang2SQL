@@ -5,7 +5,7 @@ import pytest
 from bench.bird.comparison import paired_metrics
 from bench.bird.dataset import COHORT_PATH, manifest_metadata, selected_metadata
 from bench.bird.io import ProtocolError, read_json
-from bench.bird.runner import QueryTools
+from bench.bird.runner import InlineDocumentSource, TracedTools
 from bench.bird.scoring import BUDGETS, QueryFailure, calculate_ex, read_rows
 from lang2sql.core.types import ToolResult, ToolSpec
 from lang2sql.harness.tool_registry import ToolRegistry
@@ -56,7 +56,7 @@ def test_paired_metrics_count_changes_and_reject_misaligned_ids():
 
 
 @pytest.mark.asyncio
-async def test_sql_tool_filter_preserves_product_registry_and_dispatch():
+async def test_traced_tools_preserve_all_product_specs_and_dispatch():
     invoked = []
 
     class ProbeTool:
@@ -68,24 +68,41 @@ async def test_sql_tool_filter_preserves_product_registry_and_dispatch():
             return ToolResult("", "Product result")
 
     names = (
-        "review_sql",
+        "registered_extension",
         "run_sql",
         "ingest_doc",
         "explore_schema",
         "enrich_schema",
         "term_custom",
         "org_setup",
+        "ask_user",
+        "remember",
+        "confirm_ingest",
     )
     registry = ToolRegistry([ProbeTool(name) for name in names])
     records = []
-    tools = QueryTools(registry, records)
+    tools = TracedTools(registry, records)
 
-    assert tools.specs() == [
-        spec for spec in registry.specs() if spec.name != "ingest_doc"
-    ]
+    assert tools.specs() == registry.specs()
     assert (
         await tools.dispatch("enrich_schema", {}, None, "1")
     ).content == "Product result"
-    assert (await tools.dispatch("ingest_doc", {}, None, "2")).is_error
-    assert invoked == ["enrich_schema"]
+    assert (
+        await tools.dispatch("ingest_doc", {"content": "Definition"}, None, "2")
+    ).content == "Product result"
+    assert invoked == ["enrich_schema", "ingest_doc"]
     assert [record["call_id"] for record in records] == ["1", "2"]
+
+
+@pytest.mark.asyncio
+async def test_benchmark_document_source_uses_inline_content(tmp_path):
+    ref = tmp_path / "document.txt"
+    ref.write_text("Content outside the question", encoding="utf-8")
+    source = InlineDocumentSource()
+
+    with pytest.raises(ValueError, match="requires inline content"):
+        await source.fetch(str(ref))
+    document = await source.fetch(str(ref), b"Content within the question")
+    assert document.name == "document.txt"
+    assert document.text == "Content within the question"
+    assert document.source_id == str(ref)

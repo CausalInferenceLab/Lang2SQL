@@ -6,7 +6,7 @@
 
 - [표본 manifest](manifest-sqlite100.json)는 기존 벤치와 동일한 SQLite 리비전에서 evidence가 있는 365문항을 대상으로 한다. `db_id`와 난이도별 비례 몫을 최대 나머지 방식으로 정하고, 각 그룹에서 `SHA-256(20261114:question_id)`가 작은 문항을 뽑았다. 고정한 100문항에 11개 DB와 `challenging` 98건, `moderate` 2건이 포함된다. [기존 결과 PR #315](https://github.com/CausalInferenceLab/Lang2SQL/pull/315)
 - **B**는 질문과 같은 사용자 메시지에 `BIRD evidence` 블록으로 원문을 전달한다. **D**는 질문에 공통 SQL 제출 지시만 붙인다. 각 문항은 새 세션과 빈 인메모리 지식 저장소에서 시작한다.
-- 제품 도구 레지스트리에서 `run_sql`, `explore_schema`와 등록된 `enrich_schema`, `org_setup`, `term_custom`, `review_sql`을 제품의 순서와 스키마 그대로 제공한다. 컬럼 보강과 용어 등록은 해당 문항의 임시 저장소에서 이뤄진다. 도구 내부 모델 호출도 문항당 8회 예산에 포함된다.
+- 평가 대상 커밋의 기본 도구 레지스트리 전체를 제품의 순서와 스키마 그대로 제공한다. 컬럼 보강, 용어 등록과 기억은 해당 문항의 임시 저장소에 기록된다. 문서 도구에는 `ingest_doc`의 인라인 본문을 전달할 수 있다. 도구 내부 모델 호출도 문항당 8회 예산에 포함된다.
 - [프로토콜 설정](protocol.py)은 모델 ID, 응답 확인용 모델 ID, 호출 설정을 고정한다. `gpt-4.1-mini-2025-04-14`와 `gpt-4.1-2025-04-14`는 OpenAI SDK 3.51.0, `gpt-6-luna`는 SDK 3.57.0과 `reasoning_effort=none`을 사용한다. Luna는 공급자의 별칭으로 지정하고 응답 모델 ID와 제공되는 `system_fingerprint`를 기록한다. [기존 런타임 설정](https://github.com/CausalInferenceLab/Lang2SQL/pull/315)
 - Python 3.13.14, SQLite 3.53.1, LiteLLM 1.109.1을 사용한다. SQLAlchemy와 나머지 패키지는 [잠금 파일](uv.lock)에 고정한다. 문항당 모델 호출은 8회, 출력은 호출당 4,096토큰으로 제한한다. 호출·문항·SQL 제한은 각각 120초·480초·30초이며, 채점 결과는 100,000행까지 읽는다. 각 모델은 B, D 순서로 실행하고 세 모델은 병렬로 돌린다. 조합당 동시성은 4다.
 - EX는 읽기 전용 SQLite에서 예측과 기준 SQL의 행 튜플 집합이 같으면 1점이다. 행 순서와 중복은 무시하고, 열 순서와 값은 유지한다. SQL 미제출과 실행 실패도 분모에 포함한다. [BIRD EX 규칙](https://github.com/bird-bench/mini_dev/blob/1c49a375e76c471e218564da3f4617513d33e371/evaluation/evaluation_ex.py#L17)
@@ -61,4 +61,4 @@ bash bench/bird/matrix.sh "$CANDIDATE_TREE" "$CANDIDATE_SHA" \
 
 ## 오프라인 스모크
 
-`prepare --smoke-cases 2`로 다른 DB에서 고정 문항 두 개를 준비하고 `check-gold`를 실행한다. 위의 두 `matrix.sh` 호출에 `--smoke`를 추가하고, `compare`에도 `--smoke`를 붙인다. 별도 결과 경로를 사용한다. 스크립트 응답으로 제품에 등록된 SQL 도구 호출, 최종 SQL 제출, EX 채점, 문항 대응을 확인한다. 오프라인 결과에는 `scripted-smoke` 모드가 기록된다.
+`prepare --smoke-cases 2`로 다른 DB에서 고정 문항 두 개를 준비하고 `check-gold`를 실행한다. 위의 두 `matrix.sh` 호출에 `--smoke`를 추가하고, `compare`에도 `--smoke`를 붙인다. 별도 결과 경로를 사용한다. 스크립트 응답으로 전체 도구 노출과 SQL 도구 호출, 최종 SQL 제출, EX 채점, 문항 대응을 확인한다. 오프라인 결과에는 `scripted-smoke` 모드가 기록된다.

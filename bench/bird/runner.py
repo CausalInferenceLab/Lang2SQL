@@ -19,28 +19,28 @@ from sqlalchemy.pool import NullPool
 from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.core.identity import Identity
-from lang2sql.core.types import ToolResult
 from lang2sql.harness.loop import agent_loop
 from lang2sql.harness.tool_registry import ToolRegistry
+from lang2sql.ingestion import FileSource
 from lang2sql.tenancy.concierge import ContextConcierge
 from lang2sql.tenancy.encrypted_secrets import EncryptedSecrets
 
 from .dataset import Case
 from .io import ProtocolError, json_digest, lock_output, read_json, write_json
-from .protocol import (
-    API_BASE,
-    REQUIRED_TOOLS,
-    SQL_TOOLS,
-    Budgets,
-    check_settings,
-    user_text,
-)
+from .protocol import API_BASE, Budgets, check_settings, user_text
 from .providers import CallBudgetExhausted, MeasuredLLM, ModelCallError, Transport
 from .records import CaseFiles
 from .sqlite import read_connection, set_deadline
 from .submissions import SubmissionError, final_sql
 
 HAS_FINAL_SQL_HOOK = "extract_final_sql" in inspect.signature(agent_loop).parameters
+SCRIPTED_SQL_TOOLS = {
+    "run_sql",
+    "explore_schema",
+    "enrich_schema",
+    "org_setup",
+    "term_custom",
+}
 
 
 class ReadOnlyExplorer(SqlAlchemyExplorer):
@@ -60,25 +60,27 @@ class ReadOnlyExplorer(SqlAlchemyExplorer):
         self._engine.dispose()
 
 
-class QueryTools:
-    """Use the SQL tools registered by the selected product checkout."""
+class InlineDocumentSource(FileSource):
+    """Accept the document content from the case without resolving file paths."""
+
+    async def fetch(self, ref: str, blob: bytes | None = None):
+        if blob is None:
+            raise ValueError("BIRD document input requires inline content")
+        return await super().fetch(ref, blob)
+
+
+class TracedTools:
+    """Expose the product registry and record its dispatch results."""
 
     def __init__(self, registry: ToolRegistry, dispatches: list[dict]):
         self.registry = registry
         self.dispatches = dispatches
-        self._specs = [spec for spec in registry.specs() if spec.name in SQL_TOOLS]
-        self._names = {spec.name for spec in self._specs}
-        if not self._names.issuperset(REQUIRED_TOOLS):
-            raise ProtocolError("Product registry is missing required SQL tools")
 
     def specs(self):
-        return list(self._specs)
+        return self.registry.specs()
 
     async def dispatch(self, name, args, ctx, call_id):
-        if name in self._names:
-            result = await self.registry.dispatch(name, args, ctx, call_id)
-        else:
-            result = ToolResult(call_id, f"unknown tool: {name}", is_error=True)
+        result = await self.registry.dispatch(name, args, ctx, call_id)
         self.dispatches.append({"name": name, "arguments": args, **asdict(result)})
         return result
 
@@ -109,14 +111,7 @@ def scripted_transport(db: Path, response_model: str, timeout: float) -> Transpo
         message = {"role": "assistant"}
         finish_reason = "stop"
         if not tools:
-            # Enrichment and setup use a standalone user prompt. SQL review
-            # provides a system prompt and a separate review payload.
-            payload = (
-                metadata
-                if len(messages) == 1
-                else {"verdict": "pass", "reason": "Scripted smoke verdict."}
-            )
-            message["content"] = json.dumps(payload)
+            message["content"] = json.dumps(metadata)
         else:
             properties = tools["explore_schema"]["parameters"]["properties"]
             schema = {"tables": [table]} if "tables" in properties else {"table": table}
@@ -132,7 +127,6 @@ def scripted_transport(db: Path, response_model: str, timeout: float) -> Transpo
                     ("term_custom", term_args),
                 ],
                 [("explore_schema", schema)],
-                [("review_sql", {"sql": sql})],
                 [("run_sql", {"sql": sql})],
             ]
             available = [
@@ -193,9 +187,6 @@ async def run_case(
             raise ProtocolError(
                 "First user message differs from the fixed evidence protocol"
             )
-        names = {tool["function"]["name"] for tool in specs}
-        if not set(REQUIRED_TOOLS) <= names <= SQL_TOOLS or len(names) != len(specs):
-            raise ProtocolError("Unexpected first-request SQL tools")
         trace.update(
             system=wire[0]["content"],
             user=wire[1]["content"],
@@ -234,11 +225,13 @@ async def run_case(
             max_turns=budgets.max_calls,
             secrets=EncryptedSecrets(store, key=Fernet.generate_key()),
         )
+        # The product registry wires this document source during context assembly.
+        concierge._source = InlineDocumentSource()
         ctx = await concierge.build_context(identity)
         ctx.okf_bundle_dir = None
         if store.kv_list_prefix(identity.kv_scope, "") or ctx.session.history():
             raise ProtocolError("Each case must start with an empty KV and session")
-        ctx.tools = QueryTools(ctx.tools, dispatches)
+        ctx.tools = TracedTools(ctx.tools, dispatches)
         try:
             kwargs = {"extract_final_sql": final_sql} if HAS_FINAL_SQL_HOOK else {}
             return await agent_loop(ctx, text, **kwargs)
@@ -293,7 +286,7 @@ async def run_case(
     if transport is None:
         advertised = {tool["function"]["name"] for tool in trace.get("tool_specs", [])}
         succeeded = {tool["name"] for tool in dispatches if not tool["is_error"]}
-        missing = sorted((advertised | set(REQUIRED_TOOLS)) - succeeded)
+        missing = sorted((advertised & SCRIPTED_SQL_TOOLS) - succeeded)
         if missing:
             raise ProtocolError(
                 f"Smoke case {case.question_id} failed tools {', '.join(missing)}"
