@@ -23,6 +23,11 @@ Rules:
   relevant tables whose columns are missing from your context. Choose table
   names from Known tables. A list of table names does not provide columns.
 - Prefer definitions from the semantic layer below over your own assumptions.
+- After `run_sql` succeeds, compare the original question, the executed SQL,
+  and the returned rows before answering. Check that the filters, date field,
+  and aggregation match the request. Ground the answer's values and units in
+  the returned data, distinguishing a zero aggregate from no returned rows.
+  If you find a concrete mismatch in the SQL, correct it and run the query again.
 - Answer concisely. Show only the final successful SQL you ran, not intermediate attempts.
 
 Clarification rule:

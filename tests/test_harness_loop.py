@@ -393,6 +393,29 @@ def test_prompt_with_actual_columns_allows_sql_on_the_first_call():
     assert len(ctx.explorer.executed) == 1
 
 
+def test_prompt_guides_the_next_model_call_after_run_sql():
+    question = "Show order amounts."
+    answer = "Here are the order amounts."
+    llm = ScriptedOpenAI(
+        _calls(_SCHEMA),
+        _calls(("sql", "run_sql", {"sql": _SQL})),
+        _answer(answer),
+    )
+    ctx = _context_for(llm)
+
+    assert asyncio.run(agent_loop(ctx, question)) == answer
+
+    _, _, after_sql = llm.requests
+    system, user, *_ = after_sql["messages"]
+    assert "compare the original question, the executed SQL" in system["content"]
+    assert "distinguishing a zero aggregate from no returned rows" in system["content"]
+    assert "correct it and run the query again" in system["content"]
+    assert user == {"role": "user", "content": question}
+    result = _tool_results(after_sql)["sql"]
+    assert "row(s):" in result
+    assert f"SQL: {ctx.explorer.executed[0]}" in result
+
+
 def test_column_results_are_scoped_to_the_current_user_turn():
     llm = ScriptedOpenAI(
         _calls(_SCHEMA),
