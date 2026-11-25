@@ -16,10 +16,10 @@ from cryptography.fernet import Fernet
 from sqlalchemy import create_engine, event
 from sqlalchemy.pool import NullPool
 
-from lang2sql import tools as product_tools
 from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 from lang2sql.adapters.storage.sqlite_store import SqliteStore
 from lang2sql.core.identity import Identity
+from lang2sql.core.types import ToolResult
 from lang2sql.harness.loop import agent_loop
 from lang2sql.harness.tool_registry import ToolRegistry
 from lang2sql.tenancy.concierge import ContextConcierge
@@ -29,8 +29,8 @@ from .dataset import Case
 from .io import ProtocolError, json_digest, lock_output, read_json, write_json
 from .protocol import (
     API_BASE,
-    OPTIONAL_TOOLS,
     REQUIRED_TOOLS,
+    SQL_TOOLS,
     Budgets,
     check_settings,
     user_text,
@@ -60,85 +60,106 @@ class ReadOnlyExplorer(SqlAlchemyExplorer):
         self._engine.dispose()
 
 
-class CaseStore(SqliteStore):
-    """Keep case knowledge empty while allowing the product to write audit events."""
+class QueryTools:
+    """Use the SQL tools registered by the selected product checkout."""
 
-    def kv_set(self, scope: str, key: str, value: str) -> None:
-        raise ProtocolError("Knowledge writes are disabled during inference")
+    def __init__(self, registry: ToolRegistry, dispatches: list[dict]):
+        self.registry = registry
+        self.dispatches = dispatches
+        self._specs = [spec for spec in registry.specs() if spec.name in SQL_TOOLS]
+        self._names = {spec.name for spec in self._specs}
+        if not self._names.issuperset(REQUIRED_TOOLS):
+            raise ProtocolError("Product registry is missing required SQL tools")
 
-    def kv_delete(self, scope: str, key: str) -> None:
-        raise ProtocolError("Knowledge writes are disabled during inference")
-
-    def kv_delete_prefix(self, scope: str, prefix: str) -> int:
-        raise ProtocolError("Knowledge writes are disabled during inference")
-
-
-class QueryTools(ToolRegistry):
-    def __init__(self):
-        tools = [product_tools.RunSQL(), product_tools.ExploreSchema()]
-        review = getattr(product_tools, "ReviewSQL", None)
-        if review is not None:
-            tools.append(review())
-        super().__init__(tools)
-        self.dispatches = []
+    def specs(self):
+        return list(self._specs)
 
     async def dispatch(self, name, args, ctx, call_id):
-        result = await super().dispatch(name, args, ctx, call_id)
+        if name in self._names:
+            result = await self.registry.dispatch(name, args, ctx, call_id)
+        else:
+            result = ToolResult(call_id, f"unknown tool: {name}", is_error=True)
         self.dispatches.append({"name": name, "arguments": args, **asdict(result)})
         return result
 
 
 def scripted_transport(db: Path, response_model: str, timeout: float) -> Transport:
-    """Exercise actual schema, SQL and scoring paths without loading a provider."""
+    """Exercise the available product SQL tools with scripted model responses."""
     with closing(read_connection(db, time.monotonic() + timeout)) as connection:
         table = connection.execute(
             "SELECT name FROM sqlite_schema WHERE type='table' "
             "AND name NOT LIKE 'sqlite_%' ORDER BY name LIMIT 1"
         ).fetchone()[0]
+        column = connection.execute(
+            "SELECT name FROM pragma_table_info(?) ORDER BY cid LIMIT 1", (table,)
+        ).fetchone()[0]
     escaped_table = table.replace('"', '""')
     sql = f'SELECT COUNT(*) FROM "{escaped_table}"'
+    term = "BIRD smoke row count"
+    definition = "Number of rows in the selected table."
+    metadata = {
+        "columns": {f"{table}.{column}": "BIRD smoke column description."},
+        "domain": "BIRD smoke",
+        "terms": [{"term": term, "definition": definition}],
+    }
 
     async def complete(**request):
-        tools = request.get("tools", [])
+        tools = {t["function"]["name"]: t["function"] for t in request.get("tools", [])}
         messages = request["messages"]
-        tool_turns = sum(message["role"] == "tool" for message in messages)
-        if tool_turns >= 2:
-            message = {"content": f"```sql\n{sql}\n```"}
-            finish_reason = "stop"
+        message = {"role": "assistant"}
+        finish_reason = "stop"
+        if not tools:
+            # Enrichment and setup use a standalone user prompt. SQL review
+            # provides a system prompt and a separate review payload.
+            payload = (
+                metadata
+                if len(messages) == 1
+                else {"verdict": "pass", "reason": "Scripted smoke verdict."}
+            )
+            message["content"] = json.dumps(payload)
         else:
-            if tool_turns == 0:
-                name = "explore_schema"
-                spec = next(
-                    tool["function"]
-                    for tool in tools
-                    if tool["function"]["name"] == name
-                )
-                args = (
-                    {"tables": [table]}
-                    if "tables" in spec["parameters"]["properties"]
-                    else {"table": table}
-                )
+            properties = tools["explore_schema"]["parameters"]["properties"]
+            schema = {"tables": [table]} if "tables" in properties else {"table": table}
+            term_args = (
+                {"list": True}
+                if "org_setup" in tools
+                else {"term": term, "definition": definition}
+            )
+            groups = [
+                [
+                    ("enrich_schema", {"table": table}),
+                    ("org_setup", {"team": "BIRD benchmark"}),
+                    ("term_custom", term_args),
+                ],
+                [("explore_schema", schema)],
+                [("review_sql", {"sql": sql})],
+                [("run_sql", {"sql": sql})],
+            ]
+            available = [
+                [call for call in group if call[0] in tools] for group in groups
+            ]
+            phases = [group for group in available if group]
+            tool_turns = sum(
+                bool(item.get("tool_calls"))
+                for item in messages
+                if item["role"] == "assistant"
+            )
+            if tool_turns == len(phases):
+                message["content"] = f"```sql\n{sql}\n```"
             else:
-                name, args = "run_sql", {"sql": sql}
-            message = {
-                "content": None,
-                "tool_calls": [
+                message["content"] = None
+                message["tool_calls"] = [
                     {
-                        "id": f"scripted-{tool_turns}",
+                        "id": f"scripted-{tool_turns}-{name}",
                         "type": "function",
                         "function": {"name": name, "arguments": json.dumps(args)},
                     }
-                ],
-            }
-            finish_reason = "tool_calls"
+                    for name, args in phases[tool_turns]
+                ]
+                finish_reason = "tool_calls"
         raw = {
             "model": response_model,
-            "choices": [
-                {
-                    "message": {"role": "assistant", **message},
-                    "finish_reason": finish_reason,
-                }
-            ],
+            "choices": [{"message": message, "finish_reason": finish_reason}],
         }
         return SimpleNamespace(model_dump=lambda: raw)
 
@@ -159,8 +180,8 @@ async def run_case(
     trace: dict = {}
     answer = None
     transcript: list[dict] = []
-    tools = QueryTools()
-    store = CaseStore()
+    dispatches: list[dict] = []
+    store = SqliteStore(":memory:")
     explorer = ReadOnlyExplorer(db, budgets.sql_timeout)
 
     def observe(wire: list[dict], specs: list[dict]) -> None:
@@ -172,8 +193,8 @@ async def run_case(
             raise ProtocolError(
                 "First user message differs from the fixed evidence protocol"
             )
-        names = tuple(tool["function"]["name"] for tool in specs)
-        if names not in (REQUIRED_TOOLS, REQUIRED_TOOLS + OPTIONAL_TOOLS):
+        names = {tool["function"]["name"] for tool in specs}
+        if not set(REQUIRED_TOOLS) <= names <= SQL_TOOLS or len(names) != len(specs):
             raise ProtocolError("Unexpected first-request SQL tools")
         trace.update(
             system=wire[0]["content"],
@@ -217,7 +238,7 @@ async def run_case(
         ctx.okf_bundle_dir = None
         if store.kv_list_prefix(identity.kv_scope, "") or ctx.session.history():
             raise ProtocolError("Each case must start with an empty KV and session")
-        ctx.tools = tools
+        ctx.tools = QueryTools(ctx.tools, dispatches)
         try:
             kwargs = {"extract_final_sql": final_sql} if HAS_FINAL_SQL_HOOK else {}
             return await agent_loop(ctx, text, **kwargs)
@@ -270,10 +291,17 @@ async def run_case(
                 f"Provider rejected the credentials or model (HTTP {call['status_code']})"
             )
     if transport is None:
-        succeeded = {tool["name"] for tool in tools.dispatches if not tool["is_error"]}
-        if result["status"] != "predicted" or not succeeded.issuperset(REQUIRED_TOOLS):
+        advertised = {tool["function"]["name"] for tool in trace.get("tool_specs", [])}
+        succeeded = {tool["name"] for tool in dispatches if not tool["is_error"]}
+        missing = sorted((advertised | set(REQUIRED_TOOLS)) - succeeded)
+        if missing:
             raise ProtocolError(
-                f"Smoke case {case.question_id} did not complete both tools and submit SQL"
+                f"Smoke case {case.question_id} failed tools {', '.join(missing)}"
+            )
+        if result["status"] != "predicted":
+            reason = result["failure"]["reason"]
+            raise ProtocolError(
+                f"Smoke case {case.question_id} failed to submit SQL ({reason})"
             )
     result.update(
         started_at=started_at,
@@ -282,7 +310,7 @@ async def run_case(
         seconds=time.monotonic() - started,
         answer=answer,
         transcript=transcript,
-        tools=tools.dispatches,
+        tools=dispatches,
     )
     return files.finish(result)
 

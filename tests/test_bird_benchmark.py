@@ -5,7 +5,10 @@ import pytest
 from bench.bird.comparison import paired_metrics
 from bench.bird.dataset import COHORT_PATH, manifest_metadata, selected_metadata
 from bench.bird.io import ProtocolError, read_json
+from bench.bird.runner import QueryTools
 from bench.bird.scoring import BUDGETS, QueryFailure, calculate_ex, read_rows
+from lang2sql.core.types import ToolResult, ToolSpec
+from lang2sql.harness.tool_registry import ToolRegistry
 
 
 def test_frozen_cohort_and_smoke_cases():
@@ -50,3 +53,39 @@ def test_paired_metrics_count_changes_and_reject_misaligned_ids():
     assert report["wrong_to_right"] == report["right_to_wrong"] == 1
     with pytest.raises(ProtocolError, match="paired by question ID"):
         paired_metrics(before, after[::-1])
+
+
+@pytest.mark.asyncio
+async def test_sql_tool_filter_preserves_product_registry_and_dispatch():
+    invoked = []
+
+    class ProbeTool:
+        def __init__(self, name):
+            self.spec = ToolSpec(name, f"Product definition for {name}")
+
+        async def run(self, args, ctx):
+            invoked.append(self.spec.name)
+            return ToolResult("", "Product result")
+
+    names = (
+        "review_sql",
+        "run_sql",
+        "ingest_doc",
+        "explore_schema",
+        "enrich_schema",
+        "term_custom",
+        "org_setup",
+    )
+    registry = ToolRegistry([ProbeTool(name) for name in names])
+    records = []
+    tools = QueryTools(registry, records)
+
+    assert tools.specs() == [
+        spec for spec in registry.specs() if spec.name != "ingest_doc"
+    ]
+    assert (
+        await tools.dispatch("enrich_schema", {}, None, "1")
+    ).content == "Product result"
+    assert (await tools.dispatch("ingest_doc", {}, None, "2")).is_error
+    assert invoked == ["enrich_schema"]
+    assert [record["call_id"] for record in records] == ["1", "2"]

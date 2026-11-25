@@ -17,7 +17,8 @@ BENCH_DIR = Path(__file__).resolve().parent
 BENCH_ROOT = BENCH_DIR.parents[1]
 CONDITIONS = ("B", "D")
 REQUIRED_TOOLS = ("run_sql", "explore_schema")
-OPTIONAL_TOOLS = ("review_sql",)
+OPTIONAL_TOOLS = ("enrich_schema", "org_setup", "term_custom", "review_sql")
+SQL_TOOLS = frozenset(REQUIRED_TOOLS + OPTIONAL_TOOLS)
 EVIDENCE_LABEL = "BIRD evidence"
 INSTRUCTION = (
     "\n\nNo follow-up user is available. Give the best supported answer for the "
@@ -169,6 +170,8 @@ def fixed_settings(manifest: dict) -> dict:
         "seed": SEED,
         "question_order": question_order(manifest),
         "tool_policy": {
+            "registry": "product",
+            "case_store": "in-memory",
             "required": list(REQUIRED_TOOLS),
             "optional": list(OPTIONAL_TOOLS),
         },
