@@ -158,6 +158,9 @@ async def test_missing_definition_never_reaches_database(tmp_path):
             "resolve_business_terms", {"terms": ["loyal_customer"]}
         )
         assert check.isError and "DEFINITION_REQUIRED" in check.content[0].text
+        assert "context_candidates" in check.content[0].text
+        assert "operator must approve" in check.content[0].text
+        assert "term_custom" not in check.content[0].text
         guessed = await client.call_tool(
             "run_sql",
             {"sql": "SELECT * FROM orders", "definition_check_id": "fabricated"},

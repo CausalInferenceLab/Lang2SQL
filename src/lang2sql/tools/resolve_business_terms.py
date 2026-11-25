@@ -88,7 +88,7 @@ class ResolveBusinessTerms:
                 "DEFINITION_REQUIRED: " + reason + ". SQL was NOT executed. "
                 "Ask the user for the exact business definition and intended team/org/user scope. "
                 "Do not infer a definition or register a guessed definition. "
-                "After explicit user clarification, save with term_custom and resolve_business_terms again."
+                "After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
             ),
         )
 
