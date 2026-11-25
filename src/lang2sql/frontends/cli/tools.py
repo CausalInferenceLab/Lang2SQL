@@ -6,6 +6,7 @@ import argparse
 import asyncio
 import json
 import logging
+import os
 import sys
 import uuid
 from dataclasses import asdict
@@ -18,6 +19,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from ...core.identity import Identity
 from ...tenancy.tool_runtime import build_tool_context
 from ...tools.bound_metric import bind_view
+from ...tools.context_candidates import decide_candidate
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +46,13 @@ def main(argv=None) -> int:
     parser.add_argument("--admin", action="store_true")
     parser.add_argument("--store", default=":memory:")
     commands = parser.add_subparsers(dest="command", required=True)
+    decision = commands.add_parser(
+        "decide-context", help="Operator review of a proposed definition"
+    )
+    decision.add_argument("candidate_id")
+    choice = decision.add_mutually_exclusive_group(required=True)
+    choice.add_argument("--approve", action="store_true")
+    choice.add_argument("--reject", action="store_true")
     commands.add_parser("list", help="Print tool names and JSON argument schemas")
     bind = commands.add_parser(
         "bind-oracle-view", help="Confirm a metric view for a registered definition"
@@ -65,8 +74,24 @@ def main(argv=None) -> int:
         source.add_argument(
             "--args-file", help="Read JSON from a file; '-' reads stdin"
         )
+    parser.add_argument(
+        "--metadata-url-env",
+        help="Environment variable containing the Oracle metadata URL",
+    )
+    parser.add_argument(
+        "--initialize-metadata",
+        action="store_true",
+        help="Create metadata tables with the metadata account",
+    )
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.INFO)
+    metadata_url = (
+        os.environ.get(args.metadata_url_env) if args.metadata_url_env else None
+    )
+    if args.metadata_url_env and not metadata_url:
+        parser.error("Metadata URL environment variable is missing")
+    if args.initialize_metadata and not metadata_url:
+        parser.error("--initialize-metadata requires --metadata-url-env")
     ctx = None
     output: dict[str, Any]
     try:
@@ -80,9 +105,16 @@ def main(argv=None) -> int:
                 is_admin=args.admin,
             ),
             store_path=args.store,
+            metadata_url=metadata_url,
+            initialize_metadata=args.initialize_metadata,
         )
         specs = {spec.name: spec for spec in ctx.tools.specs()}
-        if args.command == "bind-oracle-view":
+        if args.command == "decide-context":
+            output = asyncio.run(
+                decide_candidate(ctx, args.candidate_id, approve=args.approve)
+            )
+            status = 0
+        elif args.command == "bind-oracle-view":
             output = asyncio.run(
                 bind_view(
                     ctx,
@@ -177,13 +209,13 @@ def main(argv=None) -> int:
             )
             status = 1 if any(result["is_error"] for result in results) else 0
     except SQLAlchemyError as exc:
-        logger.error("oracle_binding_failed error_type=%s", type(exc).__name__)
+        logger.error("oracle_operation_failed error_type=%s", type(exc).__name__)
         output = {
             "is_error": True,
-            "content": "Cannot verify the Oracle view with this connection and account.",
+            "content": "Cannot access Oracle metadata or verify the view with this connection and account.",
         }
         status = 2
-    except (ValueError, OSError, ValidationError) as exc:
+    except (ValueError, RuntimeError, OSError, ValidationError) as exc:
         logger.warning("cli_input_failed error_type=%s", type(exc).__name__)
         output = {"is_error": True, "content": str(exc)}
         status = 2

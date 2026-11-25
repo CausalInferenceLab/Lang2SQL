@@ -70,6 +70,7 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
     async with connected(db, tmp_path / "metadata.db") as client:
         tools = (await client.list_tools()).tools
         assert {t.name for t in tools} == {
+            "context_candidates",
             "run_sql",
             "explore_schema",
             "term_custom",
@@ -223,7 +224,8 @@ async def test_check_scope_inferred_mutation_and_single_use(tmp_path):
     async with connected(db, store) as client:
         assert (
             await client.call_tool(
-                "run_sql", {"sql": "SELECT * FROM orders", "definition_check_id": token}
+                "run_sql",
+                {"sql": "SELECT * FROM orders", "definition_check_id": token},
             )
         ).isError
         assert not (

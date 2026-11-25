@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import logging
+import os
 import threading
 import uuid
 
@@ -33,6 +34,8 @@ def create_server(ctx: HarnessContext) -> Server:
             "An explicit calendar year/month determines its first day and next month's first day; do not ask the user to repeat an unambiguous period. "
             "If definitions are missing or unconfirmed, ask the user and STOP; never guess or register your own interpretation. "
             "Only register definitions explicitly supplied or confirmed by the user. "
+            "When a user explains a new business definition in conversation, extract a candidate with context_candidates and its exact user quote. "
+            "Candidates stay pending until operator approval; do not use a candidate as an approved definition or register it yourself to bypass approval. "
             "Use explore_schema and qualified table names before generating SQL. "
             "For oracle_view metrics the operator already approved the view and contract; pass only the requested period and receipt to run_sql. "
             "Do not ask to redefine an existing confirmed metric or to approve an ordinary read-only query already requested by the user. "
@@ -100,10 +103,26 @@ def main() -> None:
     parser.add_argument(
         "--store", default=":memory:", help="SQLite metadata/audit path"
     )
+    parser.add_argument(
+        "--metadata-url-env",
+        help="Environment variable containing the Oracle metadata URL",
+    )
+    parser.add_argument(
+        "--initialize-metadata",
+        action="store_true",
+        help="Create metadata tables with the metadata account",
+    )
     args = parser.parse_args()
     if any(not value.strip() for value in (args.user_id, args.org_id)):
         parser.error("user and org IDs must not be blank")
     logging.basicConfig(level=logging.INFO)
+    metadata_url = (
+        os.environ.get(args.metadata_url_env) if args.metadata_url_env else None
+    )
+    if args.metadata_url_env and not metadata_url:
+        parser.error("Metadata URL environment variable is missing")
+    if args.initialize_metadata and not metadata_url:
+        parser.error("--initialize-metadata requires --metadata-url-env")
     # Composition reads the existing DB environment; no model/API key is needed.
     ctx = build_tool_context(
         Identity(
@@ -113,6 +132,8 @@ def main() -> None:
             is_admin=args.admin,
         ),
         store_path=args.store,
+        metadata_url=metadata_url,
+        initialize_metadata=args.initialize_metadata,
     )
     try:
         asyncio.run(serve(ctx))

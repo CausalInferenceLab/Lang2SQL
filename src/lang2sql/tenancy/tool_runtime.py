@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ..adapters.db.factory import explorer_from_env
+from ..adapters.storage.oracle_store import OracleStore
 from ..adapters.storage.persistent_memory import PersistentMemoryStore
 from ..adapters.storage.sqlite_store import SqliteStore
 from ..core.identity import Identity
@@ -12,6 +13,7 @@ from ..harness.session import Session
 from ..harness.tool_registry import ToolRegistry
 from ..memory import InjectAllRecall, ManualExtractor, MemoryService
 from ..safety.pipeline import SafetyPipeline
+from ..tools.context_candidates import ContextCandidates
 from ..tools.explore_schema import ExploreSchema
 from ..tools.recall_memory import RecallMemory
 from ..tools.remember import Remember
@@ -29,6 +31,8 @@ def build_tool_context(
     *,
     store_path: str = ":memory:",
     explorer: ExplorerPort | None = None,
+    metadata_url: str | None = None,
+    initialize_metadata: bool = False,
 ) -> HarnessContext:
     """Bind one connection and identity for the lifetime of a local tool process."""
     database = explorer if explorer is not None else explorer_from_env()
@@ -36,7 +40,11 @@ def build_tool_context(
         raise ValueError(
             "Configure LANG2SQL_DB_URL or the existing D1 environment settings"
         )
-    store = SqliteStore(store_path)
+    store = (
+        OracleStore(metadata_url, initialize=initialize_metadata)
+        if metadata_url
+        else SqliteStore(store_path)
+    )
     memory = MemoryService(
         PersistentMemoryStore(store, identity.guild_id, identity.channel_id),
         InjectAllRecall(),
@@ -45,6 +53,7 @@ def build_tool_context(
     registry = ToolRegistry(
         [
             RunSQL(),
+            ContextCandidates(),
             ExploreSchema(),
             SemanticFederationTool(),
             Remember(memory),
