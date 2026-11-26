@@ -1,0 +1,701 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra",
+      "manifest_sha256": "42d0ea666016e56c84b2a280f7578a3ae88fc1a20d3b7333997de3d916114d49",
+      "scores_sha256": "0e4850bf9dd660ebf4d2ef9f31843f98c700a6ccd28aa98c19a35d344a16fa7a",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "56ade0726fc7522f6d8609d5f256e6267f4ecb40",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-fixed-decimal-20261127/spider-gpt-6.2-astra",
+      "manifest_sha256": "023c35cd0d8818fdf1ac33190addbcc2f3b1879385ac2144a98867a1870d97e0",
+      "scores_sha256": "f84c74b5d15781a7c5a1196dd5fc3bff215377a489eca510b7b93cfb581972f6",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "27b222f33f96aa5b01d6ffb25e5f70a603d8503a",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 0": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "local152",
+        "db": "imdb_movies",
+        "question": "Can you provide the top 9 directors by movie count, including their ID, name, number of movies, average inter-movie duration (rounded to the nearest integer), average rating (rounded to 2 decimals), total votes, minimum and maximum ratings, and total movie duration? Sort the output first by movie count in descending order and then by total movie duration in descending order.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,14 +1,14 @@\n WITH director_movies AS (\n     SELECT\n         d.name_id AS director_id,\n-        m.id AS movie_id,\n+        d.movie_id,\n         m.duration,\n-        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n+        JULIANDAY(m.date_published) - LAG(JULIANDAY(m.date_published)) OVER (\n             PARTITION BY d.name_id\n-            ORDER BY m.date_published, m.id\n+            ORDER BY m.date_published, d.movie_id\n         ) AS gap_days\n-    FROM director_mapping AS d\n-    JOIN movies AS m ON m.id = d.movie_id\n+    FROM main.director_mapping AS d\n+    JOIN main.movies AS m ON m.id = d.movie_id\n )\n SELECT\n     dm.director_id,\n@@ -21,8 +21,8 @@\n     MAX(r.avg_rating) AS max_rating,\n     SUM(dm.duration) AS total_movie_duration\n FROM director_movies AS dm\n-JOIN names AS n ON n.id = dm.director_id\n-LEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\n+JOIN main.names AS n ON n.id = dm.director_id\n+LEFT JOIN main.ratings AS r ON r.movie_id = dm.movie_id\n GROUP BY dm.director_id, n.name\n ORDER BY movie_count DESC, total_movie_duration DESC\n LIMIT 9",
+      "before": {
+        "score": 0,
+        "record_sha256": "5080f96c24ba26161cc8f48be4f9a40decaa5f8016f4c94cd7744b9378c8e28b",
+        "record": {
+          "instance_id": "local152",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "ed45cf60901dfe9a2f665510bb2ea3e98f53949a456668d6257a1eaeff99fa83",
+          "events_sha256": "5f34b4b3fa8884082c5f4c89d5a6d6e0816cc31882bf33118276326fd5905983",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 137249,
+              "cached_input_tokens": 126464,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1070,
+              "reasoning_output_tokens": 111
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "director_mapping"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "director_mapping (table)\n- movie_id: TEXT\n- name_id: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"_MDVz3WF1WrDatfFZEmG12B8lcx-Pgk38CkcFcWtge8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "names"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "names (table)\n- id: TEXT\n- name: TEXT\n- height: REAL\n- date_of_birth: TEXT\n- known_for_movies: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "ratings"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "ratings (table)\n- movie_id: TEXT\n- avg_rating: REAL\n- total_votes: INTEGER\n- median_rating: REAL"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "movies"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "movies (table)\n- id: TEXT\n- title: TEXT\n- year: INTEGER\n- date_published: TIMESTAMP\n- duration: INTEGER\n- country: TEXT\n- worlwide_gross_income: TEXT\n- languages: TEXT\n- production_company: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "_MDVz3WF1WrDatfFZEmG12B8lcx-Pgk38CkcFcWtge8",
+                "sql": "SELECT\n    (SELECT COUNT(*) FROM director_mapping) AS credit_rows,\n    (SELECT COUNT(*) FROM (SELECT DISTINCT name_id, movie_id FROM director_mapping)) AS distinct_credits,\n    COUNT(*) AS joined_rows,\n    COUNT(m.id) AS matched_movies,\n    COUNT(n.id) AS matched_names,\n    COUNT(r.movie_id) AS matched_ratings,\n    COUNT(julianday(m.date_published)) AS usable_dates,\n    MIN(m.date_published) AS earliest_date,\n    MAX(m.date_published) AS latest_date\nFROM director_mapping AS d\nLEFT JOIN movies AS m ON m.id = d.movie_id\nLEFT JOIN names AS n ON n.id = d.name_id\nLEFT JOIN ratings AS r ON r.movie_id = m.id"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): credit_rows=int; distinct_credits=int; joined_rows=int; matched_movies=int; matched_names=int; matched_ratings=int; usable_dates=int; earliest_date=str; latest_date=str\ncredit_rows | distinct_credits | joined_rows | matched_movies | matched_names | matched_ratings | usable_dates | earliest_date | latest_date\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n3867 | 3867 | 3867 | 3867 | 3867 | 3867 | 3867 | 2017-01-01 00:00:00 | 2019-12-27 00:00:00\nSQL: SELECT\n    (SELECT COUNT(*) FROM director_mapping) AS credit_rows,\n    (SELECT COUNT(*) FROM (SELECT DISTINCT name_id, movie_id FROM director_mapping)) AS distinct_credits,\n    COUNT(*) AS joined_rows,\n    COUNT(m.id) AS matched_movies,\n    COUNT(n.id) AS matched_names,\n    COUNT(r.movie_id) AS matched_ratings,\n    COUNT(julianday(m.date_published)) AS usable_dates,\n    MIN(m.date_published) AS earliest_date,\n    MAX(m.date_published) AS latest_date\nFROM director_mapping AS d\nLEFT JOIN movies AS m ON m.id = d.movie_id\nLEFT JOIN names AS n ON n.id = d.name_id\nLEFT JOIN ratings AS r ON r.movie_id = m.id\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"uwsoDSg3AbyXSB8fTe9R-CKE9xVs7ctQbtooP6P1prY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_8",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "uwsoDSg3AbyXSB8fTe9R-CKE9xVs7ctQbtooP6P1prY",
+                "sql": "WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): director_id=str; director_name=str; movie_count=int; avg_inter_movie_days=int; avg_rating=float; total_votes=int; min_rating=float; max_rating=float; total_movie_duration=int\ndirector_id | director_name | movie_count | avg_inter_movie_days | avg_rating | total_votes | min_rating | max_rating | total_movie_duration\n--- | --- | --- | --- | --- | --- | --- | --- | ---\nnm1777967 | A.L. Vijay | 5 | 177 | 5.42 | 1754 | 3.7 | 6.9 | 613\nnm2096009 | Andrew Jones | 5 | 191 | 3.02 | 1989 | 2.7 | 3.2 | 432\nnm0814469 | Sion Sono | 4 | 331 | 6.03 | 2972 | 5.4 | 6.4 | 502\nnm0001752 | Steven Soderbergh | 4 | 254 | 6.47 | 171684 | 6.2 | 7.0 | 401\nnm0425364 | Jesse V. Johnson | 4 | 299 | 5.45 | 14778 | 4.2 | 6.5 | 383\nnm6356309 | Özgür Bakar | 4 | 112 | 3.75 | 1092 | 3.1 | 4.9 | 374\nnm0831321 | Chris Stokes | 4 | 198 | 4.33 | 3664 | 4.0 | 4.6 | 352\nnm2691863 | Justin Price | 4 | 315 | 4.5 | 5343 | 3.0 | 5.8 | 346\nnm0515005 | Sam Liu | 4 | 260 | 6.22 | 28557 | 5.8 | 6.7 | 312\nSQL: WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9\n```",
+          "event_parse_errors": [],
+          "rows": 9,
+          "sql": "WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9",
+          "seconds": 38.499129875097424
+        },
+        "result": {
+          "columns": [
+            "director_id",
+            "director_name",
+            "movie_count",
+            "avg_inter_movie_days",
+            "avg_rating",
+            "total_votes",
+            "min_rating",
+            "max_rating",
+            "total_movie_duration"
+          ],
+          "row_count": 9,
+          "preview": [
+            [
+              "nm1777967",
+              "A.L. Vijay",
+              "5",
+              "177",
+              "5.42",
+              "1754",
+              "3.7",
+              "6.9",
+              "613"
+            ],
+            [
+              "nm2096009",
+              "Andrew Jones",
+              "5",
+              "191",
+              "3.02",
+              "1989",
+              "2.7",
+              "3.2",
+              "432"
+            ],
+            [
+              "nm0814469",
+              "Sion Sono",
+              "4",
+              "331",
+              "6.03",
+              "2972",
+              "5.4",
+              "6.4",
+              "502"
+            ],
+            [
+              "nm0001752",
+              "Steven Soderbergh",
+              "4",
+              "254",
+              "6.47",
+              "171684",
+              "6.2",
+              "7.0",
+              "401"
+            ],
+            [
+              "nm0425364",
+              "Jesse V. Johnson",
+              "4",
+              "299",
+              "5.45",
+              "14778",
+              "4.2",
+              "6.5",
+              "383"
+            ],
+            [
+              "nm6356309",
+              "Özgür Bakar",
+              "4",
+              "112",
+              "3.75",
+              "1092",
+              "3.1",
+              "4.9",
+              "374"
+            ],
+            [
+              "nm0831321",
+              "Chris Stokes",
+              "4",
+              "198",
+              "4.33",
+              "3664",
+              "4.0",
+              "4.6",
+              "352"
+            ],
+            [
+              "nm2691863",
+              "Justin Price",
+              "4",
+              "315",
+              "4.5",
+              "5343",
+              "3.0",
+              "5.8",
+              "346"
+            ],
+            [
+              "nm0515005",
+              "Sam Liu",
+              "4",
+              "260",
+              "6.22",
+              "28557",
+              "5.8",
+              "6.7",
+              "312"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "3a2b001d0cd045bbf1279636b88ab754bedc90b8ac2850a2109e8f71aec2dda6"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "33b86b77f3e059922c3c0408aa9ac3d97b200cb06e380baaa283cbe89e113024",
+        "record": {
+          "instance_id": "local152",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "ed45cf60901dfe9a2f665510bb2ea3e98f53949a456668d6257a1eaeff99fa83",
+          "events_sha256": "8b34206cd4ad46bdd59e1ae4a251527d408d15e0de841062918fa1e32fa0f7c6",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 169536,
+              "cached_input_tokens": 153344,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1079,
+              "reasoning_output_tokens": 76
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "director_mapping"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "director_mapping (table)\n- movie_id: TEXT\n- name_id: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "ratings"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "ratings (table)\n- movie_id: TEXT\n- avg_rating: REAL\n- total_votes: INTEGER\n- median_rating: REAL"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"3lhGxsaR8tJkOF3pvRachgVUWylm2r2k8Cj3ttMMzBo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "movies"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "movies (table)\n- id: TEXT\n- title: TEXT\n- year: INTEGER\n- date_published: TIMESTAMP\n- duration: INTEGER\n- country: TEXT\n- worlwide_gross_income: TEXT\n- languages: TEXT\n- production_company: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "names"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "names (table)\n- id: TEXT\n- name: TEXT\n- height: REAL\n- date_of_birth: TEXT\n- known_for_movies: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "3lhGxsaR8tJkOF3pvRachgVUWylm2r2k8Cj3ttMMzBo",
+                "sql": "SELECT\n    (SELECT COUNT(*) FROM main.director_mapping) AS mapping_rows,\n    (SELECT COUNT(*) FROM (SELECT DISTINCT name_id, movie_id FROM main.director_mapping)) AS unique_credits,\n    COUNT(*) AS joined_rows,\n    COUNT(m.id) AS matched_movies,\n    COUNT(n.id) AS matched_names,\n    COUNT(r.movie_id) AS matched_ratings,\n    COUNT(julianday(m.date_published)) AS valid_dates\nFROM main.director_mapping AS d\nLEFT JOIN main.movies AS m ON m.id = d.movie_id\nLEFT JOIN main.names AS n ON n.id = d.name_id\nLEFT JOIN main.ratings AS r ON r.movie_id = d.movie_id"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): mapping_rows=int; unique_credits=int; joined_rows=int; matched_movies=int; matched_names=int; matched_ratings=int; valid_dates=int\nmapping_rows | unique_credits | joined_rows | matched_movies | matched_names | matched_ratings | valid_dates\n--- | --- | --- | --- | --- | --- | ---\n3867 | 3867 | 3867 | 3867 | 3867 | 3867 | 3867\nSQL: SELECT\n    (SELECT COUNT(*) FROM main.director_mapping) AS mapping_rows,\n    (SELECT COUNT(*) FROM (SELECT DISTINCT name_id, movie_id FROM main.director_mapping)) AS unique_credits,\n    COUNT(*) AS joined_rows,\n    COUNT(m.id) AS matched_movies,\n    COUNT(n.id) AS matched_names,\n    COUNT(r.movie_id) AS matched_ratings,\n    COUNT(julianday(m.date_published)) AS valid_dates\nFROM main.director_mapping AS d\nLEFT JOIN main.movies AS m ON m.id = d.movie_id\nLEFT JOIN main.names AS n ON n.id = d.name_id\nLEFT JOIN main.ratings AS r ON r.movie_id = d.movie_id\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"mhEDzmISuYGD1L6Y59fMhjCoXvw29Z_2HeBUauhWUtg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_8",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "mhEDzmISuYGD1L6Y59fMhjCoXvw29Z_2HeBUauhWUtg",
+                "sql": "WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        d.movie_id,\n        m.duration,\n        JULIANDAY(m.date_published) - LAG(JULIANDAY(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, d.movie_id\n        ) AS gap_days\n    FROM main.director_mapping AS d\n    JOIN main.movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN main.names AS n ON n.id = dm.director_id\nLEFT JOIN main.ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): director_id=str; director_name=str; movie_count=int; avg_inter_movie_days=int; avg_rating=float; total_votes=int; min_rating=float; max_rating=float; total_movie_duration=int\ndirector_id | director_name | movie_count | avg_inter_movie_days | avg_rating | total_votes | min_rating | max_rating | total_movie_duration\n--- | --- | --- | --- | --- | --- | --- | --- | ---\nnm1777967 | A.L. Vijay | 5 | 177 | 5.42 | 1754 | 3.7 | 6.9 | 613\nnm2096009 | Andrew Jones | 5 | 191 | 3.02 | 1989 | 2.7 | 3.2 | 432\nnm0814469 | Sion Sono | 4 | 331 | 6.03 | 2972 | 5.4 | 6.4 | 502\nnm0001752 | Steven Soderbergh | 4 | 254 | 6.47 | 171684 | 6.2 | 7.0 | 401\nnm0425364 | Jesse V. Johnson | 4 | 299 | 5.45 | 14778 | 4.2 | 6.5 | 383\nnm6356309 | Özgür Bakar | 4 | 112 | 3.75 | 1092 | 3.1 | 4.9 | 374\nnm0831321 | Chris Stokes | 4 | 198 | 4.33 | 3664 | 4.0 | 4.6 | 352\nnm2691863 | Justin Price | 4 | 315 | 4.5 | 5343 | 3.0 | 5.8 | 346\nnm0515005 | Sam Liu | 4 | 260 | 6.22 | 28557 | 5.8 | 6.7 | 312\nSQL: WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        d.movie_id,\n        m.duration,\n        JULIANDAY(m.date_published) - LAG(JULIANDAY(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, d.movie_id\n        ) AS gap_days\n    FROM main.director_mapping AS d\n    JOIN main.movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN main.names AS n ON n.id = dm.director_id\nLEFT JOIN main.ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        d.movie_id,\n        m.duration,\n        JULIANDAY(m.date_published) - LAG(JULIANDAY(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, d.movie_id\n        ) AS gap_days\n    FROM main.director_mapping AS d\n    JOIN main.movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN main.names AS n ON n.id = dm.director_id\nLEFT JOIN main.ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9\n```",
+          "event_parse_errors": [],
+          "rows": 9,
+          "sql": "WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        d.movie_id,\n        m.duration,\n        JULIANDAY(m.date_published) - LAG(JULIANDAY(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, d.movie_id\n        ) AS gap_days\n    FROM main.director_mapping AS d\n    JOIN main.movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN main.names AS n ON n.id = dm.director_id\nLEFT JOIN main.ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9",
+          "seconds": 36.88873441691976
+        },
+        "result": {
+          "columns": [
+            "director_id",
+            "director_name",
+            "movie_count",
+            "avg_inter_movie_days",
+            "avg_rating",
+            "total_votes",
+            "min_rating",
+            "max_rating",
+            "total_movie_duration"
+          ],
+          "row_count": 9,
+          "preview": [
+            [
+              "nm1777967",
+              "A.L. Vijay",
+              "5",
+              "177",
+              "5.42",
+              "1754",
+              "3.7",
+              "6.9",
+              "613"
+            ],
+            [
+              "nm2096009",
+              "Andrew Jones",
+              "5",
+              "191",
+              "3.02",
+              "1989",
+              "2.7",
+              "3.2",
+              "432"
+            ],
+            [
+              "nm0814469",
+              "Sion Sono",
+              "4",
+              "331",
+              "6.03",
+              "2972",
+              "5.4",
+              "6.4",
+              "502"
+            ],
+            [
+              "nm0001752",
+              "Steven Soderbergh",
+              "4",
+              "254",
+              "6.47",
+              "171684",
+              "6.2",
+              "7.0",
+              "401"
+            ],
+            [
+              "nm0425364",
+              "Jesse V. Johnson",
+              "4",
+              "299",
+              "5.45",
+              "14778",
+              "4.2",
+              "6.5",
+              "383"
+            ],
+            [
+              "nm6356309",
+              "Özgür Bakar",
+              "4",
+              "112",
+              "3.75",
+              "1092",
+              "3.1",
+              "4.9",
+              "374"
+            ],
+            [
+              "nm0831321",
+              "Chris Stokes",
+              "4",
+              "198",
+              "4.33",
+              "3664",
+              "4.0",
+              "4.6",
+              "352"
+            ],
+            [
+              "nm2691863",
+              "Justin Price",
+              "4",
+              "315",
+              "4.5",
+              "5343",
+              "3.0",
+              "5.8",
+              "346"
+            ],
+            [
+              "nm0515005",
+              "Sam Liu",
+              "4",
+              "260",
+              "6.22",
+              "28557",
+              "5.8",
+              "6.7",
+              "312"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "3a2b001d0cd045bbf1279636b88ab754bedc90b8ac2850a2109e8f71aec2dda6"
+        }
+      }
+    }
+  ]
+}

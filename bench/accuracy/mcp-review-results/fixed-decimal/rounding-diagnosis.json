@@ -1,0 +1,127 @@
+{
+  "status": "offline only; not a model prediction or official score",
+  "db_sha256": "175c1da2deb00fe28d70608f7839aea5abc214dca15bb3e8622c9b7258c25b9e",
+  "max_source_scale_residual": 0.0,
+  "query": "WITH decimal_input AS (SELECT d.name_id AS group_id, CAST(ROUND(r.avg_rating * 10) AS INTEGER) AS scaled_value FROM director_mapping d JOIN ratings r ON r.movie_id = d.movie_id), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n) SELECT group_id, status, rounded_value FROM decimal_result",
+  "rows": [
+    {
+      "director_id": "nm1777967",
+      "values": [
+        5.5,
+        5.7,
+        6.9,
+        3.7,
+        5.3
+      ],
+      "decimal_average": "5.42",
+      "decimal_rounded": "5.42",
+      "prior_sql_average": "5.42",
+      "compiler_sql_average": 5.42
+    },
+    {
+      "director_id": "nm2096009",
+      "values": [
+        3.0,
+        3.2,
+        2.7,
+        3.2,
+        3.0
+      ],
+      "decimal_average": "3.02",
+      "decimal_rounded": "3.02",
+      "prior_sql_average": "3.02",
+      "compiler_sql_average": 3.02
+    },
+    {
+      "director_id": "nm0814469",
+      "values": [
+        6.4,
+        5.4,
+        6.4,
+        5.9
+      ],
+      "decimal_average": "6.025",
+      "decimal_rounded": "6.03",
+      "prior_sql_average": "6.03",
+      "compiler_sql_average": 6.03
+    },
+    {
+      "director_id": "nm0001752",
+      "values": [
+        7.0,
+        6.3,
+        6.4,
+        6.2
+      ],
+      "decimal_average": "6.475",
+      "decimal_rounded": "6.48",
+      "prior_sql_average": "6.47",
+      "compiler_sql_average": 6.48
+    },
+    {
+      "director_id": "nm0425364",
+      "values": [
+        4.2,
+        4.9,
+        6.2,
+        6.5
+      ],
+      "decimal_average": "5.45",
+      "decimal_rounded": "5.45",
+      "prior_sql_average": "5.45",
+      "compiler_sql_average": 5.45
+    },
+    {
+      "director_id": "nm6356309",
+      "values": [
+        4.9,
+        3.1,
+        3.8,
+        3.2
+      ],
+      "decimal_average": "3.75",
+      "decimal_rounded": "3.75",
+      "prior_sql_average": "3.75",
+      "compiler_sql_average": 3.75
+    },
+    {
+      "director_id": "nm0831321",
+      "values": [
+        4.2,
+        4.5,
+        4.6,
+        4.0
+      ],
+      "decimal_average": "4.325",
+      "decimal_rounded": "4.33",
+      "prior_sql_average": "4.33",
+      "compiler_sql_average": 4.33
+    },
+    {
+      "director_id": "nm2691863",
+      "values": [
+        4.6,
+        3.0,
+        5.8,
+        4.6
+      ],
+      "decimal_average": "4.5",
+      "decimal_rounded": "4.50",
+      "prior_sql_average": "4.5",
+      "compiler_sql_average": 4.5
+    },
+    {
+      "director_id": "nm0515005",
+      "values": [
+        5.9,
+        6.7,
+        6.5,
+        5.8
+      ],
+      "decimal_average": "6.225",
+      "decimal_rounded": "6.23",
+      "prior_sql_average": "6.22",
+      "compiler_sql_average": 6.23
+    }
+  ]
+}
