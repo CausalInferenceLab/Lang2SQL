@@ -44,17 +44,23 @@ def executed_sql(answer, events, *, db=None, sql_timeout=30, max_rows=100000):
         i.get("server") != "lang2sql" or i.get("tool") not in READ_TOOLS for i in calls
     ):
         raise ValueError("Unexpected MCP tool")
-    candidates = [
-        i.get("arguments", {}).get("sql", "")
-        for i in calls
-        if i.get("tool") == "run_sql"
-        and i.get("status") == "completed"
-        and not i.get("error")
-        and any(
-            re.match(r"(?:\d+ row\(s\):|\(0 rows\))", block.get("text", ""))
-            for block in (i.get("result") or {}).get("content", [])
-        )
-    ]
+    candidates = []
+    for call in calls:
+        if (
+            call.get("tool") != "run_sql"
+            or call.get("status") != "completed"
+            or call.get("error")
+        ):
+            continue
+        for block in (call.get("result") or {}).get("content", []):
+            result = block.get("text", "")
+            if not re.match(r"(?:\d+ row\(s\):|\(0 rows\))", result):
+                continue
+            # The server applies safety rewrites (e.g. LIMIT) before execution.
+            # Its result footer records that executed SQL, unlike input arguments.
+            if "\nSQL: " in result:
+                candidates.append(result.rsplit("\nSQL: ", 1)[1].strip())
+            candidates.append(call.get("arguments", {}).get("sql", ""))
     if any(
         candidate.strip().removesuffix(";").rstrip() == sql.removesuffix(";").rstrip()
         for candidate in candidates
@@ -177,7 +183,12 @@ async def run(args):
                 command += ["-c", key + "=" + json.dumps(value)]
             command += ["-"]
             prompt = (
-                "Use only lang2sql MCP tools. Do not use shell, files, web, or other servers. Do not invent missing business definitions.\n"
+                "You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. "
+                "Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. "
+                "Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. "
+                "A result table alone or SQL that you have not executed does not complete this task. "
+                "Do not use shell, files, web, or other servers. Do not invent missing business definitions; "
+                "if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.\n"
                 + case["question"]
             )
             if case.get("evidence"):
@@ -269,9 +280,9 @@ async def run(args):
                 record.update(status="predicted", sql=sql)
             except Exception as exc:  # noqa: BLE001 — retain every failed benchmark prediction
                 logger.warning(
-                    "Codex case failed id=%s error=%s", ident, type(exc).__name__
+                    "Codex case failed id=%s error=%s message=%s", ident, type(exc).__name__, str(exc)
                 )
-                record.update(status="failed", error_type=type(exc).__name__)
+                record.update(status="failed", error_type=type(exc).__name__, error_message=str(exc))
             finally:
                 if process is not None and process.returncode is None:
                     process.kill()

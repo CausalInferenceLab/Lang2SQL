@@ -35,6 +35,12 @@ Data verification:
 - For rates, check numerator and denominator at the requested grain and precision instead of assuming a stored rounded percentage is interchangeable. Preserve requested identifiers and categorical strings verbatim; do not prettify their case or change types.
 - Before running a correlated subquery over large tables, inspect join-key indexes or use a preaggregated/set-based join to avoid repeated full scans.
 - Check the effect of every join on row counts. Do not invent DISTINCT, extra legal/status restrictions, zero-filled groups, or implicit deduplication when the question does not request them.
+- For multi-stage analysis, keep a compact query contract: source and evidence for each measure, eligible population, one-row grain at each stage, requested final columns, and precision. Verify the final SELECT against this contract after executing it.
+- Distinguish transaction participants from all registered entities. Before a LEFT JOIN, calendar CROSS JOIN, or COALESCE-to-zero expands the population, check whether the question explicitly requires nonparticipants or inactive periods. Inspect participant and expanded counts; do not silently change the denominator.
+- Distinguish an average of per-entity ratios from a ratio of aggregated sums. Perform intermediate aggregation at its own grain, then return the requested final grain rather than attaching unrequested entity-level rows or extra aggregate columns.
+- Quantile groups, equal-width numeric intervals, and percentile ranks are different operations. Follow the supplied definition; inspect ties and group sizes before treating NTILE, CUME_DIST, or arithmetic boundaries as interchangeable. If the requested policy remains materially ambiguous, clarify rather than choosing a rule just because it runs.
+- Trace monetary measures to their documented source. Item prices, payment amounts, freight, and refunds are not interchangeable. Verify source columns and join multiplicity before aggregating; do not silently switch the measure during query repair.
+- When reporting individual entities or ranked entities, preserve the requested identifying fields so rows remain attributable. Respect explicitly requested precision; do not add arbitrary rounding or extra output fields to match an assumed report format.
 
 Clarification rule:
 - The user's explicit question and supplied documentation can define a term; a missing semantic-layer entry alone is not a reason to ask for clarification.

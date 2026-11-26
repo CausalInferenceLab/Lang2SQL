@@ -1,3 +1,39 @@
+# Latest correction and targeted review (2026-11-27)
+
+The execution verifier now accepts the SQL returned by a successful MCP result,
+including the server-added LIMIT, as well as the submitted SQL under the existing
+capped-execution contract. It does not strip arbitrary limits or accept blocked
+responses. Official result comparison is unchanged. Original records are retained;
+regrading makes no model calls and does not change final answers.
+
+| Sol/high, same 20 development cases | v3 corrected | v4 guidance update |
+|---|---:|---:|
+| BIRD Mini-Dev SQLite | 18/20 | 19/20 |
+| Spider 2.0-Lite SQLite | 10/20 | 10/20 |
+
+Evidence: `mcp-review-results/` contains manifests, settings, per-case scores and
+full recorded MCP calls/final answers with source-record hashes. Internal API call
+counts are unknown, not zero. v4 source snapshots and patch were recorded before
+execution. These are exposed development cases, not full-set or holdout scores.
+
+## Spider remaining failures
+
+- local041: DISTINCT changes the population; removing deduplication reproduces 78.1472656.
+- local335: extra constructor-points filter excludes affiliations; removing it reproduces the reference teams/counts.
+- local264: model table has regression=213; agent observes this but chooses filtered stack_ok=114.
+- local194: per-film actor share calculated, but average over each actor's top three films omitted.
+- local062: nonbuyers zero-filled, adding 7712 customers to the first bucket (7741 vs29); wording/population ambiguity remains.
+- local073: NOCASE changes ingredient string ordering; string-internal order is graded literally.
+- local064: all eight tied minimum months returned vs one reference month; tie policy underspecified. Including empty months is NOT itself the error.
+- local003/local202/local279: clarification without final SQL; distinguish genuine ambiguity from repeated lookup of definitions already supplied in the request.
+
+Shared guidance now asks for population, grain, source, quantile policy and final
+output checks. This is probabilistic guidance, not a semantic correctness guard.
+It fixed local004 but regressed local041; no net Spider improvement is claimed.
+Do not inject reference SQL, force guesses, or adjust official grading to hide these failures.
+
+---
+
 # Codex MCP comparison — fixed development questions
 
 Executed with ChatGPT-authenticated Codex CLI, not the exhausted API credential.

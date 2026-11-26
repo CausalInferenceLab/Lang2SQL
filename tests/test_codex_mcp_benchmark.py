@@ -79,3 +79,15 @@ def test_completed_tool_transport_is_not_proof_sql_executed(response):
     call["item"]["result"]["content"][0]["text"] = response
     with pytest.raises(ValueError):
         executed_sql("```sql\nSELECT 1\n```", [call])
+
+
+@pytest.mark.parametrize("prefix", ["1 row(s):\n1", "(0 rows)"])
+def test_server_rewritten_sql_is_execution_evidence(prefix):
+    call = event(sql="SELECT 1")
+    call["item"]["result"]["content"][0]["text"] = prefix + "\nSQL: SELECT 1 LIMIT 1000"
+    assert executed_sql("```sql\nSELECT 1 LIMIT 1000\n```", [call]) == "SELECT 1 LIMIT 1000"
+    # Preserve the existing input-query contract, but reject invented limits.
+    assert executed_sql("```sql\nSELECT 1\n```", [call]) == "SELECT 1"
+    for sql in ["SELECT 1 LIMIT 2000"]:
+        with pytest.raises(ValueError):
+            executed_sql("```sql\n" + sql + "\n```", [call])
