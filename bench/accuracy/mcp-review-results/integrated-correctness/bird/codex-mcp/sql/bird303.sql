@@ -1,0 +1,17 @@
+WITH member_counts AS (
+    SELECT mb.link_to_major, COUNT(*) AS member_count
+    FROM main.member AS mb
+    GROUP BY mb.link_to_major
+)
+SELECT
+    m.department,
+    GROUP_CONCAT(m.major_name, ', ' ORDER BY m.major_name) AS majors_offered,
+    GROUP_CONCAT(m.major_name, ', ' ORDER BY m.major_name)
+        FILTER (WHERE mc.member_count > 0) AS majors_held_by_members,
+    ROUND(AVG(COALESCE(mc.member_count, 0)), 2) AS avg_members_per_major
+FROM main.major AS m
+LEFT JOIN member_counts AS mc ON mc.link_to_major = m.major_id
+GROUP BY m.department
+HAVING COUNT(*) FILTER (WHERE m.college = 'College of Humanities and Social Sciences') > 0
+ORDER BY m.department
+LIMIT 1000

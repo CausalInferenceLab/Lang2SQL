@@ -1,0 +1,149 @@
+{
+  "instance_id": "bird346",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "46b29088f7c7d40d155c001c9323495556b14c83ed2b7d4086a5403bb17dec77",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 131858,
+      "cached_input_tokens": 121600,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 526,
+      "reasoning_output_tokens": 80
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "alignment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "alignment (table)\n- id: INTEGER NOT NULL\n- alignment: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"VXF4eWhgDJRt2QIxtXj7TXZbvETgkto1ve5YIlHR9_M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "VXF4eWhgDJRt2QIxtXj7TXZbvETgkto1ve5YIlHR9_M",
+        "sql": "SELECT s.alignment_id, a.alignment, COUNT(*) AS superhero_count\nFROM superhero AS s\nLEFT JOIN alignment AS a ON a.id = s.alignment_id\nGROUP BY s.alignment_id, a.alignment\nORDER BY s.alignment_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): alignment_id=NoneType,int; alignment=NoneType,str; superhero_count=int\nalignment_id | alignment | superhero_count\n--- | --- | ---\nNone | None | 6\n1 | Good | 504\n2 | Bad | 212\n3 | Neutral | 28\nSQL: SELECT s.alignment_id, a.alignment, COUNT(*) AS superhero_count\nFROM superhero AS s\nLEFT JOIN alignment AS a ON a.id = s.alignment_id\nGROUP BY s.alignment_id, a.alignment\nORDER BY s.alignment_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"-jVGXU-yxtIe0CWrZIREVmKrg0HsqZqprydydiRNAgg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "-jVGXU-yxtIe0CWrZIREVmKrg0HsqZqprydydiRNAgg",
+        "expected_columns": [
+          "superhero_count"
+        ],
+        "sql": "SELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE a.alignment NOT IN ('Good', 'Bad')\nLIMIT 1000"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): superhero_count=int\nsuperhero_count\n---\n28\nSQL: SELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE a.alignment NOT IN ('Good', 'Bad')\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE a.alignment NOT IN ('Good', 'Bad')\nLIMIT 1000\n```",
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE a.alignment NOT IN ('Good', 'Bad')\nLIMIT 1000",
+  "seconds": 21.21650308300741
+}

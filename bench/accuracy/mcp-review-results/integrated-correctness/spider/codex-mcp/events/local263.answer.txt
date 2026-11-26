@@ -1,0 +1,22 @@
+```sql
+WITH model_statuses AS (
+    SELECT DISTINCT name, version, L1_model, status
+    FROM main.stack_ok
+    WHERE status IN ('strong', 'soft')
+),
+status_counts AS (
+    SELECT status, L1_model, COUNT(*) AS occurrence_count
+    FROM model_statuses
+    GROUP BY status, L1_model
+),
+ranked_counts AS (
+    SELECT status, L1_model, occurrence_count,
+           RANK() OVER (PARTITION BY status ORDER BY occurrence_count DESC) AS status_rank
+    FROM status_counts
+)
+SELECT status, L1_model, occurrence_count
+FROM ranked_counts
+WHERE status_rank = 1
+ORDER BY status, L1_model
+LIMIT -1
+```

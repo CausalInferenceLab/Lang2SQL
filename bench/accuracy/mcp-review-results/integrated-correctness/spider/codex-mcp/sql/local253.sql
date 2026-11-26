@@ -1,0 +1,56 @@
+WITH RECURSIVE salary_digits(Location, CompanyName, remaining_text, digits) AS (
+    SELECT Location, CompanyName, Salary, ''
+    FROM main.SalaryDataset
+    WHERE Salary IS NOT NULL
+
+    UNION ALL
+
+    SELECT
+        Location,
+        CompanyName,
+        substr(remaining_text, 2),
+        digits || CASE
+            WHEN substr(remaining_text, 1, 1) GLOB '[0-9]'
+                THEN substr(remaining_text, 1, 1)
+            ELSE ''
+        END
+    FROM salary_digits
+    WHERE remaining_text <> ''
+),
+cleaned_salaries AS (
+    -- Average the stored amounts after stripping currency and pay-period text.
+    SELECT Location, CompanyName, CAST(digits AS REAL) AS salary_amount
+    FROM salary_digits
+    WHERE remaining_text = '' AND digits <> ''
+),
+city_company_averages AS (
+    SELECT Location, CompanyName, AVG(salary_amount) AS city_average
+    FROM cleaned_salaries
+    WHERE Location IN ('Mumbai', 'Pune', 'New Delhi', 'Hyderabad')
+    GROUP BY Location, CompanyName
+),
+ranked_companies AS (
+    SELECT
+        Location,
+        CompanyName,
+        city_average,
+        ROW_NUMBER() OVER (
+            PARTITION BY Location
+            ORDER BY city_average DESC, CompanyName
+        ) AS city_rank
+    FROM city_company_averages
+),
+national_average AS (
+    SELECT AVG(salary_amount) AS country_average
+    FROM cleaned_salaries
+)
+SELECT
+    ranked_companies.Location AS "Location",
+    ranked_companies.CompanyName AS "Company Name",
+    ranked_companies.city_average AS "Average Salary in State",
+    national_average.country_average AS "Average Salary in Country"
+FROM ranked_companies
+CROSS JOIN national_average
+WHERE ranked_companies.city_rank <= 5
+ORDER BY ranked_companies.Location, ranked_companies.city_rank
+LIMIT 20

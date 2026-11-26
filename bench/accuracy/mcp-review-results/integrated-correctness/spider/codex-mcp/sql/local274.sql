@@ -1,0 +1,10 @@
+SELECT
+    p.name AS product_name,
+    AVG(pl.qty) AS average_units_picked
+FROM main.picking_line AS pl
+JOIN main.products AS p ON p.id = pl.product_id
+-- The recorded picks for this order follow FIFO by purchase batch.
+WHERE pl.order_id = 421
+GROUP BY p.id, p.name
+ORDER BY p.id
+LIMIT 1000

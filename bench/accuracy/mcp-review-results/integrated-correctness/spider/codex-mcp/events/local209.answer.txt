@@ -1,0 +1,26 @@
+```sql
+WITH delivered_orders AS (
+    SELECT DISTINCT d.delivery_order_id
+    FROM deliveries AS d
+    WHERE d.delivery_status = 'DELIVERED'
+),
+store_totals AS (
+    SELECT
+        s.store_id,
+        s.store_name,
+        COUNT(*) AS total_orders,
+        COUNT(d.delivery_order_id) AS delivered_orders
+    FROM orders AS o
+    JOIN stores AS s ON s.store_id = o.store_id
+    LEFT JOIN delivered_orders AS d ON d.delivery_order_id = o.delivery_order_id
+    GROUP BY s.store_id, s.store_name
+)
+SELECT
+    store_name,
+    total_orders,
+    1.0 * delivered_orders / total_orders AS delivered_order_ratio
+FROM store_totals
+WHERE total_orders = (SELECT MAX(total_orders) FROM store_totals)
+ORDER BY store_id
+LIMIT 1000
+```

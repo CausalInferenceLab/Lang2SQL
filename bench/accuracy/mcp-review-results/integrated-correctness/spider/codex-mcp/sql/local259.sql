@@ -1,0 +1,101 @@
+WITH role_counts AS (
+    SELECT player_id,
+           role,
+           SUM(COUNT(*)) OVER (PARTITION BY player_id) AS total_matches_played,
+           RANK() OVER (
+               PARTITION BY player_id
+               ORDER BY role IS NULL, COUNT(*) DESC
+           ) AS role_rank
+    FROM main.player_match
+    GROUP BY player_id, role
+),
+appearances AS (
+    SELECT player_id,
+           GROUP_CONCAT(role, ', ') AS most_frequent_role,
+           MAX(total_matches_played) AS total_matches_played
+    FROM (
+        SELECT player_id, role, total_matches_played
+        FROM role_counts
+        WHERE role_rank = 1
+        ORDER BY player_id, role
+    )
+    GROUP BY player_id
+),
+batting_by_match AS (
+    SELECT b.striker AS player_id,
+           b.match_id,
+           SUM(s.runs_scored) AS runs_scored,
+           COUNT(*) AS balls_faced
+    FROM main.ball_by_ball AS b
+    JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)
+    GROUP BY b.striker, b.match_id
+),
+batting_career AS (
+    SELECT player_id,
+           SUM(runs_scored) AS total_runs_scored,
+           MAX(runs_scored) AS highest_score,
+           SUM(runs_scored >= 30) AS matches_with_30_plus,
+           SUM(runs_scored >= 50) AS matches_with_50_plus,
+           SUM(runs_scored >= 100) AS matches_with_100_plus,
+           SUM(balls_faced) AS total_balls_faced
+    FROM batting_by_match
+    GROUP BY player_id
+),
+dismissals AS (
+    SELECT player_out AS player_id,
+           COUNT(*) AS total_dismissals
+    FROM main.wicket_taken
+    WHERE kind_out <> 'retired hurt'
+    GROUP BY player_out
+),
+bowling_by_match AS (
+    SELECT b.bowler AS player_id,
+           b.match_id,
+           SUM(COALESCE(s.runs_scored, 0)) AS runs_given,
+           -- Count recorded deliveries for economy while ignoring the extra-runs data.
+           COUNT(*) AS balls_bowled,
+           COUNT(CASE WHEN w.kind_out IN (
+               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'
+           ) THEN 1 END) AS wickets_taken
+    FROM main.ball_by_ball AS b
+    LEFT JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)
+    LEFT JOIN main.wicket_taken AS w USING (match_id, over_id, ball_id, innings_no)
+    GROUP BY b.bowler, b.match_id
+),
+bowling_career AS (
+    SELECT player_id,
+           wickets_taken || '-' || runs_given AS best_bowling_performance,
+           SUM(wickets_taken) OVER player_matches AS total_wickets_taken,
+           SUM(runs_given) OVER player_matches AS total_runs_given,
+           SUM(balls_bowled) OVER player_matches AS total_balls_bowled,
+           ROW_NUMBER() OVER (
+               PARTITION BY player_id
+               ORDER BY wickets_taken DESC, runs_given, match_id
+           ) AS performance_rank
+    FROM bowling_by_match
+    WINDOW player_matches AS (PARTITION BY player_id)
+)
+SELECT p.player_id,
+       p.player_name,
+       a.most_frequent_role,
+       p.batting_hand,
+       p.bowling_skill,
+       COALESCE(bt.total_runs_scored, 0) AS total_runs_scored,
+       COALESCE(a.total_matches_played, 0) AS total_matches_played,
+       COALESCE(d.total_dismissals, 0) AS total_dismissals,
+       1.0 * COALESCE(bt.total_runs_scored, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,
+       bt.highest_score,
+       COALESCE(bt.matches_with_30_plus, 0) AS matches_with_30_plus,
+       COALESCE(bt.matches_with_50_plus, 0) AS matches_with_50_plus,
+       COALESCE(bt.matches_with_100_plus, 0) AS matches_with_100_plus,
+       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,
+       100.0 * bt.total_runs_scored / NULLIF(bt.total_balls_faced, 0) AS strike_rate,
+       COALESCE(bw.total_wickets_taken, 0) AS total_wickets_taken,
+       6.0 * bw.total_runs_given / NULLIF(bw.total_balls_bowled, 0) AS economy_rate,
+       bw.best_bowling_performance
+FROM main.player AS p
+LEFT JOIN appearances AS a ON a.player_id = p.player_id
+LEFT JOIN batting_career AS bt ON bt.player_id = p.player_id
+LEFT JOIN dismissals AS d ON d.player_id = p.player_id
+LEFT JOIN bowling_career AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1
+ORDER BY p.player_id

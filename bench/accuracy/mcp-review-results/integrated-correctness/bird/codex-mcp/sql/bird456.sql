@@ -1,0 +1,12 @@
+SELECT p.SEX AS sex, COUNT(*) AS patient_count
+FROM main.Patient AS p
+WHERE p.SEX IN ('M', 'F')
+  AND NOT EXISTS (
+      SELECT 1
+      FROM main.Laboratory AS l
+      WHERE l.ID = p.ID
+        AND l.GPT >= 60
+  )
+GROUP BY p.SEX
+ORDER BY p.SEX DESC
+LIMIT 2

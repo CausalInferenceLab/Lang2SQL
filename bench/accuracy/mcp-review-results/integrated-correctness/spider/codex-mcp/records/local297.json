@@ -1,0 +1,151 @@
+{
+  "instance_id": "local297",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "0f943b6923212ec14f810e8d1ce054c2e6ce0b6ae5f916883dde96d8d0b6222d",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 159212,
+      "cached_input_tokens": 143104,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1756,
+      "reasoning_output_tokens": 328
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_transactions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_transactions (table)\n- customer_id: INTEGER\n- txn_date: TEXT\n- txn_type: TEXT\n- txn_amount: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_nodes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_nodes (table)\n- customer_id: INTEGER\n- region_id: INTEGER\n- node_id: INTEGER\n- start_date: TEXT\n- end_date: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"KKlvmlcSFCwOchldGFjrNXV6RiNaURYUpeKjmV4SBl8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "KKlvmlcSFCwOchldGFjrNXV6RiNaURYUpeKjmV4SBl8",
+        "sql": "WITH customer_months AS (\n    SELECT tx.customer_id, DATE(tx.txn_date, 'start of month') AS month_start,\n           COUNT(CASE WHEN tx.txn_type IN ('deposit', 'withdrawal') THEN 1 END) AS eligible_rows\n    FROM main.customer_transactions AS tx\n    GROUP BY tx.customer_id, DATE(tx.txn_date, 'start of month')\n),\nlatest_months AS (\n    SELECT customer_id, MAX(month_start) AS latest_month, COUNT(*) AS month_count\n    FROM customer_months\n    WHERE eligible_rows > 0\n    GROUP BY customer_id\n)\nSELECT tx.txn_type, COUNT(*) AS row_count, COUNT(DISTINCT tx.customer_id) AS customers,\n       MIN(tx.txn_date) AS first_date, MAX(tx.txn_date) AS last_date,\n       COUNT(CASE WHEN DATE(tx.txn_date) IS NULL THEN 1 END) AS invalid_dates,\n       COUNT(CASE WHEN tx.txn_amount < 0 THEN 1 END) AS negative_amounts,\n       (SELECT COUNT(DISTINCT n.customer_id) FROM main.customer_nodes AS n) AS node_customers,\n       (SELECT COUNT(*) FROM latest_months) AS deposit_withdrawal_customers,\n       (SELECT COUNT(*) FROM latest_months WHERE month_count = 1) AS single_month_customers,\n       (SELECT COUNT(*) FROM latest_months AS l\n        LEFT JOIN customer_months AS p ON p.customer_id = l.customer_id\n          AND p.month_start = DATE(l.latest_month, '-1 month') AND p.eligible_rows > 0\n        WHERE l.month_count > 1 AND p.customer_id IS NULL) AS customers_with_latest_gap,\n       (SELECT COUNT(*) FROM latest_months\n        WHERE latest_month < (SELECT MAX(latest_month) FROM latest_months)) AS customers_ending_earlier\nFROM main.customer_transactions AS tx\nGROUP BY tx.txn_type",
+        "limit": 10
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): txn_type=str; row_count=int; customers=int; first_date=str; last_date=str; invalid_dates=int; negative_amounts=int; node_customers=int; deposit_withdrawal_customers=int; single_month_customers=int; customers_with_latest_gap=int; customers_ending_earlier=int\ntxn_type | row_count | customers | first_date | last_date | invalid_dates | negative_amounts | node_customers | deposit_withdrawal_customers | single_month_customers | customers_with_latest_gap | customers_ending_earlier\n--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---\ndeposit | 2671 | 500 | 2020-01-01 | 2020-04-26 | 0 | 0 | 500 | 500 | 17 | 59 | 237\npurchase | 1617 | 448 | 2020-01-01 | 2020-04-28 | 0 | 0 | 500 | 500 | 17 | 59 | 237\nwithdrawal | 1580 | 439 | 2020-01-02 | 2020-04-28 | 0 | 0 | 500 | 500 | 17 | 59 | 237\nSQL: WITH customer_months AS (\n    SELECT tx.customer_id, DATE(tx.txn_date, 'start of month') AS month_start,\n           COUNT(CASE WHEN tx.txn_type IN ('deposit', 'withdrawal') THEN 1 END) AS eligible_rows\n    FROM main.customer_transactions AS tx\n    GROUP BY tx.customer_id, DATE(tx.txn_date, 'start of month')\n),\nlatest_months AS (\n    SELECT customer_id, MAX(month_start) AS latest_month, COUNT(*) AS month_count\n    FROM customer_months\n    WHERE eligible_rows > 0\n    GROUP BY customer_id\n)\nSELECT tx.txn_type, COUNT(*) AS row_count, COUNT(DISTINCT tx.customer_id) AS customers,\n       MIN(tx.txn_date) AS first_date, MAX(tx.txn_date) AS last_date,\n       COUNT(CASE WHEN DATE(tx.txn_date) IS NULL THEN 1 END) AS invalid_dates,\n       COUNT(CASE WHEN tx.txn_amount < 0 THEN 1 END) AS negative_amounts,\n       (SELECT COUNT(DISTINCT n.customer_id) FROM main.customer_nodes AS n) AS node_customers,\n       (SELECT COUNT(*) FROM latest_months) AS deposit_withdrawal_customers,\n       (SELECT COUNT(*) FROM latest_months WHERE month_count = 1) AS single_month_customers,\n       (SELECT COUNT(*) FROM latest_months AS l\n        LEFT JOIN customer_months AS p ON p.customer_id = l.customer_id\n          AND p.month_start = DATE(l.latest_month, '-1 month') AND p.eligible_rows > 0\n        WHERE l.month_count > 1 AND p.customer_id IS NULL) AS customers_with_latest_gap,\n       (SELECT COUNT(*) FROM latest_months\n        WHERE latest_month < (SELECT MAX(latest_month) FROM latest_months)) AS customers_ending_earlier\nFROM main.customer_transactions AS tx\nGROUP BY tx.txn_type\nLIMIT 10"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"mMjXX2QOIxOfP1rCT-P7oCPbeia_cTqECkPQaI3RWy8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "mMjXX2QOIxOfP1rCT-P7oCPbeia_cTqECkPQaI3RWy8",
+        "sql": "WITH monthly_net AS (\n    SELECT\n        tx.customer_id,\n        DATE(tx.txn_date, 'start of month') AS month_start,\n        SUM(CASE tx.txn_type\n            WHEN 'deposit' THEN tx.txn_amount\n            WHEN 'withdrawal' THEN -tx.txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions AS tx\n    WHERE tx.txn_type IN ('deposit', 'withdrawal')\n    GROUP BY tx.customer_id, DATE(tx.txn_date, 'start of month')\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance,\n        net_amount\n    FROM monthly_net\n),\nlatest_balances AS (\n    SELECT\n        closing_balance,\n        closing_balance - net_amount AS prior_month_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS month_rank\n    FROM monthly_balances\n),\ncustomer_growth AS (\n    SELECT\n        CASE\n            WHEN prior_month_balance = 0 THEN closing_balance * 100.0\n            ELSE (closing_balance - prior_month_balance) * 100.0 / prior_month_balance\n        END AS growth_rate\n    FROM latest_balances\n    WHERE month_rank = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM customer_growth\nLIMIT 1",
+        "expected_columns": [
+          "percentage_of_customers"
+        ],
+        "limit": 1
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage_of_customers=float\npercentage_of_customers\n---\n54.2\nSQL: WITH monthly_net AS (\n    SELECT\n        tx.customer_id,\n        DATE(tx.txn_date, 'start of month') AS month_start,\n        SUM(CASE tx.txn_type\n            WHEN 'deposit' THEN tx.txn_amount\n            WHEN 'withdrawal' THEN -tx.txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions AS tx\n    WHERE tx.txn_type IN ('deposit', 'withdrawal')\n    GROUP BY tx.customer_id, DATE(tx.txn_date, 'start of month')\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance,\n        net_amount\n    FROM monthly_net\n),\nlatest_balances AS (\n    SELECT\n        closing_balance,\n        closing_balance - net_amount AS prior_month_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS month_rank\n    FROM monthly_balances\n),\ncustomer_growth AS (\n    SELECT\n        CASE\n            WHEN prior_month_balance = 0 THEN closing_balance * 100.0\n            ELSE (closing_balance - prior_month_balance) * 100.0 / prior_month_balance\n        END AS growth_rate\n    FROM latest_balances\n    WHERE month_rank = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM customer_growth\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH monthly_net AS (\n    SELECT\n        tx.customer_id,\n        DATE(tx.txn_date, 'start of month') AS month_start,\n        SUM(CASE tx.txn_type\n            WHEN 'deposit' THEN tx.txn_amount\n            WHEN 'withdrawal' THEN -tx.txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions AS tx\n    WHERE tx.txn_type IN ('deposit', 'withdrawal')\n    GROUP BY tx.customer_id, DATE(tx.txn_date, 'start of month')\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance,\n        net_amount\n    FROM monthly_net\n),\nlatest_balances AS (\n    SELECT\n        closing_balance,\n        closing_balance - net_amount AS prior_month_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS month_rank\n    FROM monthly_balances\n),\ncustomer_growth AS (\n    SELECT\n        CASE\n            WHEN prior_month_balance = 0 THEN closing_balance * 100.0\n            ELSE (closing_balance - prior_month_balance) * 100.0 / prior_month_balance\n        END AS growth_rate\n    FROM latest_balances\n    WHERE month_rank = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM customer_growth\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "WITH monthly_net AS (\n    SELECT\n        tx.customer_id,\n        DATE(tx.txn_date, 'start of month') AS month_start,\n        SUM(CASE tx.txn_type\n            WHEN 'deposit' THEN tx.txn_amount\n            WHEN 'withdrawal' THEN -tx.txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions AS tx\n    WHERE tx.txn_type IN ('deposit', 'withdrawal')\n    GROUP BY tx.customer_id, DATE(tx.txn_date, 'start of month')\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance,\n        net_amount\n    FROM monthly_net\n),\nlatest_balances AS (\n    SELECT\n        closing_balance,\n        closing_balance - net_amount AS prior_month_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS month_rank\n    FROM monthly_balances\n),\ncustomer_growth AS (\n    SELECT\n        CASE\n            WHEN prior_month_balance = 0 THEN closing_balance * 100.0\n            ELSE (closing_balance - prior_month_balance) * 100.0 / prior_month_balance\n        END AS growth_rate\n    FROM latest_balances\n    WHERE month_rank = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM customer_growth\nLIMIT 1",
+  "seconds": 47.46795816696249
+}

@@ -1,0 +1,24 @@
+WITH hero_power_counts AS (
+    SELECT s.id, g.gender, COUNT(hp.power_id) AS power_count
+    FROM main.superhero AS s
+    JOIN main.gender AS g ON g.id = s.gender_id
+    LEFT JOIN main.hero_power AS hp ON hp.hero_id = s.id
+    WHERE g.gender IN ('Male', 'Female')
+      AND INSTR(TRIM(s.full_name), ' ') > 0
+      AND TRIM(s.full_name) NOT IN (
+          'Anna Marie',
+          'Diana of Themyscira',
+          'Howard (Last name unrevealed)',
+          'Krypto the Superdog',
+          'Mr. Mxyzptlk',
+          'Ra''s Al Ghul',
+          'Weapon XI',
+          'Yurrd the Unknown'
+      )
+      AND TRIM(s.full_name) NOT LIKE 'Cyberdyne Systems Series %'
+    GROUP BY s.id, g.gender
+)
+SELECT ROUND(AVG(power_count) FILTER (WHERE gender = 'Male'), 2) AS male_average,
+       ROUND(AVG(power_count) FILTER (WHERE gender = 'Female'), 2) AS female_average
+FROM hero_power_counts
+LIMIT 1

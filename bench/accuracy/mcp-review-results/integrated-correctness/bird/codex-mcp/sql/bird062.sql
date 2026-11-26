@@ -1,0 +1,13 @@
+SELECT COUNT(DISTINCT cards.name) AS creature_count
+FROM cards
+JOIN legalities ON legalities.uuid = cards.uuid
+WHERE instr(',' || cards.types || ',', ',Creature,') > 0
+  AND instr(cards.leadershipSkills, '''brawl'': True') > 0
+  AND legalities.format = 'brawl'
+  AND legalities.status = 'Legal'
+  AND cards.name IN (
+      SELECT promo.name
+      FROM cards AS promo
+      WHERE promo.isPromo = 1
+  )
+LIMIT 1

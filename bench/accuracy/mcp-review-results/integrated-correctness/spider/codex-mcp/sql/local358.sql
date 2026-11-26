@@ -1,0 +1,27 @@
+WITH reference_date(as_of) AS (
+    SELECT date('now', '+09:00')
+),
+user_ages AS (
+    SELECT
+        u.user_id,
+        CAST(strftime('%Y', r.as_of) AS INTEGER)
+        - CAST(strftime('%Y', u.birth_date) AS INTEGER)
+        - (strftime('%m-%d', r.as_of) < strftime('%m-%d', u.birth_date)) AS age
+    FROM main.mst_users AS u
+    CROSS JOIN reference_date AS r
+),
+age_categories(category_order, age_category) AS (
+    VALUES (2, '20s'), (3, '30s'), (4, '40s'), (5, '50s'), (6, 'others')
+)
+SELECT
+    c.age_category,
+    COUNT(DISTINCT u.user_id) AS user_count
+FROM age_categories AS c
+LEFT JOIN user_ages AS u
+    ON c.category_order = CASE
+        WHEN u.age BETWEEN 20 AND 59 THEN u.age / 10
+        ELSE 6
+    END
+GROUP BY c.category_order, c.age_category
+ORDER BY c.category_order
+LIMIT 1000

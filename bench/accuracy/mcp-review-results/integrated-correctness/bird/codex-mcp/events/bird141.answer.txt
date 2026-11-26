@@ -1,0 +1,21 @@
+```sql
+WITH related_counts AS (
+    SELECT p.Id,
+           p.Title AS post_title,
+           COUNT(DISTINCT l.RelatedPostId) AS related_post_count
+    FROM posts AS p
+    LEFT JOIN postLinks AS l
+        ON l.PostId = p.Id
+       AND l.RelatedPostId <> p.Id
+    WHERE p.Title LIKE '%principal component scores%'
+    GROUP BY p.Id, p.Title
+)
+SELECT post_title, related_post_count
+FROM related_counts
+WHERE related_post_count = (
+    SELECT MAX(related_post_count)
+    FROM related_counts
+)
+ORDER BY post_title, Id
+LIMIT 1000
+```

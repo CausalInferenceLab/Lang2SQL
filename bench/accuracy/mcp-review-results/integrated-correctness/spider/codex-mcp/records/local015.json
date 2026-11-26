@@ -1,0 +1,192 @@
+{
+  "instance_id": "local015",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "b69404db34241f3ae0a725a6290964c9ab24dd2ab3d99ab657be615106f84959",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 257609,
+      "cached_input_tokens": 238208,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2124,
+      "reasoning_output_tokens": 273
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "collisions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "collisions (table)\n- case_id: REAL\n- jurisdiction: REAL\n- officer_id: TEXT\n- reporting_district: TEXT\n- chp_shift: TEXT\n- population: TEXT\n- county_city_location: INTEGER\n- county_location: TEXT\n- special_condition: REAL\n- beat_type: TEXT\n- chp_beat_type: TEXT\n- city_division_lapd: TEXT\n- chp_beat_class: TEXT\n- beat_number: TEXT\n- primary_road: TEXT\n- secondary_road: TEXT\n- distance: REAL\n- direction: TEXT\n- intersection: REAL\n- weather_1: TEXT\n- weather_2: TEXT\n- state_highway_indicator: REAL\n- caltrans_county: TEXT\n- caltrans_district: REAL\n- state_route: REAL\n- route_suffix: TEXT\n- postmile_prefix: TEXT\n- postmile: REAL\n- location_type: TEXT\n- ramp_intersection: TEXT\n- side_of_highway: TEXT\n- tow_away: REAL\n- collision_severity: TEXT\n- killed_victims: REAL\n- injured_victims: REAL\n- party_count: REAL\n- primary_collision_factor: TEXT\n- pcf_violation_code: TEXT\n- pcf_violation_category: TEXT\n- pcf_violation: REAL\n- pcf_violation_subsection: TEXT\n- hit_and_run: TEXT\n- type_of_collision: TEXT\n- motor_vehicle_involved_with: TEXT\n- pedestrian_action: TEXT\n- road_surface: TEXT\n- road_condition_1: TEXT\n- road_condition_2: TEXT\n- lighting: TEXT\n- control_device: TEXT\n- chp_road_type: TEXT\n- pedestrian_collision: INTEGER\n- bicycle_collision: INTEGER\n- motorcycle_collision: INTEGER\n- truck_collision: INTEGER\n- not_private_property: REAL\n- alcohol_involved: REAL\n- statewide_vehicle_type_at_fault: TEXT\n- chp_vehicle_type_at_fault: TEXT\n- severe_injury_count: INTEGER\n- other_visible_injury_count: INTEGER\n- complaint_of_pain_injury_count: INTEGER\n- pedestrian_killed_count: INTEGER\n- pedestrian_injured_count: INTEGER\n- bicyclist_killed_count: INTEGER\n- bicyclist_injured_count: INTEGER\n- motorcyclist_killed_count: INTEGER\n- motorcyclist_injured_count: REAL\n- primary_ramp: TEXT\n- secondary_ramp: TEXT\n- latitude: REAL\n- longitude: REAL\n- collision_date: TEXT\n- collision_time: TEXT\n- process_date: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "parties"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "parties (table)\n- id: INTEGER\n- case_id: REAL\n- party_number: INTEGER\n- party_type: TEXT\n- at_fault: INTEGER\n- party_sex: TEXT\n- party_age: REAL\n- party_sobriety: TEXT\n- party_drug_physical: TEXT\n- direction_of_travel: TEXT\n- party_safety_equipment_1: TEXT\n- party_safety_equipment_2: TEXT\n- financial_responsibility: TEXT\n- hazardous_materials: REAL\n- cellphone_in_use: REAL\n- cellphone_use_type: TEXT\n- school_bus_related: REAL\n- oaf_violation_code: TEXT\n- oaf_violation_category: TEXT\n- oaf_violation_section: REAL\n- oaf_violation_suffix: TEXT\n- other_associate_factor_1: TEXT\n- other_associate_factor_2: TEXT\n- party_number_killed: INTEGER\n- party_number_injured: INTEGER\n- movement_preceding_collision: TEXT\n- vehicle_year: REAL\n- vehicle_make: TEXT\n- statewide_vehicle_type: TEXT\n- chp_vehicle_type_towing: TEXT\n- chp_vehicle_type_towed: TEXT\n- party_race: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Xba2I1R08O7ozHJj6nirNNROBbGRvaV0Uh_yc0whVow\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Xba2I1R08O7ozHJj6nirNNROBbGRvaV0Uh_yc0whVow",
+        "sql": "WITH equipment AS (\n    SELECT party_type, statewide_vehicle_type, party_safety_equipment_1 AS equipment\n    FROM main.parties\n    WHERE party_safety_equipment_1 LIKE '%helmet%'\n    UNION ALL\n    SELECT party_type, statewide_vehicle_type, party_safety_equipment_2 AS equipment\n    FROM main.parties\n    WHERE party_safety_equipment_2 LIKE '%helmet%'\n)\nSELECT equipment, party_type, statewide_vehicle_type, COUNT(*) AS records\nFROM equipment\nGROUP BY equipment, party_type, statewide_vehicle_type\nORDER BY equipment, records DESC",
+        "limit": 200
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "35 row(s):\nResult coverage: fetched_rows=35; displayed_rows=35; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): equipment=str; party_type=str; statewide_vehicle_type=NoneType,str; records=int\nequipment | party_type | statewide_vehicle_type | records\n--- | --- | --- | ---\ndriver, motorcycle helmet not used | bicyclist | bicycle | 105\ndriver, motorcycle helmet not used | driver | motorcycle or scooter | 92\ndriver, motorcycle helmet not used | driver | None | 10\ndriver, motorcycle helmet not used | driver | passenger car | 7\ndriver, motorcycle helmet not used | driver | bicycle | 6\ndriver, motorcycle helmet not used | driver | other vehicle | 5\ndriver, motorcycle helmet not used | driver | moped | 2\ndriver, motorcycle helmet not used | driver | other bus | 1\ndriver, motorcycle helmet not used | pedestrian | pedestrian | 1\ndriver, motorcycle helmet used | driver | motorcycle or scooter | 2153\ndriver, motorcycle helmet used | driver | None | 154\ndriver, motorcycle helmet used | bicyclist | bicycle | 59\ndriver, motorcycle helmet used | driver | emergency vehicle | 38\ndriver, motorcycle helmet used | driver | passenger car | 36\ndriver, motorcycle helmet used | driver | pickup or panel truck | 6\ndriver, motorcycle helmet used | driver | moped | 5\ndriver, motorcycle helmet used | driver | other vehicle | 4\ndriver, motorcycle helmet used | driver | passenger car with trailer | 4\ndriver, motorcycle helmet used | driver | bicycle | 2\ndriver, motorcycle helmet used | driver | other bus | 1\npassenger, motorcycle helmet not used | driver | motorcycle or scooter | 2\npassenger, motorcycle helmet not used | driver | passenger car | 2\npassenger, motorcycle helmet not used | bicyclist | bicycle | 1\npassenger, motorcycle helmet not used | driver | None | 1\npassenger, motorcycle helmet not used | driver | other vehicle | 1\npassenger, motorcycle helmet used | driver | None | 139\npassenger, motorcycle helmet used | driver | passenger car | 108\npassenger, motorcycle helmet used | driver | pickup or panel truck | 13\npassenger, motorcycle helmet used | driver | motorcycle or scooter | 5\npassenger, motorcycle helmet used | driver | passenger car with trailer | 3\npassenger, motorcycle helmet used | driver | pickup or panel truck with trailer | 2\npassenger, motorcycle helmet used | driver | truck or truck tractor with trailer | 2\npassenger, motorcycle helmet used | driver | other bus | 1\npassenger, motorcycle helmet used | driver | truck or truck tractor | 1\npassenger, motorcycle helmet used | pedestrian | None | 1\nSQL: WITH equipment AS (\n    SELECT party_type, statewide_vehicle_type, party_safety_equipment_1 AS equipment\n    FROM main.parties\n    WHERE party_safety_equipment_1 LIKE '%helmet%'\n    UNION ALL\n    SELECT party_type, statewide_vehicle_type, party_safety_equipment_2 AS equipment\n    FROM main.parties\n    WHERE party_safety_equipment_2 LIKE '%helmet%'\n)\nSELECT equipment, party_type, statewide_vehicle_type, COUNT(*) AS records\nFROM equipment\nGROUP BY equipment, party_type, statewide_vehicle_type\nORDER BY equipment, records DESC\nLIMIT 200"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"gru6evyWTtCEQnnZlVJB7leX5uZPbz4CqPohEWd8Z60\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "gru6evyWTtCEQnnZlVJB7leX5uZPbz4CqPohEWd8Z60",
+        "sql": "WITH helmet_parties AS (\n    SELECT p.case_id, p.party_type, p.statewide_vehicle_type,\n           p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n               OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used') AS used,\n           p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n               OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used') AS not_used\n    FROM main.parties AS p\n    WHERE p.party_safety_equipment_1 LIKE '%helmet%' OR p.party_safety_equipment_2 LIKE '%helmet%'\n),\ncollision_counts AS (\n    SELECT motorcycle_collision, COUNT(*) AS rows, COUNT(DISTINCT case_id) AS cases,\n           COUNT(*) - COUNT(motorcyclist_killed_count) AS missing_fatality_counts\n    FROM main.collisions\n    GROUP BY motorcycle_collision\n),\nhelmet_cases AS (\n    SELECT p.case_id, MAX(p.used) AS used, MAX(p.not_used) AS not_used\n    FROM helmet_parties AS p\n    JOIN main.collisions AS c ON c.case_id = p.case_id\n    WHERE c.motorcycle_collision = 1 AND p.party_type IN ('driver', 'passenger')\n    GROUP BY p.case_id\n)\nSELECT 'collision flag / case uniqueness / missing fatalities' AS diagnostic,\n       CAST(motorcycle_collision AS TEXT) AS category, rows AS count_1, cases AS count_2,\n       missing_fatality_counts AS count_3\nFROM collision_counts\nUNION ALL\nSELECT 'party types with explicit helmet codes in motorcycle collisions', p.party_type, COUNT(*),\n       SUM(CASE WHEN p.used THEN 1 ELSE 0 END), SUM(CASE WHEN p.not_used THEN 1 ELSE 0 END)\nFROM helmet_parties AS p\nJOIN main.collisions AS c ON c.case_id = p.case_id\nWHERE c.motorcycle_collision = 1\nGROUP BY p.party_type\nUNION ALL\nSELECT 'driver or passenger collision-level helmet statuses', 'used / not used / both',\n       SUM(CASE WHEN used THEN 1 ELSE 0 END), SUM(CASE WHEN not_used THEN 1 ELSE 0 END),\n       SUM(CASE WHEN used AND not_used THEN 1 ELSE 0 END)\nFROM helmet_cases"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): diagnostic=str; category=str; count_1=int; count_2=int; count_3=int\ndiagnostic | category | count_1 | count_2 | count_3\n--- | --- | --- | --- | ---\ncollision flag / case uniqueness / missing fatalities | 0 | 91447 | 91447 | 0\ncollision flag / case uniqueness / missing fatalities | 1 | 2796 | 2796 | 0\nparty types with explicit helmet codes in motorcycle collisions | driver | 19 | 18 | 1\ndriver or passenger collision-level helmet statuses | used / not used / both | 18 | 1 | 0\nSQL: WITH helmet_parties AS (\n    SELECT p.case_id, p.party_type, p.statewide_vehicle_type,\n           p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n               OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used') AS used,\n           p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n               OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used') AS not_used\n    FROM main.parties AS p\n    WHERE p.party_safety_equipment_1 LIKE '%helmet%' OR p.party_safety_equipment_2 LIKE '%helmet%'\n),\ncollision_counts AS (\n    SELECT motorcycle_collision, COUNT(*) AS rows, COUNT(DISTINCT case_id) AS cases,\n           COUNT(*) - COUNT(motorcyclist_killed_count) AS missing_fatality_counts\n    FROM main.collisions\n    GROUP BY motorcycle_collision\n),\nhelmet_cases AS (\n    SELECT p.case_id, MAX(p.used) AS used, MAX(p.not_used) AS not_used\n    FROM helmet_parties AS p\n    JOIN main.collisions AS c ON c.case_id = p.case_id\n    WHERE c.motorcycle_collision = 1 AND p.party_type IN ('driver', 'passenger')\n    GROUP BY p.case_id\n)\nSELECT 'collision flag / case uniqueness / missing fatalities' AS diagnostic,\n       CAST(motorcycle_collision AS TEXT) AS category, rows AS count_1, cases AS count_2,\n       missing_fatality_counts AS count_3\nFROM collision_counts\nUNION ALL\nSELECT 'party types with explicit helmet codes in motorcycle collisions', p.party_type, COUNT(*),\n       SUM(CASE WHEN p.used THEN 1 ELSE 0 END), SUM(CASE WHEN p.not_used THEN 1 ELSE 0 END)\nFROM helmet_parties AS p\nJOIN main.collisions AS c ON c.case_id = p.case_id\nWHERE c.motorcycle_collision = 1\nGROUP BY p.party_type\nUNION ALL\nSELECT 'driver or passenger collision-level helmet statuses', 'used / not used / both',\n       SUM(CASE WHEN used THEN 1 ELSE 0 END), SUM(CASE WHEN not_used THEN 1 ELSE 0 END),\n       SUM(CASE WHEN used AND not_used THEN 1 ELSE 0 END)\nFROM helmet_cases\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"y7Pmw10RsAGPeUHa5RBhG6feg3Ymwz7xDFArfx4Y_QE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "y7Pmw10RsAGPeUHa5RBhG6feg3Ymwz7xDFArfx4Y_QE",
+        "sql": "WITH collision_helmet_use AS (\n    SELECT\n        c.case_id,\n        c.motorcyclist_killed_count,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n            THEN 1 ELSE 0\n        END) AS helmet_used,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n            THEN 1 ELSE 0\n        END) AS helmet_not_used\n    FROM main.collisions AS c\n    JOIN main.parties AS p ON p.case_id = c.case_id\n    WHERE c.motorcycle_collision = 1\n      AND p.party_type IN ('driver', 'passenger')\n    GROUP BY c.case_id, c.motorcyclist_killed_count\n)\nSELECT\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_used = 1), 0) AS helmet_used_fatality_pct,\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_not_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_not_used = 1), 0) AS helmet_not_used_fatality_pct\nFROM collision_helmet_use\nLIMIT 1",
+        "expected_columns": [
+          "helmet_used_fatality_pct",
+          "helmet_not_used_fatality_pct"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): helmet_used_fatality_pct=float; helmet_not_used_fatality_pct=float\nhelmet_used_fatality_pct | helmet_not_used_fatality_pct\n--- | ---\n16.666666666666668 | 0.0\nSQL: WITH collision_helmet_use AS (\n    SELECT\n        c.case_id,\n        c.motorcyclist_killed_count,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n            THEN 1 ELSE 0\n        END) AS helmet_used,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n            THEN 1 ELSE 0\n        END) AS helmet_not_used\n    FROM main.collisions AS c\n    JOIN main.parties AS p ON p.case_id = c.case_id\n    WHERE c.motorcycle_collision = 1\n      AND p.party_type IN ('driver', 'passenger')\n    GROUP BY c.case_id, c.motorcyclist_killed_count\n)\nSELECT\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_used = 1), 0) AS helmet_used_fatality_pct,\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_not_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_not_used = 1), 0) AS helmet_not_used_fatality_pct\nFROM collision_helmet_use\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH collision_helmet_use AS (\n    SELECT\n        c.case_id,\n        c.motorcyclist_killed_count,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n            THEN 1 ELSE 0\n        END) AS helmet_used,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n            THEN 1 ELSE 0\n        END) AS helmet_not_used\n    FROM main.collisions AS c\n    JOIN main.parties AS p ON p.case_id = c.case_id\n    WHERE c.motorcycle_collision = 1\n      AND p.party_type IN ('driver', 'passenger')\n    GROUP BY c.case_id, c.motorcyclist_killed_count\n)\nSELECT\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_used = 1), 0) AS helmet_used_fatality_pct,\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_not_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_not_used = 1), 0) AS helmet_not_used_fatality_pct\nFROM collision_helmet_use\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "WITH collision_helmet_use AS (\n    SELECT\n        c.case_id,\n        c.motorcyclist_killed_count,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')\n            THEN 1 ELSE 0\n        END) AS helmet_used,\n        MAX(CASE\n            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')\n            THEN 1 ELSE 0\n        END) AS helmet_not_used\n    FROM main.collisions AS c\n    JOIN main.parties AS p ON p.case_id = c.case_id\n    WHERE c.motorcycle_collision = 1\n      AND p.party_type IN ('driver', 'passenger')\n    GROUP BY c.case_id, c.motorcyclist_killed_count\n)\nSELECT\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_used = 1), 0) AS helmet_used_fatality_pct,\n    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_not_used = 1)\n        / NULLIF(COUNT(*) FILTER (WHERE helmet_not_used = 1), 0) AS helmet_not_used_fatality_pct\nFROM collision_helmet_use\nLIMIT 1",
+  "seconds": 57.272460332955234
+}

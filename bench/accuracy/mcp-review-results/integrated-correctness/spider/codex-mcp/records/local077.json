@@ -1,0 +1,156 @@
+{
+  "instance_id": "local077",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "d67c31a0917a4a51cf9c55b6bafead4cc1e7cb05a3cfef73fde639c38940ca55",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 161481,
+      "cached_input_tokens": 140288,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2202,
+      "reasoning_output_tokens": 413
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"RM6nKBdmaTVwPl3OsYdDRH2bidAcMcX7ugfP2UhWcP4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "interest_map"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "interest_map (table)\n- id: INTEGER\n- interest_name: TEXT\n- interest_summary: TEXT\n- created_at: TEXT\n- last_modified: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "interest_metrics"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "interest_metrics (table)\n- _month: REAL\n- _year: REAL\n- month_year: TEXT\n- interest_id: REAL\n- composition: REAL\n- index_value: REAL\n- ranking: INTEGER\n- percentile_ranking: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH map_keys AS (\n    SELECT id, COUNT(*) AS map_rows\n    FROM main.interest_map\n    GROUP BY id\n), monthly_interests AS (\n    SELECT\n        m._year,\n        m._month,\n        m.month_year,\n        m.interest_id,\n        COUNT(*) AS metric_rows,\n        SUM(CASE WHEN m.index_value IS NULL OR m.index_value = 0 OR m.composition IS NULL THEN 1 ELSE 0 END) AS undefined_ratios,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908\n    GROUP BY m._year, m._month, m.month_year, m.interest_id\n), monthly_ranks AS (\n    SELECT\n        i.*,\n        RANK() OVER (PARTITION BY i._year, i._month ORDER BY i.average_composition DESC) AS placement,\n        k.map_rows\n    FROM monthly_interests AS i\n    LEFT JOIN map_keys AS k ON k.id = i.interest_id\n)\nSELECT\n    month_year,\n    COUNT(*) AS interest_count,\n    MAX(metric_rows) AS max_rows_per_interest,\n    SUM(undefined_ratios) AS undefined_ratios,\n    SUM(CASE WHEN map_rows IS NULL THEN metric_rows ELSE 0 END) AS unmatched_metric_rows,\n    MAX(map_rows) AS max_map_matches,\n    SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS top_interest_count,\n    MAX(average_composition) AS max_index_composition\nFROM monthly_ranks\nGROUP BY _year, _month, month_year\nORDER BY _year, _month",
+        "definition_check_id": "RM6nKBdmaTVwPl3OsYdDRH2bidAcMcX7ugfP2UhWcP4"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "14 row(s):\nResult coverage: fetched_rows=14; displayed_rows=14; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month_year=str; interest_count=int; max_rows_per_interest=int; undefined_ratios=int; unmatched_metric_rows=int; max_map_matches=int; top_interest_count=int; max_index_composition=float\nmonth_year | interest_count | max_rows_per_interest | undefined_ratios | unmatched_metric_rows | max_map_matches | top_interest_count | max_index_composition\n--- | --- | --- | --- | --- | --- | --- | ---\n07-2018 | 729 | 1 | 0 | 0 | 1 | 1 | 7.3571428571428585\n08-2018 | 767 | 1 | 0 | 0 | 1 | 1 | 7.205128205128205\n09-2018 | 780 | 1 | 0 | 0 | 1 | 1 | 8.263636363636364\n10-2018 | 857 | 1 | 0 | 0 | 1 | 1 | 9.135135135135135\n11-2018 | 928 | 1 | 0 | 0 | 1 | 1 | 8.27659574468085\n12-2018 | 995 | 1 | 0 | 0 | 1 | 1 | 8.313725490196079\n01-2019 | 973 | 1 | 0 | 0 | 1 | 1 | 7.657258064516128\n02-2019 | 1121 | 1 | 0 | 0 | 1 | 1 | 7.6625000000000005\n03-2019 | 1136 | 1 | 0 | 0 | 1 | 1 | 6.543046357615895\n04-2019 | 1099 | 1 | 0 | 0 | 1 | 1 | 6.275862068965518\n05-2019 | 857 | 1 | 0 | 0 | 1 | 1 | 4.409090909090909\n06-2019 | 824 | 1 | 0 | 0 | 1 | 1 | 2.7650602409638556\n07-2019 | 864 | 1 | 0 | 0 | 1 | 1 | 2.8175675675675675\n08-2019 | 1149 | 1 | 0 | 0 | 1 | 1 | 2.728476821192053\nSQL: WITH map_keys AS (\n    SELECT id, COUNT(*) AS map_rows\n    FROM main.interest_map\n    GROUP BY id\n), monthly_interests AS (\n    SELECT\n        m._year,\n        m._month,\n        m.month_year,\n        m.interest_id,\n        COUNT(*) AS metric_rows,\n        SUM(CASE WHEN m.index_value IS NULL OR m.index_value = 0 OR m.composition IS NULL THEN 1 ELSE 0 END) AS undefined_ratios,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908\n    GROUP BY m._year, m._month, m.month_year, m.interest_id\n), monthly_ranks AS (\n    SELECT\n        i.*,\n        RANK() OVER (PARTITION BY i._year, i._month ORDER BY i.average_composition DESC) AS placement,\n        k.map_rows\n    FROM monthly_interests AS i\n    LEFT JOIN map_keys AS k ON k.id = i.interest_id\n)\nSELECT\n    month_year,\n    COUNT(*) AS interest_count,\n    MAX(metric_rows) AS max_rows_per_interest,\n    SUM(undefined_ratios) AS undefined_ratios,\n    SUM(CASE WHEN map_rows IS NULL THEN metric_rows ELSE 0 END) AS unmatched_metric_rows,\n    MAX(map_rows) AS max_map_matches,\n    SUM(CASE WHEN placement = 1 THEN 1 ELSE 0 END) AS top_interest_count,\n    MAX(average_composition) AS max_index_composition\nFROM monthly_ranks\nGROUP BY _year, _month, month_year\nORDER BY _year, _month\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"DDYIlt51UgePPzJ3UjXwj-_aLyMCi_cRmj4Jfn8SD50\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH monthly_interest AS (\n    SELECT\n        DATE(PRINTF('%04d-%02d-01', m._year, m._month)) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interest AS (\n    SELECT\n        month_start,\n        interest_id,\n        average_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY average_composition DESC, interest_id\n        ) AS month_rank\n    FROM monthly_interest\n    WHERE average_composition IS NOT NULL\n),\nmonthly_max AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.average_composition AS max_index_composition\n    FROM ranked_interest AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.month_rank = 1\n),\nrolling_composition AS (\n    SELECT\n        month_start,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            ORDER BY month_start ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER (ORDER BY month_start) AS one_month_ago_interest_name,\n        LAG(max_index_composition, 1) OVER (ORDER BY month_start) AS one_month_ago_max_index_composition,\n        LAG(interest_name, 2) OVER (ORDER BY month_start) AS two_months_ago_interest_name,\n        LAG(max_index_composition, 2) OVER (ORDER BY month_start) AS two_months_ago_max_index_composition\n    FROM monthly_max\n)\nSELECT\n    month_start,\n    interest_name,\n    max_index_composition,\n    three_month_rolling_average,\n    one_month_ago_interest_name,\n    one_month_ago_max_index_composition,\n    two_months_ago_interest_name,\n    two_months_ago_max_index_composition\nFROM rolling_composition\nWHERE month_start >= '2018-09-01' AND month_start < '2019-09-01'\nORDER BY month_start\nLIMIT 12",
+        "definition_check_id": "DDYIlt51UgePPzJ3UjXwj-_aLyMCi_cRmj4Jfn8SD50",
+        "expected_columns": [
+          "month_start",
+          "interest_name",
+          "max_index_composition",
+          "three_month_rolling_average",
+          "one_month_ago_interest_name",
+          "one_month_ago_max_index_composition",
+          "two_months_ago_interest_name",
+          "two_months_ago_max_index_composition"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month_start=str; interest_name=str; max_index_composition=float; three_month_rolling_average=float; one_month_ago_interest_name=str; one_month_ago_max_index_composition=float; two_months_ago_interest_name=str; two_months_ago_max_index_composition=float\nmonth_start | interest_name | max_index_composition | three_month_rolling_average | one_month_ago_interest_name | one_month_ago_max_index_composition | two_months_ago_interest_name | two_months_ago_max_index_composition\n--- | --- | --- | --- | --- | --- | --- | ---\n2018-09-01 | Work Comes First Travelers | 8.263636363636364 | 7.6086358086358095 | Las Vegas Trip Planners | 7.205128205128205 | Las Vegas Trip Planners | 7.3571428571428585\n2018-10-01 | Work Comes First Travelers | 9.135135135135135 | 8.201299901299901 | Work Comes First Travelers | 8.263636363636364 | Las Vegas Trip Planners | 7.205128205128205\n2018-11-01 | Work Comes First Travelers | 8.27659574468085 | 8.55845574781745 | Work Comes First Travelers | 9.135135135135135 | Work Comes First Travelers | 8.263636363636364\n2018-12-01 | Work Comes First Travelers | 8.313725490196079 | 8.575152123337356 | Work Comes First Travelers | 8.27659574468085 | Work Comes First Travelers | 9.135135135135135\n2019-01-01 | Work Comes First Travelers | 7.657258064516128 | 8.08252643313102 | Work Comes First Travelers | 8.313725490196079 | Work Comes First Travelers | 8.27659574468085\n2019-02-01 | Work Comes First Travelers | 7.6625000000000005 | 7.877827851570736 | Work Comes First Travelers | 7.657258064516128 | Work Comes First Travelers | 8.313725490196079\n2019-03-01 | Alabama Trip Planners | 6.543046357615895 | 7.287601474044007 | Work Comes First Travelers | 7.6625000000000005 | Work Comes First Travelers | 7.657258064516128\n2019-04-01 | Solar Energy Researchers | 6.275862068965518 | 6.827136142193805 | Alabama Trip Planners | 6.543046357615895 | Work Comes First Travelers | 7.6625000000000005\n2019-05-01 | Readers of Honduran Content | 4.409090909090909 | 5.742666445224107 | Solar Energy Researchers | 6.275862068965518 | Alabama Trip Planners | 6.543046357615895\n2019-06-01 | Las Vegas Trip Planners | 2.7650602409638556 | 4.483337739673428 | Readers of Honduran Content | 4.409090909090909 | Solar Energy Researchers | 6.275862068965518\n2019-07-01 | Las Vegas Trip Planners | 2.8175675675675675 | 3.3305729058741105 | Las Vegas Trip Planners | 2.7650602409638556 | Readers of Honduran Content | 4.409090909090909\n2019-08-01 | Cosmetics and Beauty Shoppers | 2.728476821192053 | 2.7703682099078257 | Las Vegas Trip Planners | 2.8175675675675675 | Las Vegas Trip Planners | 2.7650602409638556\nSQL: WITH monthly_interest AS (\n    SELECT\n        DATE(PRINTF('%04d-%02d-01', m._year, m._month)) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interest AS (\n    SELECT\n        month_start,\n        interest_id,\n        average_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY average_composition DESC, interest_id\n        ) AS month_rank\n    FROM monthly_interest\n    WHERE average_composition IS NOT NULL\n),\nmonthly_max AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.average_composition AS max_index_composition\n    FROM ranked_interest AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.month_rank = 1\n),\nrolling_composition AS (\n    SELECT\n        month_start,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            ORDER BY month_start ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER (ORDER BY month_start) AS one_month_ago_interest_name,\n        LAG(max_index_composition, 1) OVER (ORDER BY month_start) AS one_month_ago_max_index_composition,\n        LAG(interest_name, 2) OVER (ORDER BY month_start) AS two_months_ago_interest_name,\n        LAG(max_index_composition, 2) OVER (ORDER BY month_start) AS two_months_ago_max_index_composition\n    FROM monthly_max\n)\nSELECT\n    month_start,\n    interest_name,\n    max_index_composition,\n    three_month_rolling_average,\n    one_month_ago_interest_name,\n    one_month_ago_max_index_composition,\n    two_months_ago_interest_name,\n    two_months_ago_max_index_composition\nFROM rolling_composition\nWHERE month_start >= '2018-09-01' AND month_start < '2019-09-01'\nORDER BY month_start\nLIMIT 12"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH monthly_interest AS (\n    SELECT\n        DATE(PRINTF('%04d-%02d-01', m._year, m._month)) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interest AS (\n    SELECT\n        month_start,\n        interest_id,\n        average_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY average_composition DESC, interest_id\n        ) AS month_rank\n    FROM monthly_interest\n    WHERE average_composition IS NOT NULL\n),\nmonthly_max AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.average_composition AS max_index_composition\n    FROM ranked_interest AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.month_rank = 1\n),\nrolling_composition AS (\n    SELECT\n        month_start,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            ORDER BY month_start ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER (ORDER BY month_start) AS one_month_ago_interest_name,\n        LAG(max_index_composition, 1) OVER (ORDER BY month_start) AS one_month_ago_max_index_composition,\n        LAG(interest_name, 2) OVER (ORDER BY month_start) AS two_months_ago_interest_name,\n        LAG(max_index_composition, 2) OVER (ORDER BY month_start) AS two_months_ago_max_index_composition\n    FROM monthly_max\n)\nSELECT\n    month_start,\n    interest_name,\n    max_index_composition,\n    three_month_rolling_average,\n    one_month_ago_interest_name,\n    one_month_ago_max_index_composition,\n    two_months_ago_interest_name,\n    two_months_ago_max_index_composition\nFROM rolling_composition\nWHERE month_start >= '2018-09-01' AND month_start < '2019-09-01'\nORDER BY month_start\nLIMIT 12\n```",
+  "rows": 12,
+  "sql": "WITH monthly_interest AS (\n    SELECT\n        DATE(PRINTF('%04d-%02d-01', m._year, m._month)) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interest AS (\n    SELECT\n        month_start,\n        interest_id,\n        average_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY average_composition DESC, interest_id\n        ) AS month_rank\n    FROM monthly_interest\n    WHERE average_composition IS NOT NULL\n),\nmonthly_max AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.average_composition AS max_index_composition\n    FROM ranked_interest AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.month_rank = 1\n),\nrolling_composition AS (\n    SELECT\n        month_start,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            ORDER BY month_start ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER (ORDER BY month_start) AS one_month_ago_interest_name,\n        LAG(max_index_composition, 1) OVER (ORDER BY month_start) AS one_month_ago_max_index_composition,\n        LAG(interest_name, 2) OVER (ORDER BY month_start) AS two_months_ago_interest_name,\n        LAG(max_index_composition, 2) OVER (ORDER BY month_start) AS two_months_ago_max_index_composition\n    FROM monthly_max\n)\nSELECT\n    month_start,\n    interest_name,\n    max_index_composition,\n    three_month_rolling_average,\n    one_month_ago_interest_name,\n    one_month_ago_max_index_composition,\n    two_months_ago_interest_name,\n    two_months_ago_max_index_composition\nFROM rolling_composition\nWHERE month_start >= '2018-09-01' AND month_start < '2019-09-01'\nORDER BY month_start\nLIMIT 12",
+  "seconds": 55.77412012498826
+}
