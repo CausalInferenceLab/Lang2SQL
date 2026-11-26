@@ -1,0 +1,188 @@
+{
+  "instance_id": "local064",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "review_source_record_sha256": "5d79df008d9a4263f7c7beffada5b8533caed9d9188fdb83e8cd7cbe0f23434c",
+  "events_sha256": "c370e0d9c48c2384c20e4aa90b3439957a71850bc762e792ba4e50e62f2c5dae",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 236512,
+      "cached_input_tokens": 195584,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2244,
+      "reasoning_output_tokens": 185
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_transactions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_transactions (table)\n- customer_id: INTEGER\n- txn_date: TEXT\n- txn_type: TEXT\n- txn_amount: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_nodes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_nodes (table)\n- customer_id: INTEGER\n- region_id: INTEGER\n- node_id: INTEGER\n- start_date: TEXT\n- end_date: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ZiG8tDiMmQmS5gVZ8WJPCfpatG6VcbozhWMD-YRbBE8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ZiG8tDiMmQmS5gVZ8WJPCfpatG6VcbozhWMD-YRbBE8",
+        "sql": "WITH node_customers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_nodes\n    WHERE customer_id IS NOT NULL\n),\ntransaction_customers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_transactions\n    WHERE customer_id IS NOT NULL\n),\nnode_only AS (\n    SELECT customer_id FROM node_customers\n    EXCEPT\n    SELECT customer_id FROM transaction_customers\n),\ntransaction_only AS (\n    SELECT customer_id FROM transaction_customers\n    EXCEPT\n    SELECT customer_id FROM node_customers\n)\nSELECT txn_type,\n       COUNT(*) AS transaction_count,\n       COUNT(DISTINCT customer_id) AS customer_count,\n       MIN(txn_date) AS first_date,\n       MAX(txn_date) AS last_date,\n       COUNT(*) - COUNT(customer_id) AS missing_customer_ids,\n       COUNT(*) - COUNT(txn_amount) AS missing_amounts,\n       COUNT(CASE WHEN txn_amount < 0 THEN 1 END) AS negative_amounts,\n       COUNT(CASE WHEN DATE(txn_date) IS NULL OR LENGTH(txn_date) <> 10 THEN 1 END) AS irregular_dates,\n       (SELECT COUNT(*) FROM main.customer_nodes) AS node_rows,\n       (SELECT COUNT(*) FROM node_customers) AS node_customer_count,\n       (SELECT COUNT(*) FROM node_only) AS node_only_count,\n       (SELECT COUNT(*) FROM transaction_only) AS transaction_only_count\nFROM main.customer_transactions\nGROUP BY txn_type\nORDER BY txn_type\nLIMIT 1000"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nObserved value types (displayed rows): txn_type=str; transaction_count=int; customer_count=int; first_date=str; last_date=str; missing_customer_ids=int; missing_amounts=int; negative_amounts=int; irregular_dates=int; node_rows=int; node_customer_count=int; node_only_count=int; transaction_only_count=int\ntxn_type | transaction_count | customer_count | first_date | last_date | missing_customer_ids | missing_amounts | negative_amounts | irregular_dates | node_rows | node_customer_count | node_only_count | transaction_only_count\n--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---\ndeposit | 2671 | 500 | 2020-01-01 | 2020-04-26 | 0 | 0 | 0 | 0 | 3500 | 500 | 0 | 0\npurchase | 1617 | 448 | 2020-01-01 | 2020-04-28 | 0 | 0 | 0 | 0 | 3500 | 500 | 0 | 0\nwithdrawal | 1580 | 439 | 2020-01-02 | 2020-04-28 | 0 | 0 | 0 | 0 | 3500 | 500 | 0 | 0\nSQL: WITH node_customers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_nodes\n    WHERE customer_id IS NOT NULL\n),\ntransaction_customers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_transactions\n    WHERE customer_id IS NOT NULL\n),\nnode_only AS (\n    SELECT customer_id FROM node_customers\n    EXCEPT\n    SELECT customer_id FROM transaction_customers\n),\ntransaction_only AS (\n    SELECT customer_id FROM transaction_customers\n    EXCEPT\n    SELECT customer_id FROM node_customers\n)\nSELECT txn_type,\n       COUNT(*) AS transaction_count,\n       COUNT(DISTINCT customer_id) AS customer_count,\n       MIN(txn_date) AS first_date,\n       MAX(txn_date) AS last_date,\n       COUNT(*) - COUNT(customer_id) AS missing_customer_ids,\n       COUNT(*) - COUNT(txn_amount) AS missing_amounts,\n       COUNT(CASE WHEN txn_amount < 0 THEN 1 END) AS negative_amounts,\n       COUNT(CASE WHEN DATE(txn_date) IS NULL OR LENGTH(txn_date) <> 10 THEN 1 END) AS irregular_dates,\n       (SELECT COUNT(*) FROM main.customer_nodes) AS node_rows,\n       (SELECT COUNT(*) FROM node_customers) AS node_customer_count,\n       (SELECT COUNT(*) FROM node_only) AS node_only_count,\n       (SELECT COUNT(*) FROM transaction_only) AS transaction_only_count\nFROM main.customer_transactions\nGROUP BY txn_type\nORDER BY txn_type\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"JhgdKt71P_Usv8LZNSkZjRCBl4JJ4vO_7Q3Kl_hFbC8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "JhgdKt71P_Usv8LZNSkZjRCBl4JJ4vO_7Q3Kl_hFbC8",
+        "sql": "WITH calendar(month) AS (\n    VALUES ('2020-01'), ('2020-02'), ('2020-03'), ('2020-04'),\n           ('2020-05'), ('2020-06'), ('2020-07'), ('2020-08'),\n           ('2020-09'), ('2020-10'), ('2020-11'), ('2020-12')\n),\nactivity AS (\n    SELECT SUBSTR(txn_date, 1, 7) AS month,\n           customer_id,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE 0 END)\n           - SUM(CASE WHEN txn_type = 'withdrawal' THEN txn_amount ELSE 0 END) AS balance\n    FROM main.customer_transactions\n    WHERE txn_date >= '2020-01-01' AND txn_date < '2021-01-01'\n    GROUP BY SUBSTR(txn_date, 1, 7), customer_id\n),\npopulation AS (\n    SELECT COUNT(DISTINCT customer_id) AS customer_count\n    FROM main.customer_transactions\n)\nSELECT c.month,\n       p.customer_count,\n       COUNT(a.customer_id) AS customers_with_any_transaction,\n       COUNT(CASE WHEN a.balance > 0 THEN 1 END) AS positive_customer_count,\n       TOTAL(a.balance) AS total_balance,\n       TOTAL(a.balance) / p.customer_count AS all_customer_average\nFROM calendar AS c\nCROSS JOIN population AS p\nLEFT JOIN activity AS a ON a.month = c.month\nGROUP BY c.month, p.customer_count\nORDER BY c.month\nLIMIT 1000"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nObserved value types (displayed rows): month=str; customer_count=int; customers_with_any_transaction=int; positive_customer_count=int; total_balance=float; all_customer_average=float\nmonth | customer_count | customers_with_any_transaction | positive_customer_count | total_balance | all_customer_average\n--- | --- | --- | --- | --- | ---\n2020-01 | 500 | 500 | 424 | 278852.0 | 557.704\n2020-02 | 500 | 455 | 259 | 112428.0 | 224.856\n2020-03 | 500 | 456 | 248 | 106030.0 | 212.06\n2020-04 | 500 | 309 | 169 | 68855.0 | 137.71\n2020-05 | 500 | 0 | 0 | 0.0 | 0.0\n2020-06 | 500 | 0 | 0 | 0.0 | 0.0\n2020-07 | 500 | 0 | 0 | 0.0 | 0.0\n2020-08 | 500 | 0 | 0 | 0.0 | 0.0\n2020-09 | 500 | 0 | 0 | 0.0 | 0.0\n2020-10 | 500 | 0 | 0 | 0.0 | 0.0\n2020-11 | 500 | 0 | 0 | 0.0 | 0.0\n2020-12 | 500 | 0 | 0 | 0.0 | 0.0\nSQL: WITH calendar(month) AS (\n    VALUES ('2020-01'), ('2020-02'), ('2020-03'), ('2020-04'),\n           ('2020-05'), ('2020-06'), ('2020-07'), ('2020-08'),\n           ('2020-09'), ('2020-10'), ('2020-11'), ('2020-12')\n),\nactivity AS (\n    SELECT SUBSTR(txn_date, 1, 7) AS month,\n           customer_id,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE 0 END)\n           - SUM(CASE WHEN txn_type = 'withdrawal' THEN txn_amount ELSE 0 END) AS balance\n    FROM main.customer_transactions\n    WHERE txn_date >= '2020-01-01' AND txn_date < '2021-01-01'\n    GROUP BY SUBSTR(txn_date, 1, 7), customer_id\n),\npopulation AS (\n    SELECT COUNT(DISTINCT customer_id) AS customer_count\n    FROM main.customer_transactions\n)\nSELECT c.month,\n       p.customer_count,\n       COUNT(a.customer_id) AS customers_with_any_transaction,\n       COUNT(CASE WHEN a.balance > 0 THEN 1 END) AS positive_customer_count,\n       TOTAL(a.balance) AS total_balance,\n       TOTAL(a.balance) / p.customer_count AS all_customer_average\nFROM calendar AS c\nCROSS JOIN population AS p\nLEFT JOIN activity AS a ON a.month = c.month\nGROUP BY c.month, p.customer_count\nORDER BY c.month\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"RRiVND7jrKdFzf7JjPsYSE6PJ43Os9TbhhpLOqwDpb8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "RRiVND7jrKdFzf7JjPsYSE6PJ43Os9TbhhpLOqwDpb8",
+        "sql": "WITH RECURSIVE months(month_start) AS (\n    VALUES ('2020-01-01')\n    UNION ALL\n    SELECT DATE(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2020-12-01'\n),\ncustomers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_nodes\n    WHERE customer_id IS NOT NULL\n),\nmonthly_flows AS (\n    SELECT customer_id,\n           DATE(txn_date, 'start of month') AS month_start,\n           SUM(CASE txn_type\n                   WHEN 'deposit' THEN txn_amount\n                   WHEN 'withdrawal' THEN -txn_amount\n               END) AS balance\n    FROM main.customer_transactions\n    WHERE txn_date >= '2020-01-01'\n      AND txn_date < '2021-01-01'\n      AND txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, DATE(txn_date, 'start of month')\n),\ncustomer_month_balances AS (\n    SELECT m.month_start,\n           c.customer_id,\n           COALESCE(f.balance, 0) AS balance\n    FROM months AS m\n    CROSS JOIN customers AS c\n    LEFT JOIN monthly_flows AS f\n      ON f.customer_id = c.customer_id\n     AND f.month_start = m.month_start\n),\nmonthly_summary AS (\n    SELECT month_start,\n           COUNT(CASE WHEN balance > 0 THEN 1 END) AS positive_customer_count,\n           AVG(balance) AS average_balance\n    FROM customer_month_balances\n    GROUP BY month_start\n),\nextremes AS (\n    SELECT MAX(positive_customer_count) AS highest_count,\n           MIN(positive_customer_count) AS lowest_count\n    FROM monthly_summary\n)\nSELECT STRFTIME('%Y-%m', hi.month_start) AS highest_count_month,\n       STRFTIME('%Y-%m', lo.month_start) AS lowest_count_month,\n       hi.average_balance AS highest_count_month_average_balance,\n       lo.average_balance AS lowest_count_month_average_balance,\n       hi.average_balance - lo.average_balance AS average_balance_difference\nFROM extremes AS e\nJOIN monthly_summary AS hi ON hi.positive_customer_count = e.highest_count\nJOIN monthly_summary AS lo ON lo.positive_customer_count = e.lowest_count\nORDER BY hi.month_start, lo.month_start\nLIMIT 1000"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "8 row(s):\nObserved value types (displayed rows): highest_count_month=str; lowest_count_month=str; highest_count_month_average_balance=float; lowest_count_month_average_balance=float; average_balance_difference=float\nhighest_count_month | lowest_count_month | highest_count_month_average_balance | lowest_count_month_average_balance | average_balance_difference\n--- | --- | --- | --- | ---\n2020-01 | 2020-05 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-06 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-07 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-08 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-09 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-10 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-11 | 557.704 | 0.0 | 557.704\n2020-01 | 2020-12 | 557.704 | 0.0 | 557.704\nSQL: WITH RECURSIVE months(month_start) AS (\n    VALUES ('2020-01-01')\n    UNION ALL\n    SELECT DATE(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2020-12-01'\n),\ncustomers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_nodes\n    WHERE customer_id IS NOT NULL\n),\nmonthly_flows AS (\n    SELECT customer_id,\n           DATE(txn_date, 'start of month') AS month_start,\n           SUM(CASE txn_type\n                   WHEN 'deposit' THEN txn_amount\n                   WHEN 'withdrawal' THEN -txn_amount\n               END) AS balance\n    FROM main.customer_transactions\n    WHERE txn_date >= '2020-01-01'\n      AND txn_date < '2021-01-01'\n      AND txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, DATE(txn_date, 'start of month')\n),\ncustomer_month_balances AS (\n    SELECT m.month_start,\n           c.customer_id,\n           COALESCE(f.balance, 0) AS balance\n    FROM months AS m\n    CROSS JOIN customers AS c\n    LEFT JOIN monthly_flows AS f\n      ON f.customer_id = c.customer_id\n     AND f.month_start = m.month_start\n),\nmonthly_summary AS (\n    SELECT month_start,\n           COUNT(CASE WHEN balance > 0 THEN 1 END) AS positive_customer_count,\n           AVG(balance) AS average_balance\n    FROM customer_month_balances\n    GROUP BY month_start\n),\nextremes AS (\n    SELECT MAX(positive_customer_count) AS highest_count,\n           MIN(positive_customer_count) AS lowest_count\n    FROM monthly_summary\n)\nSELECT STRFTIME('%Y-%m', hi.month_start) AS highest_count_month,\n       STRFTIME('%Y-%m', lo.month_start) AS lowest_count_month,\n       hi.average_balance AS highest_count_month_average_balance,\n       lo.average_balance AS lowest_count_month_average_balance,\n       hi.average_balance - lo.average_balance AS average_balance_difference\nFROM extremes AS e\nJOIN monthly_summary AS hi ON hi.positive_customer_count = e.highest_count\nJOIN monthly_summary AS lo ON lo.positive_customer_count = e.lowest_count\nORDER BY hi.month_start, lo.month_start\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH RECURSIVE months(month_start) AS (\n    VALUES ('2020-01-01')\n    UNION ALL\n    SELECT DATE(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2020-12-01'\n),\ncustomers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_nodes\n    WHERE customer_id IS NOT NULL\n),\nmonthly_flows AS (\n    SELECT customer_id,\n           DATE(txn_date, 'start of month') AS month_start,\n           SUM(CASE txn_type\n                   WHEN 'deposit' THEN txn_amount\n                   WHEN 'withdrawal' THEN -txn_amount\n               END) AS balance\n    FROM main.customer_transactions\n    WHERE txn_date >= '2020-01-01'\n      AND txn_date < '2021-01-01'\n      AND txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, DATE(txn_date, 'start of month')\n),\ncustomer_month_balances AS (\n    SELECT m.month_start,\n           c.customer_id,\n           COALESCE(f.balance, 0) AS balance\n    FROM months AS m\n    CROSS JOIN customers AS c\n    LEFT JOIN monthly_flows AS f\n      ON f.customer_id = c.customer_id\n     AND f.month_start = m.month_start\n),\nmonthly_summary AS (\n    SELECT month_start,\n           COUNT(CASE WHEN balance > 0 THEN 1 END) AS positive_customer_count,\n           AVG(balance) AS average_balance\n    FROM customer_month_balances\n    GROUP BY month_start\n),\nextremes AS (\n    SELECT MAX(positive_customer_count) AS highest_count,\n           MIN(positive_customer_count) AS lowest_count\n    FROM monthly_summary\n)\nSELECT STRFTIME('%Y-%m', hi.month_start) AS highest_count_month,\n       STRFTIME('%Y-%m', lo.month_start) AS lowest_count_month,\n       hi.average_balance AS highest_count_month_average_balance,\n       lo.average_balance AS lowest_count_month_average_balance,\n       hi.average_balance - lo.average_balance AS average_balance_difference\nFROM extremes AS e\nJOIN monthly_summary AS hi ON hi.positive_customer_count = e.highest_count\nJOIN monthly_summary AS lo ON lo.positive_customer_count = e.lowest_count\nORDER BY hi.month_start, lo.month_start\nLIMIT 1000\n```",
+  "rows": 8,
+  "sql": "WITH RECURSIVE months(month_start) AS (\n    VALUES ('2020-01-01')\n    UNION ALL\n    SELECT DATE(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2020-12-01'\n),\ncustomers AS (\n    SELECT DISTINCT customer_id\n    FROM main.customer_nodes\n    WHERE customer_id IS NOT NULL\n),\nmonthly_flows AS (\n    SELECT customer_id,\n           DATE(txn_date, 'start of month') AS month_start,\n           SUM(CASE txn_type\n                   WHEN 'deposit' THEN txn_amount\n                   WHEN 'withdrawal' THEN -txn_amount\n               END) AS balance\n    FROM main.customer_transactions\n    WHERE txn_date >= '2020-01-01'\n      AND txn_date < '2021-01-01'\n      AND txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, DATE(txn_date, 'start of month')\n),\ncustomer_month_balances AS (\n    SELECT m.month_start,\n           c.customer_id,\n           COALESCE(f.balance, 0) AS balance\n    FROM months AS m\n    CROSS JOIN customers AS c\n    LEFT JOIN monthly_flows AS f\n      ON f.customer_id = c.customer_id\n     AND f.month_start = m.month_start\n),\nmonthly_summary AS (\n    SELECT month_start,\n           COUNT(CASE WHEN balance > 0 THEN 1 END) AS positive_customer_count,\n           AVG(balance) AS average_balance\n    FROM customer_month_balances\n    GROUP BY month_start\n),\nextremes AS (\n    SELECT MAX(positive_customer_count) AS highest_count,\n           MIN(positive_customer_count) AS lowest_count\n    FROM monthly_summary\n)\nSELECT STRFTIME('%Y-%m', hi.month_start) AS highest_count_month,\n       STRFTIME('%Y-%m', lo.month_start) AS lowest_count_month,\n       hi.average_balance AS highest_count_month_average_balance,\n       lo.average_balance AS lowest_count_month_average_balance,\n       hi.average_balance - lo.average_balance AS average_balance_difference\nFROM extremes AS e\nJOIN monthly_summary AS hi ON hi.positive_customer_count = e.highest_count\nJOIN monthly_summary AS lo ON lo.positive_customer_count = e.lowest_count\nORDER BY hi.month_start, lo.month_start\nLIMIT 1000",
+  "seconds": 61.30565699993167
+}
