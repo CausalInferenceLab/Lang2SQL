@@ -1,0 +1,43 @@
+{
+  "source_record_sha256": "ace676de777f7445298264e69be127e09c0485364387d43d2e98713f4a83a788",
+  "questions_sha256": "926af2a0d1b47e5d0d15a7aa8a34d4721007f4550a881555b6a89496b54a2606",
+  "db_sha256": "87583183c3dc472fba04de702965560a9d7c0a548836613f242317e0eeb83f00",
+  "sql_variants": {
+    "model": "SELECT COUNT(DISTINCT l.ID) AS patient_count\nFROM main.Laboratory AS l\nJOIN main.Patient AS p ON p.ID = l.ID\nWHERE l.\"Date\" BETWEEN '1981-01-01' AND '1986-12-31'\n  AND l.\"Date\" >= p.Birthday\n  AND l.\"Date\" < date(p.Birthday, '+50 years')\n  AND l.PLT BETWEEN 100 AND 400\n  AND (CAST(l.\"U-PRO\" AS REAL) > 0 OR l.\"U-PRO\" IN ('TR', '%%'))\nLIMIT 1",
+    "protein_predicate_only": "SELECT COUNT(DISTINCT l.ID) AS patient_count\nFROM main.Laboratory AS l\nJOIN main.Patient AS p ON p.ID = l.ID\nWHERE l.\"Date\" BETWEEN '1981-01-01' AND '1986-12-31'\n  AND l.\"Date\" >= p.Birthday\n  AND l.\"Date\" < date(p.Birthday, '+50 years')\n  AND l.PLT BETWEEN 100 AND 400\n  AND l.\"U-PRO\" IS NOT NULL AND l.\"U-PRO\" NOT IN ('-', '0')\nLIMIT 1",
+    "remove_unrequested_nonnegative_age_only": "SELECT COUNT(DISTINCT l.ID) AS patient_count\nFROM main.Laboratory AS l\nJOIN main.Patient AS p ON p.ID = l.ID\nWHERE l.\"Date\" BETWEEN '1981-01-01' AND '1986-12-31'\n  AND l.\"Date\" < date(p.Birthday, '+50 years')\n  AND l.PLT BETWEEN 100 AND 400\n  AND (CAST(l.\"U-PRO\" AS REAL) > 0 OR l.\"U-PRO\" IN ('TR', '%%'))\nLIMIT 1",
+    "reference": "SELECT COUNT(DISTINCT p.ID) AS patient_count FROM Patient AS p JOIN Laboratory AS l ON l.ID = p.ID WHERE SUBSTR(l.Date, 1, 4) BETWEEN '1981' AND '1986' AND l.PLT BETWEEN 100 AND 400 AND p.Birthday IS NOT NULL AND (CAST(SUBSTR(l.Date, 1, 4) AS INTEGER) - CAST(SUBSTR(p.Birthday, 1, 4) AS INTEGER) - CASE WHEN SUBSTR(l.Date, 6, 5) < SUBSTR(p.Birthday, 6, 5) THEN 1 ELSE 0 END) < 50 AND l.\"U-PRO\" IS NOT NULL AND l.\"U-PRO\" NOT IN ('-', '0')"
+  },
+  "results": {
+    "model": [
+      [
+        71
+      ]
+    ],
+    "protein_predicate_only": [
+      [
+        71
+      ]
+    ],
+    "remove_unrequested_nonnegative_age_only": [
+      [
+        73
+      ]
+    ],
+    "reference": [
+      [
+        73
+      ]
+    ]
+  },
+  "added_patient_ids_without_chronology_filter": [
+    2047892,
+    3385021
+  ],
+  "finding": "Changingonlyproteinpredicate doesnotfixcount. Removingmodel-addedtest-date>=birthdateconditionalone changes71to73matchingreference. The2addedpatientsqualifythroughpre-birthdatetestrecords.",
+  "limits": [
+    "Offlinecounterfactualonly;notmodelrepairorinput.",
+    "Originalofficialgrade0retained.",
+    "Do notsilentlyremovechronologyvalidationasgeneralproductpolicyjusttomatchreference."
+  ]
+}
