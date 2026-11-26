@@ -1,0 +1,7 @@
+SELECT CAST(AVG(
+    ROUND(ABS(STRFTIME('%Y', final_game) - STRFTIME('%Y', debut)), 2)
+  + ROUND(ABS(STRFTIME('%m', final_game) - STRFTIME('%m', debut)) / 12.0, 2)
+  + ROUND(ABS(STRFTIME('%d', final_game) - STRFTIME('%d', debut)) / 365.0, 2)
+) AS FLOAT) AS average_career_span_years
+FROM main.player
+LIMIT 1

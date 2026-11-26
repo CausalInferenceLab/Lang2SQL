@@ -1,0 +1,358 @@
+{
+  "scope": "21 no-final-SQL cases from integrated run, not rerun here",
+  "method": "Read supplied question/documentation and actual clarification. Hypotheses are not proven grader defects. No gold SQL/reference values consulted for these classifications. No changes to official grades.",
+  "missing_information_policy": "Do not replace uncertainty with a benchmark-specific constant. Convention/schema cases need further evidence.",
+  "cases": [
+    {
+      "suite": "bird",
+      "instance_id": "bird001",
+      "input": {
+        "instance_id": "bird001",
+        "db": "california_schools",
+        "question": "For locally funded schools whose K-12 minus ages-5-17 enrollment difference exceeds the average such difference among locally funded schools, list each school's directory-listed name and DOC type.",
+        "evidence": ""
+      },
+      "clarification": "Which column should define “locally funded” for both school selection and the average: `frpm.\"Charter Funding Type\"` or `schools.FundingType`? Both contain `Locally funded`, but they identify different sets of schools.",
+      "diagnostic_hypothesis": "competing_schema_fields",
+      "assessment": "Two stored locally-funded fields identify different sets; determine authoritative field from upstream documentation before changing selection.",
+      "run_sql_calls": 1,
+      "record_sha256": "6edb85af8bbcd1771a1dd6c4cdf133acad138fd518575ee1e8474e919baf687b",
+      "events_sha256": "9fa8b7217fad607b492c852fc4b56449350063792d910a8b76a34c44b31dcd98"
+    },
+    {
+      "suite": "bird",
+      "instance_id": "bird115",
+      "input": {
+        "instance_id": "bird115",
+        "db": "card_games",
+        "question": "Among the Commander-type expansion sets released in calendar year 2020 (1 January 2020 to 31 December 2020), I need the one with the highest total card count, so we can plan translation work. Please send me the set's id from the sets listing, its name, and the number of official languages it was released in. The total card count should include promotional and related supplemental products, but exclude Alchemy modifications. If two sets tie for the highest total card count, list each of them, ordered by set id ascending.",
+        "evidence": "Commander: a multiplayer expansion type of the game. Alchemy modifications: online-only variant versions of cards."
+      },
+      "clarification": "Should I count the distinct languages recorded in `set_translations`, or should the official release count also include English when it has no translation row?",
+      "diagnostic_hypothesis": "catalog_coverage",
+      "assessment": "Language count asks whether implicit English is included; inspect official language-field semantics rather than adding one unconditionally.",
+      "run_sql_calls": 0,
+      "record_sha256": "fe09e7b4b7f92e14bd4ddb724efee73903beb99d355235d4894fdaff1b902f37",
+      "events_sha256": "9c2d2a9b49908efe74ec2a1008195be32f3452a9b1002598acec827a9fa24ce3"
+    },
+    {
+      "suite": "bird",
+      "instance_id": "bird142",
+      "input": {
+        "instance_id": "bird142",
+        "db": "codebase_community",
+        "question": "I'm auditing accounts on the stats forum. What is the id of the youngest user account whose display name is Michael? If two or more such accounts tie as the youngest, give me the smallest id.",
+        "evidence": ""
+      },
+      "clarification": "Should “youngest user account” mean the most recently created account (`CreationDate`) or the account whose user has the lowest recorded age (`Age`)?",
+      "diagnostic_hypothesis": "entity_semantics",
+      "assessment": "Question says youngest user account, while two candidate fields represent account creation and human age; inspect metadata and task contract.",
+      "run_sql_calls": 0,
+      "record_sha256": "457d794033f60f0ebabf57953f042eed74bbd10599041b203f4603376dd2c0e9",
+      "events_sha256": "2d4bd0d436c786b203a61217841f36b9a5279d2053986496b5b459ef8912c624"
+    },
+    {
+      "suite": "bird",
+      "instance_id": "bird231",
+      "input": {
+        "instance_id": "bird231",
+        "db": "financial",
+        "question": "I need to find out where our pre-1997 long-term mortgage exposure is concentrated geographically. Long-term means a loan duration of more than 24 months, and \"opened before 1997\" should exclude anything opened during 1997. Please tell me: for each region, which districts have at least one such account, and give me the region whose qualifying districts have the largest combined number of inhabitants. Along with the region's name, I want the number of those districts in it, their combined population, and the total number of those accounts in the region. If two regions tie on combined population, pick the one whose name comes first alphabetically.",
+        "evidence": ""
+      },
+      "clarification": "Which field and value, or other rule, identifies a mortgage account in this dataset? The `loan` table records duration but has no loan-type field, and Lang2SQL returned no confirmed mortgage definition.",
+      "diagnostic_hypothesis": "undocumented_policy",
+      "assessment": "Loan duration is explicit, mortgage classification is not; no loan-type field found in prior diagnostics.",
+      "run_sql_calls": 0,
+      "record_sha256": "f808aafd56452c506fba3b3542e0e92581b1607ba8f48d9e08ce3ed151b87757",
+      "events_sha256": "2f4992562b60ad5c2b5997f784ef47efd93d6a1ab94733082b2f5ce5aa019461"
+    },
+    {
+      "suite": "bird",
+      "instance_id": "bird259",
+      "input": {
+        "instance_id": "bird259",
+        "db": "formula_1",
+        "question": "Who won the 2017 Azerbaijan Grand Prix? I'd like the winner's forename and surname, the local clock time (hours:minutes:seconds.milliseconds) at the circuit at which he crossed the finish line, and the url of his information page, so I can compare the moment the race ended with the TV coverage.",
+        "evidence": "A driver's race time is the duration from the start of the race to the moment he crosses the finish line."
+      },
+      "clarification": "What was the actual race-start timestamp in Baku, including milliseconds? The pit-stop and lap records put the start around 17:03:40 local time, but they can’t establish it precisely enough to calculate the finish timestamp you requested.",
+      "diagnostic_hypothesis": "missing_precision_or_source",
+      "assessment": "A duration cannot alone establish wall-clock finish time; distinguish scheduled timestamp from observed start timestamp.",
+      "run_sql_calls": 3,
+      "record_sha256": "f6fb37a97173c8965600bad696e6296b16c52831222c16d677f243bcd74ae03c",
+      "events_sha256": "1967933e0f32be6c60fb2e8d1fd372e0dc098b28244123d14c9bcab18987019a"
+    },
+    {
+      "suite": "bird",
+      "instance_id": "bird378",
+      "input": {
+        "instance_id": "bird378",
+        "db": "superhero",
+        "question": "I'm preparing a report on Marvel's roster and want to gauge how heroic their catalogued heroes are. Among Marvel Comics superheroes whose civilian full name is documented, what percentage are good? Please give me just that single percentage, rounded to two decimal places. Note: the percentage should be taken over all Marvel Comics superheroes with a known full name - those whose moral alignment is unknown still count toward the total, just not as good.",
+        "evidence": "Good refers to alignment = 'Good'. A full name means the hero's real-world civilian identity, i.e. an actual person's name such as 'Charles Chandler' or 'Richard Milhouse Jones'."
+      },
+      "clarification": "Should single-name entries count as documented full names? The catalog stores both `T'Challa` and `Bob` in `full_name` without indicating which entries are complete civilian identities.",
+      "diagnostic_hypothesis": "catalog_semantics",
+      "assessment": "Known civilian identity vs multiword-name heuristic; no general rule can reject single-name identities solely by whitespace.",
+      "run_sql_calls": 4,
+      "record_sha256": "7329fe91fe39801d30f96540e7bae475cc7d93f8e08696372d9f2d33d1631797",
+      "events_sha256": "978d738c55387dcdbdfc6596e7d722d631483253c22176e7d883c8f36d32bc2b"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local212",
+      "input": {
+        "instance_id": "local212",
+        "db": "delivery_center",
+        "question": "Can you find 5 delivery drivers with the highest average number of daily deliveries?",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "For the daily average, which date should count (order creation, delivery, or order finish), which delivery statuses should qualify, and should days with zero deliveries count in each driver’s average?",
+      "diagnostic_hypothesis": "denominator_and_date",
+      "assessment": "Delivery status/date and zero-delivery-day inclusion affect denominator.",
+      "run_sql_calls": 0,
+      "record_sha256": "dfe6a977eb99aab1501e03d0c521dcef35f1674b834e8e76dcd82bf221718aec",
+      "events_sha256": "085859bc1d8a4669c24416d519783a7f218434ab3689457abb799316d13cb3cd"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local286",
+      "input": {
+        "instance_id": "local286",
+        "db": "electronic_sales",
+        "question": "Prepare a comprehensive performance report on our sellers, focusing on total sales, average item price, average review scores, and packing times. Ensure that the report includes only those sellers who have sold a quantity of more than 100 products and highlight the product category names in English with the highest sales volume.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "Which order statuses count as sold, should total sales sum item prices only, and which timestamps mark the start and end of packing time? The schema has purchase, approval, and carrier handoff timestamps, but no packing timestamps.",
+      "diagnostic_hypothesis": "event_mapping",
+      "assessment": "Packing boundaries are not named in available timestamps; sales quantity/date/status also affect report.",
+      "run_sql_calls": 0,
+      "record_sha256": "a74af2e178777bf5e9a418e1cfbc0af5602fd0ef461136d72798bc83a41dd8ce",
+      "events_sha256": "3c29d3c565f789e0aaf6e757a40111a468a1e0605c7d4b6a6d0377ad40f5621e"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local277",
+      "input": {
+        "instance_id": "local277",
+        "db": "oracle_sql",
+        "question": "What is the average forecasted annual sales for products 4160 and 7790 during 2018, using monthly sales data starting from January 2016 for the first 36 months, applying seasonality adjustments from time steps 7 through 30, and employing a weighted regression method to estimate sales?",
+        "external_knowledge": "calculation_method.md",
+        "document_sha256": "dfe12121ce38a8a38c62c3480dc0fadeafcbe134d5bf6f3f6eda216e1b1677de"
+      },
+      "clarification": "What forecasting rule should I use to turn the sales-to-CMA ratios into monthly seasonal factors, and which months and weights should the regression use? The documentation defines the ratios but leaves those choices open.",
+      "diagnostic_hypothesis": "documented_gap",
+      "assessment": "Supplied calculation_method.md specifies CMA and ratio windows but not regression weights/seasonal factor aggregation.",
+      "run_sql_calls": 0,
+      "record_sha256": "a1e74f40317836c772db1e775c608d163b80a98572a6fbedc940f29ff8e31061",
+      "events_sha256": "9c7eefd2fe709b4807520b704a344157dd193ac53565fffe9b2b5952970e8de6"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local002",
+      "input": {
+        "instance_id": "local002",
+        "db": "E_commerce",
+        "question": "Can you calculate the 5-day symmetric moving average of predicted toy sales for December 5 to 8, 2018, using daily sales data from January 1, 2017, to August 29, 2018, with a simple linear regression model? Finally provide the sum of those four 5-day moving averages?",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "How should I define daily toy sales for this forecast? Please specify whether to count toy units, count orders containing toys, or sum toy item revenue, as well as which order date and statuses to use.",
+      "diagnostic_hypothesis": "metric_definition",
+      "assessment": "Toy sales can mean quantity or revenue; status/date choices also affect forecast.",
+      "run_sql_calls": 0,
+      "record_sha256": "f238644ca497d30d0a18db2faddb4e9c1e9512a78778bb0f2c15c3d5797298c0",
+      "events_sha256": "b0279e9ab04b69e1899cba2c504d427427d60dfacac06b06bc5f3bd931efb0b5"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local336",
+      "input": {
+        "instance_id": "local336",
+        "db": "f1",
+        "question": "In the first five laps of the race, how many overtakes occurred in each category—retirements, pit stops, start-related overtakes, and standard on-track passes?",
+        "external_knowledge": "f1_overtake.md",
+        "document_sha256": "b83e7b52e1672e0b6d34bcfad8122034abac926b75d34c880c210ab1bfc8a046"
+      },
+      "clarification": "Which Grand Prix and year (or race ID) should I use, and what time threshold or calculation should define a “typical pit stop duration” for the pit-exit rule?",
+      "diagnostic_hypothesis": "documented_gap",
+      "assessment": "Question does not name race; supplied f1_overtake.md does not quantify typical pit-stop duration.",
+      "run_sql_calls": 1,
+      "record_sha256": "a190a0ba39963b4c64ea830dededfe740d899e76fd84555733e7db44fc9c257a",
+      "events_sha256": "2b5183e019732de0f25e02f1b3d89601dcac7552f0f3b26c32ff8a97dc001989"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local285",
+      "input": {
+        "instance_id": "local285",
+        "db": "bank_sales_trading",
+        "question": "For veg whsle data, can you analyze our financial performance over the years 2020 to 2023? I need insights into the average wholesale price, maximum wholesale price, minimum wholesale price, wholesale price difference, total wholesale price, total selling price, average loss rate, total loss, and profit for each category within each year. Round all calculated values to two decimal places.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "The wholesale table records prices per kilogram, and the sales table records quantities sold. Should the two price totals sum unit prices or use quantities sold to calculate wholesale cost and sales revenue? How should I average the item-level loss rates and use them to calculate total loss and profit?",
+      "diagnostic_hypothesis": "unit_and_aggregation_definition",
+      "assessment": "Summing unit prices vs quantity-weighted cost/revenue and averaging item loss rates differ.",
+      "run_sql_calls": 0,
+      "record_sha256": "d918a8169ecc6f310b296581a8b36217092261a2bffb9233c92ebff4f654df3f",
+      "events_sha256": "632eb8fcc23b4d3629a834fafe7b7156523353484737b838193d7386c6eef17a"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local152",
+      "input": {
+        "instance_id": "local152",
+        "db": "imdb_movies",
+        "question": "Can you provide the top 9 directors by movie count, including their ID, name, number of movies, average inter-movie duration (rounded to the nearest integer), average rating (rounded to 2 decimals), total votes, minimum and maximum ratings, and total movie duration? Sort the output first by movie count in descending order and then by total movie duration in descending order.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "Should “average inter-movie duration” mean the average number of days between consecutive `date_published` values for each director?",
+      "diagnostic_hypothesis": "convention_review",
+      "assessment": "Average inter-movie duration has a conventional consecutive-release-date interpretation; inspect need for clarification without assuming a hidden unit.",
+      "run_sql_calls": 0,
+      "record_sha256": "1037d8db7b4b79bcb2ee1d2ee9a666ffded1d048af4e53de95b279a1fef30867",
+      "events_sha256": "c8c397fc8393905570014e8029448ea205fb4dd67db75af91f5d7190b6b0ffe2"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local195",
+      "input": {
+        "instance_id": "local195",
+        "db": "sqlite-sakila",
+        "question": "Please find out how widespread the appeal of our top five actors is. What percentage of our customers have rented films featuring these actors?",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "What should determine the top five actors: total rentals of their films, the number of distinct customers who rented their films, or another metric?",
+      "diagnostic_hypothesis": "ranking_definition",
+      "assessment": "Top actor ranking metric absent from question.",
+      "run_sql_calls": 0,
+      "record_sha256": "36bbb8c095e872092a3504bdd280e6da1a34d48b8b3f20ea08e6a309a8f69520",
+      "events_sha256": "67a29ab4245f2d6caf0e269fb582ec6f86cea085ac684b4a8791cfec2a87ef2d"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local141",
+      "input": {
+        "instance_id": "local141",
+        "db": "AdventureWorks",
+        "question": "How did each salesperson's annual total sales compare to their annual sales quota? Provide the difference between their total sales and the quota for each year, organized by salesperson and year.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "Lang2SQL found multiple quota records in 41 salesperson-years. Should I sum the quota records in each calendar year or use the last recorded quota, and should annual sales use order subtotals or totals including tax and freight?",
+      "diagnostic_hypothesis": "aggregation_definition",
+      "assessment": "Multiple yearly quota rows and subtotal vs total sales need interpretation.",
+      "run_sql_calls": 1,
+      "record_sha256": "7069ca441b09f68e55d4d15b13095d944a6d97c230a898c8f10c20ace948d250",
+      "events_sha256": "05972fb26a712bb5344be52e8a50e325f1112d24ab66ae624da6be5dd4536035"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local023",
+      "input": {
+        "instance_id": "local023",
+        "db": "IPL",
+        "question": "Please help me find the names of top 5 players with the highest average runs per match in season 5, along with their batting averages.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "For season 5, should average runs per match count every match a player appeared in or only matches they batted in, and should batting average be reported separately as total runs divided by dismissals?",
+      "diagnostic_hypothesis": "denominator_definition",
+      "assessment": "All played matches vs batted matches, plus dismissals for separate batting average.",
+      "run_sql_calls": 0,
+      "record_sha256": "48fcb25a7d2d613e96e62a1fa5199603e28cd3866bfafacb2ffcd7c11d18a489",
+      "events_sha256": "00c47573c2d06c08f5a170b57303b1e46bff3e6cee4eda6e91c050e2f1b3e47d"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local309",
+      "input": {
+        "instance_id": "local309",
+        "db": "f1",
+        "question": "For each year, which driver and which constructor scored the most points? I want the full name of each driver.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "Should I rank drivers and constructors by points in the final standings or by total points scored across races and sprints? The choice changes the answer. In 1988, Ayrton Senna led the final standings with 90 points, while Alain Prost scored 105 across races.",
+      "diagnostic_hypothesis": "scoring_semantics",
+      "assessment": "Final standings vs total race+sprint points differ under historical drop-score rules.",
+      "run_sql_calls": 1,
+      "record_sha256": "79200bc8bb291eb2aad660f93acf955fb1c99e7cca29d4d30b4c476073085a74",
+      "events_sha256": "c31fc263175a22e9bc6d6bb52fcfbcc893f77e9b47fa531787672a673c6f0149"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local056",
+      "input": {
+        "instance_id": "local056",
+        "db": "sqlite-sakila",
+        "question": "Which customer has the highest average monthly change in payment amounts? Provide the customer's full name.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "How should I calculate “average monthly change in payment amounts” for each customer? Please specify whether to compare monthly totals or average payments, whether to use signed, absolute, or percentage changes, and how to handle months with no payments.",
+      "diagnostic_hypothesis": "change_definition",
+      "assessment": "Absolute/signed/percentage and missing-month policy differ.",
+      "run_sql_calls": 0,
+      "record_sha256": "6492e2fca5d9827865218d13b77a55b96db84027677fb1c3d8d3f35c010e38db",
+      "events_sha256": "295c5520fe18ac2734ddc5f545eb3e32ebd578e34e7b1f9d66dce64948304f2d"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local273",
+      "input": {
+        "instance_id": "local273",
+        "db": "oracle_sql",
+        "question": "Calculate the average pick percentage for each product name, using a first-in-first-out approach that selects from inventory locations based on the earliest purchase date and smallest available quantity, ensuring that the picked quantity reflects only the overlapping range between each order’s required quantity and the inventory’s available quantity, and then grouping and ordering the results by product name?",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "Should “average pick percentage” mean the average share of each order’s required quantity that was picked, or the average share of each inventory location’s available quantity that was picked?",
+      "diagnostic_hypothesis": "denominator_definition",
+      "assessment": "Pick percentage denominator could be order requirement or location quantity.",
+      "run_sql_calls": 0,
+      "record_sha256": "d7dfc5988ad4f7ac6786861c31702d77d55b10baa6bb2c7a49edc3029070e6f7",
+      "events_sha256": "2142145d48b23135f1afd98a36902d1192470141346b9be4824aaffe6957e2b9"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local049",
+      "input": {
+        "instance_id": "local049",
+        "db": "modern_data",
+        "question": "Can you help me calculate the average number of new unicorn companies per year in the top industry from 2019 to 2021?",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "clarification": "What qualifies a company as a new unicorn, which date marks that event, and what metric and time period should determine the top industry?",
+      "diagnostic_hypothesis": "metric_and_date_definition",
+      "assessment": "Unicorn event/date and top-industry ranking metric require schema interpretation.",
+      "run_sql_calls": 0,
+      "record_sha256": "764a21d494eaa815d9abbcaba0ed2a49f85656496848ded64a386b8abab84c22",
+      "events_sha256": "5ad6602a98abe5b66e43e141ec6e66752d59841bd45fa9ac47a494e38038d787"
+    },
+    {
+      "suite": "spider",
+      "instance_id": "local344",
+      "input": {
+        "instance_id": "local344",
+        "db": "f1",
+        "question": "Considering all races where pit stop data is available, and focusing on instances when a driver was not behind another car on the previous lap but is behind on the current lap (accounting for retirements, pit-stop entries, pit-stop exits, and race starts), how many times has each type of overtake occurred in Formula 1?",
+        "external_knowledge": "f1_overtake.md",
+        "document_sha256": "b83e7b52e1672e0b6d34bcfad8122034abac926b75d34c880c210ab1bfc8a046"
+      },
+      "clarification": "What cutoff should I use for “a typical pit stop duration” in the pit-exit rule? The documentation and Lang2SQL provide no confirmed cutoff or calculation, and that choice affects the Pit and Track counts.",
+      "diagnostic_hypothesis": "documented_gap",
+      "assessment": "Supplied f1_overtake.md leaves typical pit-stop duration unquantified.",
+      "run_sql_calls": 0,
+      "record_sha256": "7b2be197f5f9155beceb6c5d4e017403e366c97840370b56e6ee8e3b4a484dd4",
+      "events_sha256": "3d466ec00ce11a1bcfd1f56087de8094b4ef77b1cb4de3fcfbfbe9f805248974"
+    }
+  ]
+}

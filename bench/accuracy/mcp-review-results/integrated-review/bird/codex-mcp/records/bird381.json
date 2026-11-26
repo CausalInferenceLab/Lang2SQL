@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird381",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "review_source_record_sha256": "f2b5e3769e0843230edc8975e34421ae83914ad51c03a5c78c4ac6deabd69db9",
+  "prompt_sha256": "96172867b6d12a9ef0f34c669e1403480739ca4f34a300ca8eed36504bb40b86",
+  "events_sha256": "24990ececfa636d29a319a42d2e1889d6f878b7ed4cf663414e0d0feff86800f",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 168666,
+      "cached_input_tokens": 155776,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1255,
+      "reasoning_output_tokens": 553
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "colour (table)\n- id: INTEGER NOT NULL\n- colour: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"qualrvVezVxGzTFNFuwH69BTDfLK6vF1KkngKjS8LEA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "qualrvVezVxGzTFNFuwH69BTDfLK6vF1KkngKjS8LEA",
+        "sql": "SELECT\n    CASE\n        WHEN s.weight_kg IS NULL THEN 'NULL'\n        WHEN s.weight_kg = 0 THEN 'zero'\n        WHEN s.weight_kg < 0 THEN 'negative'\n        WHEN typeof(s.weight_kg) <> 'integer' THEN typeof(s.weight_kg)\n        ELSE 'positive integer'\n    END AS weight_kind,\n    COUNT(*) AS hero_count,\n    COUNT(CASE WHEN c.colour = 'No Colour' THEN 1 END) AS no_colour_count,\n    COUNT(CASE WHEN c.colour = 'Blue' THEN 1 END) AS blue_count,\n    COUNT(CASE WHEN c.colour LIKE '%blue%' AND c.colour <> 'Blue' THEN 1 END) AS other_blue_labels,\n    COUNT(CASE WHEN c.id IS NULL THEN 1 END) AS unmatched_eye_colour,\n    MIN(CASE WHEN s.weight_kg > 0 THEN s.weight_kg END) AS lowest_positive_weight\nFROM main.superhero AS s\nLEFT JOIN main.colour AS c ON c.id = s.eye_colour_id\nGROUP BY weight_kind\nORDER BY weight_kind\nLIMIT 20"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): weight_kind=str; hero_count=int; no_colour_count=int; blue_count=int; other_blue_labels=int; unmatched_eye_colour=int; lowest_positive_weight=NoneType,int\nweight_kind | hero_count | no_colour_count | blue_count | other_blue_labels | unmatched_eye_colour | lowest_positive_weight\n--- | --- | --- | --- | --- | --- | ---\nNULL | 64 | 49 | 1 | 0 | 0 | None\npositive integer | 514 | 21 | 208 | 3 | 0 | 14\nzero | 172 | 99 | 25 | 0 | 0 | None\nSQL: SELECT\n    CASE\n        WHEN s.weight_kg IS NULL THEN 'NULL'\n        WHEN s.weight_kg = 0 THEN 'zero'\n        WHEN s.weight_kg < 0 THEN 'negative'\n        WHEN typeof(s.weight_kg) <> 'integer' THEN typeof(s.weight_kg)\n        ELSE 'positive integer'\n    END AS weight_kind,\n    COUNT(*) AS hero_count,\n    COUNT(CASE WHEN c.colour = 'No Colour' THEN 1 END) AS no_colour_count,\n    COUNT(CASE WHEN c.colour = 'Blue' THEN 1 END) AS blue_count,\n    COUNT(CASE WHEN c.colour LIKE '%blue%' AND c.colour <> 'Blue' THEN 1 END) AS other_blue_labels,\n    COUNT(CASE WHEN c.id IS NULL THEN 1 END) AS unmatched_eye_colour,\n    MIN(CASE WHEN s.weight_kg > 0 THEN s.weight_kg END) AS lowest_positive_weight\nFROM main.superhero AS s\nLEFT JOIN main.colour AS c ON c.id = s.eye_colour_id\nGROUP BY weight_kind\nORDER BY weight_kind\nLIMIT 20"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"dqXNKMoN1BTPIxAhlsTzNVqhZeGJWKdhHHMtTgIZXZw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "dqXNKMoN1BTPIxAhlsTzNVqhZeGJWKdhHHMtTgIZXZw",
+        "expected_columns": [
+          "difference"
+        ],
+        "sql": "SELECT\n    COUNT(CASE WHEN c.colour = 'No Colour' THEN 1 END)\n    - COUNT(CASE WHEN c.colour = 'Blue' THEN 1 END) AS difference\nFROM main.superhero AS s\nJOIN main.colour AS c ON c.id = s.eye_colour_id\nWHERE s.weight_kg IS NULL\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): difference=int\ndifference\n---\n48\nSQL: SELECT\n    COUNT(CASE WHEN c.colour = 'No Colour' THEN 1 END)\n    - COUNT(CASE WHEN c.colour = 'Blue' THEN 1 END) AS difference\nFROM main.superhero AS s\nJOIN main.colour AS c ON c.id = s.eye_colour_id\nWHERE s.weight_kg IS NULL\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    COUNT(CASE WHEN c.colour = 'No Colour' THEN 1 END)\n    - COUNT(CASE WHEN c.colour = 'Blue' THEN 1 END) AS difference\nFROM main.superhero AS s\nJOIN main.colour AS c ON c.id = s.eye_colour_id\nWHERE s.weight_kg IS NULL\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    COUNT(CASE WHEN c.colour = 'No Colour' THEN 1 END)\n    - COUNT(CASE WHEN c.colour = 'Blue' THEN 1 END) AS difference\nFROM main.superhero AS s\nJOIN main.colour AS c ON c.id = s.eye_colour_id\nWHERE s.weight_kg IS NULL\nLIMIT 1",
+  "seconds": 36.85416583297774
+}

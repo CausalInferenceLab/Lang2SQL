@@ -1,0 +1,18 @@
+WITH race_winner_times AS (
+    -- Shared winners can repeat the same elapsed time for a race.
+    SELECT DISTINCT r.year, r.raceId, res.milliseconds
+    FROM main.races AS r
+    JOIN main.results AS res ON res.raceId = r.raceId
+    WHERE r.year < 1975
+      AND res.position = 1
+      AND res.milliseconds IS NOT NULL
+)
+SELECT
+    year,
+    -- Round the nonnegative mean to whole hundredths using integer arithmetic.
+    ((SUM(milliseconds) + 5 * COUNT(*)) / (10 * COUNT(*))) / 100.0
+        AS mean_winner_elapsed_seconds
+FROM race_winner_times
+GROUP BY year
+ORDER BY year
+LIMIT -1
