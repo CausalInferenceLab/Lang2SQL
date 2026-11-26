@@ -84,6 +84,9 @@ uv run python -m bench.accuracy.evaluate score --db-dir "$BIRD_DB" \
   --questions "$QUESTIONS" --evaluator "$EVALUATOR" --output "$RUN"
 ```
 
+Each benchmark uses concurrency 4. Spider and BIRD final runs overlap in wall
+time (up to 8 requests total); latency is not reported as a model-speed benchmark.
+
 Change `--split` to `holdout` only after selecting and freezing the final
 configuration. Changing the model, prompt, budget or source creates a new
 experiment; historical scores under different configurations are not paired
