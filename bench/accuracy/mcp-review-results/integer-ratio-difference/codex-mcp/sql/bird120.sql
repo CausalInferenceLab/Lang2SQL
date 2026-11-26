@@ -1,0 +1,8 @@
+SELECT
+    100.0 * (
+        COUNT(*) FILTER (WHERE strftime('%Y', b.Date) = '2010')
+        - COUNT(*) FILTER (WHERE strftime('%Y', b.Date) = '2011')
+    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference
+FROM main.badges AS b
+WHERE b.Name = 'Student'
+LIMIT 1
