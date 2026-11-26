@@ -79,7 +79,8 @@ async def test_responses_path_uses_shared_measurement_budget(monkeypatch):
         requests.append(kwargs)
 
         class Response:
-            def model_dump(self):
+            def model_dump(self, **kwargs):
+                assert kwargs == {"by_alias": True, "exclude_none": True}
                 return {
                     "model": "test",
                     "status": "completed",
