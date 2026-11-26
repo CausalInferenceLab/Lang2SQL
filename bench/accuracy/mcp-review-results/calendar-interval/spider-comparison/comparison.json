@@ -1,0 +1,399 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra",
+      "manifest_sha256": "42d0ea666016e56c84b2a280f7578a3ae88fc1a20d3b7333997de3d916114d49",
+      "scores_sha256": "0e4850bf9dd660ebf4d2ef9f31843f98c700a6ccd28aa98c19a35d344a16fa7a",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "56ade0726fc7522f6d8609d5f256e6267f4ecb40",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-calendar-interval-20261127/spider-gpt-6.2-astra",
+      "manifest_sha256": "ee5d71f87079c1aa5196c835bca282c48e9ea5b0c6281074aaedf1c62fcbae8e",
+      "scores_sha256": "79b2a0141635b30b5aafd79c2b5ce527a054fc10255716106dc965a2cb3bc182",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "a86fea5420f633f09f617feb1a87a07ce2f19b25",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 1": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "local007",
+        "db": "Baseball",
+        "question": "Could you help me calculate the average single career span value in years for all baseball players? Please precise the result as a float number. First, calculate the difference in years, months, and days between the debut and final game dates. For each player, the career span is computed as the sum of the absolute number of years, plus the absolute number of months divided by 12, plus the absolute number of days divided by 365. Round each part to two decimal places before summing. Finally, average the career spans and round the result to a float number.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,11 +1,39 @@\n-WITH player_spans AS (\n-    SELECT\n-        ROUND(ABS(strftime('%Y', final_game) - strftime('%Y', debut)), 2)\n-        + ROUND(ABS(strftime('%m', final_game) - strftime('%m', debut)) / 12.0, 2)\n-        + ROUND(ABS(strftime('%d', final_game) - strftime('%d', debut)) / 365.0, 2)\n-        AS career_span_years\n+WITH player_dates AS (\n+    SELECT MIN(debut, final_game) AS start_date,\n+           MAX(debut, final_game) AS end_date\n     FROM main.player\n+    WHERE date(debut, '+0 days') = debut\n+      AND date(final_game, '+0 days') = final_game\n+),\n+complete_months AS (\n+    SELECT start_date, end_date,\n+           12 * (strftime('%Y', end_date) - strftime('%Y', start_date))\n+           + (strftime('%m', end_date) - strftime('%m', start_date))\n+           - CASE\n+                 WHEN strftime('%d', end_date) < strftime('%d', start_date)\n+                  AND end_date < date(end_date, 'start of month', '+1 month', '-1 day')\n+                 THEN 1 ELSE 0\n+             END AS whole_months\n+    FROM player_dates\n+),\n+anniversary_months AS (\n+    SELECT start_date, end_date, whole_months,\n+           date(start_date, 'start of month', printf('+%d months', whole_months)) AS month_start\n+    FROM complete_months\n+),\n+calendar_parts AS (\n+    SELECT whole_months / 12 AS years,\n+           whole_months % 12 AS months,\n+           julianday(end_date) - julianday(MIN(\n+               date(month_start, printf('+%d days', strftime('%d', start_date) - 1)),\n+               date(month_start, '+1 month', '-1 day')\n+           )) AS days\n+    FROM anniversary_months\n )\n-SELECT ROUND(AVG(career_span_years), 2) AS average_career_span_years\n-FROM player_spans\n+SELECT ROUND(AVG(\n+           ROUND(ABS(years), 2)\n+           + ROUND(ABS(months) / 12.0, 2)\n+           + ROUND(ABS(days) / 365.0, 2)\n+       ), 2) AS average_career_span_years\n+FROM calendar_parts\n LIMIT 1",
+      "before": {
+        "score": 0,
+        "record_sha256": "85842d7d83a85bdae48e5bdbcffd10325988d5d084dbd0221b0212c4a3a6fbe4",
+        "record": {
+          "instance_id": "local007",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "ce4bc5bcb210e290a4a99b66794fa2cba4b373457be4792ed85e9210a91fd158",
+          "events_sha256": "c241303a8dabf15d11cbc7efb7fdf71dbb93cf9f7e9b7c57ea17819af3b590f8",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 193502,
+              "cached_input_tokens": 169984,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 667,
+              "reasoning_output_tokens": 13
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "player"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "player (table)\n- player_id: TEXT\n- birth_year: NUMERIC\n- birth_month: NUMERIC\n- birth_day: NUMERIC\n- birth_country: TEXT\n- birth_state: TEXT\n- birth_city: TEXT\n- death_year: NUMERIC\n- death_month: NUMERIC\n- death_day: NUMERIC\n- death_country: TEXT\n- death_state: TEXT\n- death_city: TEXT\n- name_first: TEXT\n- name_last: TEXT\n- name_given: TEXT\n- weight: NUMERIC\n- height: NUMERIC\n- bats: TEXT\n- throws: TEXT\n- debut: TEXT\n- final_game: TEXT\n- retro_id: TEXT\n- bbref_id: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"z_BZpG-nk0P0ISh8xyv3g7epIult7zaf_Vh6DVSVynU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "z_BZpG-nk0P0ISh8xyv3g7epIult7zaf_Vh6DVSVynU",
+                "sql": "SELECT COUNT(*) AS player_rows, COUNT(DISTINCT player_id) AS player_ids,\n       SUM(debut = '' OR final_game = '') AS blank_pairs,\n       SUM(debut IS NULL OR final_game IS NULL) AS null_pairs,\n       SUM(date(debut) IS NOT NULL AND date(final_game) IS NOT NULL) AS parseable_pairs,\n       MIN(NULLIF(debut, '')) AS first_debut, MAX(final_game) AS last_game\nFROM main.player"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): player_rows=int; player_ids=int; blank_pairs=int; null_pairs=int; parseable_pairs=int; first_debut=str; last_game=str\nplayer_rows | player_ids | blank_pairs | null_pairs | parseable_pairs | first_debut | last_game\n--- | --- | --- | --- | --- | --- | ---\n18846 | 18846 | 193 | 0 | 18653 | 1871-05-04 | 2015-10-04\nSQL: SELECT COUNT(*) AS player_rows, COUNT(DISTINCT player_id) AS player_ids,\n       SUM(debut = '' OR final_game = '') AS blank_pairs,\n       SUM(debut IS NULL OR final_game IS NULL) AS null_pairs,\n       SUM(date(debut) IS NOT NULL AND date(final_game) IS NOT NULL) AS parseable_pairs,\n       MIN(NULLIF(debut, '')) AS first_debut, MAX(final_game) AS last_game\nFROM main.player\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"baaqo7lCyTPWo3AqeK7u2pALyTfsPrdrncum7WSs4uI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "baaqo7lCyTPWo3AqeK7u2pALyTfsPrdrncum7WSs4uI",
+                "expected_columns": [
+                  "average_career_span_years"
+                ],
+                "sql": "WITH player_spans AS (\n    SELECT\n        ROUND(ABS(strftime('%Y', final_game) - strftime('%Y', debut)), 2)\n        + ROUND(ABS(strftime('%m', final_game) - strftime('%m', debut)) / 12.0, 2)\n        + ROUND(ABS(strftime('%d', final_game) - strftime('%d', debut)) / 365.0, 2)\n        AS career_span_years\n    FROM main.player\n)\nSELECT ROUND(AVG(career_span_years), 2) AS average_career_span_years\nFROM player_spans\nLIMIT 1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_career_span_years=float\naverage_career_span_years\n---\n4.92\nSQL: WITH player_spans AS (\n    SELECT\n        ROUND(ABS(strftime('%Y', final_game) - strftime('%Y', debut)), 2)\n        + ROUND(ABS(strftime('%m', final_game) - strftime('%m', debut)) / 12.0, 2)\n        + ROUND(ABS(strftime('%d', final_game) - strftime('%d', debut)) / 365.0, 2)\n        AS career_span_years\n    FROM main.player\n)\nSELECT ROUND(AVG(career_span_years), 2) AS average_career_span_years\nFROM player_spans\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH player_spans AS (\n    SELECT\n        ROUND(ABS(strftime('%Y', final_game) - strftime('%Y', debut)), 2)\n        + ROUND(ABS(strftime('%m', final_game) - strftime('%m', debut)) / 12.0, 2)\n        + ROUND(ABS(strftime('%d', final_game) - strftime('%d', debut)) / 365.0, 2)\n        AS career_span_years\n    FROM main.player\n)\nSELECT ROUND(AVG(career_span_years), 2) AS average_career_span_years\nFROM player_spans\nLIMIT 1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH player_spans AS (\n    SELECT\n        ROUND(ABS(strftime('%Y', final_game) - strftime('%Y', debut)), 2)\n        + ROUND(ABS(strftime('%m', final_game) - strftime('%m', debut)) / 12.0, 2)\n        + ROUND(ABS(strftime('%d', final_game) - strftime('%d', debut)) / 365.0, 2)\n        AS career_span_years\n    FROM main.player\n)\nSELECT ROUND(AVG(career_span_years), 2) AS average_career_span_years\nFROM player_spans\nLIMIT 1",
+          "seconds": 29.851016749977134
+        },
+        "result": {
+          "columns": [
+            "average_career_span_years"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "4.92"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "76654997185dff6420b191309632da82d0632818eae5df4a2aabd262273627c0"
+        }
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "6beda2548de4d4b801d67c8f0d10d55d8d4396b2f32c87b1b667389851d361d2",
+        "record": {
+          "instance_id": "local007",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "ce4bc5bcb210e290a4a99b66794fa2cba4b373457be4792ed85e9210a91fd158",
+          "events_sha256": "09ad5cec57eb1d429ae690ead0f74417c57d043e1efe12a14212d329b6dde998",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 239385,
+              "cached_input_tokens": 212992,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1327,
+              "reasoning_output_tokens": 102
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "player"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "player (table)\n- player_id: TEXT\n- birth_year: NUMERIC\n- birth_month: NUMERIC\n- birth_day: NUMERIC\n- birth_country: TEXT\n- birth_state: TEXT\n- birth_city: TEXT\n- death_year: NUMERIC\n- death_month: NUMERIC\n- death_day: NUMERIC\n- death_country: TEXT\n- death_state: TEXT\n- death_city: TEXT\n- name_first: TEXT\n- name_last: TEXT\n- name_given: TEXT\n- weight: NUMERIC\n- height: NUMERIC\n- bats: TEXT\n- throws: TEXT\n- debut: TEXT\n- final_game: TEXT\n- retro_id: TEXT\n- bbref_id: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"h-Lmn55M0F6ZNWPdlJPcFvtTEfoQBRPSvdZxWolCsgI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "calendar_interval_sql",
+              "arguments": {
+                "dialect": "sqlite"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "SQLite only. Start with WITH calendar_input AS (your SELECT exposing row_id, start_date, end_date), then append these CTEs, then SELECT from calendar_interval. Reserve the calendar_* CTE names.\nInputs: strict YYYY-MM-DD dates, years 0001..9999; NULL, invalid dates and timestamps yield NULL components and direction, preserving the row.\nOutput: nonnegative years, remaining months (0..11), remaining days; direction=-1 for reversed inputs, otherwise +1. Dates are ordered first: this is an absolute calendar span, not a signed SQL AGE implementation. Take the maximum whole months with the original day clamped to the target month end; divide into years/months; days are the remaining elapsed days. Rounding, fractional-year conversion and aggregation remain explicit caller choices. No DB read, UDF or SQL execution occurs in this tool.\n\ncalendar_validated AS (\n  SELECT row_id,\n    CASE WHEN typeof(start_date) = 'text' AND length(start_date) = 10\n      AND start_date BETWEEN '0001-01-01' AND '9999-12-31'\n      AND date(start_date, '+0 days') = start_date THEN start_date END AS s,\n    CASE WHEN typeof(end_date) = 'text' AND length(end_date) = 10\n      AND end_date BETWEEN '0001-01-01' AND '9999-12-31'\n      AND date(end_date, '+0 days') = end_date THEN end_date END AS e\n  FROM calendar_input\n), calendar_ordered AS (\n  SELECT row_id, MIN(s, e) AS lo, MAX(s, e) AS hi,\n    CASE WHEN s IS NULL OR e IS NULL THEN NULL\n      WHEN e < s THEN -1 ELSE 1 END AS direction\n  FROM calendar_validated\n), calendar_months AS (\n  SELECT *, (CAST(strftime('%Y', hi) AS INTEGER) - CAST(strftime('%Y', lo) AS INTEGER)) * 12\n    + CAST(strftime('%m', hi) AS INTEGER) - CAST(strftime('%m', lo) AS INTEGER) AS m\n  FROM calendar_ordered\n), calendar_complete_months AS (\n  SELECT *, m - CASE WHEN date(date(lo, 'start of month', printf('+%d months', m)), printf('+%d days', MIN(CAST(strftime('%d', lo) AS INTEGER), CASE WHEN strftime('%m', date(lo, 'start of month', printf('+%d months', m))) = '12' THEN 31 ELSE CAST(strftime('%d', date(date(lo, 'start of month', printf('+%d months', m)), '+1 month', '-1 day')) AS INTEGER) END) - 1)) > hi THEN 1 ELSE 0 END AS whole_months\n  FROM calendar_months\n), calendar_interval AS (\n  SELECT row_id, direction,\n    whole_months / 12 AS years, whole_months % 12 AS months,\n    CAST(julianday(hi) - julianday(date(date(lo, 'start of month', printf('+%d months', whole_months)), printf('+%d days', MIN(CAST(strftime('%d', lo) AS INTEGER), CASE WHEN strftime('%m', date(lo, 'start of month', printf('+%d months', whole_months))) = '12' THEN 31 ELSE CAST(strftime('%d', date(date(lo, 'start of month', printf('+%d months', whole_months)), '+1 month', '-1 day')) AS INTEGER) END) - 1))) AS INTEGER) AS days\n  FROM calendar_complete_months\n)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "h-Lmn55M0F6ZNWPdlJPcFvtTEfoQBRPSvdZxWolCsgI",
+                "sql": "SELECT COUNT(*) AS player_rows, COUNT(DISTINCT player_id) AS player_ids,\n       COUNT(CASE WHEN date(debut, '+0 days') = debut AND date(final_game, '+0 days') = final_game THEN 1 END) AS valid_pairs,\n       NULLIF(MIN(NULLIF(debut, '')), '') AS earliest_debut, MAX(final_game) AS latest_final_game\nFROM main.player"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): player_rows=int; player_ids=int; valid_pairs=int; earliest_debut=str; latest_final_game=str\nplayer_rows | player_ids | valid_pairs | earliest_debut | latest_final_game\n--- | --- | --- | --- | ---\n18846 | 18846 | 18653 | 1871-05-04 | 2015-10-04\nSQL: SELECT COUNT(*) AS player_rows, COUNT(DISTINCT player_id) AS player_ids,\n       COUNT(CASE WHEN date(debut, '+0 days') = debut AND date(final_game, '+0 days') = final_game THEN 1 END) AS valid_pairs,\n       NULLIF(MIN(NULLIF(debut, '')), '') AS earliest_debut, MAX(final_game) AS latest_final_game\nFROM main.player\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"0WtJ1dbnDjT4gvR22lGSg6VYsmtouznsTcy4W-OY_a8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "0WtJ1dbnDjT4gvR22lGSg6VYsmtouznsTcy4W-OY_a8",
+                "sql": "WITH player_dates AS (\n    SELECT MIN(debut, final_game) AS start_date,\n           MAX(debut, final_game) AS end_date\n    FROM main.player\n    WHERE date(debut, '+0 days') = debut\n      AND date(final_game, '+0 days') = final_game\n),\ncomplete_months AS (\n    SELECT start_date, end_date,\n           12 * (strftime('%Y', end_date) - strftime('%Y', start_date))\n           + (strftime('%m', end_date) - strftime('%m', start_date))\n           - CASE\n                 WHEN strftime('%d', end_date) < strftime('%d', start_date)\n                  AND end_date < date(end_date, 'start of month', '+1 month', '-1 day')\n                 THEN 1 ELSE 0\n             END AS whole_months\n    FROM player_dates\n),\nanniversary_months AS (\n    SELECT start_date, end_date, whole_months,\n           date(start_date, 'start of month', printf('+%d months', whole_months)) AS month_start\n    FROM complete_months\n),\ncalendar_parts AS (\n    SELECT whole_months / 12 AS years,\n           whole_months % 12 AS months,\n           julianday(end_date) - julianday(MIN(\n               date(month_start, printf('+%d days', strftime('%d', start_date) - 1)),\n               date(month_start, '+1 month', '-1 day')\n           )) AS days\n    FROM anniversary_months\n)\nSELECT ROUND(AVG(\n           ROUND(ABS(years), 2)\n           + ROUND(ABS(months) / 12.0, 2)\n           + ROUND(ABS(days) / 365.0, 2)\n       ), 2) AS average_career_span_years\nFROM calendar_parts\nLIMIT 1",
+                "expected_columns": [
+                  "average_career_span_years"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_career_span_years=float\naverage_career_span_years\n---\n4.82\nSQL: WITH player_dates AS (\n    SELECT MIN(debut, final_game) AS start_date,\n           MAX(debut, final_game) AS end_date\n    FROM main.player\n    WHERE date(debut, '+0 days') = debut\n      AND date(final_game, '+0 days') = final_game\n),\ncomplete_months AS (\n    SELECT start_date, end_date,\n           12 * (strftime('%Y', end_date) - strftime('%Y', start_date))\n           + (strftime('%m', end_date) - strftime('%m', start_date))\n           - CASE\n                 WHEN strftime('%d', end_date) < strftime('%d', start_date)\n                  AND end_date < date(end_date, 'start of month', '+1 month', '-1 day')\n                 THEN 1 ELSE 0\n             END AS whole_months\n    FROM player_dates\n),\nanniversary_months AS (\n    SELECT start_date, end_date, whole_months,\n           date(start_date, 'start of month', printf('+%d months', whole_months)) AS month_start\n    FROM complete_months\n),\ncalendar_parts AS (\n    SELECT whole_months / 12 AS years,\n           whole_months % 12 AS months,\n           julianday(end_date) - julianday(MIN(\n               date(month_start, printf('+%d days', strftime('%d', start_date) - 1)),\n               date(month_start, '+1 month', '-1 day')\n           )) AS days\n    FROM anniversary_months\n)\nSELECT ROUND(AVG(\n           ROUND(ABS(years), 2)\n           + ROUND(ABS(months) / 12.0, 2)\n           + ROUND(ABS(days) / 365.0, 2)\n       ), 2) AS average_career_span_years\nFROM calendar_parts\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH player_dates AS (\n    SELECT MIN(debut, final_game) AS start_date,\n           MAX(debut, final_game) AS end_date\n    FROM main.player\n    WHERE date(debut, '+0 days') = debut\n      AND date(final_game, '+0 days') = final_game\n),\ncomplete_months AS (\n    SELECT start_date, end_date,\n           12 * (strftime('%Y', end_date) - strftime('%Y', start_date))\n           + (strftime('%m', end_date) - strftime('%m', start_date))\n           - CASE\n                 WHEN strftime('%d', end_date) < strftime('%d', start_date)\n                  AND end_date < date(end_date, 'start of month', '+1 month', '-1 day')\n                 THEN 1 ELSE 0\n             END AS whole_months\n    FROM player_dates\n),\nanniversary_months AS (\n    SELECT start_date, end_date, whole_months,\n           date(start_date, 'start of month', printf('+%d months', whole_months)) AS month_start\n    FROM complete_months\n),\ncalendar_parts AS (\n    SELECT whole_months / 12 AS years,\n           whole_months % 12 AS months,\n           julianday(end_date) - julianday(MIN(\n               date(month_start, printf('+%d days', strftime('%d', start_date) - 1)),\n               date(month_start, '+1 month', '-1 day')\n           )) AS days\n    FROM anniversary_months\n)\nSELECT ROUND(AVG(\n           ROUND(ABS(years), 2)\n           + ROUND(ABS(months) / 12.0, 2)\n           + ROUND(ABS(days) / 365.0, 2)\n       ), 2) AS average_career_span_years\nFROM calendar_parts\nLIMIT 1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH player_dates AS (\n    SELECT MIN(debut, final_game) AS start_date,\n           MAX(debut, final_game) AS end_date\n    FROM main.player\n    WHERE date(debut, '+0 days') = debut\n      AND date(final_game, '+0 days') = final_game\n),\ncomplete_months AS (\n    SELECT start_date, end_date,\n           12 * (strftime('%Y', end_date) - strftime('%Y', start_date))\n           + (strftime('%m', end_date) - strftime('%m', start_date))\n           - CASE\n                 WHEN strftime('%d', end_date) < strftime('%d', start_date)\n                  AND end_date < date(end_date, 'start of month', '+1 month', '-1 day')\n                 THEN 1 ELSE 0\n             END AS whole_months\n    FROM player_dates\n),\nanniversary_months AS (\n    SELECT start_date, end_date, whole_months,\n           date(start_date, 'start of month', printf('+%d months', whole_months)) AS month_start\n    FROM complete_months\n),\ncalendar_parts AS (\n    SELECT whole_months / 12 AS years,\n           whole_months % 12 AS months,\n           julianday(end_date) - julianday(MIN(\n               date(month_start, printf('+%d days', strftime('%d', start_date) - 1)),\n               date(month_start, '+1 month', '-1 day')\n           )) AS days\n    FROM anniversary_months\n)\nSELECT ROUND(AVG(\n           ROUND(ABS(years), 2)\n           + ROUND(ABS(months) / 12.0, 2)\n           + ROUND(ABS(days) / 365.0, 2)\n       ), 2) AS average_career_span_years\nFROM calendar_parts\nLIMIT 1",
+          "seconds": 47.76837762503419
+        },
+        "result": {
+          "columns": [
+            "average_career_span_years"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "4.82"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "108491a951fd6266438767df54549a540e1334814b60222f83591557d721e989"
+        }
+      }
+    }
+  ]
+}
