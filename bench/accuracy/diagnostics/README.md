@@ -128,3 +128,15 @@ pilots, before full-v3 inference. Product revision 7a51b9f includes the false-
 clarification fix; full-v2 used 6f3baff and is retained as an intermediate result.
 Production ambiguity handling is unchanged: genuinely missing business
 policies still require clarification, and those cases remain benchmark errors.
+
+
+## Account quota incident
+
+During later runs the provider returned `credit_balance_exhausted` /
+`insufficient_quota` (HTTP 429). Previously every RateLimitError was retried as
+transient, causing futile calls and contaminating an Astra pilot. The measured
+provider now recognizes these structured codes without logging raw errors,
+raises a terminal quota error, and the batch cancels remaining tasks and records
+`aborted`. Tests cover terminal quota versus transient rate-limit retries,
+case-level error propagation and prevention of queued case starts. Incomplete
+attempts are retained without a full-set score; see the measured report.

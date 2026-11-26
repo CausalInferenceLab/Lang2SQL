@@ -23,7 +23,7 @@ from lang2sql.harness.loop import agent_loop
 from lang2sql.safety.layers.whitelist import _strip_comments
 from lang2sql.tenancy.concierge import ContextConcierge
 
-from .providers import MeasuredLLM
+from .providers import MeasuredLLM, ProviderQuotaExhausted
 
 logger = logging.getLogger(__name__)
 INSTRUCTION = "\nReturn your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available."
@@ -191,7 +191,7 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             args.max_rows,
         )
         record.update(status="predicted", sql=sql)
-    except Exception as exc:  # noqa: BLE001 — record all model/SQL failures
+    except Exception as exc:
         # Error text from providers may contain request secrets. Persist type only.
         record.update(status="failed", error_type=type(exc).__name__)
         logger.error(
@@ -200,6 +200,8 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             case["instance_id"],
             type(exc).__name__,
         )
+        if isinstance(exc, ProviderQuotaExhausted):
+            raise
     finally:
         record.update(
             seconds=time.monotonic() - started,

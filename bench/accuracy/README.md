@@ -135,3 +135,10 @@ second retry loop. The cache is bounded by the case call budget and is never
 shared between cases. Profile settings and returned/replayed item counts are
 recorded. Higher reasoning effort is an experiment, not an assumed improvement.
 The production frontend/provider default is unchanged.
+
+
+Latest outcome: [investigation and incomplete follow-up](IMPROVEMENT_RESULTS.md).
+The 95% target was not reached; full-v3 stopped on account credit exhaustion.
+Structured account-quota errors now abort the batch without retrying every
+remaining question. Ordinary transient rate limits keep the configured bounded
+retry. An aborted/partial run cannot publish an accuracy score.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from collections.abc import Sequence
@@ -17,6 +18,27 @@ from lang2sql.core.types import Message, ToolSpec
 from .responses import ResponsesCodec
 
 logger = logging.getLogger(__name__)
+
+
+class ProviderQuotaExhausted(RuntimeError):
+    """Account quota requires intervention, not another prediction attempt."""
+
+
+def quota_exhausted(exc):
+    body = getattr(exc, "body", None)
+    if not isinstance(body, dict):
+        response = getattr(exc, "response", None)
+        try:
+            body = response.json() if response is not None else json.loads(body or "{}")
+        except (ValueError, TypeError):
+            return False
+    if not isinstance(body, dict):
+        return False
+    error = body.get("error", body)
+    return isinstance(error, dict) and any(
+        error.get(field) in {"insufficient_quota", "credit_balance_exhausted"}
+        for field in ("code", "type")
+    )
 
 
 class MeasuredLLM:
@@ -127,6 +149,12 @@ class MeasuredLLM:
                 return _decode_completion(raw)
             except Exception as exc:
                 entry.update(status="error", error_type=type(exc).__name__)
+                if quota_exhausted(exc):
+                    entry["error_category"] = "quota_exhausted"
+                    logger.error("API quota exhausted profile=%s", self.profile["name"])
+                    raise ProviderQuotaExhausted(
+                        "Provider account quota exhausted"
+                    ) from None
                 retry = (
                     isinstance(exc, (Timeout, APIConnectionError, RateLimitError))
                     and attempt < retries

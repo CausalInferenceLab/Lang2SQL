@@ -27,6 +27,7 @@ from bench.spider2.evaluate import (
 from bench.spider2.evaluate import (
     score as score_spider,
 )
+from bench.spider2.providers import ProviderQuotaExhausted
 
 logger = logging.getLogger(__name__)
 BIRD_REVISION = "5b256b5a9c17478f06ed6912612e9a14d17065c8"
@@ -174,23 +175,52 @@ async def run(args):
         for sub in ("sql", "csv", "records"):
             (directory / sub).mkdir(parents=True)
         semaphore = asyncio.Semaphore(args.concurrency)
+        exhausted = asyncio.Event()
 
         async def bounded(
-            case, semaphore=semaphore, directory=directory, profile=profile
+            case,
+            semaphore=semaphore,
+            directory=directory,
+            profile=profile,
+            exhausted=exhausted,
         ):
             async with semaphore:
-                await run_case(
-                    case,
-                    args.root,
-                    args.db_dir,
-                    directory,
-                    profile,
-                    env[profile["api_key_env"]],
-                    args,
-                )
+                if exhausted.is_set():
+                    raise ProviderQuotaExhausted("Provider account quota exhausted")
+                try:
+                    await run_case(
+                        case,
+                        args.root,
+                        args.db_dir,
+                        directory,
+                        profile,
+                        env[profile["api_key_env"]],
+                        args,
+                    )
+                except ProviderQuotaExhausted:
+                    exhausted.set()
+                    raise
 
         started = time.monotonic()
-        await asyncio.gather(*(bounded(case) for case in manifest["cases"]))
+        tasks = [asyncio.create_task(bounded(case)) for case in manifest["cases"]]
+        try:
+            await asyncio.gather(*tasks)
+        except ProviderQuotaExhausted:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            write_json(
+                directory / "status.json",
+                {
+                    "status": "aborted",
+                    "reason": "quota_exhausted",
+                    "wall_seconds": time.monotonic() - started,
+                },
+            )
+            logger.error(
+                "Benchmark aborted profile=%s reason=quota_exhausted", profile["name"]
+            )
+            raise
         write_json(
             directory / "status.json",
             {"status": "completed", "wall_seconds": time.monotonic() - started},
