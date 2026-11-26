@@ -1,0 +1,43 @@
+"""Offline filter ablation; never passed to a model or counted as a model repair."""
+import ast
+import csv
+import hashlib
+import json
+import math
+import sqlite3
+from pathlib import Path
+import pandas as pd
+
+root = Path('/Users/seyoung/workspace/benchmarks')
+run = root / 'codex-mcp-unobserved-20261127/checkpoints/002/spider'
+out = run.parent / 'diagnosis'
+manifest = json.loads((run / 'manifest.json').read_text())
+record_path = run / 'codex-mcp/records/local356.json'
+record = json.loads(record_path.read_text())
+evaluator = root / 'Spider2/spider2-lite/evaluation_suite/evaluate.py'
+assert hashlib.sha256(evaluator.read_bytes()).hexdigest() == manifest['evaluator_sha256']
+node = next(n for n in ast.parse(evaluator.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'compare_pandas_table')
+namespace = {'pd': pd, 'math': math}
+exec(compile(ast.Module(body=[node], type_ignores=[]), str(evaluator), 'exec'), namespace)
+gold = evaluator.parent / 'gold'
+standard = next(json.loads(line) for line in (gold / 'spider2lite_eval.jsonl').read_text().splitlines() if json.loads(line)['instance_id'] == 'local356')
+db = root / 'spider2-databases/f1.sqlite'
+assert hashlib.sha256(db.read_bytes()).hexdigest() == manifest['db_sha256']['f1']
+old_sql = record['sql']
+assert old_sql.count('AND r.is_pit_data_available = 1') == 1
+sql = old_sql.replace('AND r.is_pit_data_available = 1', '')
+with sqlite3.connect('file:' + str(db) + '?mode=ro', uri=True) as connection:
+    frame = pd.read_sql_query(sql, connection)
+    coverage = pd.read_sql_query('SELECT is_pit_data_available,MIN(year) AS first_year,MAX(year) AS last_year,COUNT(*) AS races FROM races_ext GROUP BY is_pit_data_available', connection)
+refs = sorted((gold / 'exec_result').glob('local356*.csv'))
+conditions = standard['condition_cols'] or [[] for _ in refs]
+comparisons = []
+for i, reference in enumerate(refs):
+    ref = pd.read_csv(reference)
+    comparisons.append({'reference': reference.name, 'sha256': hashlib.sha256(reference.read_bytes()).hexdigest(), 'matches': bool(namespace['compare_pandas_table'](frame, ref, conditions[i], standard.get('ignore_order', False))), 'missing': sorted(set(ref.full_name) - set(frame.full_name)), 'extra': sorted(set(frame.full_name) - set(ref.full_name))})
+(out / 'local356-without-pit-availability.sql').write_text(sql + '\n')
+frame.to_csv(out / 'local356-without-pit-availability.csv', index=False)
+coverage.to_csv(out / 'local356-race-coverage.csv', index=False)
+report = {'scope': 'Offline diagnostic filter ablation. No correctness information, edited SQL, or reference values supplied to inference. This is not a model repair score.', 'record_sha256': hashlib.sha256(record_path.read_bytes()).hexdigest(), 'db_sha256': manifest['db_sha256']['f1'], 'evaluator_sha256': manifest['evaluator_sha256'], 'original_rows': record['rows'], 'counterfactual_rows': len(frame), 'single_edit': 'Remove AND r.is_pit_data_available = 1. All pit entry/exit, retirement, first-lap exclusions and pairwise overtaking logic remain unchanged.', 'coverage': coverage.to_dict(orient='records'), 'comparisons': comparisons, 'findings': ['The user did not request excluding races with unavailable pit-stop data.', 'The model added that cohort restriction after observing availability values, limiting eligible races to 2011 onward.', 'The initial query timeout was recovered with MATERIALIZED CTEs before final execution; it does not explain the final result mismatch.', 'Removing only the unrequested availability predicate matches reference_a exactly. Missing pit data still limits the real-world completeness of overtaking classification; this ablation follows benchmark scope and is not proof that historical events are fully observed.']}
+(out / 'local356-audit.json').write_text(json.dumps(report, ensure_ascii=False, indent=2) + '\n')
+print(json.dumps({'original_rows': record['rows'], 'counterfactual_rows': len(frame), 'matching_references': [r['reference'] for r in comparisons if r['matches']]}))
