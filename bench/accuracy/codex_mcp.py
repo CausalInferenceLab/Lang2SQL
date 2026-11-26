@@ -79,6 +79,31 @@ def executed_sql(answer, events, *, db=None, sql_timeout=30, max_rows=100000):
     raise ValueError("Final SQL was not executed through Lang2SQL MCP")
 
 
+def capture_trace(record, events_path, answer_path, process):
+    """Keep complete events even when interruption leaves a partial final line."""
+    events, errors = [], []
+    if events_path.exists():
+        record["events_sha256"] = digest(events_path)
+        for number, line in enumerate(events_path.read_text(errors="replace").splitlines(), 1):
+            if not line.startswith("{"):
+                continue
+            try:
+                events.append(json.loads(line))
+            except json.JSONDecodeError as exc:
+                errors.append({"line": number, "error": str(exc)})
+                logger.warning("Invalid Codex event id=%s line=%d error=%s: %s",
+                               record["instance_id"], number, type(exc).__name__, exc)
+    record.update(
+        cli_exit_code=process.returncode if process is not None else None,
+        cli_usage=[e.get("usage") for e in events if e.get("type") == "turn.completed"],
+        mcp_calls=[e["item"] for e in events if e.get("type") == "item.completed"
+                   and e["item"].get("type") == "mcp_tool_call"],
+        answer=answer_path.read_text(errors="replace") if answer_path.exists() else "",
+        event_parse_errors=errors,
+    )
+    return events
+
+
 def review_evidence(record):
     """Only model-visible prior evidence, never grader/status/answer-key fields."""
     return json.dumps(
@@ -323,40 +348,34 @@ async def run(args):
             )
             process = None
             try:
-                with (
-                    events_path.open("wb") as out,
-                    (directory / "events" / (ident + ".stderr")).open("wb") as err,
-                ):
-                    process = await asyncio.create_subprocess_exec(
-                        *command,
-                        cwd=work,
-                        env=env,
-                        stdin=asyncio.subprocess.PIPE,
-                        stdout=out,
-                        stderr=err,
-                    )
-                    await asyncio.wait_for(
-                        process.communicate(prompt.encode()), args.case_timeout
-                    )
-                events = [
-                    json.loads(line)
-                    for line in events_path.read_text().splitlines()
-                    if line.startswith("{")
-                ]
-                record["events_sha256"] = digest(events_path)
-                record["cli_exit_code"] = process.returncode
-                record["cli_usage"] = [
-                    e.get("usage") for e in events if e.get("type") == "turn.completed"
-                ]
-                record["mcp_calls"] = [
-                    e["item"]
-                    for e in events
-                    if e.get("type") == "item.completed"
-                    and e["item"].get("type") == "mcp_tool_call"
-                ]
-                record["answer"] = (
-                    answer_path.read_text() if answer_path.exists() else ""
-                )
+                prompt_path = directory / "events" / (ident + ".prompt.txt")
+                prompt_bytes = prompt.encode("utf-8")
+                prompt_path.write_bytes(prompt_bytes)
+                record["prompt_sha256"] = digest(prompt_path)
+                logger.info("Codex case starting id=%s prompt_sha256=%s", ident, record["prompt_sha256"])
+                try:
+                    with (
+                        events_path.open("wb") as out,
+                        (directory / "events" / (ident + ".stderr")).open("wb") as err,
+                    ):
+                        process = await asyncio.create_subprocess_exec(
+                            *command,
+                            cwd=work,
+                            env=env,
+                            stdin=asyncio.subprocess.PIPE,
+                            stdout=out,
+                            stderr=err,
+                        )
+                        await asyncio.wait_for(
+                            process.communicate(prompt_bytes), args.case_timeout
+                        )
+                finally:
+                    if process is not None and process.returncode is None:
+                        process.kill()
+                        await process.wait()
+                    events = capture_trace(record, events_path, answer_path, process)
+                if record["event_parse_errors"]:
+                    raise ValueError("Malformed Codex event stream; retained complete events for diagnosis")
                 if process.returncode != 0:
                     raise RuntimeError("Codex invocation failed")
                 sql = executed_sql(
@@ -382,9 +401,6 @@ async def run(args):
                 )
                 record.update(status="failed", error_type=type(exc).__name__, error_message=str(exc))
             finally:
-                if process is not None and process.returncode is None:
-                    process.kill()
-                    await process.wait()
                 record["seconds"] = time.monotonic() - started
                 write_json(directory / "records" / (ident + ".json"), record)
             logger.info("Codex case finished id=%s status=%s", ident, record["status"])

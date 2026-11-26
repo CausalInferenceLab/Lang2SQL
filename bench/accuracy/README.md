@@ -194,3 +194,15 @@ next attempt. They are not a latest-result ledger, regression check, pass@1
 estimate or full-suite score. Keep all original failures and repair attempts.
 A final accuracy claim still needs the prescribed full-suite evaluation with
 one fixed configuration and unchanged official denominator.
+
+Interrupted Codex attempts retain complete MCP events, partial answers, CLI exit
+status and the raw event hash in the per-case record. An incomplete JSON event
+is logged and indexed by line; raw bytes are never rewritten. A malformed stream
+cannot qualify as a prediction. Timeouts remain failures even if an earlier
+query succeeded. Each new run also saves the exact UTF-8 stdin payload as
+`codex-mcp/events/<instance_id>.prompt.txt` with `prompt_sha256` in the record.
+This is the submitted benchmark request, not Codex's internal system context.
+It contains question/schema/documentation and any explicitly requested prior
+observations; no environment variables or authentication configuration are added.
+Historical runs without these artifacts are not retroactively reconstructed as
+captured inputs. This improves auditability, not measured benchmark accuracy.
