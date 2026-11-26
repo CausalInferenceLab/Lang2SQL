@@ -11,11 +11,12 @@ import asyncio
 import json
 import logging
 import os
+import re
 import subprocess
 import time
 from pathlib import Path
 
-from bench.accuracy.evaluate import load_schema_documents, validate_inputs
+from bench.accuracy.evaluate import load_schema_documents, query_rows, validate_inputs
 from bench.oracle_view.codex_demo import READ_TOOLS, mcp_settings
 from bench.spider2.evaluate import (
     INSTRUCTION,
@@ -29,7 +30,7 @@ from bench.spider2.evaluate import (
 logger = logging.getLogger(__name__)
 
 
-def executed_sql(answer, events):
+def executed_sql(answer, events, *, db=None, sql_timeout=30, max_rows=100000):
     """Only MCP-executed final answers qualify; no shell or final-tool fallback."""
     sql = final_sql(answer)
     items = [e["item"] for e in events if e.get("type") == "item.completed"]
@@ -43,15 +44,33 @@ def executed_sql(answer, events):
         i.get("server") != "lang2sql" or i.get("tool") not in READ_TOOLS for i in calls
     ):
         raise ValueError("Unexpected MCP tool")
-    if not any(
-        i.get("tool") == "run_sql"
+    candidates = [
+        i.get("arguments", {}).get("sql", "")
+        for i in calls
+        if i.get("tool") == "run_sql"
         and i.get("status") == "completed"
         and not i.get("error")
-        and i.get("arguments", {}).get("sql", "").strip() == sql
-        for i in calls
+        and any(
+            re.match(r"(?:\d+ row\(s\):|\(0 rows\))", block.get("text", ""))
+            for block in (i.get("result") or {}).get("content", [])
+        )
+    ]
+    if any(
+        candidate.strip().removesuffix(";").rstrip() == sql.removesuffix(";").rstrip()
+        for candidate in candidates
     ):
-        raise ValueError("Final SQL was not executed through Lang2SQL MCP")
-    return sql
+        return sql
+    if db is not None and candidates:
+        # Compare SQLite bytecode, preserving literals. No result/gold-based selection.
+        plan = query_rows(db, "EXPLAIN " + sql, sql_timeout, max_rows)
+        for candidate in candidates:
+            if (
+                candidate
+                and query_rows(db, "EXPLAIN " + candidate, sql_timeout, max_rows)
+                == plan
+            ):
+                return sql
+    raise ValueError("Final SQL was not executed through Lang2SQL MCP")
 
 
 async def run(args):
@@ -231,7 +250,13 @@ async def run(args):
                 )
                 if process.returncode != 0:
                     raise RuntimeError("Codex invocation failed")
-                sql = executed_sql(record["answer"], events)
+                sql = executed_sql(
+                    record["answer"],
+                    events,
+                    db=db,
+                    sql_timeout=args.sql_timeout,
+                    max_rows=args.max_rows,
+                )
                 record["rows"] = await asyncio.to_thread(
                     export_result,
                     db,

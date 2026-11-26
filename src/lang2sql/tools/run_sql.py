@@ -8,10 +8,9 @@ explanation the model can act on; PASS/REWRITE proceed to
 
 from __future__ import annotations
 
-import re
 import logging
+import re
 from typing import TYPE_CHECKING, Any
-
 
 from ..core.ports.audit import AuditEvent
 from ..core.ports.explorer import DataAccessError
@@ -197,8 +196,19 @@ def _render_rows(sql: str, rows: list[dict]) -> str:
     if not rows:
         return f"(0 rows)\nSQL: {sql}"
     headers = list(rows[0].keys())
+    observed_types = {
+        h: sorted({type(r.get(h)).__name__ for r in rows[:50]}) for h in headers
+    }
+    type_note = "Observed value types (displayed rows): " + "; ".join(
+        f"{h}={','.join(kinds)}" for h, kinds in observed_types.items()
+    )
     lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
     for r in rows[:50]:
         lines.append(" | ".join(str(r.get(h, "")) for h in headers))
     suffix = f"\n… ({len(rows)} rows total)" if len(rows) > 50 else ""
-    return f"{len(rows)} row(s):\n" + "\n".join(lines) + suffix + f"\nSQL: {sql}"
+    return (
+        f"{len(rows)} row(s):\n{type_note}\n"
+        + "\n".join(lines)
+        + suffix
+        + f"\nSQL: {sql}"
+    )

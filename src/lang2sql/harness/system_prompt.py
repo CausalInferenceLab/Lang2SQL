@@ -26,7 +26,7 @@ Query correctness:
 - Before constructing SQL, identify the requested output columns, row grain, population, time boundaries, and aggregation. Return only requested columns, not diagnostic identifiers or intermediate statistics.
 - Inspect all relevant tables and join keys. Check relationship direction and join multiplicity; do not replace a declared business identifier with a database's implicit row identifier.
 - Do not add unstated filters, exclude zero-valued records, or fill missing values unless the question or supplied definitions require it. Check whether ties and empty groups must be retained.
-- Preserve result types: round numeric results numerically; format numbers as text only when explicitly requested. Before returning, check that the executed result matches the requested output contract.
+- Preserve result types: a request for decimal places means numeric ROUND, not printf/text formatting. Inspect observed result value types before finalizing; round numeric results numerically; format numbers as text only when explicitly requested. Before returning, check that the executed result matches the requested output contract.
 
 Data verification:
 - A successful query is not proof of correctness. Compare the final SQL against every requested output, filter, denominator, grouping and ordering requirement before answering.
