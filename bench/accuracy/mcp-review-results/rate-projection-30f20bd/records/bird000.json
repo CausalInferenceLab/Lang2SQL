@@ -1,0 +1,146 @@
+{
+  "instance_id": "bird000",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "8b3de9191ba827b0265011ef20c70d92ea431d0de3d98cbb5c7cb78650e8da93",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165952,
+      "cached_input_tokens": 153472,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1001,
+      "reasoning_output_tokens": 213
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"eVqWbHxqp1Hx2ZbhmGRFAnsa7R-vkA0jC-hyMHcF-Tk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "eVqWbHxqp1Hx2ZbhmGRFAnsa7R-vkA0jC-hyMHcF-Tk",
+        "sql": "SELECT\n    s.rtype,\n    COUNT(*) AS sat_rows,\n    COUNT(f.CDSCode) AS matched_rows,\n    SUM(CASE WHEN s.NumTstTakr = 0 THEN 1 ELSE 0 END) AS zero_test_takers,\n    SUM(CASE WHEN typeof(s.NumGE1500) NOT IN ('integer', 'null') THEN 1 ELSE 0 END) AS noninteger_score_counts,\n    SUM(CASE WHEN f.\"Enrollment (Ages 5-17)\" = 0 THEN 1 ELSE 0 END) AS zero_enrollment,\n    SUM(CASE WHEN typeof(f.\"Free Meal Count (Ages 5-17)\") NOT IN ('real', 'integer', 'null')\n              OR typeof(f.\"Enrollment (Ages 5-17)\") NOT IN ('real', 'integer', 'null')\n             THEN 1 ELSE 0 END) AS nonnumeric_meal_inputs,\n    COUNT(f.\"Percent (%) Eligible Free (Ages 5-17)\") AS stored_rate_rows\nFROM main.satscores AS s\nLEFT JOIN main.frpm AS f ON f.CDSCode = s.cds\nGROUP BY s.rtype"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nObserved value types (displayed rows): rtype=str; sat_rows=int; matched_rows=int; zero_test_takers=int; noninteger_score_counts=int; zero_enrollment=int; nonnumeric_meal_inputs=int; stored_rate_rows=int\nrtype | sat_rows | matched_rows | zero_test_takers | noninteger_score_counts | zero_enrollment | nonnumeric_meal_inputs | stored_rate_rows\n--- | --- | --- | --- | --- | --- | --- | ---\nD | 520 | 35 | 36 | 0 | 0 | 0 | 29\nS | 1749 | 1747 | 182 | 0 | 0 | 0 | 1734\nSQL: SELECT\n    s.rtype,\n    COUNT(*) AS sat_rows,\n    COUNT(f.CDSCode) AS matched_rows,\n    SUM(CASE WHEN s.NumTstTakr = 0 THEN 1 ELSE 0 END) AS zero_test_takers,\n    SUM(CASE WHEN typeof(s.NumGE1500) NOT IN ('integer', 'null') THEN 1 ELSE 0 END) AS noninteger_score_counts,\n    SUM(CASE WHEN f.\"Enrollment (Ages 5-17)\" = 0 THEN 1 ELSE 0 END) AS zero_enrollment,\n    SUM(CASE WHEN typeof(f.\"Free Meal Count (Ages 5-17)\") NOT IN ('real', 'integer', 'null')\n              OR typeof(f.\"Enrollment (Ages 5-17)\") NOT IN ('real', 'integer', 'null')\n             THEN 1 ELSE 0 END) AS nonnumeric_meal_inputs,\n    COUNT(f.\"Percent (%) Eligible Free (Ages 5-17)\") AS stored_rate_rows\nFROM main.satscores AS s\nLEFT JOIN main.frpm AS f ON f.CDSCode = s.cds\nGROUP BY s.rtype\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"0R1PqV-7AQj8dxVxC2XRfmgE8kgKEYT9r5rgK49sDh4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "0R1PqV-7AQj8dxVxC2XRfmgE8kgKEYT9r5rgK49sDh4",
+        "sql": "SELECT MAX(\n    CAST(f.\"Free Meal Count (Ages 5-17)\" AS REAL)\n    / NULLIF(f.\"Enrollment (Ages 5-17)\", 0)\n) AS highest_free_meal_eligibility_rate\nFROM main.satscores AS s\nJOIN main.frpm AS f ON f.CDSCode = s.cds\nWHERE s.rtype = 'S'\n  AND CAST(s.NumGE1500 AS REAL) / NULLIF(s.NumTstTakr, 0) > 0.3\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): highest_free_meal_eligibility_rate=float\nhighest_free_meal_eligibility_rate\n---\n0.9049079754601227\nSQL: SELECT MAX(\n    CAST(f.\"Free Meal Count (Ages 5-17)\" AS REAL)\n    / NULLIF(f.\"Enrollment (Ages 5-17)\", 0)\n) AS highest_free_meal_eligibility_rate\nFROM main.satscores AS s\nJOIN main.frpm AS f ON f.CDSCode = s.cds\nWHERE s.rtype = 'S'\n  AND CAST(s.NumGE1500 AS REAL) / NULLIF(s.NumTstTakr, 0) > 0.3\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT MAX(\n    CAST(f.\"Free Meal Count (Ages 5-17)\" AS REAL)\n    / NULLIF(f.\"Enrollment (Ages 5-17)\", 0)\n) AS highest_free_meal_eligibility_rate\nFROM main.satscores AS s\nJOIN main.frpm AS f ON f.CDSCode = s.cds\nWHERE s.rtype = 'S'\n  AND CAST(s.NumGE1500 AS REAL) / NULLIF(s.NumTstTakr, 0) > 0.3\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "SELECT MAX(\n    CAST(f.\"Free Meal Count (Ages 5-17)\" AS REAL)\n    / NULLIF(f.\"Enrollment (Ages 5-17)\", 0)\n) AS highest_free_meal_eligibility_rate\nFROM main.satscores AS s\nJOIN main.frpm AS f ON f.CDSCode = s.cds\nWHERE s.rtype = 'S'\n  AND CAST(s.NumGE1500 AS REAL) / NULLIF(s.NumTstTakr, 0) > 0.3\nLIMIT 1",
+  "seconds": 36.641486749984324
+}
