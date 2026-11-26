@@ -1,0 +1,70 @@
+{
+  "purpose": "Offline replay of saved execution provenance; no model calls, no grader/old artifact mutation",
+  "runs": [
+    {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-integrated-20261127/bird-gpt-6.2-sol",
+      "predictions_checked": 31,
+      "changed_sql": [],
+      "rejected": []
+    },
+    {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-integrated-20261127/spider-gpt-6.2-sol",
+      "predictions_checked": 26,
+      "changed_sql": [
+        {
+          "id": "local259",
+          "old_sql": "WITH role_counts AS (\n    SELECT player_id,\n           role,\n           SUM(COUNT(*)) OVER (PARTITION BY player_id) AS total_matches_played,\n           RANK() OVER (\n               PARTITION BY player_id\n               ORDER BY role IS NULL, COUNT(*) DESC\n           ) AS role_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nappearances AS (\n    SELECT player_id,\n           GROUP_CONCAT(role, ', ') AS most_frequent_role,\n           MAX(total_matches_played) AS total_matches_played\n    FROM (\n        SELECT player_id, role, total_matches_played\n        FROM role_counts\n        WHERE role_rank = 1\n        ORDER BY player_id, role\n    )\n    GROUP BY player_id\n),\nbatting_by_match AS (\n    SELECT b.striker AS player_id,\n           b.match_id,\n           SUM(s.runs_scored) AS runs_scored,\n           COUNT(*) AS balls_faced\n    FROM main.ball_by_ball AS b\n    JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)\n    GROUP BY b.striker, b.match_id\n),\nbatting_career AS (\n    SELECT player_id,\n           SUM(runs_scored) AS total_runs_scored,\n           MAX(runs_scored) AS highest_score,\n           SUM(runs_scored >= 30) AS matches_with_30_plus,\n           SUM(runs_scored >= 50) AS matches_with_50_plus,\n           SUM(runs_scored >= 100) AS matches_with_100_plus,\n           SUM(balls_faced) AS total_balls_faced\n    FROM batting_by_match\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id,\n           COUNT(*) AS total_dismissals\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_by_match AS (\n    SELECT b.bowler AS player_id,\n           b.match_id,\n           SUM(COALESCE(s.runs_scored, 0)) AS runs_given,\n           -- Count recorded deliveries for economy while ignoring the extra-runs data.\n           COUNT(*) AS balls_bowled,\n           COUNT(CASE WHEN w.kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           ) THEN 1 END) AS wickets_taken\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, over_id, ball_id, innings_no)\n    GROUP BY b.bowler, b.match_id\n),\nbowling_career AS (\n    SELECT player_id,\n           wickets_taken || '-' || runs_given AS best_bowling_performance,\n           SUM(wickets_taken) OVER player_matches AS total_wickets_taken,\n           SUM(runs_given) OVER player_matches AS total_runs_given,\n           SUM(balls_bowled) OVER player_matches AS total_balls_bowled,\n           ROW_NUMBER() OVER (\n               PARTITION BY player_id\n               ORDER BY wickets_taken DESC, runs_given, match_id\n           ) AS performance_rank\n    FROM bowling_by_match\n    WINDOW player_matches AS (PARTITION BY player_id)\n)\nSELECT p.player_id,\n       p.player_name,\n       a.most_frequent_role,\n       p.batting_hand,\n       p.bowling_skill,\n       COALESCE(bt.total_runs_scored, 0) AS total_runs_scored,\n       COALESCE(a.total_matches_played, 0) AS total_matches_played,\n       COALESCE(d.total_dismissals, 0) AS total_dismissals,\n       1.0 * COALESCE(bt.total_runs_scored, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,\n       bt.highest_score,\n       COALESCE(bt.matches_with_30_plus, 0) AS matches_with_30_plus,\n       COALESCE(bt.matches_with_50_plus, 0) AS matches_with_50_plus,\n       COALESCE(bt.matches_with_100_plus, 0) AS matches_with_100_plus,\n       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,\n       100.0 * bt.total_runs_scored / NULLIF(bt.total_balls_faced, 0) AS strike_rate,\n       COALESCE(bw.total_wickets_taken, 0) AS total_wickets_taken,\n       6.0 * bw.total_runs_given / NULLIF(bw.total_balls_bowled, 0) AS economy_rate,\n       bw.best_bowling_performance\nFROM main.player AS p\nLEFT JOIN appearances AS a ON a.player_id = p.player_id\nLEFT JOIN batting_career AS bt ON bt.player_id = p.player_id\nLEFT JOIN dismissals AS d ON d.player_id = p.player_id\nLEFT JOIN bowling_career AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1\nORDER BY p.player_id",
+          "bound_sql": "WITH role_counts AS (\n    SELECT player_id,\n           role,\n           SUM(COUNT(*)) OVER (PARTITION BY player_id) AS total_matches_played,\n           RANK() OVER (\n               PARTITION BY player_id\n               ORDER BY role IS NULL, COUNT(*) DESC\n           ) AS role_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nappearances AS (\n    SELECT player_id,\n           GROUP_CONCAT(role, ', ') AS most_frequent_role,\n           MAX(total_matches_played) AS total_matches_played\n    FROM (\n        SELECT player_id, role, total_matches_played\n        FROM role_counts\n        WHERE role_rank = 1\n        ORDER BY player_id, role\n    )\n    GROUP BY player_id\n),\nbatting_by_match AS (\n    SELECT b.striker AS player_id,\n           b.match_id,\n           SUM(s.runs_scored) AS runs_scored,\n           COUNT(*) AS balls_faced\n    FROM main.ball_by_ball AS b\n    JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)\n    GROUP BY b.striker, b.match_id\n),\nbatting_career AS (\n    SELECT player_id,\n           SUM(runs_scored) AS total_runs_scored,\n           MAX(runs_scored) AS highest_score,\n           SUM(runs_scored >= 30) AS matches_with_30_plus,\n           SUM(runs_scored >= 50) AS matches_with_50_plus,\n           SUM(runs_scored >= 100) AS matches_with_100_plus,\n           SUM(balls_faced) AS total_balls_faced\n    FROM batting_by_match\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id,\n           COUNT(*) AS total_dismissals\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_by_match AS (\n    SELECT b.bowler AS player_id,\n           b.match_id,\n           SUM(COALESCE(s.runs_scored, 0)) AS runs_given,\n           -- Count recorded deliveries for economy while ignoring the extra-runs data.\n           COUNT(*) AS balls_bowled,\n           COUNT(CASE WHEN w.kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           ) THEN 1 END) AS wickets_taken\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, over_id, ball_id, innings_no)\n    GROUP BY b.bowler, b.match_id\n),\nbowling_career AS (\n    SELECT player_id,\n           wickets_taken || '-' || runs_given AS best_bowling_performance,\n           SUM(wickets_taken) OVER player_matches AS total_wickets_taken,\n           SUM(runs_given) OVER player_matches AS total_runs_given,\n           SUM(balls_bowled) OVER player_matches AS total_balls_bowled,\n           ROW_NUMBER() OVER (\n               PARTITION BY player_id\n               ORDER BY wickets_taken DESC, runs_given, match_id\n           ) AS performance_rank\n    FROM bowling_by_match\n    WINDOW player_matches AS (PARTITION BY player_id)\n)\nSELECT p.player_id,\n       p.player_name,\n       a.most_frequent_role,\n       p.batting_hand,\n       p.bowling_skill,\n       COALESCE(bt.total_runs_scored, 0) AS total_runs_scored,\n       COALESCE(a.total_matches_played, 0) AS total_matches_played,\n       COALESCE(d.total_dismissals, 0) AS total_dismissals,\n       1.0 * COALESCE(bt.total_runs_scored, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,\n       bt.highest_score,\n       COALESCE(bt.matches_with_30_plus, 0) AS matches_with_30_plus,\n       COALESCE(bt.matches_with_50_plus, 0) AS matches_with_50_plus,\n       COALESCE(bt.matches_with_100_plus, 0) AS matches_with_100_plus,\n       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,\n       100.0 * bt.total_runs_scored / NULLIF(bt.total_balls_faced, 0) AS strike_rate,\n       COALESCE(bw.total_wickets_taken, 0) AS total_wickets_taken,\n       6.0 * bw.total_runs_given / NULLIF(bw.total_balls_bowled, 0) AS economy_rate,\n       bw.best_bowling_performance\nFROM main.player AS p\nLEFT JOIN appearances AS a ON a.player_id = p.player_id\nLEFT JOIN batting_career AS bt ON bt.player_id = p.player_id\nLEFT JOIN dismissals AS d ON d.player_id = p.player_id\nLEFT JOIN bowling_career AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1\nORDER BY p.player_id\nLIMIT 1000",
+          "old_rows": 468,
+          "new_rows": 468,
+          "native_rows_identical": true,
+          "record_sha256": "6d0878b2acb9963b3499f93e515b5722e1426d466a34f56563554a50aac0e76b",
+          "events_sha256": "433f709207cbc00cfddb8ac2beef95d5fcd002cfa14b8015e274e3907a851ed1"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-prior-full-failures-20261127/bird-gpt-6.2-sol",
+      "predictions_checked": 59,
+      "changed_sql": [
+        {
+          "id": "bird357",
+          "old_sql": "WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT AVG(NULLIF(h.weight_kg, 0)) AS average_weight_kg\nFROM main.superhero AS h\nJOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nWHERE f.race_id IS NULL;",
+          "bound_sql": "WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT AVG(NULLIF(h.weight_kg, 0)) AS average_weight_kg\nFROM main.superhero AS h\nJOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nWHERE f.race_id IS NULL\nLIMIT 1000",
+          "old_rows": 1,
+          "new_rows": 1,
+          "native_rows_identical": true,
+          "record_sha256": "f12bb04d3230cb4253bfaf728335f0ced4a488b8d1e98e3c8fcd54e2928d56e8",
+          "events_sha256": "284678d1b215e8abc38be48ab30f33416af7782d73fbb363aab52d80d261cb33"
+        }
+      ],
+      "rejected": []
+    },
+    {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-prior-full-failures-20261127/spider-gpt-6.2-sol",
+      "predictions_checked": 29,
+      "changed_sql": [],
+      "rejected": []
+    },
+    {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-integrated-review-20261127/bird-gpt-6.2-sol",
+      "predictions_checked": 4,
+      "changed_sql": [],
+      "rejected": []
+    },
+    {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-integrated-review-20261127/spider-gpt-6.2-sol",
+      "predictions_checked": 3,
+      "changed_sql": [],
+      "rejected": []
+    }
+  ],
+  "script_sha256": "aad364cd0126fac1e439db7feeb726a0b11b18d31732fcac8c929b544db46e5f",
+  "summary": {
+    "predictions_checked": 152,
+    "sql_text_changes": 2,
+    "rejected": 0,
+    "native_result_changes": 0
+  }
+}
