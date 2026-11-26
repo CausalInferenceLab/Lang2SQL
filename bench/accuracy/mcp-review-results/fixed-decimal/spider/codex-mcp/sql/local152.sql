@@ -1,0 +1,28 @@
+WITH director_movies AS (
+    SELECT
+        d.name_id AS director_id,
+        d.movie_id,
+        m.duration,
+        JULIANDAY(m.date_published) - LAG(JULIANDAY(m.date_published)) OVER (
+            PARTITION BY d.name_id
+            ORDER BY m.date_published, d.movie_id
+        ) AS gap_days
+    FROM main.director_mapping AS d
+    JOIN main.movies AS m ON m.id = d.movie_id
+)
+SELECT
+    dm.director_id,
+    n.name AS director_name,
+    COUNT(*) AS movie_count,
+    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,
+    ROUND(AVG(r.avg_rating), 2) AS avg_rating,
+    SUM(r.total_votes) AS total_votes,
+    MIN(r.avg_rating) AS min_rating,
+    MAX(r.avg_rating) AS max_rating,
+    SUM(dm.duration) AS total_movie_duration
+FROM director_movies AS dm
+JOIN main.names AS n ON n.id = dm.director_id
+LEFT JOIN main.ratings AS r ON r.movie_id = dm.movie_id
+GROUP BY dm.director_id, n.name
+ORDER BY movie_count DESC, total_movie_duration DESC
+LIMIT 9

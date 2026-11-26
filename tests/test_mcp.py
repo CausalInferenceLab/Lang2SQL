@@ -72,6 +72,7 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
         assert {t.name for t in tools} == {
             "context_candidates",
             "calendar_interval_sql",
+            "fixed_decimal_sql",
             "run_sql",
             "explore_schema",
             "term_custom",
@@ -463,3 +464,25 @@ async def test_calendar_compiler_through_stdio_and_sql_guard(tmp_path):
         assert "1 | 0 | 0" in result.content[0].text
         denied = await client.call_tool("run_sql", {"sql": sql})
         assert denied.isError
+
+
+@pytest.mark.asyncio
+async def test_fixed_decimal_compiler_stdio_execution(tmp_path):
+    from lang2sql.tools.fixed_decimal_sql import fixed_decimal_ctes
+
+    async with connected(fixture_db(tmp_path), tmp_path / "meta.db") as client:
+        compiled = await client.call_tool("fixed_decimal_sql", {
+            "dialect": "sqlite", "input_scale": 1, "output_scale": 1, "aggregate": "avg"
+        })
+        assert not compiled.isError
+        ctes = fixed_decimal_ctes(1, 1, "avg")
+        assert ctes in compiled.content[0].text
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        token = json.loads(check.content[0].text)["definition_check_id"]
+        sql = (
+            "WITH decimal_input(group_id, scaled_value) AS (VALUES ('a', 11), ('a', 12)), "
+            + ctes + " SELECT status, rounded_value FROM decimal_result"
+        )
+        result = await client.call_tool("run_sql", {"sql": sql, "definition_check_id": token})
+        assert not result.isError
+        assert "ok | 1.2" in result.content[0].text

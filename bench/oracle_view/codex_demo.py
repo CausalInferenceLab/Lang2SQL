@@ -9,7 +9,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-READ_TOOLS = ["resolve_business_terms", "explore_schema", "run_sql", "calendar_interval_sql"]
+READ_TOOLS = ["resolve_business_terms", "explore_schema", "run_sql", "calendar_interval_sql", "fixed_decimal_sql"]
 
 
 def mcp_settings(server_args, *, tools=READ_TOOLS, extra_env=()):

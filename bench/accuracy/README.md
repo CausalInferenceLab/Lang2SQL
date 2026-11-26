@@ -231,3 +231,22 @@ read-only guards. No SQLite extension/UDF is needed by exported SQL or grading.
 The `experiments/calendar-interval` protocol freezes a fresh Astra/high retry of
 one prior Spider failure. Neither diagnostic answers nor reference results are
 passed to inference. Its outcome is a repair rate on that case, not full accuracy.
+
+### Fixed decimal aggregation probe
+
+`fixed_decimal_sql(dialect="sqlite", input_scale=1, output_scale=2,
+aggregate="avg")` emits CTEs consuming `decimal_input(group_id, scaled_value)`.
+The caller must supply integers in declared units after checking source precision;
+the tool does not round arbitrary source data or infer currency conversions.
+`decimal_result` exposes `status`, `invalid_count`, `n`, exact `rounded_units`, and
+`rounded_value`. AVG and SUM use integer quotient/remainder and round half away
+from zero once after aggregation. Noninteger input or unsafe magnitude makes the
+entire group invalid/overflow instead of silently computing a partial result.
+NULL input follows normal aggregate exclusion; all-NULL groups return empty.
+Scales 0–6 are supported; absolute sums and denominators are conservatively bounded
+to the exact-integer range of binary64 for overflow checks. SQL is plain SQLite,
+requires no UDF, and still executes through guarded `run_sql`.
+
+The `experiments/fixed-decimal` protocol freezes a fresh original-input retry of
+one prior Spider rounding failure. It is a selected repair experiment, not a full
+accuracy measurement. Existing calendar tooling is retained from the parent PR.
