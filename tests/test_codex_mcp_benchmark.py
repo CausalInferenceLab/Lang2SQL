@@ -91,3 +91,18 @@ def test_server_rewritten_sql_is_execution_evidence(prefix):
     for sql in ["SELECT 1 LIMIT 2000"]:
         with pytest.raises(ValueError):
             executed_sql("```sql\n" + sql + "\n```", [call])
+
+
+def test_review_evidence_excludes_evaluation_feedback():
+    import json
+
+    from bench.accuracy.codex_mcp import review_evidence
+
+    record = {"answer": "previous SQL", "score": 0, "gold_sql": "SECRET_GOLD",
+              "status": "failed", "error_message": "GRADER_FEEDBACK",
+              "mcp_calls": [event()["item"]]}
+    payload = review_evidence(record)
+    assert "SECRET_GOLD" not in payload and "GRADER_FEEDBACK" not in payload
+    data = json.loads(payload)
+    assert set(data) == {"previous_answer", "tool_observations"}
+    assert data["tool_observations"][0]["arguments"]["sql"] == "SELECT 1"
