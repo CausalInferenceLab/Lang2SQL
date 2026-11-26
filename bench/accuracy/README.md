@@ -206,3 +206,12 @@ It contains question/schema/documentation and any explicitly requested prior
 observations; no environment variables or authentication configuration are added.
 Historical runs without these artifacts are not retroactively reconstructed as
 captured inputs. This improves auditability, not measured benchmark accuracy.
+
+Final SQL provenance is bound to the server's `SQL:` execution footer. If the
+final answer names a submitted query that the safety gate rewrote, the exported
+prediction uses the executed rewrite (for example, its actual LIMIT), not the
+unbounded input. Formatting-only aliases are checked using SQLite bytecode;
+changed literals are not accepted. Repeated input aliases bind to their latest
+successful execution. A success-looking row header without an execution footer
+is insufficient evidence. Original answer text and raw events remain available
+alongside the bound `record.sql`; no reference answer determines this binding.
