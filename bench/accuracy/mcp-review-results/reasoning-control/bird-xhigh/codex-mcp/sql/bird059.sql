@@ -1,0 +1,10 @@
+SELECT COUNT(*) AS italian_translation_set_count
+FROM main.sets AS s
+WHERE s.block = 'Ice Age'
+  AND s.code IN (
+    SELECT t.setCode
+    FROM main.set_translations AS t
+    WHERE t.language = 'Italian'
+      AND t.translation IS NOT NULL
+  )
+LIMIT 1

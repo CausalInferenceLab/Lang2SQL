@@ -1,0 +1,97 @@
+{
+  "scope": "Paired single-attempt diagnostics on two preselected previously failed cases; not full accuracy. No correct cases added. No inference feedback from grading.",
+  "controlled_variables_verified": [
+    "revision",
+    "model",
+    "runner/server source hashes",
+    "schema document hash",
+    "manifest",
+    "timeouts",
+    "concurrency",
+    "review source",
+    "Codex version"
+  ],
+  "observations": [
+    "bird059: high counts a language association even when its translation is NULL; xhigh requires a non-NULL translation and passes the unchanged BIRD evaluator.",
+    "local008: both arms use per-record maxima instead of career sums and fail the unchanged Spider evaluator.",
+    "A one-attempt paired result cannot establish a general reasoning-effort advantage; no production default changed."
+  ],
+  "runs": [
+    {
+      "suite": "bird",
+      "id": "bird059",
+      "effort": "high",
+      "score": 0,
+      "status": "predicted",
+      "seconds": 35.83736270805821,
+      "mcp_tool_calls": 6,
+      "cli_usage": [
+        {
+          "input_tokens": 143302,
+          "cached_input_tokens": 131072,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1125,
+          "reasoning_output_tokens": 623
+        }
+      ],
+      "sql": "SELECT COUNT(*) AS italian_set_count\nFROM sets AS s\nWHERE s.block = 'Ice Age'\n  AND s.code IN (\n    SELECT st.setCode\n    FROM set_translations AS st\n    WHERE st.language = 'Italian'\n  )\nLIMIT 1"
+    },
+    {
+      "suite": "bird",
+      "id": "bird059",
+      "effort": "xhigh",
+      "score": 1,
+      "status": "predicted",
+      "seconds": 34.72665262501687,
+      "mcp_tool_calls": 6,
+      "cli_usage": [
+        {
+          "input_tokens": 167867,
+          "cached_input_tokens": 141056,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1180,
+          "reasoning_output_tokens": 640
+        }
+      ],
+      "sql": "SELECT COUNT(*) AS italian_translation_set_count\nFROM main.sets AS s\nWHERE s.block = 'Ice Age'\n  AND s.code IN (\n    SELECT t.setCode\n    FROM main.set_translations AS t\n    WHERE t.language = 'Italian'\n      AND t.translation IS NOT NULL\n  )\nLIMIT 1"
+    },
+    {
+      "suite": "spider",
+      "id": "local008",
+      "effort": "high",
+      "score": 0,
+      "status": "predicted",
+      "seconds": 47.18216562503949,
+      "mcp_tool_calls": 9,
+      "cli_usage": [
+        {
+          "input_tokens": 225829,
+          "cached_input_tokens": 204160,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1758,
+          "reasoning_output_tokens": 585
+        }
+      ],
+      "sql": "WITH maxima AS (\n    SELECT MAX(b.g) AS games_played,\n           MAX(NULLIF(b.r, '')) AS runs,\n           MAX(NULLIF(b.h, '')) AS hits,\n           MAX(NULLIF(b.hr, '')) AS home_runs\n    FROM main.batting AS b\n),\nleaders AS (\n    SELECT 1 AS stat_order, 'Games played' AS statistic, b.player_id, b.g AS score\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.g = m.games_played\n    UNION ALL\n    SELECT 2, 'Runs', b.player_id, b.r\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.r = m.runs\n    UNION ALL\n    SELECT 3, 'Hits', b.player_id, b.h\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.h = m.hits\n    UNION ALL\n    SELECT 4, 'Home runs', b.player_id, b.hr\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.hr = m.home_runs\n)\nSELECT p.name_given, l.statistic, l.score\nFROM leaders AS l\nJOIN main.player AS p ON p.player_id = l.player_id\nORDER BY l.stat_order, p.name_given\nLIMIT 1000"
+    },
+    {
+      "suite": "spider",
+      "id": "local008",
+      "effort": "xhigh",
+      "score": 0,
+      "status": "predicted",
+      "seconds": 113.97034216695465,
+      "mcp_tool_calls": 11,
+      "cli_usage": [
+        {
+          "input_tokens": 300228,
+          "cached_input_tokens": 262400,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 3508,
+          "reasoning_output_tokens": 1816
+        }
+      ],
+      "sql": "WITH maxima AS (\n    SELECT MAX(b.g) AS games_played,\n           MAX(NULLIF(b.r, '')) AS runs,\n           MAX(NULLIF(b.h, '')) AS hits,\n           MAX(NULLIF(b.hr, '')) AS home_runs\n    FROM main.batting AS b\n),\nleaders AS (\n    SELECT 1 AS stat_order, 'Games played' AS statistic, b.player_id, b.g AS score\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.g = m.games_played\n    UNION ALL\n    SELECT 2, 'Runs', b.player_id, b.r\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.r = m.runs\n    UNION ALL\n    SELECT 3, 'Hits', b.player_id, b.h\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.h = m.hits\n    UNION ALL\n    SELECT 4, 'Home runs', b.player_id, b.hr\n    FROM main.batting AS b\n    JOIN maxima AS m ON b.hr = m.home_runs\n)\nSELECT l.statistic, p.name_given, l.score\nFROM leaders AS l\nJOIN main.player AS p ON p.player_id = l.player_id\nGROUP BY l.stat_order, l.statistic, l.player_id, p.name_given, l.score\nORDER BY l.stat_order, p.name_given, l.player_id\nLIMIT 1000"
+    }
+  ]
+}
