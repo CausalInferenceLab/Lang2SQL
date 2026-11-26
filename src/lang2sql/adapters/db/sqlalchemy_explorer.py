@@ -13,9 +13,12 @@ Blocking DB calls run in a worker thread to keep the async event loop free.
 from __future__ import annotations
 
 import asyncio
+import logging
 from typing import Any
 
-from ...core.ports.explorer import Column, DataAccessError, Table
+from ...core.ports.explorer import Column, DataAccessError, ForeignKey, Table
+
+logger = logging.getLogger(__name__)
 
 _ORACLE_ACCESS_ERRORS = frozenset({942, 1031})
 
@@ -113,7 +116,40 @@ class SqlAlchemyExplorer:
             )
             for c in insp.get_columns(name, schema=self._schema)
         ]
-        return Table(name=name, schema=self._schema or "", columns=cols, kind=kind)
+        primary_key, foreign_keys = [], []
+        if kind == "table":
+            try:
+                primary_key = (
+                    insp.get_pk_constraint(name, schema=self._schema).get(
+                        "constrained_columns"
+                    )
+                    or []
+                )
+                foreign_keys = [
+                    ForeignKey(
+                        columns=fk["constrained_columns"],
+                        referred_table=fk["referred_table"],
+                        referred_columns=fk["referred_columns"],
+                        referred_schema=fk.get("referred_schema") or "",
+                    )
+                    for fk in insp.get_foreign_keys(name, schema=self._schema)
+                ]
+            except NotImplementedError as exc:
+                logger.warning(
+                    "constraint reflection unsupported table=%s dialect=%s error=%s: %s",
+                    name,
+                    self.dialect,
+                    type(exc).__name__,
+                    exc,
+                )
+        return Table(
+            name=name,
+            schema=self._schema or "",
+            columns=cols,
+            kind=kind,
+            primary_key=primary_key,
+            foreign_keys=foreign_keys,
+        )
 
     def _execute_sync(self, sql: str, limit: int) -> list[dict]:
         from sqlalchemy import text

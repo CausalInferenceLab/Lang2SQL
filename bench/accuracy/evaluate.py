@@ -137,6 +137,7 @@ async def run(args):
                 "sql_timeout",
                 "max_rows",
                 "concurrency",
+                "review_rounds",
             )
         },
     }
@@ -277,6 +278,7 @@ def main():
         "--product-commit", default="e7f0b0644883b6e3fa760e706fd396cc6730e846"
     )
     parser.add_argument("--pilot-size", type=int, default=20)
+    parser.add_argument("--review-rounds", type=int, choices=[0, 1, 2], default=0)
     parser.add_argument("--max-calls", type=int, default=16)
     parser.add_argument("--call-timeout", type=float, default=180)
     parser.add_argument("--case-timeout", type=float, default=900)

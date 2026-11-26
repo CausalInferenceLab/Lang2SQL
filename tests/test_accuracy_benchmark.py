@@ -155,3 +155,53 @@ async def test_transport_retry_is_logged_bounded_and_does_not_retry_answers(
     with pytest.raises(RuntimeError, match="budget"):
         await llm.complete([])
     assert len(attempts) == 2
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("clarify", [False, True])
+async def test_review_is_measured_and_does_not_override_clarification(
+    tmp_path, monkeypatch, clarify
+):
+    from bench.spider2 import evaluate
+
+    db = tmp_path / "test.sqlite"
+    with sqlite3.connect(db) as conn:
+        conn.execute("CREATE TABLE items(value INTEGER)")
+        conn.execute("INSERT INTO items VALUES (7)")
+    directory = tmp_path / "out"
+    for sub in ("sql", "csv", "records"):
+        (directory / sub).mkdir(parents=True)
+    prompts = []
+
+    async def loop(ctx, prompt):
+        prompts.append(prompt)
+        if clarify:
+            return "Which business definition should apply?"
+        return "```sql\nSELECT value FROM items\n```"
+
+    monkeypatch.setattr(evaluate, "agent_loop", loop)
+    args = Namespace(
+        call_timeout=1,
+        max_calls=8,
+        sql_timeout=1,
+        case_timeout=10,
+        max_rows=10,
+        review_rounds=1,
+    )
+    await evaluate.run_case(
+        {"instance_id": "case", "db": "test", "question": "List item values"},
+        tmp_path,
+        tmp_path,
+        directory,
+        {"name": "test", "model": "fake"},
+        "not-a-key",
+        args,
+    )
+    record = json.loads((directory / "records/case.json").read_text())
+    assert len(prompts) == (1 if clarify else 2)
+    assert record["status"] == ("failed" if clarify else "predicted")
+    assert record["initial_answer"]
+    if not clarify:
+        assert "List item values" in prompts[1]
+        assert len(record["reviews"]) == 1
+        assert record["rows"] == 1

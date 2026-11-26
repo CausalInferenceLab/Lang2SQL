@@ -145,6 +145,33 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
     }
     try:
         answer = await asyncio.wait_for(agent_loop(ctx, prompt), args.case_timeout)
+        record["initial_answer"] = answer
+        record["answer"] = answer
+        # A review is another measured agent turn, not a gold-scored candidate search.
+        # Validate first: clarification/refusal must never be overridden by review.
+        final_sql(answer)
+        record["reviews"] = []
+        for review in range(getattr(args, "review_rounds", 0)):
+            remaining = args.case_timeout - (time.monotonic() - started)
+            if remaining <= 0:
+                raise TimeoutError("Case deadline exhausted before SQL review")
+            logger.info("SQL review id=%s round=%d", case["instance_id"], review + 1)
+            answer = await asyncio.wait_for(
+                agent_loop(
+                    ctx,
+                    "Review your proposed SQL against the original request below. "
+                    "Re-check the actual schema, stored values, join multiplicity, "
+                    "missing-value semantics, date boundaries, numeric precision and "
+                    "exact output columns. Use diagnostic SQL to test any suspected "
+                    "mistake. Do not change a correct query without evidence. "
+                    "Do not invent missing business definitions. Execute the final "
+                    "query and return exactly one final SQL block.\n\n" + prompt,
+                ),
+                remaining,
+            )
+            record["reviews"].append(answer)
+            record["answer"] = answer
+            final_sql(answer)
         record["answer"] = answer
         sql = final_sql(answer)
         (directory / "sql" / f"{case['instance_id']}.sql").write_text(sql + "\n")

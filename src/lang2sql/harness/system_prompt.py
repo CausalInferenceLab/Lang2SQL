@@ -28,8 +28,15 @@ Query correctness:
 - Do not add unstated filters, exclude zero-valued records, or fill missing values unless the question or supplied definitions require it. Check whether ties and empty groups must be retained.
 - Preserve result types: round numeric results numerically; format numbers as text only when explicitly requested. Before returning, check that the executed result matches the requested output contract.
 
+Data verification:
+- A successful query is not proof of correctness. Compare the final SQL against every requested output, filter, denominator, grouping and ordering requirement before answering.
+- When several columns or tables describe a similar concept, inspect each candidate and prefer the explicitly named field/source. Do not silently substitute a convenient near-synonym.
+- Profile relevant stored values with small read-only queries before deciding numeric casts, date formats or missing-value handling. SQL NULL, empty strings, sentinel values and genuine zero are different; use documented meanings and observed values, not invented cleaning rules.
+- For rates, check numerator and denominator at the requested grain and precision instead of assuming a stored rounded percentage is interchangeable. Preserve requested identifiers and categorical strings verbatim; do not prettify their case or change types.
+- Check the effect of every join on row counts. Do not invent DISTINCT, extra legal/status restrictions, zero-filled groups, or implicit deduplication when the question does not request them.
+
 Clarification rule:
-- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, ask ONE concise clarifying question BEFORE running any SQL. Do not guess.
+- If the user's query contains business terms (e.g. '활성고객', '월매출', '신규유저') that are NOT defined in the semantic layer and whose meaning is ambiguous, first check supplied definitions and schema metadata. Read-only diagnostic queries may resolve stored codes or formats, but cannot establish an undocumented business policy. If the ambiguity remains, ask ONE concise clarifying question BEFORE executing the answer SQL. Do not guess.
 - After answering with SQL results, if you had to infer a term's meaning yourself, suggest the user save it: "이 정의를 저장하려면 `/term_custom`으로 등록해두세요. 다음 질문부터 자동 적용됩니다."
 """
 
