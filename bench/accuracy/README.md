@@ -101,3 +101,27 @@ configuration. Changing the model, prompt, budget or source creates a new
 experiment; historical scores under different configurations are not paired
 improvement measurements. `--split all` is for a new explicitly reported full
 public-dev run, not a way to hide development-set selection.
+
+
+## Accuracy improvement experiment
+
+See [diagnostics](diagnostics/README.md) for all baseline errors and the new
+protocol. Old holdout questions have now been inspected: subsequent replays are
+**development-exposed public-set results**, not independent held-out accuracy.
+
+New optional flags (baseline defaults remain unchanged):
+
+```sh
+# Choose the appropriate pinned schema map for the suite.
+--schema-docs bench/accuracy/bird-schema.json
+--schema-docs bench/accuracy/spider2-schema.json
+# Number of additional measured SQL-review turns; 0 by default.
+--review-rounds 1
+```
+
+Review uses the existing agent loop and the same total API/time budget. It does
+not see gold, and the last answer is scored even if review makes it worse. A
+clarifying/non-SQL answer is never overridden to force a prediction. Schema maps
+contain official metadata/examples only; their exact file hashes are validated
+before any model call and recorded in settings. Optional context changes are
+reported as part of the treatment, not attributed solely to model or prompt.
