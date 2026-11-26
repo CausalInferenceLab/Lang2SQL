@@ -125,3 +125,13 @@ clarifying/non-SQL answer is never overridden to force a prediction. Schema maps
 contain official metadata/examples only; their exact file hashes are validated
 before any model call and recorded in settings. Optional context changes are
 reported as part of the treatment, not attributed solely to model or prompt.
+
+
+An optional profile `"api": "responses"` (see `models-responses.json`) compares
+Responses with Chat Completions. It retains provider-returned opaque reasoning
+items across tool calls for the exact message prefix and tool definitions, with
+`store=false`; it does not add provider types to the core domain or enable a
+second retry loop. The cache is bounded by the case call budget and is never
+shared between cases. Profile settings and returned/replayed item counts are
+recorded. Higher reasoning effort is an experiment, not an assumed improvement.
+The production frontend/provider default is unchanged.

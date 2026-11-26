@@ -107,3 +107,24 @@ and treats explicit user/document definitions as valid even without a semantic
 layer entry. Genuine missing business definitions still require clarification.
 This follow-up is a **new product revision**, not part of the frozen full-v2
 predictions. Targeted checks and any subsequent full replay must identify it.
+
+
+## Follow-up: reasoning continuity experiment
+
+The benchmark Chat Completions translation retained tool calls but had no
+Responses reasoning-item continuity path. An optional Responses codec now
+replays the original opaque output items only for unchanged message prefixes
+and tool definitions, using the existing provider budget/retry loop. A real API
+smoke confirmed six successive calls with reasoning items replayed. The first
+smoke exposed SDK null/alias fields rejected by the API; wire serialization now
+uses aliases and omits unset nulls. Both the failed smoke and corrected run
+remain in local evidence; this is not an accuracy result.
+
+Sol and Astra with maximum reasoning and 32,768 output tokens were compared on
+the same original 20 development examples. This experiment changes both API and
+budget, so it cannot isolate the effect of reasoning continuity alone. The
+final full-v3 selection is fixed from those development trials and earlier
+pilots, before full-v3 inference. Product revision 7a51b9f includes the false-
+clarification fix; full-v2 used 6f3baff and is retained as an intermediate result.
+Production ambiguity handling is unchanged: genuinely missing business
+policies still require clarification, and those cases remain benchmark errors.
