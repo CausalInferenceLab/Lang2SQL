@@ -1,0 +1,14 @@
+```sql
+WITH eligible AS (
+    SELECT s.School, s.Phone, t.NumGE1500
+    FROM schools AS s
+    JOIN satscores AS t ON t.cds = s.CDSCode
+    WHERE s.DOC = '03'
+      AND t.rtype = 'S'
+)
+SELECT School, Phone
+FROM eligible
+WHERE NumGE1500 = (SELECT MAX(NumGE1500) FROM eligible)
+ORDER BY School, Phone
+LIMIT 1000
+```

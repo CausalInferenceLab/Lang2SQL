@@ -1,0 +1,11 @@
+SELECT DISTINCT c.name
+FROM main.cards AS c
+WHERE c.isPromo = 1
+  AND c.side <> ''
+  AND c.frameVersion = (
+      SELECT MAX(frameVersion)
+      FROM main.cards
+      WHERE frameVersion GLOB '[0-9][0-9][0-9][0-9]'
+  )
+ORDER BY c.name
+LIMIT 1000

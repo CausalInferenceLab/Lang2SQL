@@ -1,0 +1,132 @@
+{
+  "instance_id": "bird017",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "8d175d83a988253d4c668fd815dbbc2b33fadebce409fbaa96bcc2afa6edb242",
+  "events_sha256": "ee28fc09584cb4b6d2db2ce7351f67f17bd828d59e1d6fab030bb38da4f65b9b",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 172558,
+      "cached_input_tokens": 138496,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 495,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"6at-EmSlAZB2DK7XLyF_No0HnJR5W92TWgSRr-CBa9I\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "6at-EmSlAZB2DK7XLyF_No0HnJR5W92TWgSRr-CBa9I",
+        "sql": "SELECT cds, rtype, sname, cname, NumTstTakr FROM main.satscores WHERE cds IN ('7618040730051', '07618040730051')"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): cds=str; rtype=str; sname=str; cname=str; NumTstTakr=int\ncds | rtype | sname | cname | NumTstTakr\n--- | --- | --- | --- | ---\n07618040730051 | S | California High | Contra Costa | 435\nSQL: SELECT cds, rtype, sname, cname, NumTstTakr FROM main.satscores WHERE cds IN ('7618040730051', '07618040730051')\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"TdqLddSnPW6A7VkCatnjHoxrqZt6iDO8zszhFzwiE_4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "TdqLddSnPW6A7VkCatnjHoxrqZt6iDO8zszhFzwiE_4",
+        "sql": "SELECT COUNT(*) AS school_count\nFROM main.satscores\nWHERE cname = 'Contra Costa'\n  AND rtype = 'S'\n  AND NumTstTakr > (\n      SELECT NumTstTakr\n      FROM main.satscores\n      WHERE cds = '07618040730051'\n  )\nLIMIT 1",
+        "expected_columns": [
+          "school_count"
+        ],
+        "expected_rows": 1
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): school_count=int\nschool_count\n---\n1\nSQL: SELECT COUNT(*) AS school_count\nFROM main.satscores\nWHERE cname = 'Contra Costa'\n  AND rtype = 'S'\n  AND NumTstTakr > (\n      SELECT NumTstTakr\n      FROM main.satscores\n      WHERE cds = '07618040730051'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS school_count\nFROM main.satscores\nWHERE cname = 'Contra Costa'\n  AND rtype = 'S'\n  AND NumTstTakr > (\n      SELECT NumTstTakr\n      FROM main.satscores\n      WHERE cds = '07618040730051'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS school_count\nFROM main.satscores\nWHERE cname = 'Contra Costa'\n  AND rtype = 'S'\n  AND NumTstTakr > (\n      SELECT NumTstTakr\n      FROM main.satscores\n      WHERE cds = '07618040730051'\n  )\nLIMIT 1",
+  "seconds": 24.412688083015382
+}

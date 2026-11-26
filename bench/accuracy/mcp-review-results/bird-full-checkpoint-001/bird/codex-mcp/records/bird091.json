@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird091",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "9cdb3c1fe3d258d2d2d5c6f4655470d28c6235460808f5a006b858b66fde2d79",
+  "events_sha256": "f3369b52381bd80302dc90fdbaad8f82cc4c7de2792bfd1afaf1d5a09a08b813",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 234121,
+      "cached_input_tokens": 212736,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 595,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "cards"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"CfhfB1ZjJJVpHYYAQdJLy1piAOlX-U82uHpechbH5mY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "legalities"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "legalities (table)\n- id: INTEGER NOT NULL\n- format: TEXT\n- status: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "CfhfB1ZjJJVpHYYAQdJLy1piAOlX-U82uHpechbH5mY",
+        "sql": "SELECT c.artist, c.availability, c.side, COUNT(*) AS entries\nFROM main.cards AS c\nWHERE c.artist LIKE '%Erica Yang%'\nGROUP BY c.artist, c.availability, c.side;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): artist=str; availability=str; side=NoneType; entries=int\nartist | availability | side | entries\n--- | --- | --- | ---\nErica Yang | arena,paper | None | 1\nErica Yang | mtgo | None | 11\nErica Yang | mtgo,paper | None | 51\nErica Yang | paper | None | 17\nSQL: SELECT c.artist, c.availability, c.side, COUNT(*) AS entries\nFROM main.cards AS c\nWHERE c.artist LIKE '%Erica Yang%'\nGROUP BY c.artist, c.availability, c.side\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"BJnq211DripgZcpGpuM989TeqJ3t-hf796HFe1KlAyE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "BJnq211DripgZcpGpuM989TeqJ3t-hf796HFe1KlAyE",
+        "sql": "SELECT COUNT(*) AS printing_count\nFROM main.cards AS c\nWHERE c.artist = 'Erica Yang'\n  AND instr(',' || c.availability || ',', ',paper,') > 0\n  AND c.uuid IN (\n      SELECT l.uuid\n      FROM main.legalities AS l\n      WHERE l.format = 'pauper'\n        AND l.status = 'Legal'\n  )\nLIMIT 1",
+        "expected_columns": [
+          "printing_count"
+        ],
+        "expected_rows": 1
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): printing_count=int\nprinting_count\n---\n23\nSQL: SELECT COUNT(*) AS printing_count\nFROM main.cards AS c\nWHERE c.artist = 'Erica Yang'\n  AND instr(',' || c.availability || ',', ',paper,') > 0\n  AND c.uuid IN (\n      SELECT l.uuid\n      FROM main.legalities AS l\n      WHERE l.format = 'pauper'\n        AND l.status = 'Legal'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS printing_count\nFROM main.cards AS c\nWHERE c.artist = 'Erica Yang'\n  AND instr(',' || c.availability || ',', ',paper,') > 0\n  AND c.uuid IN (\n      SELECT l.uuid\n      FROM main.legalities AS l\n      WHERE l.format = 'pauper'\n        AND l.status = 'Legal'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS printing_count\nFROM main.cards AS c\nWHERE c.artist = 'Erica Yang'\n  AND instr(',' || c.availability || ',', ',paper,') > 0\n  AND c.uuid IN (\n      SELECT l.uuid\n      FROM main.legalities AS l\n      WHERE l.format = 'pauper'\n        AND l.status = 'Legal'\n  )\nLIMIT 1",
+  "seconds": 30.624834250076674
+}

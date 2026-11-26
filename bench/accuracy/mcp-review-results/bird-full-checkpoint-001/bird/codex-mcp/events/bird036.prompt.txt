@@ -1,0 +1,742 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'm putting together a profile of Alameda County high schools, focusing on economic disadvantage among schools that serve up through 12th grade. Among those schools, can you tell me which one has the highest free meal rate? For each school you identify, give me one line with: the school name, its free meal rate to 4 decimal places, whether it is a charter school (Yes/No/Unknown), the grades it serves, and its SAT performance level (Below Average, Average, Above Average, or No SAT Data). Please use the school's grade span of enrollment from the school directory (the GSserved field of the schools table) both to decide whether it serves up through 12th grade and for the grades-it-serves column-do not use the free-meal program record's Low Grade/High Grade for either. If several schools tie for the highest free meal rate, list every one of them.
+Provided evidence:
+Free meal rate = Free Meal Count (K-12) / Enrollment (K-12). SAT performance level is based on the SAT total (Reading + Math + Writing): Below Average if below 1200, Average if 1200 to 1500, Above Average if above 1500, and 'No SAT Data' if no SAT scores are available.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `frpm` (
+    `CDSCode` TEXT, -- CDSCode; example: ['01100170109835', '01100170112607']
+    `Academic Year` TEXT, -- Academic Year; example: ['2014-2015']
+    `County Code` TEXT, -- County Code; example: ['01']
+    `District Code` INTEGER, -- District Code; example: [10017]
+    `School Code` TEXT, -- School Code; example: ['0109835', '0112607']
+    `County Name` TEXT, -- County Code; example: ['Alameda']
+    `District Name` TEXT, -- District Name; example: ['Alameda County Office of Education']
+    `School Name` TEXT, -- School Name; example: ['FAME Public Charter', 'Envision Academy for Arts & Technology']
+    `District Type` TEXT, -- District Type; example: ['County Office of Education (COE)']
+    `School Type` TEXT, -- School Type; example: ['K-12 Schools (Public)', 'High Schools (Public)']
+    `Educational Option Type` TEXT, -- Educational Option Type; example: ['Traditional']
+    `NSLP Provision Status` TEXT, -- NSLP Provision Status; example: ['Breakfast Provision 2']
+    `Charter School (Y/N)` INTEGER, -- Charter School (Y/N); example: [1]
+    `Charter School Number` TEXT, -- Charter School Number; example: ['0728', '0811']
+    `Charter Funding Type` TEXT, -- Charter Funding Type; example: ['Directly funded']
+    `IRC` INTEGER, -- example: [1]
+    `Low Grade` TEXT, -- Low Grade; example: ['K', '9']
+    `High Grade` TEXT, -- High Grade; example: ['12', '8']
+    `Enrollment (K-12)` REAL, -- Enrollment (K-12); example: [1087.0, 395.0]
+    `Free Meal Count (K-12)` REAL, -- Free Meal Count (K-12); example: [565.0, 186.0]
+    `Percent (%) Eligible Free (K-12)` REAL, -- example: [0.519779208831647, 0.470886075949367]
+    `FRPM Count (K-12)` REAL, -- Free or Reduced Price Meal Count (K-12); example: [715.0, 186.0]
+    `Percent (%) Eligible FRPM (K-12)` REAL, -- example: [0.657773689052438, 0.470886075949367]
+    `Enrollment (Ages 5-17)` REAL, -- Enrollment (Ages 5-17); example: [1070.0, 376.0]
+    `Free Meal Count (Ages 5-17)` REAL, -- Free Meal Count (Ages 5-17); example: [553.0, 182.0]
+    `Percent (%) Eligible Free (Ages 5-17)` REAL, -- example: [0.516822429906542, 0.484042553191489]
+    `FRPM Count (Ages 5-17)` REAL, -- example: [702.0, 182.0]
+    `Percent (%) Eligible FRPM (Ages 5-17)` REAL, -- example: [0.65607476635514, 0.484042553191489]
+    `2013-14 CALPADS Fall 1 Certification Status` INTEGER, -- 2013-14 CALPADS Fall 1 Certification Status; example: [1]
+    PRIMARY KEY (`CDSCode`),
+    FOREIGN KEY (`CDSCode`) REFERENCES `schools` (`CDSCode`)
+);
+
+CREATE TABLE `satscores` (
+    `cds` TEXT, -- California Department Schools; example: ['01100170000000', '01100170109835']
+    `rtype` TEXT, -- rtype; example: ['D', 'S']
+    `sname` TEXT, -- school name; example: ['FAME Public Charter', 'Envision Academy for Arts & Technology']
+    `dname` TEXT, -- district segment; example: ['Alameda County Office of Education', 'Alameda Unified']
+    `cname` TEXT, -- county name; example: ['Alameda']
+    `enroll12` INTEGER, -- enrollment (1st-12nd grade); example: [398, 62]
+    `NumTstTakr` INTEGER, -- Number of Test Takers in this school; example: [88, 17]
+    `AvgScrRead` INTEGER, -- average scores in Reading; example: [418, 503]
+    `AvgScrMath` INTEGER, -- average scores in Math; example: [418, 546]
+    `AvgScrWrite` INTEGER, -- average scores in writing; example: [417, 505]
+    `NumGE1500` INTEGER, -- Number of Test Takers Whose Total SAT Scores Are Greater or Equal to 1500; example: [14, 9]
+    PRIMARY KEY (`cds`),
+    FOREIGN KEY (`cds`) REFERENCES `schools` (`CDSCode`)
+);
+
+CREATE TABLE `schools` (
+    `CDSCode` TEXT, -- CDSCode; example: ['01100170000000', '01100170109835']
+    `NCESDist` TEXT, -- This field represents the 7-digit National Center for Educational Statistics (NCES) school district identification numbe; example: ['0691051']
+    `NCESSchool` TEXT, -- This field represents the 5-digit NCES school identification number. The NCESSchool combined with the NCESDist form a un; example: ['10546', '10947']
+    `StatusType` TEXT, -- This field identifies the status of the district.; example: ['Active', 'Closed']
+    `County` TEXT, -- County name; example: ['Alameda']
+    `District` TEXT, -- District; example: ['Alameda County Office of Education']
+    `School` TEXT, -- School; example: ['FAME Public Charter', 'Envision Academy for Arts & Technology']
+    `Street` TEXT, -- Street; example: ['313 West Winton Avenue', '39899 Balentine Drive, Suite 335']
+    `StreetAbr` TEXT, -- The abbreviated street address of the school, district, or administrative authority’s physical location.; example: ['313 West Winton Ave.', '39899 Balentine Dr., Ste. 335']
+    `City` TEXT, -- City; example: ['Hayward', 'Newark']
+    `Zip` TEXT, -- Zip; example: ['94544-1136', '94560-5359']
+    `State` TEXT, -- State; example: ['CA']
+    `MailStreet` TEXT, -- MailStreet; example: ['313 West Winton Avenue', '39899 Balentine Drive, Suite 335']
+    `MailStrAbr` TEXT, -- mailing street address; example: ['313 West Winton Ave.', '39899 Balentine Dr., Ste. 335']
+    `MailCity` TEXT, -- mailing city; example: ['Hayward', 'Newark']
+    `MailZip` TEXT, -- mailing zip; example: ['94544-1136', '94560-5359']
+    `MailState` TEXT, -- mailing state; example: ['CA']
+    `Phone` TEXT, -- Phone; example: ['(510) 887-0152', '(510) 596-8901']
+    `Ext` TEXT, -- The phone number extension of the school, district, or administrative authority.; example: []
+    `Website` TEXT, -- The website address of the school, district, or administrative authority.; example: ['www.acoe.org', 'www.envisionacademy.org/']
+    `OpenDate` DATE, -- The date the school opened.; example: ['2005-08-29', '2006-08-28']
+    `ClosedDate` DATE, -- The date the school closed.; example: ['2015-07-31', '2015-06-30']
+    `Charter` INTEGER, -- This field identifies a charter school.; example: [1]
+    `CharterNum` TEXT, -- The charter school number,; example: ['0728', '0811']
+    `FundingType` TEXT, -- Indicates the charter school funding type; example: ['Directly funded']
+    `DOC` TEXT, -- District Ownership Code; example: ['00']
+    `DOCType` TEXT, -- The District Ownership Code Type is the text description of the DOC category.; example: ['County Office of Education (COE)']
+    `SOC` TEXT, -- The School Ownership Code is a numeric code used to identify the type of school.; example: ['65', '66']
+    `SOCType` TEXT, -- The School Ownership Code Type is the text description of the type of school.; example: ['K-12 Schools (Public)', 'High Schools (Public)']
+    `EdOpsCode` TEXT, -- The Education Option Code is a short text description of the type of education offered.; example: ['TRAD']
+    `EdOpsName` TEXT, -- Educational Option Name; example: ['Traditional']
+    `EILCode` TEXT, -- The Educational Instruction Level Code is a short text description of the institution's type relative to the grade range; example: ['ELEMHIGH', 'HS']
+    `EILName` TEXT, -- The Educational Instruction Level Name is the long text description of the institution’s type relative to the grade rang; example: ['Elementary-High Combination', 'High School']
+    `GSoffered` TEXT, -- The grade span offered is the lowest grade and the highest grade offered or supported by the school, district, or admini; example: ['K-12', '9-12']
+    `GSserved` TEXT, -- It is the lowest grade and the highest grade of student enrollment as reported in the most recent certified CALPADS Fall; example: ['K-12', '9-12']
+    `Virtual` TEXT, -- This field identifies the type of virtual instruction offered by the school. Virtual instruction is instruction in which; example: ['P', 'N']
+    `Magnet` INTEGER, -- This field identifies whether a school is a magnet school and/or provides a magnet program.; example: [0]
+    `Latitude` REAL, -- The angular distance (expressed in degrees) between the location of the school, district, or administrative authority an; example: [37.658212, 37.521436]
+    `Longitude` REAL, -- The angular distance (expressed in degrees) between the location of the school, district, or administrative authority an; example: [-122.09713, -121.99391]
+    `AdmFName1` TEXT, -- administrator's first name; example: ['L Karen', 'Laura']
+    `AdmLName1` TEXT, -- administrator's last name; example: ['Monroe', 'Robell']
+    `AdmEmail1` TEXT, -- administrator's email address; example: ['lkmonroe@acoe.org', 'laura@envisionacademy.org']
+    `AdmFName2` TEXT, -- example: []
+    `AdmLName2` TEXT, -- example: []
+    `AdmEmail2` TEXT, -- example: []
+    `AdmFName3` TEXT, -- example: []
+    `AdmLName3` TEXT, -- example: []
+    `AdmEmail3` TEXT, -- example: []
+    `LastUpdate` DATE, -- example: ['2015-06-23', '2015-09-01']
+    PRIMARY KEY (`CDSCode`)
+);
+
+
+Official column/value descriptions (2024 Dev release):
+{
+  "frpm": [
+    {
+      "original_column_name": "CDSCode",
+      "column_name": "",
+      "column_description": "CDSCode",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Academic Year",
+      "column_name": "",
+      "column_description": "Academic Year",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "County Code",
+      "column_name": "",
+      "column_description": "County Code",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "District Code",
+      "column_name": "",
+      "column_description": "District Code",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "School Code ",
+      "column_name": "",
+      "column_description": "School Code",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "County Name",
+      "column_name": "",
+      "column_description": "County Code ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "District Name ",
+      "column_name": "",
+      "column_description": "District Name ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "School Name",
+      "column_name": "",
+      "column_description": "School Name ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "District Type",
+      "column_name": "",
+      "column_description": "District Type",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "School Type ",
+      "column_name": "",
+      "column_description": "School Type ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Educational Option Type",
+      "column_name": "",
+      "column_description": "Educational Option Type",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "NSLP Provision Status",
+      "column_name": "",
+      "column_description": "NSLP Provision Status",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Charter School (Y/N)",
+      "column_name": "",
+      "column_description": "Charter School (Y/N)",
+      "data_format": "integer",
+      "value_description": "0: N;\n1: Y"
+    },
+    {
+      "original_column_name": "Charter School Number",
+      "column_name": "",
+      "column_description": "Charter School Number",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Charter Funding Type",
+      "column_name": "",
+      "column_description": "Charter Funding Type",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "IRC",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "integer",
+      "value_description": "Not useful"
+    },
+    {
+      "original_column_name": "Low Grade",
+      "column_name": "",
+      "column_description": "Low Grade",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "High Grade",
+      "column_name": "",
+      "column_description": "High Grade",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Enrollment (K-12)",
+      "column_name": "",
+      "column_description": "Enrollment (K-12)",
+      "data_format": "real",
+      "value_description": "commonsense evidence:\n\nK-12: 1st grade - 12nd grade "
+    },
+    {
+      "original_column_name": "Free Meal Count (K-12)",
+      "column_name": "",
+      "column_description": "Free Meal Count (K-12)",
+      "data_format": "real",
+      "value_description": "commonsense evidence:\n\neligible free rate = Free Meal Count / Enrollment"
+    },
+    {
+      "original_column_name": "Percent (%) Eligible Free (K-12)",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "FRPM Count (K-12)",
+      "column_name": "",
+      "column_description": "Free or Reduced Price Meal Count (K-12)",
+      "data_format": "real",
+      "value_description": "commonsense evidence:\n\neligible FRPM rate = FRPM / Enrollment"
+    },
+    {
+      "original_column_name": "Percent (%) Eligible FRPM (K-12)",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Enrollment (Ages 5-17)",
+      "column_name": "",
+      "column_description": "Enrollment (Ages 5-17)",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Free Meal Count (Ages 5-17)",
+      "column_name": "",
+      "column_description": "Free Meal Count (Ages 5-17)",
+      "data_format": "real",
+      "value_description": "commonsense evidence:\n\neligible free rate = Free Meal Count / Enrollment"
+    },
+    {
+      "original_column_name": " Percent (%) Eligible Free (Ages 5-17)",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "FRPM Count (Ages 5-17)",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Percent (%) Eligible FRPM (Ages 5-17)",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "2013-14 CALPADS Fall 1 Certification Status",
+      "column_name": "",
+      "column_description": "2013-14 CALPADS Fall 1 Certification Status",
+      "data_format": "integer",
+      "value_description": ""
+    }
+  ],
+  "satscores": [
+    {
+      "original_column_name": "cds",
+      "column_name": "",
+      "column_description": "California Department Schools",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "rtype",
+      "column_name": "",
+      "column_description": "rtype",
+      "data_format": "text",
+      "value_description": "unuseful"
+    },
+    {
+      "original_column_name": "sname",
+      "column_name": "school name",
+      "column_description": "school name",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "dname",
+      "column_name": "district name",
+      "column_description": "district segment",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "cname",
+      "column_name": "county name",
+      "column_description": "county name",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "enroll12",
+      "column_name": "enrollment (1st-12nd grade)",
+      "column_description": "enrollment (1st-12nd grade)",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "NumTstTakr",
+      "column_name": "Number of Test Takers",
+      "column_description": "Number of Test Takers in this school",
+      "data_format": "integer",
+      "value_description": "number of test takers in each school"
+    },
+    {
+      "original_column_name": "AvgScrRead",
+      "column_name": "average scores in Reading",
+      "column_description": "average scores in Reading",
+      "data_format": "integer",
+      "value_description": "average scores in Reading"
+    },
+    {
+      "original_column_name": "AvgScrMath",
+      "column_name": "average scores in Math",
+      "column_description": "average scores in Math",
+      "data_format": "integer",
+      "value_description": "average scores in Math"
+    },
+    {
+      "original_column_name": "AvgScrWrite",
+      "column_name": "average scores in writing",
+      "column_description": "average scores in writing",
+      "data_format": "integer",
+      "value_description": "average scores in writing"
+    },
+    {
+      "original_column_name": "NumGE1500",
+      "column_name": "Number of Test Takers Whose Total SAT Scores Are Greater or Equal to 1500",
+      "column_description": "Number of Test Takers Whose Total SAT Scores Are Greater or Equal to 1500",
+      "data_format": "integer",
+      "value_description": "Number of Test Takers Whose Total SAT Scores Are Greater or Equal to 1500\n\ncommonsense evidence:\n\nExcellence Rate = NumGE1500 / NumTstTakr"
+    }
+  ],
+  "schools": [
+    {
+      "original_column_name": "CDSCode",
+      "column_name": "CDSCode",
+      "column_description": "CDSCode",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "NCESDist",
+      "column_name": "National Center for Educational Statistics school district identification number",
+      "column_description": "This field represents the 7-digit National Center for Educational Statistics (NCES) school district identification number. The first 2 digits identify the state and the last 5 digits identify the school district. Combined, they make a unique 7-digit ID for each school district.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "NCESSchool",
+      "column_name": "National Center for Educational Statistics school identification number",
+      "column_description": "This field represents the 5-digit NCES school identification number. The NCESSchool combined with the NCESDist form a unique 12-digit ID for each school.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "StatusType",
+      "column_name": "",
+      "column_description": "This field identifies the status of the district. ",
+      "data_format": "text",
+      "value_description": "Definitions of the valid status types are listed below:\n·       Active: The district is in operation and providing instructional services.\n·       Closed: The district is not in operation and no longer providing instructional services.\n·       Merged: The district has combined with another district or districts.\n·       Pending: The district has not opened for operation and instructional services yet, but plans to open within the next 9–12 months."
+    },
+    {
+      "original_column_name": "County",
+      "column_name": "",
+      "column_description": "County name",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "District",
+      "column_name": "",
+      "column_description": "District",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "School",
+      "column_name": "",
+      "column_description": "School",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Street",
+      "column_name": "",
+      "column_description": "Street",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "StreetAbr",
+      "column_name": "street address ",
+      "column_description": "The abbreviated street address of the school, district, or administrative authority’s physical location.",
+      "data_format": "text",
+      "value_description": "The abbreviated street address of the school, district, or administrative authority’s physical location. Note: Some records (primarily records of closed or retired schools) may not have data in this field."
+    },
+    {
+      "original_column_name": "City",
+      "column_name": "",
+      "column_description": "City",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Zip",
+      "column_name": "",
+      "column_description": "Zip",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "State",
+      "column_name": "",
+      "column_description": "State",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "MailStreet",
+      "column_name": "",
+      "column_description": "MailStreet",
+      "data_format": "text",
+      "value_description": "The unabbreviated mailing address of the school, district, or administrative authority. Note: 1) Some entities (primarily closed or retired schools) may not have data in this field; 2) Many active entities have not provided a mailing street address. For your convenience we have filled the unpopulated MailStreet cells with Street data."
+    },
+    {
+      "original_column_name": "MailStrAbr",
+      "column_name": "mailing street address ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "the abbreviated mailing street address of the school, district, or administrative authority.Note: Many active entities have not provided a mailing street address. For your convenience we have filled the unpopulated MailStrAbr cells with StreetAbr data."
+    },
+    {
+      "original_column_name": "MailCity",
+      "column_name": "mailing city",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "The city associated with the mailing address of the school, district, or administrative authority. Note: Many entities have not provided a mailing address city. For your convenience we have filled the unpopulated MailCity cells with City data."
+    },
+    {
+      "original_column_name": "MailZip",
+      "column_name": "mailing zip ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "The zip code associated with the mailing address of the school, district, or administrative authority. Note: Many entities have not provided a mailing address zip code. For your convenience we have filled the unpopulated MailZip cells with Zip data."
+    },
+    {
+      "original_column_name": "MailState",
+      "column_name": "mailing state",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "The state within the mailing address. For your convenience we have filled the unpopulated MailState cells with State data."
+    },
+    {
+      "original_column_name": "Phone",
+      "column_name": "",
+      "column_description": "Phone",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Ext",
+      "column_name": "extension",
+      "column_description": "The phone number extension of the school, district, or administrative authority.",
+      "data_format": "text",
+      "value_description": "The phone number extension of the school, district, or administrative authority."
+    },
+    {
+      "original_column_name": "Website",
+      "column_name": "",
+      "column_description": "The website address of the school, district, or administrative authority.",
+      "data_format": "text",
+      "value_description": "The website address of the school, district, or administrative authority."
+    },
+    {
+      "original_column_name": "OpenDate",
+      "column_name": "",
+      "column_description": "The date the school opened.",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "ClosedDate",
+      "column_name": "",
+      "column_description": "The date the school closed.",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Charter",
+      "column_name": "",
+      "column_description": "This field identifies a charter school. ",
+      "data_format": "integer",
+      "value_description": "The field is coded as follows:\n\n·       1 = The school is a charter\n\n·       0 = The school is not a charter"
+    },
+    {
+      "original_column_name": "CharterNum",
+      "column_name": "",
+      "column_description": "The charter school number,",
+      "data_format": "text",
+      "value_description": "4-digit number assigned to a charter school."
+    },
+    {
+      "original_column_name": "FundingType",
+      "column_name": "",
+      "column_description": "Indicates the charter school funding type",
+      "data_format": "text",
+      "value_description": "Values are as follows:\n\n·       Not in CS (California School) funding model\n\n·       Locally funded\n\n·       Directly funded"
+    },
+    {
+      "original_column_name": "DOC",
+      "column_name": "District Ownership Code",
+      "column_description": "District Ownership Code",
+      "data_format": "text",
+      "value_description": "The District Ownership Code (DOC) is the numeric code used to identify the category of the Administrative Authority.\n•       00 - County Office of Education\n•       02 – State Board of Education\n•       03 – Statewide Benefit Charter\n•       31 – State Special Schools\n•       34 – Non-school Location*\n•       52 – Elementary School District\n•       54 – Unified School District\n•       56 – High School District\n•       98 – Regional Occupational Center/Program (ROC/P)\ncommonsense evidence:\n*Only the California Education Authority has been included in the non-school location category."
+    },
+    {
+      "original_column_name": "DOCType",
+      "column_name": "The District Ownership Code Type",
+      "column_description": "The District Ownership Code Type is the text description of the DOC category.",
+      "data_format": "text",
+      "value_description": "(See text values in DOC field description above)"
+    },
+    {
+      "original_column_name": "SOC",
+      "column_name": "School Ownership Code",
+      "column_description": "The School Ownership Code is a numeric code used to identify the type of school.",
+      "data_format": "text",
+      "value_description": "•      08 - Preschool      \n•       09 – Special Education Schools (Public)\n•      11 – Youth Authority Facilities (CEA)\n•       13 – Opportunity Schools\n•       14 – Juvenile Court Schools\n•       15 – Other County or District Programs\n•       31 – State Special Schools\n•       60 – Elementary School (Public)\n•       61 – Elementary School in 1 School District (Public)\n•       62 – Intermediate/Middle Schools (Public)\n•       63 – Alternative Schools of Choice\n•       64 – Junior High Schools (Public)\n•       65 – K-12 Schools (Public)\n•       66 – High Schools (Public)\n•       67 – High Schools in 1 School District (Public)\n•       68 – Continuation High Schools\n•       69 – District Community Day Schools\n•       70 – Adult Education Centers\n•       98 – Regional Occupational Center/Program (ROC/P)"
+    },
+    {
+      "original_column_name": "SOCType",
+      "column_name": "School Ownership Code Type",
+      "column_description": "The School Ownership Code Type is the text description of the type of school.",
+      "data_format": "text",
+      "value_description": "The School Ownership Code Type is the text description of the type of school."
+    },
+    {
+      "original_column_name": "EdOpsCode",
+      "column_name": "Education Option Code",
+      "column_description": "The Education Option Code is a short text description of the type of education offered.",
+      "data_format": "text",
+      "value_description": "\n•      ALTSOC – Alternative School of Choice\n•      COMM – County Community School\n•       COMMDAY – Community Day School\n•       CON – Continuation School\n•       JUV – Juvenile Court School\n•       OPP – Opportunity School\n•       YTH – Youth Authority School\n•       SSS – State Special School\n•       SPEC – Special Education School\n•       TRAD – Traditional\n•       ROP – Regional Occupational Program\n•       HOMHOS – Home and Hospital\n•       SPECON – District Consortia Special Education School"
+    },
+    {
+      "original_column_name": "EdOpsName",
+      "column_name": "Educational Option Name",
+      "column_description": "Educational Option Name",
+      "data_format": "text",
+      "value_description": "The Educational Option Name is the long text description of the type of education being offered."
+    },
+    {
+      "original_column_name": "EILCode",
+      "column_name": "Educational Instruction Level Code",
+      "column_description": "The Educational Instruction Level Code is a short text description of the institution's type relative to the grade range served.",
+      "data_format": "text",
+      "value_description": "•       A – Adult\n•       ELEM – Elementary\n•       ELEMHIGH – Elementary-High Combination\n•       HS – High School\n•       INTMIDJR – Intermediate/Middle/Junior High\n•       PS – Preschool\n•       UG – Ungraded"
+    },
+    {
+      "original_column_name": "EILName",
+      "column_name": "Educational Instruction Level Name ",
+      "column_description": "The Educational Instruction Level Name is the long text description of the institution’s type relative to the grade range served.",
+      "data_format": "text",
+      "value_description": "The Educational Instruction Level Name is the long text description of the institution’s type relative to the grade range served."
+    },
+    {
+      "original_column_name": "GSoffered",
+      "column_name": "grade span offered",
+      "column_description": "The grade span offered is the lowest grade and the highest grade offered or supported by the school, district, or administrative authority. This field might differ from the grade span served as reported in the most recent certified California Longitudinal Pupil Achievement (CALPADS) Fall 1 data collection.",
+      "data_format": "text",
+      "value_description": "For example XYZ School might display the following data:\n\nGSoffered = P–Adult\n\nGSserved = K–12"
+    },
+    {
+      "original_column_name": "GSserved",
+      "column_name": "grade span served.",
+      "column_description": "It is the lowest grade and the highest grade of student enrollment as reported in the most recent certified CALPADS Fall 1 data collection. Only K–12 enrollment is reported through CALPADS. This field may differ from the grade span offered.",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\n\n1.     Only K–12 enrollment is reported through CALPADS\n\n2.     Note: Special programs at independent study, alternative education, and special education schools will often exceed the typical grade span for schools of that type"
+    },
+    {
+      "original_column_name": "Virtual",
+      "column_name": "",
+      "column_description": "This field identifies the type of virtual instruction offered by the school. Virtual instruction is instruction in which students and teachers are separated by time and/or location, and interaction occurs via computers and/or telecommunications technologies. ",
+      "data_format": "text",
+      "value_description": "The field is coded as follows:\n\n·       F = Exclusively Virtual – The school has no physical building where students meet with each other or with teachers, all instruction is virtual.\n\n·       V = Primarily Virtual – The school focuses on a systematic program of virtual instruction but includes some physical meetings among students or with teachers.\n\n·       C = Primarily Classroom – The school offers virtual courses but virtual instruction is not the primary means of instruction.\n\n·       N = Not Virtual – The school does not offer any virtual instruction.\n\n·       P = Partial Virtual – The school offers some, but not all, instruction through virtual instruction. Note: This value was retired and replaced with the Primarily Virtual and Primarily Classroom values beginning with the 2016–17 school year."
+    },
+    {
+      "original_column_name": "Magnet",
+      "column_name": "",
+      "column_description": "This field identifies whether a school is a magnet school and/or provides a magnet program. ",
+      "data_format": "integer",
+      "value_description": "The field is coded as follows:\n\n·       1 = Magnet - The school is a magnet school and/or offers a magnet program.\n\n·       0 = Not Magnet - The school is not a magnet school and/or does not offer a magnet program.\n\ncommonsense evidence:\n\nNote: Preschools and adult education centers do not contain a magnet school indicator."
+    },
+    {
+      "original_column_name": "Latitude",
+      "column_name": "",
+      "column_description": "The angular distance (expressed in degrees) between the location of the school, district, or administrative authority and the equator measured north to south.",
+      "data_format": "real",
+      "value_description": "The angular distance (expressed in degrees) between the location of the school, district, or administrative authority and the equator measured north to south."
+    },
+    {
+      "original_column_name": "Longitude",
+      "column_name": "",
+      "column_description": "The angular distance (expressed in degrees) between the location of the school, district, or administrative authority and the prime meridian (Greenwich, England) measured from west to east.",
+      "data_format": "real",
+      "value_description": "The angular distance (expressed in degrees) between the location of the school, district, or administrative authority and the prime meridian (Greenwich, England) measured from west to east."
+    },
+    {
+      "original_column_name": "AdmFName1",
+      "column_name": "administrator's first name",
+      "column_description": "administrator's first name",
+      "data_format": "text",
+      "value_description": "The superintendent’s or principal’s first name.\n\ncommonsense evidence:\n\nOnly active and pending districts and schools will display administrator information, if applicable."
+    },
+    {
+      "original_column_name": "AdmLName1",
+      "column_name": "administrator's last name",
+      "column_description": "administrator's last name",
+      "data_format": "text",
+      "value_description": "The superintendent’s or principal’s last name.\n\ncommonsense evidence:\nOnly active and pending districts and schools will display administrator information, if applicable."
+    },
+    {
+      "original_column_name": "AdmEmail1",
+      "column_name": "administrator's email address",
+      "column_description": "administrator's email address",
+      "data_format": "text",
+      "value_description": "The superintendent’s or principal’s email address.\n\ncommonsense evidence:\n\nOnly active and pending districts and schools will display administrator information, if applicable."
+    },
+    {
+      "original_column_name": "AdmFName2",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "SAME as 1"
+    },
+    {
+      "original_column_name": "AdmLName2",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "AdmEmail2",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "AdmFName3",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "not useful"
+    },
+    {
+      "original_column_name": "AdmLName3",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "not useful"
+    },
+    {
+      "original_column_name": "AdmEmail3",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "not useful"
+    },
+    {
+      "original_column_name": "LastUpdate",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "date",
+      "value_description": "when is this record updated last time"
+    }
+  ]
+}
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

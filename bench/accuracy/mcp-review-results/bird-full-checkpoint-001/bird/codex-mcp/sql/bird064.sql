@@ -1,0 +1,6 @@
+SELECT COUNT(*) AS card_count
+FROM main.cards
+WHERE borderColor = 'black'
+  AND instr(',' || availability || ',', ',mtgo,') > 0
+  AND (CAST(power AS REAL) >= 10 OR power = '∞')
+LIMIT 1

@@ -1,0 +1,240 @@
+{
+  "instance_id": "bird024",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "a122aa8c547f95c6ac32a49edaf46bd450f1a9327d9a59ed54f786b0fbc7d057",
+  "events_sha256": "2753abf5982468755879edb1d363a17256ec5af6978e1ef14d977d143886d86c",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 292751,
+      "cached_input_tokens": 272000,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1565,
+      "reasoning_output_tokens": 108
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"btL4G52c3b5K6JsxNjyx7Ha1_OO3r4SDEporaMywW14\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "btL4G52c3b5K6JsxNjyx7Ha1_OO3r4SDEporaMywW14",
+        "sql": "SELECT s.School, f.\"School Name\", f.\"School Type\", s.SOCType, s.Latitude, s.State, s.StatusType\nFROM schools AS s\nLEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.School LIKE '%middle%' OR s.SOC IN ('62', '64') OR f.\"School Type\" LIKE '%middle%' OR s.School LIKE '%intermediate%' OR s.School LIKE '%junior high%'\nORDER BY s.Latitude DESC\nLIMIT 12"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=str; School Name=NoneType,str; School Type=NoneType,str; SOCType=str; Latitude=float; State=str; StatusType=str\nSchool | School Name | School Type | SOCType | Latitude | State | StatusType\n--- | --- | --- | --- | --- | --- | ---\nCrescent Elk Middle | Crescent Elk Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 41.756316 | CA | Active\nJackson Street Elementary | Jackson Street Elementary | Intermediate/Middle Schools (Public) | Elementary Schools (Public) | 41.728092 | CA | Active\nScott Valley Junior High | Scott Valley Junior High | Junior High Schools (Public) | Junior High Schools (Public) | 41.609126 | CA | Active\nModoc Middle | Modoc Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 41.487362 | CA | Active\nSisson | None | None | Intermediate/Middle Schools (Public) | 41.318576 | CA | Closed\nBig Valley Elementary | Big Valley Elementary | Intermediate/Middle Schools (Public) | Elementary Schools (Public) | 41.123157 | CA | Active\nMcKinleyville Middle | McKinleyville Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 40.946977 | CA | Active\nSunny Brae Middle | Sunny Brae Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 40.857437 | CA | Active\nZane (Catherine L.) Junior High | None | None | Intermediate/Middle Schools (Public) | 40.788118 | CA | Merged\nCatherine L. Zane Middle | Catherine L. Zane Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 40.787755 | CA | Active\nFreshwater Charter Middle | Freshwater Charter Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 40.787702 | CA | Active\nWinship Middle | Winship Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 40.765207 | CA | Active\nSQL: SELECT s.School, f.\"School Name\", f.\"School Type\", s.SOCType, s.Latitude, s.State, s.StatusType\nFROM schools AS s\nLEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.School LIKE '%middle%' OR s.SOC IN ('62', '64') OR f.\"School Type\" LIKE '%middle%' OR s.School LIKE '%intermediate%' OR s.School LIKE '%junior high%'\nORDER BY s.Latitude DESC\nLIMIT 12"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"PjhzIoh19nVbgOBBa-e7k219-yy6PPbuOb8QjymgQC0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "PjhzIoh19nVbgOBBa-e7k219-yy6PPbuOb8QjymgQC0",
+        "expected_columns": [
+          "School Type",
+          "School Name",
+          "Latitude"
+        ],
+        "sql": "WITH middle_schools AS (\n    SELECT f.\"School Type\", s.School AS \"School Name\", s.Latitude\n    FROM schools AS s\n    LEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\n    WHERE s.State = 'CA'\n      AND s.Latitude IS NOT NULL\n      AND (\n          f.\"School Type\" IN ('Intermediate/Middle Schools (Public)', 'Junior High Schools (Public)')\n          OR s.SOC IN ('62', '64')\n          OR (' ' || s.School || ' ') LIKE '% middle %'\n          OR s.School LIKE '%intermediate%'\n          OR s.School LIKE '%junior high%'\n          OR (' ' || f.\"School Name\" || ' ') LIKE '% middle %'\n          OR f.\"School Name\" LIKE '%intermediate%'\n          OR f.\"School Name\" LIKE '%junior high%'\n      )\n)\nSELECT \"School Type\", \"School Name\", Latitude\nFROM middle_schools\nWHERE Latitude = (SELECT MAX(Latitude) FROM middle_schools)\nORDER BY \"School Name\";"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School Type=str; School Name=str; Latitude=float\nSchool Type | School Name | Latitude\n--- | --- | ---\nJunior High Schools (Public) | Butte Valley Elementary | 41.964204\nSQL: WITH middle_schools AS (\n    SELECT f.\"School Type\", s.School AS \"School Name\", s.Latitude\n    FROM schools AS s\n    LEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\n    WHERE s.State = 'CA'\n      AND s.Latitude IS NOT NULL\n      AND (\n          f.\"School Type\" IN ('Intermediate/Middle Schools (Public)', 'Junior High Schools (Public)')\n          OR s.SOC IN ('62', '64')\n          OR (' ' || s.School || ' ') LIKE '% middle %'\n          OR s.School LIKE '%intermediate%'\n          OR s.School LIKE '%junior high%'\n          OR (' ' || f.\"School Name\" || ' ') LIKE '% middle %'\n          OR f.\"School Name\" LIKE '%intermediate%'\n          OR f.\"School Name\" LIKE '%junior high%'\n      )\n)\nSELECT \"School Type\", \"School Name\", Latitude\nFROM middle_schools\nWHERE Latitude = (SELECT MAX(Latitude) FROM middle_schools)\nORDER BY \"School Name\"\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"UcfdqZXVez2Lcz4I_CxmZj0C5hpPF0SjtxGyz3fuiDk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "UcfdqZXVez2Lcz4I_CxmZj0C5hpPF0SjtxGyz3fuiDk",
+        "sql": "SELECT f.\"School Name\", s.School, f.\"School Type\", s.SOCType, s.Latitude FROM frpm AS f JOIN schools AS s ON s.CDSCode = f.CDSCode WHERE s.Latitude >= 41.75 AND (f.\"School Type\" LIKE '%Junior%' OR f.\"School Name\" LIKE '%Middle%' OR s.School LIKE '%Middle%') ORDER BY s.Latitude DESC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School Name=str; School=str; School Type=str; SOCType=str; Latitude=float\nSchool Name | School | School Type | SOCType | Latitude\n--- | --- | --- | --- | ---\nButte Valley Middle | Butte Valley Elementary | Junior High Schools (Public) | Elementary Schools (Public) | 41.964204\nCrescent Elk Middle | Crescent Elk Middle | Intermediate/Middle Schools (Public) | Intermediate/Middle Schools (Public) | 41.756316\nSQL: SELECT f.\"School Name\", s.School, f.\"School Type\", s.SOCType, s.Latitude FROM frpm AS f JOIN schools AS s ON s.CDSCode = f.CDSCode WHERE s.Latitude >= 41.75 AND (f.\"School Type\" LIKE '%Junior%' OR f.\"School Name\" LIKE '%Middle%' OR s.School LIKE '%Middle%') ORDER BY s.Latitude DESC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_fQ3VeSjh8mBAVBcKu9b0Lym79V4CLlwdKY0xjHqT0w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_fQ3VeSjh8mBAVBcKu9b0Lym79V4CLlwdKY0xjHqT0w",
+        "expected_columns": [
+          "School Type",
+          "School Name",
+          "Latitude"
+        ],
+        "sql": "WITH middle_schools AS (\n    SELECT f.\"School Type\",\n           COALESCE(f.\"School Name\", s.School) AS \"School Name\",\n           s.Latitude\n    FROM schools AS s\n    LEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\n    WHERE s.State = 'CA'\n      AND s.Latitude IS NOT NULL\n      AND (\n          f.\"School Type\" IN ('Intermediate/Middle Schools (Public)', 'Junior High Schools (Public)')\n          OR s.SOC IN ('62', '64')\n          OR (' ' || f.\"School Name\" || ' ') LIKE '% middle %'\n          OR f.\"School Name\" LIKE '%intermediate%'\n          OR f.\"School Name\" LIKE '%junior high%'\n          OR (' ' || s.School || ' ') LIKE '% middle %'\n          OR s.School LIKE '%intermediate%'\n          OR s.School LIKE '%junior high%'\n      )\n)\nSELECT \"School Type\", \"School Name\", Latitude\nFROM middle_schools\nWHERE Latitude = (SELECT MAX(Latitude) FROM middle_schools)\nORDER BY \"School Name\"\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School Type=str; School Name=str; Latitude=float\nSchool Type | School Name | Latitude\n--- | --- | ---\nJunior High Schools (Public) | Butte Valley Middle | 41.964204\nSQL: WITH middle_schools AS (\n    SELECT f.\"School Type\",\n           COALESCE(f.\"School Name\", s.School) AS \"School Name\",\n           s.Latitude\n    FROM schools AS s\n    LEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\n    WHERE s.State = 'CA'\n      AND s.Latitude IS NOT NULL\n      AND (\n          f.\"School Type\" IN ('Intermediate/Middle Schools (Public)', 'Junior High Schools (Public)')\n          OR s.SOC IN ('62', '64')\n          OR (' ' || f.\"School Name\" || ' ') LIKE '% middle %'\n          OR f.\"School Name\" LIKE '%intermediate%'\n          OR f.\"School Name\" LIKE '%junior high%'\n          OR (' ' || s.School || ' ') LIKE '% middle %'\n          OR s.School LIKE '%intermediate%'\n          OR s.School LIKE '%junior high%'\n      )\n)\nSELECT \"School Type\", \"School Name\", Latitude\nFROM middle_schools\nWHERE Latitude = (SELECT MAX(Latitude) FROM middle_schools)\nORDER BY \"School Name\"\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH middle_schools AS (\n    SELECT f.\"School Type\",\n           COALESCE(f.\"School Name\", s.School) AS \"School Name\",\n           s.Latitude\n    FROM schools AS s\n    LEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\n    WHERE s.State = 'CA'\n      AND s.Latitude IS NOT NULL\n      AND (\n          f.\"School Type\" IN ('Intermediate/Middle Schools (Public)', 'Junior High Schools (Public)')\n          OR s.SOC IN ('62', '64')\n          OR (' ' || f.\"School Name\" || ' ') LIKE '% middle %'\n          OR f.\"School Name\" LIKE '%intermediate%'\n          OR f.\"School Name\" LIKE '%junior high%'\n          OR (' ' || s.School || ' ') LIKE '% middle %'\n          OR s.School LIKE '%intermediate%'\n          OR s.School LIKE '%junior high%'\n      )\n)\nSELECT \"School Type\", \"School Name\", Latitude\nFROM middle_schools\nWHERE Latitude = (SELECT MAX(Latitude) FROM middle_schools)\nORDER BY \"School Name\"\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH middle_schools AS (\n    SELECT f.\"School Type\",\n           COALESCE(f.\"School Name\", s.School) AS \"School Name\",\n           s.Latitude\n    FROM schools AS s\n    LEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\n    WHERE s.State = 'CA'\n      AND s.Latitude IS NOT NULL\n      AND (\n          f.\"School Type\" IN ('Intermediate/Middle Schools (Public)', 'Junior High Schools (Public)')\n          OR s.SOC IN ('62', '64')\n          OR (' ' || f.\"School Name\" || ' ') LIKE '% middle %'\n          OR f.\"School Name\" LIKE '%intermediate%'\n          OR f.\"School Name\" LIKE '%junior high%'\n          OR (' ' || s.School || ' ') LIKE '% middle %'\n          OR s.School LIKE '%intermediate%'\n          OR s.School LIKE '%junior high%'\n      )\n)\nSELECT \"School Type\", \"School Name\", Latitude\nFROM middle_schools\nWHERE Latitude = (SELECT MAX(Latitude) FROM middle_schools)\nORDER BY \"School Name\"\nLIMIT -1",
+  "seconds": 56.2000569999218
+}

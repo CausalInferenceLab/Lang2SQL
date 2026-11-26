@@ -1,0 +1,10 @@
+SELECT COUNT(*) AS card_count
+FROM (
+    SELECT name
+    FROM main.cards
+    GROUP BY name
+    HAVING MAX(hasContentWarning) = 1
+       AND MAX(instr(',' || availability || ',', ',paper,')) > 0
+       AND MAX(instr(',' || availability || ',', ',mtgo,')) = 0
+) AS qualifying_cards
+LIMIT 1000

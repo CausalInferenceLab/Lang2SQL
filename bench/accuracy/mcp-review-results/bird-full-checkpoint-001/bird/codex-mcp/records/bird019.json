@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird019",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "63de30ac2f4be3a9077172e0c12903ac9ee3e05285eb5f969330a4ff96ff2f62",
+  "events_sha256": "96299cf1f792ac9a036be63d40e27979b6d0e052625e34b4f0c220f7905f4161",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 219735,
+      "cached_input_tokens": 200448,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 709,
+      "reasoning_output_tokens": 8
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"t5ODEs_N2XhL229hHecTvrwD7QcHnhYteUzoPkuEsKA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "t5ODEs_N2XhL229hHecTvrwD7QcHnhYteUzoPkuEsKA",
+        "sql": "SELECT f.\"Low Grade\", s.GSoffered, s.GSserved, COUNT(*) AS records\nFROM main.schools AS s\nLEFT JOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.NCESDist = '0632640' AND s.School IS NOT NULL\nGROUP BY f.\"Low Grade\", s.GSoffered, s.GSserved"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Low Grade=NoneType,str; GSoffered=str; GSserved=str; records=int\nLow Grade | GSoffered | GSserved | records\n--- | --- | --- | ---\nNone | K-2 | K-6 | 1\nK | K-6 | K-6 | 7\nK | K-8 | 1-8 | 1\nP | P-6 | K-6 | 1\nSQL: SELECT f.\"Low Grade\", s.GSoffered, s.GSserved, COUNT(*) AS records\nFROM main.schools AS s\nLEFT JOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.NCESDist = '0632640' AND s.School IS NOT NULL\nGROUP BY f.\"Low Grade\", s.GSoffered, s.GSserved\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"4QGp_kL80wVaoLxBsPS46L3KaOFrKaQVRSVobeJS3Mw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "4QGp_kL80wVaoLxBsPS46L3KaOFrKaQVRSVobeJS3Mw",
+        "expected_rows": 1,
+        "expected_columns": [
+          "lowest_grade"
+        ],
+        "sql": "SELECT f.\"Low Grade\" AS lowest_grade\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.NCESDist = '0632640'\n  AND f.\"Low Grade\" IS NOT NULL\nORDER BY CASE f.\"Low Grade\"\n    WHEN 'P' THEN -1\n    WHEN 'K' THEN 0\n    ELSE CAST(f.\"Low Grade\" AS INTEGER)\nEND\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): lowest_grade=str\nlowest_grade\n---\nP\nSQL: SELECT f.\"Low Grade\" AS lowest_grade\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.NCESDist = '0632640'\n  AND f.\"Low Grade\" IS NOT NULL\nORDER BY CASE f.\"Low Grade\"\n    WHEN 'P' THEN -1\n    WHEN 'K' THEN 0\n    ELSE CAST(f.\"Low Grade\" AS INTEGER)\nEND\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT f.\"Low Grade\" AS lowest_grade\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.NCESDist = '0632640'\n  AND f.\"Low Grade\" IS NOT NULL\nORDER BY CASE f.\"Low Grade\"\n    WHEN 'P' THEN -1\n    WHEN 'K' THEN 0\n    ELSE CAST(f.\"Low Grade\" AS INTEGER)\nEND\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT f.\"Low Grade\" AS lowest_grade\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.NCESDist = '0632640'\n  AND f.\"Low Grade\" IS NOT NULL\nORDER BY CASE f.\"Low Grade\"\n    WHEN 'P' THEN -1\n    WHEN 'K' THEN 0\n    ELSE CAST(f.\"Low Grade\" AS INTEGER)\nEND\nLIMIT 1",
+  "seconds": 29.995985624962486
+}

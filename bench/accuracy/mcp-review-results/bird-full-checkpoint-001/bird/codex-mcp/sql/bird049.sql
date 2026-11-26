@@ -1,0 +1,6 @@
+SELECT id
+FROM main.cards
+WHERE borderColor = 'borderless'
+  AND (cardKingdomId IS NULL OR cardKingdomFoilId IS NULL)
+ORDER BY id
+LIMIT -1

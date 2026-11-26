@@ -1,0 +1,6 @@
+SELECT COUNT(DISTINCT name) AS card_count
+FROM main.cards
+WHERE isPromo = 1
+  AND instr(',' || types || ',', ',Creature,') > 0
+  AND instr(leadershipSkills, '''brawl'': True') > 0
+LIMIT 1

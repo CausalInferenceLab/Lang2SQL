@@ -1,0 +1,12 @@
+WITH eligible AS (
+    SELECT s.School, s.MailStreet, t.AvgScrRead
+    FROM main.schools AS s
+    JOIN main.satscores AS t ON t.cds = s.CDSCode
+    WHERE s.DOC = '02'
+      AND t.rtype = 'S'
+)
+SELECT School, MailStreet
+FROM eligible
+WHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)
+ORDER BY School, MailStreet
+LIMIT -1

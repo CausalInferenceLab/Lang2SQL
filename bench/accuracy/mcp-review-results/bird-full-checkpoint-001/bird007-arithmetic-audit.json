@@ -1,0 +1,43 @@
+{
+  "purpose": "Offline single-expression diagnostic only; original official score remains zero and no model input changed.",
+  "original_sql": "SELECT\n    f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) * 100.0\n        AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM schools AS s\nJOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000\n",
+  "counterfactual_sql": "SELECT\n    100.0 * f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0)\n        AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM schools AS s\nJOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000\n",
+  "reference_sql": "SELECT T1.`Free Meal Count (K-12)` * 100 / T1.`Enrollment (K-12)`, T1.`District Code` FROM frpm AS T1 INNER JOIN schools AS T2 ON T1.CDSCode = T2.CDSCode WHERE T2.AdmFName1 = 'Alusine'",
+  "original_rows": [
+    [
+      70.15113350125944,
+      64857
+    ]
+  ],
+  "counterfactual_rows": [
+    [
+      70.15113350125945,
+      64857
+    ]
+  ],
+  "reference_rows": [
+    [
+      70.15113350125945,
+      64857
+    ]
+  ],
+  "input_sqlite_types": [
+    [
+      "real",
+      "real"
+    ]
+  ],
+  "original_matches_reference": false,
+  "counterfactual_matches_reference": true,
+  "float_of_exact_rational": 70.15113350125945,
+  "finding": "REAL inputs, not integer division. Dividing before percentage scaling introduces an extra rounding step. Multiplying the exactly represented count by100 before dividing matches the nearest representable float to the exact rational for this case.",
+  "limits": [
+    "No universal claim that changing operation order improves every float expression.",
+    "A future exact-ratio compiler would need explicit integral-input and magnitude guards; arbitrary REAL source values cannot silently be cast/rounded."
+  ],
+  "hashes": {
+    "/Users/seyoung/workspace/benchmarks/bird-sqlite/california_schools.sqlite": "c0903eec662e63068fd1d14403d3d6c1d473287fc10c4356333ea58f878db983",
+    "/Users/seyoung/workspace/benchmarks/bird-mini-dev-20261025.jsonl": "926af2a0d1b47e5d0d15a7aa8a34d4721007f4550a881555b6a89496b54a2606",
+    "/Users/seyoung/workspace/benchmarks/codex-mcp-bird-full-context-validation-20261127/checkpoints/001/bird/codex-mcp/records/bird007.json": "e163238dcab117dbcfb55b0cc1cb0224ca15a26ffcf8cb693b6234bad19f1a05"
+  }
+}

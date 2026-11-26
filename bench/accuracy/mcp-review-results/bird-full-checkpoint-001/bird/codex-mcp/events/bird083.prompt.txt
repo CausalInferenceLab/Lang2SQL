@@ -1,0 +1,970 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+Hi! I'm preparing a licensing brief for our Japanese partner about Magic: The Gathering localization coverage. Could you pull a report of every expansion type (core, expansion, promo, etc.), showing for each one how many sets of that type carry a Japanese name entry? A Japanese name entry means the set's name-translations include a Japanese-language entry giving the set's name in Japanese. Please include every expansion type in the report even if none of its sets have such an entry (show 0 for those), and sort the results alphabetically by expansion type. Nothing else needed - just the expansion type and the count.
+Provided evidence:
+Japanese name entry: an entry in the set's name-translations whose language is Japanese and which gives the set's name in Japanese.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `cards` (
+    `id` INTEGER, -- unique id number identifying the cards; example: [1, 2]
+    `artist` TEXT, -- The name of the artist that illustrated the card art.; example: ['Pete Venters', 'Volkan Baǵa']
+    `asciiName` TEXT, -- The ASCII(opens new window) (Basic/128) code formatted card name with no special unicode characters.; example: []
+    `availability` TEXT, -- A list of the card's available printing types.; example: ['mtgo,paper']
+    `borderColor` TEXT, -- The color of the card border.; example: ['black']
+    `cardKingdomFoilId` TEXT, -- card Kingdom Foil Id; example: ['123094', '123095']
+    `cardKingdomId` TEXT, -- card Kingdom Id; example: ['122719', '122720']
+    `colorIdentity` TEXT, -- A list of all the colors found in manaCost, colorIndicator, and text; example: ['W']
+    `colorIndicator` TEXT, -- A list of all the colors in the color indicator (The symbol prefixed to a card's types).; example: []
+    `colors` TEXT, -- A list of all the colors in manaCost and colorIndicator.; example: ['W']
+    `convertedManaCost` REAL, -- The converted mana cost of the card. Use the manaValue property.; example: [7.0, 5.0]
+    `duelDeck` TEXT, -- The indicator for which duel deck the card is in.; example: []
+    `edhrecRank` INTEGER, -- The card rank on EDHRec; example: [15650, 12702]
+    `faceConvertedManaCost` REAL, -- The converted mana cost or mana value for the face for either half or part of the card.; example: []
+    `faceName` TEXT, -- The name on the face of the card.; example: []
+    `flavorName` TEXT, -- The promotional card name printed above the true card name on special cards that has no game function.; example: []
+    `flavorText` TEXT, -- The italicized text found below the rules text that has no game function.; example: ['Every tear shed is a drop of immortality.', 'The perfect antidote for a tightly packed formation.']
+    `frameEffects` TEXT, -- The visual frame effects.; example: []
+    `frameVersion` TEXT, -- The version of the card frame style.; example: ['2003']
+    `hand` TEXT, -- The starting maximum hand size total modifier.; example: []
+    `hasAlternativeDeckLimit` INTEGER, -- If the card allows a value other than 4 copies in a deck.; example: [0]
+    `hasContentWarning` INTEGER, -- If the card marked by Wizards of the Coast (opens new window) for having sensitive content. See this official article (o; example: [0]
+    `hasFoil` INTEGER, -- If the card can be found in foil; example: [0, 1]
+    `hasNonFoil` INTEGER, -- If the card can be found in non-foil; example: [1]
+    `isAlternative` INTEGER, -- If the card is an alternate variation to an original printing; example: [0]
+    `isFullArt` INTEGER, -- If the card has full artwork.; example: [0]
+    `isOnlineOnly` INTEGER, -- If the card is only available in online game variations.; example: [0]
+    `isOversized` INTEGER, -- If the card is oversized.; example: [0]
+    `isPromo` INTEGER, -- If the card is a promotional printing.; example: [0]
+    `isReprint` INTEGER, -- If the card has been reprinted.; example: [1]
+    `isReserved` INTEGER, -- If the card is on the Magic: The Gathering Reserved List (opens new window); example: [0]
+    `isStarter` INTEGER, -- If the card is found in a starter deck such as Planeswalker/Brawl decks.; example: [0]
+    `isStorySpotlight` INTEGER, -- If the card is a Story Spotlight card.; example: [0]
+    `isTextless` INTEGER, -- If the card does not have a text box.; example: [0]
+    `isTimeshifted` INTEGER, -- If the card is time shifted; example: [0]
+    `keywords` TEXT, -- A list of keywords found on the card.; example: ['First strike', 'Flying']
+    `layout` TEXT, -- The type of card layout. For a token card, this will be "token"; example: ['normal']
+    `leadershipSkills` TEXT, -- A list of formats the card is legal to be a commander in; example: []
+    `life` TEXT, -- The starting life total modifier. A plus or minus character precedes an integer.; example: []
+    `loyalty` TEXT, -- The starting loyalty value of the card.; example: []
+    `manaCost` TEXT, -- The mana cost of the card wrapped in brackets for each value.; example: ['{5}{W}{W}', '{4}{W}']
+    `mcmId` TEXT, -- example: ['16165', '16166']
+    `mcmMetaId` TEXT, -- example: ['156', '176']
+    `mtgArenaId` TEXT, -- example: []
+    `mtgjsonV4Id` TEXT, -- example: ['ad41be73-582f-58ed-abd4-a88c1f616ac3', '9eb2e54c-a12b-5e88-a9c0-d8c84c52d59c']
+    `mtgoFoilId` TEXT, -- example: ['27501', '26993']
+    `mtgoId` TEXT, -- example: ['27500', '26992']
+    `multiverseId` TEXT, -- example: ['130550', '129465']
+    `name` TEXT, -- The name of the card.; example: ["Ancestor's Chosen", 'Angel of Mercy']
+    `number` TEXT, -- The number of the card; example: ['1', '2']
+    `originalReleaseDate` TEXT, -- original Release Date; example: []
+    `originalText` TEXT, -- original Text; example: ['First strike (This creature deals combat damage before creatures without first s', "Flying (This creature can't be blocked except by creatures with flying or reach."]
+    `originalType` TEXT, -- original Type; example: ['Creature - Human Cleric', 'Creature - Angel']
+    `otherFaceIds` TEXT, -- other Face Ids; example: []
+    `power` TEXT, -- The power of the card.; example: ['4', '3']
+    `printings` TEXT, -- A list of set printing codes the card was printed in, formatted in uppercase.; example: ['10E,JUD,UMA', '10E,8ED,9ED,DDC,DVD,IMA,INV,JMP,MB1,P02,PS11,PSAL,S99']
+    `promoTypes` TEXT, -- A list of promotional types for a card.; example: []
+    `purchaseUrls` TEXT, -- Links that navigate to websites where the card can be purchased.; example: ["{'cardKingdom': 'https://mtgjson.com/links/9fb51af0ad6f0736', 'cardmarket': 'htt", "{'cardKingdom': 'https://mtgjson.com/links/027095d094e58f5b', 'cardmarket': 'htt"]
+    `rarity` TEXT, -- The card printing rarity.; example: ['uncommon', 'common']
+    `scryfallId` TEXT, -- example: ['7a5cd03c-4227-4551-aa4b-7d119f0468b5', '8f7980d4-da43-4d6d-ad16-14b8a34ae91d']
+    `scryfallIllustrationId` TEXT, -- example: ['be2f7173-c8b7-4172-a388-9b2c6b3c16e5', 'e4d6c53f-e936-4be8-8b70-47c2be863b20']
+    `scryfallOracleId` TEXT, -- example: ['fc2ccab7-cab1-4463-b73d-898070136d74', 'a2daaf32-dbfe-4618-892e-0da24f63a44a']
+    `setCode` TEXT, -- The set printing code that the card is from.; example: ['10E']
+    `side` TEXT, -- The identifier of the card side.; example: []
+    `subtypes` TEXT, -- A list of card subtypes found after em-dash.; example: ['Human,Cleric', 'Angel']
+    `supertypes` TEXT, -- A list of card supertypes found before em-dash.; example: []
+    `tcgplayerProductId` TEXT, -- tcg player ProductId; example: ['15032', '15033']
+    `text` TEXT, -- The rules text of the card.; example: ['First strike (This creature deals combat damage before creatures without first s', 'Flying When Angel of Mercy enters the battlefield, you gain 3 life.']
+    `toughness` TEXT, -- The toughness of the card.; example: ['4', '3']
+    `type` TEXT, -- The type of the card as visible, including any supertypes and subtypes.; example: ['Creature — Human Cleric', 'Creature — Angel']
+    `types` TEXT, -- A list of all card types of the card, including Un‑sets and gameplay variants.; example: ['Creature', 'Instant']
+    `uuid` TEXT, -- The universal unique identifier (v5) generated by MTGJSON. Each entry is unique.; example: ['5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c', '57aaebc1-850c-503d-9f6e-bb8d00d8bf7c']
+    `variations` TEXT, -- example: ['b7c19924-b4bf-56fc-aa73-f586e940bd42', '8fd4e2eb-3eb4-50ea-856b-ef638fa47f8a']
+    `watermark` TEXT, -- The name of the watermark on the card.; example: []
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `foreign_data` (
+    `id` INTEGER, -- unique id number identifying this row of data; example: [1, 2]
+    `flavorText` TEXT, -- The foreign flavor text of the card.; example: ['„Es ist der Wille aller, und meine Hand, die ihn ausführt."', '"La voluntad de todos, realizada por mi mano."']
+    `language` TEXT, -- The foreign language of card.; example: ['German', 'Spanish']
+    `multiverseid` INTEGER, -- The foreign multiverse identifier of the card.; example: [148411, 150317]
+    `name` TEXT, -- The foreign name of the card.; example: ['Ausgewählter der Ahnfrau', 'Elegido de la Antepasada']
+    `text` TEXT, -- The foreign text ruling of the card.; example: ['Erstschlag (Diese Kreatur fügt Kampfschaden vor Kreaturen ohne Erstschlag zu.) W', 'Daña primero. (Esta criatura hace daño de combate antes que las criaturas sin la']
+    `type` TEXT, -- The foreign type of the card. Includes any supertypes and subtypes.; example: ['Kreatur — Mensch, Kleriker', 'Criatura — Clérigo humano']
+    `uuid` TEXT, -- example: ['5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`uuid`) REFERENCES `cards` (`uuid`)
+);
+
+CREATE TABLE `legalities` (
+    `id` INTEGER, -- unique id identifying this legality; example: [1, 2]
+    `format` TEXT, -- format of play; example: ['commander', 'duel']
+    `status` TEXT, -- example: ['Legal']
+    `uuid` TEXT, -- example: ['5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`uuid`) REFERENCES `cards` (`uuid`)
+);
+
+CREATE TABLE `sets` (
+    `id` INTEGER, -- unique id identifying this set; example: [1, 2]
+    `baseSetSize` INTEGER, -- The number of cards in the set.; example: [383, 302]
+    `block` TEXT, -- The block name the set was in.; example: ['Core Set']
+    `booster` TEXT, -- A breakdown of possibilities and weights of cards in a booster pack.; example: ["{'default': {'boosters': [{'contents': {'basic': 1, 'common': 10, 'rare': 1, 'un", "{'default': {'boosters': [{'contents': {'common': 11, 'rare': 1, 'uncommon': 3},"]
+    `code` TEXT, -- The set code for the set.; example: ['10E', '2ED']
+    `isFoilOnly` INTEGER, -- If the set is only available in foil.; example: [0]
+    `isForeignOnly` INTEGER, -- If the set is available only outside the United States of America.; example: [0, 1]
+    `isNonFoilOnly` INTEGER, -- If the set is only available in non-foil.; example: [0, 1]
+    `isOnlineOnly` INTEGER, -- If the set is only available in online game variations.; example: [0]
+    `isPartialPreview` INTEGER, -- If the set is still in preview (spoiled). Preview sets do not have complete data.; example: [0]
+    `keyruneCode` TEXT, -- The matching Keyrune code for set image icons.; example: ['10E', '2ED']
+    `mcmId` INTEGER, -- The Magic Card Marketset identifier.; example: [74, 3204]
+    `mcmIdExtras` INTEGER, -- The split Magic Card Market set identifier if a set is printed in two sets. This identifier represents the second set's ; example: [3209]
+    `mcmName` TEXT, -- magic card market name; example: ['Tenth Edition', 'Double Masters']
+    `mtgoCode` TEXT, -- The set code for the set as it appears on Magic: The Gathering Online; example: ['10E', '2XM']
+    `name` TEXT, -- The name of the set.; example: ['Tenth Edition', 'Unlimited Edition']
+    `parentCode` TEXT, -- The parent set code for set variations like promotions, guild kits, etc.; example: []
+    `releaseDate` DATE, -- The release date in ISO 8601 format for the set.; example: ['2007-07-13', '1993-12-01']
+    `tcgplayerGroupId` INTEGER, -- The group identifier of the set on TCGplayer; example: [1, 115]
+    `totalSetSize` INTEGER, -- The total number of cards in the set, including promotional and related supplemental products but excluding Alchemy modi; example: [508, 302]
+    `type` TEXT, -- The expansion type of the set.; example: ['core', 'masters']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `set_translations` (
+    `id` INTEGER, -- unique id identifying this set; example: [1, 2]
+    `language` TEXT, -- language of this card; example: ['Chinese Simplified', 'Chinese Traditional']
+    `setCode` TEXT, -- the set code for this set; example: ['10E']
+    `translation` TEXT, -- translation of this card; example: ['核心系列第十版', 'Dixième édition']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`setCode`) REFERENCES `sets` (`code`)
+);
+
+CREATE TABLE `rulings` (
+    `id` INTEGER, -- unique id identifying this ruling; example: [1, 2]
+    `date` DATE, -- date; example: ['2007-07-15', '2007-02-01']
+    `text` TEXT, -- description about this ruling; example: ['You draw the card when Bandage resolves, not when the damage is actually prevent', 'If you double a negative life total, you do the real math. A life total of -10 b']
+    `uuid` TEXT, -- example: ['6d268c95-c176-5766-9a46-c14f739aba1c', '56f4935b-f6c5-59b9-88bf-9bcce20247ce']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`uuid`) REFERENCES `cards` (`uuid`)
+);
+
+
+Official column/value descriptions (2024 Dev release):
+{
+  "cards": [
+    {
+      "original_column_name": "id",
+      "column_name": "unique id number identifying the cards",
+      "column_description": "",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "artist",
+      "column_name": "",
+      "column_description": "The name of the artist that illustrated the card art.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "asciiName",
+      "column_name": "ascii Name",
+      "column_description": "The ASCII(opens new window) (Basic/128) code formatted card name with no special unicode characters.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "availability",
+      "column_name": "",
+      "column_description": "A list of the card's available printing types.",
+      "data_format": "text",
+      "value_description": "\"arena\", \"dreamcast\", \"mtgo\", \"paper\", \"shandalar\""
+    },
+    {
+      "original_column_name": "borderColor",
+      "column_name": "border Color",
+      "column_description": "The color of the card border.",
+      "data_format": "text",
+      "value_description": "\"black\", \"borderless\", \"gold\", \"silver\", \"white\""
+    },
+    {
+      "original_column_name": "cardKingdomFoilId",
+      "column_name": "card Kingdom Foil Id",
+      "column_description": "card Kingdom Foil Id",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\ncardKingdomFoilId, when paired with cardKingdomId that is not Null, is incredibly powerful. "
+    },
+    {
+      "original_column_name": "cardKingdomId",
+      "column_name": "card Kingdom Id",
+      "column_description": "card Kingdom Id",
+      "data_format": "text",
+      "value_description": "A list of all the colors in the color indicator"
+    },
+    {
+      "original_column_name": "colorIdentity",
+      "column_name": "color Identity",
+      "column_description": "A list of all the colors found in manaCost, colorIndicator, and text",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "colorIndicator",
+      "column_name": "color Indicator",
+      "column_description": "A list of all the colors in the color indicator (The symbol prefixed to a card's types).",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "colors",
+      "column_name": "",
+      "column_description": "A list of all the colors in manaCost and colorIndicator. ",
+      "data_format": "text",
+      "value_description": "Some cards may not have values, such as cards with \"Devoid\" in its text."
+    },
+    {
+      "original_column_name": "convertedManaCost",
+      "column_name": "converted Mana Cost",
+      "column_description": "The converted mana cost of the card. Use the manaValue property.",
+      "data_format": "real",
+      "value_description": "if value is higher, it means that this card cost more converted mana "
+    },
+    {
+      "original_column_name": "duelDeck",
+      "column_name": "duel Deck",
+      "column_description": "The indicator for which duel deck the card is in.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "edhrecRank",
+      "column_name": "rec Rank in edh",
+      "column_description": "The card rank on EDHRec",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "faceConvertedManaCost",
+      "column_name": "face Converted Mana Cost",
+      "column_description": "The converted mana cost or mana value for the face for either half or part of the card. ",
+      "data_format": "real",
+      "value_description": "if value is higher, it means that this card cost more converted mana for the face"
+    },
+    {
+      "original_column_name": "faceName",
+      "column_name": "face Name",
+      "column_description": "The name on the face of the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "flavorName",
+      "column_name": "flavor Name",
+      "column_description": "The promotional card name printed above the true card name on special cards that has no game function.",
+      "data_format": "text",
+      "value_description": "The promotional card name printed above the true card name on special cards that has no game function."
+    },
+    {
+      "original_column_name": "flavorText",
+      "column_name": "flavor Text",
+      "column_description": "The italicized text found below the rules text that has no game function.",
+      "data_format": "text",
+      "value_description": "The italicized text found below the rules text that has no game function."
+    },
+    {
+      "original_column_name": "frameEffects",
+      "column_name": "frame Effects",
+      "column_description": "The visual frame effects.",
+      "data_format": "text",
+      "value_description": "\"colorshifted\", \"companion\", \"compasslanddfc\", \"devoid\", \"draft\", \"etched\", \"extendedart\", \"fullart\", \"inverted\", \"legendary\", \"lesson\", \"miracle\", \"mooneldrazidfc\", \"nyxtouched\", \"originpwdfc\", \"showcase\", \"snow\", \"sunmoondfc\", \"textless\", \"tombstone\", \"waxingandwaningmoondfc\""
+    },
+    {
+      "original_column_name": "frameVersion",
+      "column_name": "frame Version",
+      "column_description": "The version of the card frame style.",
+      "data_format": "text",
+      "value_description": "\"1993\", \"1997\", \"2003\", \"2015\", \"future\""
+    },
+    {
+      "original_column_name": "hand",
+      "column_name": "",
+      "column_description": "The starting maximum hand size total modifier. ",
+      "data_format": "text",
+      "value_description": "A + or - character precedes an integer. \ncommonsense evidence:\npositive maximum hand size: +1, +2, ....\nnegative maximum hand size: -1, ....\nneural maximum hand size: 0...."
+    },
+    {
+      "original_column_name": "hasAlternativeDeckLimit",
+      "column_name": "has Alternative Deck Limit",
+      "column_description": "If the card allows a value other than 4 copies in a deck.",
+      "data_format": "integer",
+      "value_description": "0: disallow 1: allow"
+    },
+    {
+      "original_column_name": "hasContentWarning",
+      "column_name": "has Content Warning",
+      "column_description": "If the card marked by Wizards of the Coast (opens new window) for having sensitive content. See this official article (opens new window) for more information.",
+      "data_format": "integer",
+      "value_description": "0: doesn't have 1: has sensitve content or Wizards of the Coast\ncommonsense evidence:\nCards with this property may have missing or degraded properties and values. "
+    },
+    {
+      "original_column_name": "hasFoil",
+      "column_name": "has Foil",
+      "column_description": "If the card can be found in foil",
+      "data_format": "integer",
+      "value_description": "0: cannot be found 1: can be found"
+    },
+    {
+      "original_column_name": "hasNonFoil",
+      "column_name": "has Non Foil",
+      "column_description": "If the card can be found in non-foil",
+      "data_format": "integer",
+      "value_description": "0: cannot be found 1: can be found"
+    },
+    {
+      "original_column_name": "isAlternative",
+      "column_name": "is Alternative",
+      "column_description": "If the card is an alternate variation to an original printing",
+      "data_format": "integer",
+      "value_description": "0: is not 1: is"
+    },
+    {
+      "original_column_name": "isFullArt",
+      "column_name": "is Full Art",
+      "column_description": "If the card has full artwork.",
+      "data_format": "integer",
+      "value_description": "0: doesn't have, 1: has full artwork"
+    },
+    {
+      "original_column_name": "isOnlineOnly",
+      "column_name": "is Online Only",
+      "column_description": "If the card is only available in online game variations.",
+      "data_format": "integer",
+      "value_description": "0: is not 1: is"
+    },
+    {
+      "original_column_name": "isOversized",
+      "column_name": "is Oversized",
+      "column_description": "If the card is oversized.",
+      "data_format": "integer",
+      "value_description": "0: is not 1: is"
+    },
+    {
+      "original_column_name": "isPromo",
+      "column_name": "is Promotion",
+      "column_description": "If the card is a promotional printing.",
+      "data_format": "integer",
+      "value_description": "0: is not 1: is"
+    },
+    {
+      "original_column_name": "isReprint",
+      "column_name": "is Reprint",
+      "column_description": "If the card has been reprinted.",
+      "data_format": "integer",
+      "value_description": "0: has not 1: has not been"
+    },
+    {
+      "original_column_name": "isReserved",
+      "column_name": "is Reserved",
+      "column_description": "If the card is on the Magic: The Gathering Reserved List (opens new window)",
+      "data_format": "integer",
+      "value_description": "If the card is on the Magic, it will appear in The Gathering Reserved List"
+    },
+    {
+      "original_column_name": "isStarter",
+      "column_name": "is Starter",
+      "column_description": "If the card is found in a starter deck such as Planeswalker/Brawl decks.",
+      "data_format": "integer",
+      "value_description": "0: is not 1: is"
+    },
+    {
+      "original_column_name": "isStorySpotlight",
+      "column_name": "is Story Spotlight",
+      "column_description": "If the card is a Story Spotlight card.",
+      "data_format": "integer",
+      "value_description": "0: is not 1: is"
+    },
+    {
+      "original_column_name": "isTextless",
+      "column_name": "is Text less",
+      "column_description": "If the card does not have a text box.",
+      "data_format": "integer",
+      "value_description": "commonsense evidence:\n0: has a text box;\n1: doesn't have a text box;"
+    },
+    {
+      "original_column_name": "isTimeshifted",
+      "column_name": "is Time shifted",
+      "column_description": "If the card is time shifted",
+      "data_format": "integer",
+      "value_description": "commonsense evidence:\nIf the card is \"timeshifted\", a feature of certain sets where a card will have a different frameVersion."
+    },
+    {
+      "original_column_name": "keywords",
+      "column_name": "",
+      "column_description": "A list of keywords found on the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "layout",
+      "column_name": "",
+      "column_description": "The type of card layout. For a token card, this will be \"token\"",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "leadershipSkills",
+      "column_name": "leadership Skills",
+      "column_description": "A list of formats the card is legal to be a commander in",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "life",
+      "column_name": "",
+      "column_description": "The starting life total modifier. A plus or minus character precedes an integer.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "loyalty",
+      "column_name": "",
+      "column_description": "The starting loyalty value of the card.",
+      "data_format": "text",
+      "value_description": "Used only on cards with \"Planeswalker\" in its types. empty means unkown"
+    },
+    {
+      "original_column_name": "manaCost",
+      "column_name": "mana Cost ",
+      "column_description": "The mana cost of the card wrapped in brackets for each value.",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nmanaCost is unconverted mana cost"
+    },
+    {
+      "original_column_name": "mcmId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "mcmMetaId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "mtgArenaId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "mtgjsonV4Id",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "mtgoFoilId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "mtgoId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "multiverseId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "name",
+      "column_name": "",
+      "column_description": "The name of the card.",
+      "data_format": "text",
+      "value_description": "Cards with multiple faces, like \"Split\" and \"Meld\" cards are given a delimiter."
+    },
+    {
+      "original_column_name": "number",
+      "column_name": "",
+      "column_description": "The number of the card",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "originalReleaseDate",
+      "column_name": "",
+      "column_description": "original Release Date",
+      "data_format": "text",
+      "value_description": "The original release date in ISO 8601(opens new window) format for a promotional card printed outside of a cycle window, such as Secret Lair Drop promotions."
+    },
+    {
+      "original_column_name": "originalText",
+      "column_name": "",
+      "column_description": "original Text",
+      "data_format": "text",
+      "value_description": "The text on the card as originally printed."
+    },
+    {
+      "original_column_name": "originalType",
+      "column_name": "",
+      "column_description": "original Type",
+      "data_format": "text",
+      "value_description": "The type of the card as originally printed. Includes any supertypes and subtypes."
+    },
+    {
+      "original_column_name": "otherFaceIds",
+      "column_name": "",
+      "column_description": "other Face Ids",
+      "data_format": "text",
+      "value_description": "A list of card UUID's to this card's counterparts, such as transformed or melded faces."
+    },
+    {
+      "original_column_name": "power",
+      "column_name": "",
+      "column_description": "The power of the card.",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\n∞ means infinite power\nnull or * refers to unknown power"
+    },
+    {
+      "original_column_name": "printings",
+      "column_name": "",
+      "column_description": "A list of set printing codes the card was printed in, formatted in uppercase.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "promoTypes",
+      "column_name": "promo Types",
+      "column_description": "A list of promotional types for a card.",
+      "data_format": "text",
+      "value_description": "\"arenaleague\", \"boosterfun\", \"boxtopper\", \"brawldeck\", \"bundle\", \"buyabox\", \"convention\", \"datestamped\", \"draculaseries\", \"draftweekend\", \"duels\", \"event\", \"fnm\", \"gameday\", \"gateway\", \"giftbox\", \"gilded\", \"godzillaseries\", \"instore\", \"intropack\", \"jpwalker\", \"judgegift\", \"league\", \"mediainsert\", \"neonink\", \"openhouse\", \"planeswalkerstamped\", \"playerrewards\", \"playpromo\", \"premiereshop\", \"prerelease\", \"promopack\", \"release\", \"setpromo\", \"stamped\", \"textured\", \"themepack\", \"thick\", \"tourney\", \"wizardsplaynetwork\""
+    },
+    {
+      "original_column_name": "purchaseUrls",
+      "column_name": "purchase Urls",
+      "column_description": "Links that navigate to websites where the card can be purchased.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "rarity",
+      "column_name": "",
+      "column_description": "The card printing rarity.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "scryfallId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "scryfallIllustrationId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "scryfallOracleId",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "setCode",
+      "column_name": "Set Code",
+      "column_description": "The set printing code that the card is from.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "side",
+      "column_name": "",
+      "column_description": "The identifier of the card side. ",
+      "data_format": "text",
+      "value_description": "Used on cards with multiple faces on the same card.\ncommonsense evidence:\nif this value is empty, then it means this card doesn't have multiple faces on the same card."
+    },
+    {
+      "original_column_name": "subtypes",
+      "column_name": "",
+      "column_description": "A list of card subtypes found after em-dash.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "supertypes",
+      "column_name": "super types",
+      "column_description": "A list of card supertypes found before em-dash.",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nlist of all types should be the union of subtypes and supertypes"
+    },
+    {
+      "original_column_name": "tcgplayerProductId",
+      "column_name": "tcg player ProductId",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "text",
+      "column_name": "",
+      "column_description": "The rules text of the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "toughness",
+      "column_name": "",
+      "column_description": "The toughness of the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "type",
+      "column_name": "",
+      "column_description": "The type of the card as visible, including any supertypes and subtypes.",
+      "data_format": "text",
+      "value_description": "\"Artifact\", \"Card\", \"Conspiracy\", \"Creature\", \"Dragon\", \"Dungeon\", \"Eaturecray\", \"Elemental\", \"Elite\", \"Emblem\", \"Enchantment\", \"Ever\", \"Goblin\", \"Hero\", \"Instant\", \"Jaguar\", \"Knights\", \"Land\", \"Phenomenon\", \"Plane\", \"Planeswalker\", \"Scariest\", \"Scheme\", \"See\", \"Sorcery\", \"Sticker\", \"Summon\", \"Token\", \"Tribal\", \"Vanguard\", \"Wolf\", \"You’ll\", \"instant\""
+    },
+    {
+      "original_column_name": "types",
+      "column_name": "",
+      "column_description": "A list of all card types of the card, including Un‑sets and gameplay variants.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "uuid",
+      "column_name": "",
+      "column_description": "The universal unique identifier (v5) generated by MTGJSON. Each entry is unique.",
+      "data_format": "text",
+      "value_description": "NOT USEFUL"
+    },
+    {
+      "original_column_name": "variations",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "watermark",
+      "column_name": "",
+      "column_description": "The name of the watermark on the card.",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "foreign_data": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "unique id number identifying this row of data",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "flavorText",
+      "column_name": "flavor Text",
+      "column_description": "The foreign flavor text of the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "language",
+      "column_name": "",
+      "column_description": "The foreign language of card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "multiverseid",
+      "column_name": "",
+      "column_description": "The foreign multiverse identifier of the card.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "name",
+      "column_name": "",
+      "column_description": "The foreign name of the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "text",
+      "column_name": "",
+      "column_description": "The foreign text ruling of the card.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "type",
+      "column_name": "",
+      "column_description": "The foreign type of the card. Includes any supertypes and subtypes.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "uuid",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "legalities": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "unique id identifying this legality",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "format",
+      "column_name": "",
+      "column_description": "format of play",
+      "data_format": "text",
+      "value_description": "each value refers to different rules to play"
+    },
+    {
+      "original_column_name": "status",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "• legal\n• banned\n• restricted"
+    },
+    {
+      "original_column_name": "uuid",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "rulings": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "unique id identifying this ruling",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "date",
+      "column_name": "",
+      "column_description": "date ",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "text",
+      "column_name": "",
+      "column_description": "description about this ruling",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "uuid",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "set_translations": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "unique id identifying this set",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "language",
+      "column_name": "",
+      "column_description": "language of this card set",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "setCode",
+      "column_name": "set code",
+      "column_description": "the set code for this set",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "translation",
+      "column_name": "",
+      "column_description": "translation of this card set",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "sets": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "unique id identifying this set",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "baseSetSize",
+      "column_name": "base Set Size",
+      "column_description": "The number of cards in the set.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "block",
+      "column_name": "",
+      "column_description": "The block name the set was in.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "booster",
+      "column_name": "",
+      "column_description": "A breakdown of possibilities and weights of cards in a booster pack.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "code",
+      "column_name": "",
+      "column_description": "The set code for the set.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "isFoilOnly",
+      "column_name": "is Foil Only",
+      "column_description": "If the set is only available in foil.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "isForeignOnly",
+      "column_name": "is Foreign Only",
+      "column_description": "If the set is available only outside the United States of America.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "isNonFoilOnly",
+      "column_name": "is Non Foil Only",
+      "column_description": "If the set is only available in non-foil.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "isOnlineOnly",
+      "column_name": "is Online Only",
+      "column_description": "If the set is only available in online game variations.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "isPartialPreview",
+      "column_name": "is Partial Preview",
+      "column_description": "If the set is still in preview (spoiled). Preview sets do not have complete data.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "keyruneCode",
+      "column_name": "keyrune Code",
+      "column_description": "The matching Keyrune code for set image icons.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "mcmId",
+      "column_name": "magic card market id",
+      "column_description": "The Magic Card Marketset identifier.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "mcmIdExtras",
+      "column_name": "magic card market ID Extras",
+      "column_description": "The split Magic Card Market set identifier if a set is printed in two sets. This identifier represents the second set's identifier.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "mcmName",
+      "column_name": "magic card market name ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "mtgoCode",
+      "column_name": "magic the gathering online code",
+      "column_description": "The set code for the set as it appears on Magic: The Gathering Online",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nif the value is null or empty, then it doesn't appear on Magic: The Gathering Online"
+    },
+    {
+      "original_column_name": "name",
+      "column_name": "",
+      "column_description": "The name of the set.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "parentCode",
+      "column_name": "parent Code",
+      "column_description": "The parent set code for set variations like promotions, guild kits, etc.",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "releaseDate",
+      "column_name": "release Date",
+      "column_description": "The release date in ISO 8601 format for the set.",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "tcgplayerGroupId",
+      "column_name": "tcg player Group Id",
+      "column_description": "The group identifier of the set on TCGplayer",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "totalSetSize",
+      "column_name": "total Set Size",
+      "column_description": "The total number of cards in the set, including promotional and related supplemental products but excluding Alchemy modifications - however those cards are included in the set itself.",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "type",
+      "column_name": "",
+      "column_description": "The expansion type of the set.",
+      "data_format": "text",
+      "value_description": "\"alchemy\", \"archenemy\", \"arsenal\", \"box\", \"commander\", \"core\", \"draft_innovation\", \"duel_deck\", \"expansion\", \"from_the_vault\", \"funny\", \"masterpiece\", \"masters\", \"memorabilia\", \"planechase\", \"premium_deck\", \"promo\", \"spellbook\", \"starter\", \"token\", \"treasure_chest\", \"vanguard\""
+    }
+  ]
+}
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

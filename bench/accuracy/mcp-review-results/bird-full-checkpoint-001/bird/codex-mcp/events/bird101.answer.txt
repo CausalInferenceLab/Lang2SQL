@@ -1,0 +1,18 @@
+```sql
+SELECT s.name, s.releaseDate
+FROM main.sets AS s
+WHERE s.type = (
+    SELECT ref.type
+    FROM main.sets AS ref
+    WHERE ref.name = 'From the Vault: Lore'
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM main.set_translations AS t
+    WHERE t.setCode = s.code
+      AND t.language <> 'English'
+      AND t.translation <> ''
+)
+ORDER BY s.releaseDate ASC
+LIMIT 1000
+```

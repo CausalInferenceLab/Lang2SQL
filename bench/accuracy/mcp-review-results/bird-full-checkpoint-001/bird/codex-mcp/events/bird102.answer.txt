@@ -1,0 +1,23 @@
+```sql
+WITH printings AS (
+    SELECT s.name AS set_name,
+           s.releaseDate,
+           CASE c.frameVersion
+               WHEN 'future' THEN 2007  -- Future Sight used this frame in 2007.
+               ELSE CAST(c.frameVersion AS INTEGER)
+           END AS frame_year
+    FROM main.cards AS c
+    JOIN main.sets AS s ON s.code = c.setCode
+    WHERE c.name = 'Aven Mindcensor'
+),
+ranked AS (
+    SELECT set_name, releaseDate,
+           RANK() OVER (ORDER BY frame_year DESC, releaseDate DESC) AS printing_rank
+    FROM printings
+)
+SELECT DISTINCT set_name, releaseDate
+FROM ranked
+WHERE printing_rank = 1
+ORDER BY set_name
+LIMIT -1
+```

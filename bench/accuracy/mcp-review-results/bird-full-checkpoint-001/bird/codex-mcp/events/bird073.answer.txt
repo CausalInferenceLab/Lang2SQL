@@ -1,0 +1,38 @@
+```sql
+WITH first_printing AS (
+    SELECT s.code, s.name, s.releaseDate
+    FROM sets AS s
+    WHERE s.releaseDate IS NOT NULL
+      AND s.code IN (
+          SELECT c.setCode
+          FROM cards AS c
+          WHERE c.name = 'Abyssal Horror'
+      )
+    ORDER BY s.releaseDate ASC, s.code ASC
+    LIMIT 1
+),
+latest_set AS (
+    SELECT s.code, s.name, s.releaseDate
+    FROM sets AS s
+    WHERE s.releaseDate IS NOT NULL
+    ORDER BY s.releaseDate DESC, s.code ASC
+    LIMIT 1
+),
+selected_sets AS (
+    SELECT code, name, releaseDate FROM first_printing
+    UNION
+    SELECT code, name, releaseDate FROM latest_set
+)
+SELECT s.name AS set_name,
+       ROUND(
+           100.0 * COUNT(CASE WHEN TRIM(c.manaCost) <> ''
+                               AND c.convertedManaCost <= 3 THEN 1 END)
+           / NULLIF(COUNT(c.id), 0),
+           2
+       ) AS percentage
+FROM selected_sets AS s
+LEFT JOIN cards AS c ON c.setCode = s.code
+GROUP BY s.code, s.name, s.releaseDate
+ORDER BY s.releaseDate ASC, s.code ASC
+LIMIT 2
+```

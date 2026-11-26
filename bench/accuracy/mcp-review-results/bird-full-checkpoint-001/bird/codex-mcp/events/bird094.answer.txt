@@ -1,0 +1,21 @@
+```sql
+WITH guild_counts AS (
+    SELECT c.watermark AS guild, COUNT(*) AS card_count
+    FROM main.cards AS c
+    WHERE c.watermark IN (
+        'azorius', 'boros', 'dimir', 'golgari', 'gruul',
+        'izzet', 'orzhov', 'rakdos', 'selesnya', 'simic'
+    )
+      AND c.uuid IN (
+          SELECT f.uuid
+          FROM main.foreign_data AS f
+          WHERE f.language <> 'English' AND f.language <> ''
+      )
+    GROUP BY c.watermark
+)
+SELECT guild, card_count
+FROM guild_counts
+WHERE card_count = (SELECT MAX(card_count) FROM guild_counts)
+ORDER BY guild
+LIMIT 10
+```

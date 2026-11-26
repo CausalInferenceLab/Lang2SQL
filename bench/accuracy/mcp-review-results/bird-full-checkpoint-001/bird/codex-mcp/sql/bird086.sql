@@ -1,0 +1,9 @@
+SELECT frameVersion AS frame_year, COUNT(*) AS card_count
+FROM main.cards
+WHERE INSTR(leadershipSkills, '''commander'': True') > 0
+  AND cardKingdomFoilId IS NOT NULL
+  AND cardKingdomId IS NOT NULL
+  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'
+GROUP BY frameVersion
+ORDER BY frameVersion DESC
+LIMIT 1

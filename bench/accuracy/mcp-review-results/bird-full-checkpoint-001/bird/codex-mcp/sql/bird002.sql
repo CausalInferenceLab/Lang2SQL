@@ -1,0 +1,9 @@
+SELECT ROUND(
+    CAST(f."FRPM Count (K-12)" AS REAL) / NULLIF(f."Enrollment (K-12)", 0),
+    6
+) AS eligible_meal_rate
+FROM frpm AS f
+JOIN schools AS s ON s.CDSCode = f.CDSCode
+WHERE s.SOC = '66'
+ORDER BY f."FRPM Count (K-12)" DESC, f.CDSCode
+LIMIT 5;
