@@ -1,0 +1,257 @@
+{
+  "instance_id": "local025",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "c5acf3240b68c86ba597dc4fa41afce61985cea1eb840537d6fc6557c988e9fa",
+  "events_sha256": "b706dfd399ec32c6b6f7f11daff5775444e0a91ecc8b4d297e83bbc7c1793441",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 211226,
+      "cached_input_tokens": 184192,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 7074,
+      "reasoning_output_tokens": 4862
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"kJABDe8YQiLGJJQMSZM0AkZn3bRpEt73FGbqe640jDU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "ball_by_ball"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ball_by_ball (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- innings_no: INTEGER NOT NULL\n- team_batting: INTEGER\n- team_bowling: INTEGER\n- striker_batting_position: INTEGER\n- striker: INTEGER\n- non_striker: INTEGER\n- bowler: INTEGER\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "match"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "match (table)\n- match_id: INTEGER\n- team_1: INTEGER\n- team_2: INTEGER\n- match_date: DATE\n- season_id: INTEGER\n- venue: TEXT\n- toss_winner: INTEGER\n- toss_decision: TEXT\n- win_type: TEXT\n- win_margin: INTEGER\n- outcome_type: TEXT\n- match_winner: INTEGER\n- man_of_the_match: INTEGER\nPRIMARY KEY (match_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "batsman_scored"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "batsman_scored (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- runs_scored: INTEGER\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "player"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "player (table)\n- player_id: INTEGER\n- player_name: TEXT\n- dob: DATE\n- batting_hand: TEXT\n- bowling_skill: TEXT\n- country_name: TEXT\nPRIMARY KEY (player_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "extra_runs"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "extra_runs (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- extra_type: TEXT\n- extra_runs: INTEGER\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH delivery_coverage AS (\n    SELECT COUNT(*) AS deliveries,\n           COUNT(DISTINCT b.match_id) AS matches_with_deliveries,\n           COUNT(s.match_id) AS matched_batting_rows,\n           COUNT(e.match_id) AS matched_extra_rows,\n           COUNT(*) FILTER (WHERE e.match_id IS NOT NULL AND s.match_id IS NULL) AS extras_without_batting_row,\n           COUNT(*) FILTER (WHERE b.bowler IS NULL) AS missing_bowler,\n           COUNT(*) FILTER (WHERE b.bowler IS NOT NULL AND p.player_id IS NULL) AS unknown_bowler,\n           MIN(b.innings_no) AS first_innings,\n           MAX(b.innings_no) AS last_innings\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)\n    LEFT JOIN main.extra_runs AS e USING (match_id, over_id, ball_id, innings_no)\n    LEFT JOIN main.player AS p ON p.player_id = b.bowler\n),\nover_bowlers AS (\n    SELECT match_id, innings_no, over_id, COUNT(DISTINCT bowler) AS bowlers\n    FROM main.ball_by_ball\n    GROUP BY match_id, innings_no, over_id\n)\nSELECT dc.*,\n       (SELECT COUNT(*) FROM main.\"match\") AS all_matches,\n       (SELECT COUNT(*) FROM main.batsman_scored) AS batting_rows,\n       (SELECT COUNT(*) FROM main.extra_runs) AS extra_rows,\n       (SELECT COUNT(*) FROM main.batsman_scored WHERE runs_scored IS NULL) AS null_batting_runs,\n       (SELECT COUNT(*) FROM main.extra_runs WHERE extra_runs IS NULL) AS null_extra_runs,\n       (SELECT COUNT(*) FROM over_bowlers WHERE bowlers > 1) AS shared_overs\nFROM delivery_coverage AS dc",
+        "definition_check_id": "kJABDe8YQiLGJJQMSZM0AkZn3bRpEt73FGbqe640jDU"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): deliveries=int; matches_with_deliveries=int; matched_batting_rows=int; matched_extra_rows=int; extras_without_batting_row=int; missing_bowler=int; unknown_bowler=int; first_innings=int; last_innings=int; all_matches=int; batting_rows=int; extra_rows=int; null_batting_runs=int; null_extra_runs=int; shared_overs=int\ndeliveries | matches_with_deliveries | matched_batting_rows | matched_extra_rows | extras_without_batting_row | missing_bowler | unknown_bowler | first_innings | last_innings | all_matches | batting_rows | extra_rows | null_batting_runs | null_extra_runs | shared_overs\n--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---\n134703 | 568 | 131259 | 7348 | 3444 | 0 | 1727 | 1 | 2 | 567 | 131259 | 7349 | 0 | 0 | 16\nSQL: WITH delivery_coverage AS (\n    SELECT COUNT(*) AS deliveries,\n           COUNT(DISTINCT b.match_id) AS matches_with_deliveries,\n           COUNT(s.match_id) AS matched_batting_rows,\n           COUNT(e.match_id) AS matched_extra_rows,\n           COUNT(*) FILTER (WHERE e.match_id IS NOT NULL AND s.match_id IS NULL) AS extras_without_batting_row,\n           COUNT(*) FILTER (WHERE b.bowler IS NULL) AS missing_bowler,\n           COUNT(*) FILTER (WHERE b.bowler IS NOT NULL AND p.player_id IS NULL) AS unknown_bowler,\n           MIN(b.innings_no) AS first_innings,\n           MAX(b.innings_no) AS last_innings\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)\n    LEFT JOIN main.extra_runs AS e USING (match_id, over_id, ball_id, innings_no)\n    LEFT JOIN main.player AS p ON p.player_id = b.bowler\n),\nover_bowlers AS (\n    SELECT match_id, innings_no, over_id, COUNT(DISTINCT bowler) AS bowlers\n    FROM main.ball_by_ball\n    GROUP BY match_id, innings_no, over_id\n)\nSELECT dc.*,\n       (SELECT COUNT(*) FROM main.\"match\") AS all_matches,\n       (SELECT COUNT(*) FROM main.batsman_scored) AS batting_rows,\n       (SELECT COUNT(*) FROM main.extra_runs) AS extra_rows,\n       (SELECT COUNT(*) FROM main.batsman_scored WHERE runs_scored IS NULL) AS null_batting_runs,\n       (SELECT COUNT(*) FROM main.extra_runs WHERE extra_runs IS NULL) AS null_extra_runs,\n       (SELECT COUNT(*) FROM over_bowlers WHERE bowlers > 1) AS shared_overs\nFROM delivery_coverage AS dc\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"xy21AX3IUVZSMnOtAKSRFrTtXJNU8b-kDcZiF2_rxo0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "xy21AX3IUVZSMnOtAKSRFrTtXJNU8b-kDcZiF2_rxo0",
+        "sql": "WITH all_runs AS (\n    SELECT match_id, innings_no, over_id, runs_scored AS runs FROM main.batsman_scored\n    UNION ALL\n    SELECT match_id, innings_no, over_id, extra_runs FROM main.extra_runs\n),\ntotals AS (\n    SELECT match_id, innings_no, over_id, SUM(runs) AS runs\n    FROM all_runs GROUP BY match_id, innings_no, over_id\n),\nbowling AS (\n    SELECT match_id, innings_no, over_id, COUNT(DISTINCT bowler) AS bowler_count\n    FROM main.ball_by_ball GROUP BY match_id, innings_no, over_id\n),\nranked AS (\n    SELECT t.*, COUNT(*) OVER (PARTITION BY match_id, runs) AS equal_scores,\n           ROW_NUMBER() OVER (PARTITION BY match_id ORDER BY runs DESC, innings_no, over_id) AS rn\n    FROM totals AS t\n),\nwinners AS (\n    SELECT r.*, b.bowler_count\n    FROM ranked AS r LEFT JOIN bowling AS b USING (match_id, innings_no, over_id)\n    WHERE r.rn = 1\n)\nSELECT COUNT(*) AS scored_matches, SUM(w.runs) AS sum_of_maxima, AVG(w.runs) AS average_of_maxima,\n       SUM(w.equal_scores > 1) AS matches_with_top_ties,\n       SUM(w.bowler_count > 1) AS shared_winning_overs,\n       COUNT(*) FILTER (WHERE w.bowler_count IS NULL) AS missing_winning_overs,\n       (SELECT COUNT(*) FROM bowling AS b LEFT JOIN totals AS t USING (match_id, innings_no, over_id)\n        WHERE t.match_id IS NULL) AS overs_without_scores,\n       (SELECT COUNT(*) FROM totals AS t LEFT JOIN bowling AS b USING (match_id, innings_no, over_id)\n        WHERE b.match_id IS NULL) AS overs_without_deliveries,\n       (SELECT COUNT(*) FROM main.\"match\" AS m LEFT JOIN winners AS x USING (match_id)\n        WHERE x.match_id IS NULL) AS catalog_matches_without_overs,\n       MAX(CASE WHEN m.match_id IS NULL THEN w.match_id END) AS uncatalogued_scored_match,\n       MAX(CASE WHEN m.match_id IS NULL THEN w.runs END) AS uncatalogued_match_maximum,\n       MAX(CASE WHEN w.bowler_count > 1 THEN w.match_id END) AS example_shared_winner\nFROM winners AS w LEFT JOIN main.\"match\" AS m USING (match_id)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): scored_matches=int; sum_of_maxima=int; average_of_maxima=float; matches_with_top_ties=int; shared_winning_overs=int; missing_winning_overs=int; overs_without_scores=int; overs_without_deliveries=int; catalog_matches_without_overs=int; uncatalogued_scored_match=int; uncatalogued_match_maximum=int; example_shared_winner=int\nscored_matches | sum_of_maxima | average_of_maxima | matches_with_top_ties | shared_winning_overs | missing_winning_overs | overs_without_scores | overs_without_deliveries | catalog_matches_without_overs | uncatalogued_scored_match | uncatalogued_match_maximum | example_shared_winner\n--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---\n568 | 11034 | 19.426056338028168 | 79 | 6 | 0 | 0 | 0 | 0 | 419136 | 18 | 733978\nSQL: WITH all_runs AS (\n    SELECT match_id, innings_no, over_id, runs_scored AS runs FROM main.batsman_scored\n    UNION ALL\n    SELECT match_id, innings_no, over_id, extra_runs FROM main.extra_runs\n),\ntotals AS (\n    SELECT match_id, innings_no, over_id, SUM(runs) AS runs\n    FROM all_runs GROUP BY match_id, innings_no, over_id\n),\nbowling AS (\n    SELECT match_id, innings_no, over_id, COUNT(DISTINCT bowler) AS bowler_count\n    FROM main.ball_by_ball GROUP BY match_id, innings_no, over_id\n),\nranked AS (\n    SELECT t.*, COUNT(*) OVER (PARTITION BY match_id, runs) AS equal_scores,\n           ROW_NUMBER() OVER (PARTITION BY match_id ORDER BY runs DESC, innings_no, over_id) AS rn\n    FROM totals AS t\n),\nwinners AS (\n    SELECT r.*, b.bowler_count\n    FROM ranked AS r LEFT JOIN bowling AS b USING (match_id, innings_no, over_id)\n    WHERE r.rn = 1\n)\nSELECT COUNT(*) AS scored_matches, SUM(w.runs) AS sum_of_maxima, AVG(w.runs) AS average_of_maxima,\n       SUM(w.equal_scores > 1) AS matches_with_top_ties,\n       SUM(w.bowler_count > 1) AS shared_winning_overs,\n       COUNT(*) FILTER (WHERE w.bowler_count IS NULL) AS missing_winning_overs,\n       (SELECT COUNT(*) FROM bowling AS b LEFT JOIN totals AS t USING (match_id, innings_no, over_id)\n        WHERE t.match_id IS NULL) AS overs_without_scores,\n       (SELECT COUNT(*) FROM totals AS t LEFT JOIN bowling AS b USING (match_id, innings_no, over_id)\n        WHERE b.match_id IS NULL) AS overs_without_deliveries,\n       (SELECT COUNT(*) FROM main.\"match\" AS m LEFT JOIN winners AS x USING (match_id)\n        WHERE x.match_id IS NULL) AS catalog_matches_without_overs,\n       MAX(CASE WHEN m.match_id IS NULL THEN w.match_id END) AS uncatalogued_scored_match,\n       MAX(CASE WHEN m.match_id IS NULL THEN w.runs END) AS uncatalogued_match_maximum,\n       MAX(CASE WHEN w.bowler_count > 1 THEN w.match_id END) AS example_shared_winner\nFROM winners AS w LEFT JOIN main.\"match\" AS m USING (match_id)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"p1QMBQfodSF6pp-3BtJ_wf7Ozlq0MCjGEcu8X45cph0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH scoring AS (\n    SELECT match_id, innings_no, over_id, runs_scored AS runs\n    FROM main.batsman_scored\n    UNION ALL\n    SELECT match_id, innings_no, over_id, extra_runs AS runs\n    FROM main.extra_runs\n),\nranked_overs AS (\n    SELECT match_id, innings_no, over_id, SUM(runs) AS total_runs,\n           ROW_NUMBER() OVER (\n               PARTITION BY match_id\n               -- Select the earliest over when totals tie.\n               ORDER BY SUM(runs) DESC, innings_no, over_id\n           ) AS over_rank\n    FROM scoring\n    GROUP BY match_id, innings_no, over_id\n),\nwinning_over_bowlers AS (\n    SELECT r.match_id, r.innings_no, r.over_id, r.total_runs,\n           b.bowler, MIN(b.ball_id) AS first_ball\n    FROM ranked_overs AS r\n    LEFT JOIN main.ball_by_ball AS b USING (match_id, innings_no, over_id)\n    WHERE r.over_rank = 1\n    GROUP BY r.match_id, r.innings_no, r.over_id, r.total_runs, b.bowler\n)\nSELECT match_id, innings_no, over_id, total_runs,\n       GROUP_CONCAT(bowler, ', ' ORDER BY first_ball) AS bowler_ids,\n       AVG(total_runs) OVER () AS avg_highest_over_runs\nFROM winning_over_bowlers\nGROUP BY match_id, innings_no, over_id, total_runs\nORDER BY match_id\nLIMIT -1",
+        "definition_check_id": "p1QMBQfodSF6pp-3BtJ_wf7Ozlq0MCjGEcu8X45cph0",
+        "expected_columns": [
+          "match_id",
+          "innings_no",
+          "over_id",
+          "total_runs",
+          "bowler_ids",
+          "avg_highest_over_runs"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "568 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=568; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): match_id=int; innings_no=int; over_id=int; total_runs=int; bowler_ids=str; avg_highest_over_runs=float\nmatch_id | innings_no | over_id | total_runs | bowler_ids | avg_highest_over_runs\n--- | --- | --- | --- | --- | ---\n335987 | 1 | 15 | 24 | 10 | 19.426056338028168\n335988 | 1 | 20 | 25 | 25 | 19.426056338028168\n335989 | 2 | 2 | 13 | 32 | 19.426056338028168\n335990 | 1 | 18 | 20 | 81 | 19.426056338028168\n335991 | 1 | 17 | 20 | 4 | 19.426056338028168\n335992 | 1 | 20 | 17 | 32 | 19.426056338028168\n335993 | 2 | 13 | 30 | 56 | 19.426056338028168\n335994 | 2 | 17 | 21 | 435 | 19.426056338028168\n335995 | 2 | 5 | 22 | 60 | 19.426056338028168\n335996 | 2 | 12 | 22 | 78 | 19.426056338028168\n335997 | 2 | 14 | 26 | 14 | 19.426056338028168\n335998 | 2 | 16 | 18 | 84 | 19.426056338028168\n335999 | 2 | 7 | 23 | 49 | 19.426056338028168\n336000 | 1 | 16 | 15 | 77 | 19.426056338028168\n336001 | 1 | 19 | 24 | 94 | 19.426056338028168\n336002 | 2 | 9 | 16 | 5 | 19.426056338028168\n336003 | 1 | 14 | 19 | 16 | 19.426056338028168\n336004 | 2 | 15 | 19 | 99 | 19.426056338028168\n336005 | 1 | 18 | 16 | 63 | 19.426056338028168\n336006 | 2 | 7 | 19 | 119 | 19.426056338028168\n336007 | 2 | 19 | 21 | 111 | 19.426056338028168\n336008 | 1 | 20 | 21 | 84 | 19.426056338028168\n336009 | 1 | 19 | 22 | 117 | 19.426056338028168\n336010 | 1 | 12 | 17 | 38 | 19.426056338028168\n336011 | 2 | 10 | 14 | 124 | 19.426056338028168\n336012 | 2 | 18 | 21 | 119 | 19.426056338028168\n336013 | 1 | 6 | 17 | 80 | 19.426056338028168\n336014 | 2 | 14 | 23 | 41 | 19.426056338028168\n336015 | 1 | 9 | 15 | 124 | 19.426056338028168\n336016 | 2 | 6 | 17 | 131 | 19.426056338028168\n336017 | 1 | 11 | 18 | 80 | 19.426056338028168\n336018 | 2 | 18 | 19 | 120 | 19.426056338028168\n336019 | 2 | 14 | 22 | 83 | 19.426056338028168\n336020 | 1 | 19 | 27 | 38 | 19.426056338028168\n336021 | 2 | 11 | 21 | 94 | 19.426056338028168\n336022 | 1 | 7 | 13 | 91 | 19.426056338028168\n336023 | 2 | 14 | 26 | 127 | 19.426056338028168\n336024 | 1 | 17 | 25 | 75 | 19.426056338028168\n336025 | 1 | 4 | 20 | 61 | 19.426056338028168\n336026 | 2 | 3 | 23 | 144 | 19.426056338028168\n336027 | 1 | 6 | 22 | 78 | 19.426056338028168\n336028 | 2 | 13 | 19 | 39 | 19.426056338028168\n336029 | 1 | 2 | 19 | 98 | 19.426056338028168\n336030 | 1 | 12 | 16 | 121 | 19.426056338028168\n336031 | 1 | 20 | 24 | 89 | 19.426056338028168\n336032 | 2 | 12 | 17 | 1 | 19.426056338028168\n336033 | 2 | 2 | 24 | 29 | 19.426056338028168\n336034 | 2 | 3 | 20 | 94 | 19.426056338028168\n336036 | 1 | 17 | 21 | 437 | 19.426056338028168\n336037 | 2 | 1 | 19 | 49 | 19.426056338028168\nSQL: WITH scoring AS (\n    SELECT match_id, innings_no, over_id, runs_scored AS runs\n    FROM main.batsman_scored\n    UNION ALL\n    SELECT match_id, innings_no, over_id, extra_runs AS runs\n    FROM main.extra_runs\n),\nranked_overs AS (\n    SELECT match_id, innings_no, over_id, SUM(runs) AS total_runs,\n           ROW_NUMBER() OVER (\n               PARTITION BY match_id\n               -- Select the earliest over when totals tie.\n               ORDER BY SUM(runs) DESC, innings_no, over_id\n           ) AS over_rank\n    FROM scoring\n    GROUP BY match_id, innings_no, over_id\n),\nwinning_over_bowlers AS (\n    SELECT r.match_id, r.innings_no, r.over_id, r.total_runs,\n           b.bowler, MIN(b.ball_id) AS first_ball\n    FROM ranked_overs AS r\n    LEFT JOIN main.ball_by_ball AS b USING (match_id, innings_no, over_id)\n    WHERE r.over_rank = 1\n    GROUP BY r.match_id, r.innings_no, r.over_id, r.total_runs, b.bowler\n)\nSELECT match_id, innings_no, over_id, total_runs,\n       GROUP_CONCAT(bowler, ', ' ORDER BY first_ball) AS bowler_ids,\n       AVG(total_runs) OVER () AS avg_highest_over_runs\nFROM winning_over_bowlers\nGROUP BY match_id, innings_no, over_id, total_runs\nORDER BY match_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH scoring AS (\n    SELECT match_id, innings_no, over_id, runs_scored AS runs\n    FROM main.batsman_scored\n    UNION ALL\n    SELECT match_id, innings_no, over_id, extra_runs AS runs\n    FROM main.extra_runs\n),\nranked_overs AS (\n    SELECT match_id, innings_no, over_id, SUM(runs) AS total_runs,\n           ROW_NUMBER() OVER (\n               PARTITION BY match_id\n               -- Select the earliest over when totals tie.\n               ORDER BY SUM(runs) DESC, innings_no, over_id\n           ) AS over_rank\n    FROM scoring\n    GROUP BY match_id, innings_no, over_id\n),\nwinning_over_bowlers AS (\n    SELECT r.match_id, r.innings_no, r.over_id, r.total_runs,\n           b.bowler, MIN(b.ball_id) AS first_ball\n    FROM ranked_overs AS r\n    LEFT JOIN main.ball_by_ball AS b USING (match_id, innings_no, over_id)\n    WHERE r.over_rank = 1\n    GROUP BY r.match_id, r.innings_no, r.over_id, r.total_runs, b.bowler\n)\nSELECT match_id, innings_no, over_id, total_runs,\n       GROUP_CONCAT(bowler, ', ' ORDER BY first_ball) AS bowler_ids,\n       AVG(total_runs) OVER () AS avg_highest_over_runs\nFROM winning_over_bowlers\nGROUP BY match_id, innings_no, over_id, total_runs\nORDER BY match_id\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 568,
+  "sql": "WITH scoring AS (\n    SELECT match_id, innings_no, over_id, runs_scored AS runs\n    FROM main.batsman_scored\n    UNION ALL\n    SELECT match_id, innings_no, over_id, extra_runs AS runs\n    FROM main.extra_runs\n),\nranked_overs AS (\n    SELECT match_id, innings_no, over_id, SUM(runs) AS total_runs,\n           ROW_NUMBER() OVER (\n               PARTITION BY match_id\n               -- Select the earliest over when totals tie.\n               ORDER BY SUM(runs) DESC, innings_no, over_id\n           ) AS over_rank\n    FROM scoring\n    GROUP BY match_id, innings_no, over_id\n),\nwinning_over_bowlers AS (\n    SELECT r.match_id, r.innings_no, r.over_id, r.total_runs,\n           b.bowler, MIN(b.ball_id) AS first_ball\n    FROM ranked_overs AS r\n    LEFT JOIN main.ball_by_ball AS b USING (match_id, innings_no, over_id)\n    WHERE r.over_rank = 1\n    GROUP BY r.match_id, r.innings_no, r.over_id, r.total_runs, b.bowler\n)\nSELECT match_id, innings_no, over_id, total_runs,\n       GROUP_CONCAT(bowler, ', ' ORDER BY first_ball) AS bowler_ids,\n       AVG(total_runs) OVER () AS avg_highest_over_runs\nFROM winning_over_bowlers\nGROUP BY match_id, innings_no, over_id, total_runs\nORDER BY match_id\nLIMIT -1",
+  "seconds": 162.5469196670456
+}

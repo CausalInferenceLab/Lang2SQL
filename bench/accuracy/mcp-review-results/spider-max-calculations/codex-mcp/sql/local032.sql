@@ -1,0 +1,43 @@
+WITH delivered_items AS (
+    SELECT i.seller_id, i.order_id, o.customer_id,
+           i.price - i.freight_value AS item_profit
+    FROM main.olist_order_items AS i
+    JOIN main.olist_orders AS o ON o.order_id = i.order_id
+    WHERE o.order_status = 'delivered'
+),
+seller_totals AS (
+    SELECT i.seller_id,
+           COUNT(DISTINCT c.customer_unique_id) AS customer_count,
+           ROUND(SUM(i.item_profit), 2) AS profit,
+           COUNT(DISTINCT i.order_id) AS order_count
+    FROM delivered_items AS i
+    LEFT JOIN main.olist_customers AS c ON c.customer_id = i.customer_id
+    GROUP BY i.seller_id
+),
+metrics AS (
+    SELECT 1 AS category, 'Most unique customers' AS achievement,
+           seller_id, customer_count AS value
+    FROM seller_totals
+    UNION ALL
+    SELECT 2, 'Highest total profit', seller_id, profit
+    FROM seller_totals
+    UNION ALL
+    SELECT 3, 'Most distinct delivered orders', seller_id, order_count
+    FROM seller_totals
+    UNION ALL
+    SELECT 4, 'Most 5-star ratings', i.seller_id, COUNT(DISTINCT r.review_id)
+    FROM delivered_items AS i
+    JOIN main.olist_order_reviews AS r ON r.order_id = i.order_id
+    WHERE r.review_score = 5
+    GROUP BY i.seller_id
+),
+ranked AS (
+    SELECT category, achievement, seller_id, value,
+           RANK() OVER (PARTITION BY category ORDER BY value DESC) AS place
+    FROM metrics
+)
+SELECT achievement, seller_id, value
+FROM ranked
+WHERE place = 1
+ORDER BY category, seller_id
+LIMIT 1000
