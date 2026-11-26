@@ -1,0 +1,1214 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-integrated-20261127/bird-gpt-6.2-sol",
+      "manifest_sha256": "892185c34772ea9d34065bea7767745b45cd849537a6e20943877ef83202d68c",
+      "scores_sha256": "b52f082479fe9b649940c6b0aa2af9c1000e7a88ff1d34614616395cbb21791a",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-sol",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "4d7f3a707587fab01a706461719c7e23f58c8dfe",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "5b87250f7b0f92903647327e91e8effab7b092b403569d930413644f1c97a173",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": {
+          "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-prior-full-failures-20261127/bird-gpt-6.2-sol",
+          "manifest_sha256": "c6c2aa6d57836036c1986ff4ccb60daf4c2fbd69cb924004d21957ceae227e13",
+          "scores_sha256": "32ebf4704ef74a54b12221e18b457d9163c4eda1173df1321844cd94e95e3b98",
+          "excluded_passed_sources": [
+            {
+              "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-rate-projection-20261127/bird-gpt-6.2-sol",
+              "manifest_sha256": "f25f02f2d97ffad616b9fee428baaaf54092ec32684b0cd4124e0460c5d18145",
+              "scores_sha256": "006b2f995300ef903c6be3faa93af23349d27a1b816278cbf13538298fee9d8c"
+            },
+            {
+              "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-reasoning-control-20261127/bird-xhigh",
+              "manifest_sha256": "56d2b682e6498f7c34cb3daac20723a460aab2e5310714de49b8ae452807b1bb",
+              "scores_sha256": "667745f0a9bd9dd57c7f8a7d5d789a28d975aa0448db56526fc63fe4a21f83d1"
+            }
+          ],
+          "exclusion_policy": "any pass in explicitly supplied completed runs; not an aggregate accuracy score",
+          "metric": "repair rate on selected prior failures, not full benchmark accuracy"
+        },
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-multistage-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "10bc184dd7bcf310b301ecc3e1182d04901a4105b3e6ebf8c375b2a5d30ae16c",
+      "scores_sha256": "0683542b0212772bcbb6dbddbf79b30347c14f7372d10d2f1c272e063f77aa65",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "e926421538a22fe605a0516babb4ab6dba5d5351",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 1": 2,
+    "0 -> 0": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird062",
+        "db": "card_games",
+        "question": "I collect promotional printings and play Brawl. How many different creature cards that have a promotional printing can serve as a Brawl commander? I just want a single number back.",
+        "evidence": "A promotional printing is a printing of a card made as a promotion, as opposed to a regular set printing. Brawl is a Magic: The Gathering format; the deck's commander is the card that leads it, and only certain cards are legal as a Brawl commander."
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,13 +1,6 @@\n-SELECT COUNT(DISTINCT cards.name) AS creature_count\n-FROM cards\n-JOIN legalities ON legalities.uuid = cards.uuid\n-WHERE instr(',' || cards.types || ',', ',Creature,') > 0\n-  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n-  AND legalities.format = 'brawl'\n-  AND legalities.status = 'Legal'\n-  AND cards.name IN (\n-      SELECT promo.name\n-      FROM cards AS promo\n-      WHERE promo.isPromo = 1\n-  )\n+SELECT COUNT(DISTINCT c.name) AS card_count\n+FROM main.cards AS c\n+WHERE c.isPromo = 1\n+  AND instr(',' || c.types || ',', ',Creature,') > 0\n+  AND instr(c.leadershipSkills, '''brawl'': True') > 0\n LIMIT 1",
+      "before": {
+        "score": 0,
+        "record_sha256": "314615e6a9dea1858a031947a48a6c1268d1c56000eb4f1cf3dd939c9bd8e641",
+        "record": {
+          "instance_id": "bird062",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-sol",
+          "status": "predicted",
+          "calls": [],
+          "events_sha256": "8d2c224fdcd32d96185a09e1accf7a2479202466a647f0a5c7eda553ddf94368",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 294396,
+              "cached_input_tokens": 277120,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1857,
+              "reasoning_output_tokens": 448
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "legalities"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "legalities (table)\n- id: INTEGER NOT NULL\n- format: TEXT\n- status: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"vYnECZL1Hk19YlPT_WISlfkA1h_MHv-oP_3Zs0cO_Gg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "vYnECZL1Hk19YlPT_WISlfkA1h_MHv-oP_3Zs0cO_Gg",
+                "sql": "SELECT 'leadershipSkills' AS field, cards.leadershipSkills AS value, COUNT(*) AS row_count\nFROM cards\nWHERE cards.leadershipSkills IS NOT NULL\nGROUP BY cards.leadershipSkills\nUNION ALL\nSELECT 'types', cards.types, COUNT(*)\nFROM cards\nWHERE cards.types LIKE '%Creature%'\nGROUP BY cards.types\nUNION ALL\nSELECT 'isPromo', CAST(cards.isPromo AS TEXT), COUNT(*)\nFROM cards\nGROUP BY cards.isPromo\nUNION ALL\nSELECT 'Brawl legality', legalities.format || '/' || legalities.status, COUNT(*)\nFROM legalities\nWHERE legalities.format LIKE '%brawl%'\nGROUP BY legalities.format, legalities.status"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "15 row(s):\nResult coverage: fetched_rows=15; displayed_rows=15; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): field=str; value=str; row_count=int\nfield | value | row_count\n--- | --- | ---\nleadershipSkills | {'brawl': False, 'commander': False, 'oathbreaker': True} | 724\nleadershipSkills | {'brawl': False, 'commander': True, 'oathbreaker': False} | 2660\nleadershipSkills | {'brawl': False, 'commander': True, 'oathbreaker': True} | 45\nleadershipSkills | {'brawl': True, 'commander': False, 'oathbreaker': True} | 66\nleadershipSkills | {'brawl': True, 'commander': True, 'oathbreaker': False} | 255\ntypes | Artifact,Creature | 1617\ntypes | Creature | 24229\ntypes | Enchantment,Creature | 256\ntypes | Instant,Creature | 2\ntypes | Land,Creature | 4\ntypes | Scariest,Creature,You’ll,Ever,See | 1\nisPromo | 0 | 51234\nisPromo | 1 | 5588\nBrawl legality | brawl/Banned | 34\nBrawl legality | brawl/Legal | 7664\nSQL: SELECT 'leadershipSkills' AS field, cards.leadershipSkills AS value, COUNT(*) AS row_count\nFROM cards\nWHERE cards.leadershipSkills IS NOT NULL\nGROUP BY cards.leadershipSkills\nUNION ALL\nSELECT 'types', cards.types, COUNT(*)\nFROM cards\nWHERE cards.types LIKE '%Creature%'\nGROUP BY cards.types\nUNION ALL\nSELECT 'isPromo', CAST(cards.isPromo AS TEXT), COUNT(*)\nFROM cards\nGROUP BY cards.isPromo\nUNION ALL\nSELECT 'Brawl legality', legalities.format || '/' || legalities.status, COUNT(*)\nFROM legalities\nWHERE legalities.format LIKE '%brawl%'\nGROUP BY legalities.format, legalities.status\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"oQ9Btt06vDlO8gtNVXAFpPYg1cioPngstItFx5RZbXg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "oQ9Btt06vDlO8gtNVXAFpPYg1cioPngstItFx5RZbXg",
+                "sql": "WITH eligible AS (\n    SELECT cards.name, cards.scryfallOracleId, cards.uuid, cards.isPromo\n    FROM cards\n    WHERE instr(',' || cards.types || ',', ',Creature,') > 0\n      AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n),\npromo AS (\n    SELECT DISTINCT cards.name FROM cards WHERE cards.isPromo = 1\n)\nSELECT COUNT(DISTINCT eligible.name) AS eligible_names,\n       COUNT(DISTINCT CASE WHEN eligible.isPromo = 1 THEN eligible.name END) AS same_row,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL THEN eligible.name END) AS any_promo,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL THEN eligible.scryfallOracleId END) AS promo_oracle_ids,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL AND eligible.scryfallOracleId IS NULL THEN eligible.name END) AS promo_names_missing_oracle_id,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL AND legalities.status = 'Legal' THEN eligible.name END) AS promo_and_legal,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL AND legalities.status = 'Banned' THEN eligible.name END) AS promo_and_banned\nFROM eligible\nLEFT JOIN promo ON promo.name = eligible.name\nLEFT JOIN legalities ON legalities.uuid = eligible.uuid AND legalities.format = 'brawl'"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): eligible_names=int; same_row=int; any_promo=int; promo_oracle_ids=int; promo_names_missing_oracle_id=int; promo_and_legal=int; promo_and_banned=int\neligible_names | same_row | any_promo | promo_oracle_ids | promo_names_missing_oracle_id | promo_and_legal | promo_and_banned\n--- | --- | --- | --- | --- | --- | ---\n130 | 7 | 101 | 101 | 0 | 98 | 3\nSQL: WITH eligible AS (\n    SELECT cards.name, cards.scryfallOracleId, cards.uuid, cards.isPromo\n    FROM cards\n    WHERE instr(',' || cards.types || ',', ',Creature,') > 0\n      AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n),\npromo AS (\n    SELECT DISTINCT cards.name FROM cards WHERE cards.isPromo = 1\n)\nSELECT COUNT(DISTINCT eligible.name) AS eligible_names,\n       COUNT(DISTINCT CASE WHEN eligible.isPromo = 1 THEN eligible.name END) AS same_row,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL THEN eligible.name END) AS any_promo,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL THEN eligible.scryfallOracleId END) AS promo_oracle_ids,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL AND eligible.scryfallOracleId IS NULL THEN eligible.name END) AS promo_names_missing_oracle_id,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL AND legalities.status = 'Legal' THEN eligible.name END) AS promo_and_legal,\n       COUNT(DISTINCT CASE WHEN promo.name IS NOT NULL AND legalities.status = 'Banned' THEN eligible.name END) AS promo_and_banned\nFROM eligible\nLEFT JOIN promo ON promo.name = eligible.name\nLEFT JOIN legalities ON legalities.uuid = eligible.uuid AND legalities.format = 'brawl'\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"5VbjyAmeRsBu3YSLuh1KSPectN7Og4ZRj4MSd8WRO1c\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_8",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "5VbjyAmeRsBu3YSLuh1KSPectN7Og4ZRj4MSd8WRO1c",
+                "sql": "SELECT cards.name, cards.types, cards.side,\n       GROUP_CONCAT(DISTINCT legalities.status) AS brawl_statuses,\n       COUNT(DISTINCT cards.uuid) AS eligible_printings\nFROM cards\nJOIN legalities ON legalities.uuid = cards.uuid AND legalities.format = 'brawl'\nWHERE instr(',' || cards.types || ',', ',Creature,') > 0\n  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n  AND cards.name IN (SELECT cards.name FROM cards WHERE cards.isPromo = 1)\nGROUP BY cards.name, cards.types, cards.side\nHAVING COUNT(CASE WHEN legalities.status = 'Banned' THEN 1 END) > 0 OR cards.side IS NOT NULL\nORDER BY cards.name, cards.side"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "15 row(s):\nResult coverage: fetched_rows=15; displayed_rows=15; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): name=str; types=str; side=NoneType,str; brawl_statuses=str; eligible_printings=int\nname | types | side | brawl_statuses | eligible_printings\n--- | --- | --- | --- | ---\nAlrund, God of the Cosmos // Hakka, Whispering Raven | Creature | a | Legal | 2\nBirgi, God of Storytelling // Harnfel, Horn of Bounty | Creature | a | Legal | 2\nCosima, God of the Voyage // The Omenkeel | Creature | a | Legal | 2\nEgon, God of Death // Throne of Death | Creature | a | Legal | 2\nEsika, God of the Tree // The Prismatic Bridge | Creature | a | Legal | 2\nHalvar, God of Battle // Sword of the Realms | Creature | a | Legal | 2\nJorn, God of Winter // Kaldring, the Rimestaff | Creature | a | Legal | 2\nKolvori, God of Kinship // The Ringhart Crest | Creature | a | Legal | 2\nLutri, the Spellchaser | Creature | None | Banned | 2\nOmnath, Locus of Creation | Creature | None | Banned | 2\nReidane, God of the Worthy // Valkmira, Protector's Shield | Creature | a | Legal | 2\nTergrid, God of Fright // Tergrid's Lantern | Creature | a | Legal | 2\nToralf, God of Fury // Toralf's Hammer | Creature | a | Legal | 2\nValki, God of Lies // Tibalt, Cosmic Impostor | Creature | a | Legal | 3\nWinota, Joiner of Forces | Creature | None | Banned | 2\nSQL: SELECT cards.name, cards.types, cards.side,\n       GROUP_CONCAT(DISTINCT legalities.status) AS brawl_statuses,\n       COUNT(DISTINCT cards.uuid) AS eligible_printings\nFROM cards\nJOIN legalities ON legalities.uuid = cards.uuid AND legalities.format = 'brawl'\nWHERE instr(',' || cards.types || ',', ',Creature,') > 0\n  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n  AND cards.name IN (SELECT cards.name FROM cards WHERE cards.isPromo = 1)\nGROUP BY cards.name, cards.types, cards.side\nHAVING COUNT(CASE WHEN legalities.status = 'Banned' THEN 1 END) > 0 OR cards.side IS NOT NULL\nORDER BY cards.name, cards.side\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_9",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"AB-ZEsO_X6orrnTE6sLv0R0XrD4Cb1FTjSC3FByPTAY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_10",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "AB-ZEsO_X6orrnTE6sLv0R0XrD4Cb1FTjSC3FByPTAY",
+                "sql": "SELECT COUNT(DISTINCT cards.name) AS creature_count\nFROM cards\nJOIN legalities ON legalities.uuid = cards.uuid\nWHERE instr(',' || cards.types || ',', ',Creature,') > 0\n  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n  AND legalities.format = 'brawl'\n  AND legalities.status = 'Legal'\n  AND cards.name IN (\n      SELECT promo.name\n      FROM cards AS promo\n      WHERE promo.isPromo = 1\n  )\nLIMIT 1",
+                "expected_columns": [
+                  "creature_count"
+                ],
+                "limit": 1
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): creature_count=int\ncreature_count\n---\n98\nSQL: SELECT COUNT(DISTINCT cards.name) AS creature_count\nFROM cards\nJOIN legalities ON legalities.uuid = cards.uuid\nWHERE instr(',' || cards.types || ',', ',Creature,') > 0\n  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n  AND legalities.format = 'brawl'\n  AND legalities.status = 'Legal'\n  AND cards.name IN (\n      SELECT promo.name\n      FROM cards AS promo\n      WHERE promo.isPromo = 1\n  )\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT COUNT(DISTINCT cards.name) AS creature_count\nFROM cards\nJOIN legalities ON legalities.uuid = cards.uuid\nWHERE instr(',' || cards.types || ',', ',Creature,') > 0\n  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n  AND legalities.format = 'brawl'\n  AND legalities.status = 'Legal'\n  AND cards.name IN (\n      SELECT promo.name\n      FROM cards AS promo\n      WHERE promo.isPromo = 1\n  )\nLIMIT 1\n```",
+          "rows": 1,
+          "sql": "SELECT COUNT(DISTINCT cards.name) AS creature_count\nFROM cards\nJOIN legalities ON legalities.uuid = cards.uuid\nWHERE instr(',' || cards.types || ',', ',Creature,') > 0\n  AND instr(cards.leadershipSkills, '''brawl'': True') > 0\n  AND legalities.format = 'brawl'\n  AND legalities.status = 'Legal'\n  AND cards.name IN (\n      SELECT promo.name\n      FROM cards AS promo\n      WHERE promo.isPromo = 1\n  )\nLIMIT 1",
+          "seconds": 54.05298412498087
+        },
+        "result": {
+          "columns": [
+            "creature_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "98"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "83afc52137306de5ff285a7d3a88bd2ccbf006a333608e4b59e61a859b6ffdb0"
+        }
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "9c3faa1c7c6ffae40546c77d3653204c3bd73ee201a37adf0eafc472a78e3894",
+        "record": {
+          "instance_id": "bird062",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "ad25602d7fea13ce303db9e81b00650e6cd775acb57baaee528ce55c798f98f3",
+          "events_sha256": "095bd9e2bec8f285bdfe62a0077447681bb06024a0648e71c2edc4886e36a3ac",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 147211,
+              "cached_input_tokens": 131456,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 557,
+              "reasoning_output_tokens": 16
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"2aN1G5Sr-WNP2k_zyYJsLX7a-aZTGPuUmHgj0OBJ9hw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "2aN1G5Sr-WNP2k_zyYJsLX7a-aZTGPuUmHgj0OBJ9hw",
+                "sql": "SELECT c.leadershipSkills, GROUP_CONCAT(DISTINCT c.types) AS card_types\nFROM main.cards AS c\nWHERE c.isPromo = 1 AND c.leadershipSkills IS NOT NULL\nGROUP BY c.leadershipSkills"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): leadershipSkills=str; card_types=str\nleadershipSkills | card_types\n--- | ---\n{'brawl': False, 'commander': False, 'oathbreaker': True} | Planeswalker\n{'brawl': False, 'commander': True, 'oathbreaker': False} | Creature,Artifact,Creature,Enchantment,Creature\n{'brawl': False, 'commander': True, 'oathbreaker': True} | Planeswalker\n{'brawl': True, 'commander': True, 'oathbreaker': False} | Creature,Enchantment,Creature\nSQL: SELECT c.leadershipSkills, GROUP_CONCAT(DISTINCT c.types) AS card_types\nFROM main.cards AS c\nWHERE c.isPromo = 1 AND c.leadershipSkills IS NOT NULL\nGROUP BY c.leadershipSkills\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"_aIaJ0z_22ov3qjpDVNnppjdvR2WHzxWWTq-7yA3-Cc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "_aIaJ0z_22ov3qjpDVNnppjdvR2WHzxWWTq-7yA3-Cc",
+                "expected_columns": [
+                  "card_count"
+                ],
+                "sql": "SELECT COUNT(DISTINCT c.name) AS card_count\nFROM main.cards AS c\nWHERE c.isPromo = 1\n  AND instr(',' || c.types || ',', ',Creature,') > 0\n  AND instr(c.leadershipSkills, '''brawl'': True') > 0\nLIMIT 1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): card_count=int\ncard_count\n---\n7\nSQL: SELECT COUNT(DISTINCT c.name) AS card_count\nFROM main.cards AS c\nWHERE c.isPromo = 1\n  AND instr(',' || c.types || ',', ',Creature,') > 0\n  AND instr(c.leadershipSkills, '''brawl'': True') > 0\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT COUNT(DISTINCT c.name) AS card_count\nFROM main.cards AS c\nWHERE c.isPromo = 1\n  AND instr(',' || c.types || ',', ',Creature,') > 0\n  AND instr(c.leadershipSkills, '''brawl'': True') > 0\nLIMIT 1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT COUNT(DISTINCT c.name) AS card_count\nFROM main.cards AS c\nWHERE c.isPromo = 1\n  AND instr(',' || c.types || ',', ',Creature,') > 0\n  AND instr(c.leadershipSkills, '''brawl'': True') > 0\nLIMIT 1",
+          "seconds": 28.594876665971242
+        },
+        "result": {
+          "columns": [
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "7"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "2a5ace8988080c593553ad0b4bdb7e5a6ef05aa94d9fb5dd2f26542b6617a16c"
+        }
+      }
+    },
+    {
+      "input": {
+        "instance_id": "bird093",
+        "db": "card_games",
+        "question": "Among the cards carrying the boros watermark that were printed in a foreign language, which card type is the most common, and how many of those cards have that type? If several types tie for the most, list all of them with their counts.",
+        "evidence": "\"Boros watermark\" refers to the guild watermark appearing on cards of the Boros guild; \"printed in a foreign language\" means the card was printed in any language other than English."
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,11 +1,11 @@\n WITH type_counts AS (\n     SELECT c.types AS card_type, COUNT(*) AS card_count\n-    FROM main.cards AS c\n+    FROM cards AS c\n     WHERE c.watermark = 'boros'\n       AND c.uuid IN (\n           SELECT f.uuid\n-          FROM main.foreign_data AS f\n-          WHERE f.language <> 'English'\n+          FROM foreign_data AS f\n+          WHERE f.language <> 'English' AND f.language <> ''\n       )\n     GROUP BY c.types\n )",
+      "before": {
+        "score": 0,
+        "record_sha256": "8d3931610ec930bd12d5ae0013a3bf27e21640c6ee35fcbd72770739896c452f",
+        "record": {
+          "instance_id": "bird093",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-sol",
+          "status": "predicted",
+          "calls": [],
+          "events_sha256": "9b741e21f3dbfa2f6fa7d7ae7b4597335dc8ad424600adf55e953309d58b36d4",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 154375,
+              "cached_input_tokens": 139008,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1321,
+              "reasoning_output_tokens": 668
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "foreign_data"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "foreign_data (table)\n- id: INTEGER NOT NULL\n- flavorText: TEXT\n- language: TEXT\n- multiverseid: INTEGER\n- name: TEXT\n- text: TEXT\n- type: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"G8hS3-WzOxx2E9-6W_P1eQyGjG5I9vy59DmoO5s0kOA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "G8hS3-WzOxx2E9-6W_P1eQyGjG5I9vy59DmoO5s0kOA",
+                "sql": "SELECT c.watermark, c.types, c.type,\n       COUNT(DISTINCT c.id) AS card_count,\n       COUNT(*) AS language_row_count,\n       GROUP_CONCAT(DISTINCT f.language) AS languages\nFROM main.cards AS c\nJOIN main.foreign_data AS f ON f.uuid = c.uuid\nWHERE LOWER(c.watermark) = 'boros'\nGROUP BY c.watermark, c.types, c.type\nORDER BY card_count DESC, c.types, c.type"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "25 row(s):\nResult coverage: fetched_rows=25; displayed_rows=25; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): watermark=str; types=str; type=str; card_count=int; language_row_count=int; languages=str\nwatermark | types | type | card_count | language_row_count | languages\n--- | --- | --- | --- | --- | ---\nboros | Instant | Instant | 28 | 226 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Creature | Creature — Human Soldier | 16 | 141 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Human Knight | 8 | 73 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Sorcery | Sorcery | 7 | 50 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Artifact | Artifact | 6 | 47 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Creature | Creature — Angel | 5 | 38 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Goblin Soldier | 5 | 43 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Human Wizard | 5 | 41 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Minotaur Soldier | 5 | 46 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Creature | Legendary Creature — Angel | 5 | 38 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Elemental Soldier | 4 | 35 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Giant Soldier | 4 | 38 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Legendary Creature — Human Soldier | 4 | 32 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Enchantment | Enchantment | 4 | 36 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Land | Land | 4 | 26 | German,Spanish,French,Italian,Japanese,Portuguese (Brazil),Russian,Chinese Simplified\nboros | Land | Land — Mountain Plains | 3 | 28 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Human Cleric | 2 | 18 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Minotaur Wizard | 2 | 15 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Viashino Soldier | 2 | 19 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Land | Land — Gate | 2 | 19 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional,Portuguese (Brazil)\nboros | Artifact | Artifact — Equipment | 1 | 8 | German,Spanish,French,Italian,Japanese,Portuguese (Brazil),Russian,Chinese Simplified\nboros | Creature | Creature — Cyclops Soldier | 1 | 10 | German,Spanish,French,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Dog | 1 | 9 | German,Spanish,French,Italian,Japanese,Korean,Russian,Chinese Simplified,Chinese Traditional\nboros | Creature | Creature — Elemental Berserker | 1 | 8 | German,Spanish,French,Italian,Japanese,Portuguese (Brazil),Russian,Chinese Simplified\nboros | Creature | Creature — Griffin | 1 | 8 | German,Spanish,French,Italian,Japanese,Portuguese (Brazil),Russian,Chinese Simplified\nSQL: SELECT c.watermark, c.types, c.type,\n       COUNT(DISTINCT c.id) AS card_count,\n       COUNT(*) AS language_row_count,\n       GROUP_CONCAT(DISTINCT f.language) AS languages\nFROM main.cards AS c\nJOIN main.foreign_data AS f ON f.uuid = c.uuid\nWHERE LOWER(c.watermark) = 'boros'\nGROUP BY c.watermark, c.types, c.type\nORDER BY card_count DESC, c.types, c.type\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"uC3aEddaO2l2Tirw7aIswvO15vbuNVWB8470F5TOJZw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "uC3aEddaO2l2Tirw7aIswvO15vbuNVWB8470F5TOJZw",
+                "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM main.cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM main.foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1",
+                "expected_columns": [
+                  "card_type",
+                  "card_count"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): card_type=str; card_count=int\ncard_type | card_count\n--- | ---\nCreature | 71\nSQL: WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM main.cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM main.foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM main.cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM main.foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1\n```",
+          "rows": 1,
+          "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM main.cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM main.foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1",
+          "seconds": 36.783750124974176
+        },
+        "result": {
+          "columns": [
+            "card_type",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "Creature",
+              "71"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "447dc32e5bf636101affb8d2cea2a2e2762bd4cb599f9ead3a2a47187f4fe577"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "0d5024022f09d9d0a40ed502b53414c34302a39943da54866372500c24cb8fc6",
+        "record": {
+          "instance_id": "bird093",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "1b2bfb056388de9cf6784b0ac42a77124d101a075a2be33dba44e3de70db8e62",
+          "events_sha256": "36b65b54ce4f60a3e9b5298bf334ca72d5fb35d429f8e958e9c241ceec89c826",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 168992,
+              "cached_input_tokens": 152448,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 669,
+              "reasoning_output_tokens": 37
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "foreign_data"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "foreign_data (table)\n- id: INTEGER NOT NULL\n- flavorText: TEXT\n- language: TEXT\n- multiverseid: INTEGER\n- name: TEXT\n- text: TEXT\n- type: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"WvQoN_vUnXGsGb-WUBAejTRaZBFfxURewjVDbFzjrcI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "WvQoN_vUnXGsGb-WUBAejTRaZBFfxURewjVDbFzjrcI",
+                "sql": "SELECT c.types, MIN(c.type) AS example_type_line, COUNT(*) AS cards\nFROM cards AS c\nWHERE c.watermark = 'boros'\n  AND c.uuid IN (SELECT f.uuid FROM foreign_data AS f WHERE f.language <> 'English' AND f.language <> '')\nGROUP BY c.types"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): types=str; example_type_line=str; cards=int\ntypes | example_type_line | cards\n--- | --- | ---\nArtifact | Artifact | 7\nCreature | Creature — Angel | 71\nEnchantment | Enchantment | 4\nInstant | Instant | 28\nLand | Land | 9\nSorcery | Sorcery | 7\nSQL: SELECT c.types, MIN(c.type) AS example_type_line, COUNT(*) AS cards\nFROM cards AS c\nWHERE c.watermark = 'boros'\n  AND c.uuid IN (SELECT f.uuid FROM foreign_data AS f WHERE f.language <> 'English' AND f.language <> '')\nGROUP BY c.types\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"AwblWsHRBDE7m_tqqS3CQdq1rusYYrqoB9ql9rfLg6U\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "AwblWsHRBDE7m_tqqS3CQdq1rusYYrqoB9ql9rfLg6U",
+                "expected_columns": [
+                  "card_type",
+                  "card_count"
+                ],
+                "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English' AND f.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): card_type=str; card_count=int\ncard_type | card_count\n--- | ---\nCreature | 71\nSQL: WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English' AND f.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English' AND f.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English' AND f.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT -1",
+          "seconds": 31.79486933303997
+        },
+        "result": {
+          "columns": [
+            "card_type",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "Creature",
+              "71"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "447dc32e5bf636101affb8d2cea2a2e2762bd4cb599f9ead3a2a47187f4fe577"
+        }
+      }
+    },
+    {
+      "input": {
+        "instance_id": "bird154",
+        "db": "debit_card_specializing",
+        "question": "I'm reviewing 2013 uptake and want to know the genuinely active cardholder base in each client segment. For each client segment, how many of that segment's customers consumed any fuel at all during the calendar year 2013? I just need the client segment and the number of customers who consumed fuel in 2013, nothing else.",
+        "evidence": "A customer's consumption for a month is the amount of fuel recorded against them for that month; by 'consumed any fuel in 2013' I mean they had fuel recorded against them in at least one month of 2013."
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,14 +1,12 @@\n-WITH customers_with_fuel AS (\n-    SELECT DISTINCT ym.CustomerID\n-    FROM yearmonth AS ym\n-    WHERE ym.Date >= '201301'\n-      AND ym.Date < '201401'\n-      AND ym.Consumption IS NOT NULL\n+WITH active_customers AS (\n+    SELECT DISTINCT y.CustomerID\n+    FROM main.yearmonth AS y\n+    WHERE y.Date >= '201301'\n+      AND y.Date < '201401'\n+      AND y.Consumption > 0\n )\n-SELECT\n-    c.Segment,\n-    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\n-FROM customers AS c\n-LEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\n+SELECT c.Segment, COUNT(a.CustomerID) AS customer_count\n+FROM main.customers AS c\n+LEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\n GROUP BY c.Segment\n-LIMIT -1\n+LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "6d3e7bcf1f67fb3cdced8ced3e566e681919fda470064fef78b97928fd4722d0",
+        "record": {
+          "instance_id": "bird154",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-sol",
+          "status": "predicted",
+          "calls": [],
+          "events_sha256": "77a71c10e2da3a5dfbaee2eeccf6010ecc5089a119206a0f47c6289922549017",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 153030,
+              "cached_input_tokens": 142464,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1089,
+              "reasoning_output_tokens": 307
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "customers"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "yearmonth"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"2akxx8i9N-lsvqwbzAOaUIaigN8J0h0umjEl8PXuwNg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "2akxx8i9N-lsvqwbzAOaUIaigN8J0h0umjEl8PXuwNg",
+                "sql": "WITH activity AS (\n    SELECT\n        ym.CustomerID,\n        COUNT(*) AS monthly_rows,\n        COUNT(ym.Consumption) AS recorded_months,\n        MAX(ym.Consumption > 0) AS has_positive_month,\n        MIN(ym.Consumption) AS min_consumption,\n        MIN(ym.Date) AS first_month,\n        MAX(ym.Date) AS last_month\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301' AND ym.Date < '201401'\n    GROUP BY ym.CustomerID\n)\nSELECT\n    c.Segment,\n    COUNT(*) AS customers,\n    COUNT(a.CustomerID) AS customers_with_monthly_rows,\n    COUNT(CASE WHEN a.recorded_months > 0 THEN 1 END) AS customers_with_recorded_amount,\n    COUNT(CASE WHEN a.has_positive_month = 1 THEN 1 END) AS customers_with_positive_amount,\n    SUM(a.monthly_rows - a.recorded_months) AS null_months,\n    MIN(a.min_consumption) AS min_consumption,\n    MIN(a.first_month) AS first_month,\n    MAX(a.last_month) AS last_month\nFROM customers AS c\nLEFT JOIN activity AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; customers=int; customers_with_monthly_rows=int; customers_with_recorded_amount=int; customers_with_positive_amount=int; null_months=int; min_consumption=float; first_month=str; last_month=str\nSegment | customers | customers_with_monthly_rows | customers_with_recorded_amount | customers_with_positive_amount | null_months | min_consumption | first_month | last_month\n--- | --- | --- | --- | --- | --- | --- | --- | ---\nKAM | 2040 | 1836 | 1836 | 1833 | 0 | -582092.86 | 201301 | 201311\nLAM | 3658 | 3541 | 3541 | 3539 | 0 | -2458.05 | 201301 | 201311\nSME | 26763 | 22274 | 22274 | 22246 | 0 | -14896.12 | 201301 | 201311\nSQL: WITH activity AS (\n    SELECT\n        ym.CustomerID,\n        COUNT(*) AS monthly_rows,\n        COUNT(ym.Consumption) AS recorded_months,\n        MAX(ym.Consumption > 0) AS has_positive_month,\n        MIN(ym.Consumption) AS min_consumption,\n        MIN(ym.Date) AS first_month,\n        MAX(ym.Date) AS last_month\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301' AND ym.Date < '201401'\n    GROUP BY ym.CustomerID\n)\nSELECT\n    c.Segment,\n    COUNT(*) AS customers,\n    COUNT(a.CustomerID) AS customers_with_monthly_rows,\n    COUNT(CASE WHEN a.recorded_months > 0 THEN 1 END) AS customers_with_recorded_amount,\n    COUNT(CASE WHEN a.has_positive_month = 1 THEN 1 END) AS customers_with_positive_amount,\n    SUM(a.monthly_rows - a.recorded_months) AS null_months,\n    MIN(a.min_consumption) AS min_consumption,\n    MIN(a.first_month) AS first_month,\n    MAX(a.last_month) AS last_month\nFROM customers AS c\nLEFT JOIN activity AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"KgKq77_coXjywdPGe0of7VAq5ciA4o9Ypv9NcSqfCnM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "KgKq77_coXjywdPGe0of7VAq5ciA4o9Ypv9NcSqfCnM",
+                "expected_columns": [
+                  "Segment",
+                  "CustomersConsumedFuel2013"
+                ],
+                "sql": "WITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; CustomersConsumedFuel2013=int\nSegment | CustomersConsumedFuel2013\n--- | ---\nKAM | 1836\nLAM | 3541\nSME | 22274\nSQL: WITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1\n```",
+          "rows": 3,
+          "sql": "WITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1",
+          "seconds": 36.84892525000032
+        },
+        "result": {
+          "columns": [
+            "Segment",
+            "CustomersConsumedFuel2013"
+          ],
+          "row_count": 3,
+          "preview": [
+            [
+              "KAM",
+              "1836"
+            ],
+            [
+              "LAM",
+              "3541"
+            ],
+            [
+              "SME",
+              "22274"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "6ca6324ad20390cd30087ef791e69abd2b3d2eb9d74c4668db71c5d7576fc572"
+        }
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "3db1494a2dddd249d7fd288cae857f64a579de7c233330381bcb7c6abe7ba19d",
+        "record": {
+          "instance_id": "bird154",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "4653991d69f5ba836a8852d082d2b2c3298fff987c6cbd841eeb5064d6a1324a",
+          "events_sha256": "dee47ce0b3805a53c2f43fbd0a4699f2110f371dff8e9e1689fe76cf812cb007",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 128482,
+              "cached_input_tokens": 115712,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 612,
+              "reasoning_output_tokens": 45
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"N9FMozVyPkNriyMBd1Yyfign2VdBOwRd80Zhr1PyysQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "yearmonth"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "customers"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "N9FMozVyPkNriyMBd1Yyfign2VdBOwRd80Zhr1PyysQ",
+                "sql": "SELECT MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS monthly_rows, COUNT(y.Consumption) AS recorded_amounts,\n       SUM(y.Consumption = 0) AS zero_amounts, SUM(y.Consumption < 0) AS negative_amounts\nFROM main.yearmonth AS y\nWHERE y.Date >= '201301' AND y.Date < '201401'"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_month=str; last_month=str; monthly_rows=int; recorded_amounts=int; zero_amounts=int; negative_amounts=int\nfirst_month | last_month | monthly_rows | recorded_amounts | zero_amounts | negative_amounts\n--- | --- | --- | --- | --- | ---\n201301 | 201311 | 224466 | 224466 | 22 | 103\nSQL: SELECT MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS monthly_rows, COUNT(y.Consumption) AS recorded_amounts,\n       SUM(y.Consumption = 0) AS zero_amounts, SUM(y.Consumption < 0) AS negative_amounts\nFROM main.yearmonth AS y\nWHERE y.Date >= '201301' AND y.Date < '201401'\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"TXUiY8_o12BjjiXAd-QMrbzPyxg4ve6hFB-FRylbBM4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "TXUiY8_o12BjjiXAd-QMrbzPyxg4ve6hFB-FRylbBM4",
+                "expected_columns": [
+                  "Segment",
+                  "customer_count"
+                ],
+                "sql": "WITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; customer_count=int\nSegment | customer_count\n--- | ---\nKAM | 1833\nLAM | 3539\nSME | 22246\nSQL: WITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 3,
+          "sql": "WITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000",
+          "seconds": 26.017450916930102
+        },
+        "result": {
+          "columns": [
+            "Segment",
+            "customer_count"
+          ],
+          "row_count": 3,
+          "preview": [
+            [
+              "KAM",
+              "1833"
+            ],
+            [
+              "LAM",
+              "3539"
+            ],
+            [
+              "SME",
+              "22246"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "9ac74cc0d0fec3d29187435f4c5a785fc8a7ae83575f60bbf54ec2c64a7af2c5"
+        }
+      }
+    }
+  ]
+}

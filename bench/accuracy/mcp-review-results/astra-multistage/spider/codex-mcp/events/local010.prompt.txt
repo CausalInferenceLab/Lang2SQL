@@ -1,0 +1,64 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+Distribute all the unique city pairs into the distance ranges 0, 1000, 2000, 3000, 4000, 5000, and 6000+, based on their average distance of all routes between them. Then how many pairs are there in the distance range with the fewest unique city paires?
+Documentation:
+
+# Flight Route Distance Calculation
+
+## Introduction
+
+This document describes the method used to calculate the distance between two cities for flight routes. The calculation is based on the Haversine formula, which is commonly used to find the shortest distance between two points on a sphere given their latitude and longitude. This method is especially useful for determining flight distances between airports located in different cities around the world.
+
+## City and Coordinate Extraction
+
+For each flight, the following data is obtained:
+
+- **Departure city** (referred to as `from_city`) and its geographical coordinates (longitude and latitude).
+- **Arrival city** (referred to as `to_city`) and its geographical coordinates (longitude and latitude).
+
+The coordinates are extracted as decimal values, with longitude and latitude represented in degrees. This ensures that trigonometric operations can be applied during the distance calculation.
+
+## Haversine Formula
+
+The Haversine formula is used to calculate the great-circle distance between two points on a sphere using their latitude and longitude. The formula is given as:
+
+\[
+d = 2r \cdot \arcsin\left(\sqrt{\sin^2\left(\frac{\Delta \phi}{2}\right) + \cos(\phi_1) \cdot \cos(\phi_2) \cdot \sin^2\left(\frac{\Delta \lambda}{2}\right)}\right)
+\]
+
+Where:
+
+- \( d \) is the distance between the two points (in kilometers).
+- \( r \) is the radius of the Earth (approximately 6371 km).
+- \( \phi_1 \) and \( \phi_2 \) are the latitudes of the departure and arrival points, respectively, in radians.
+- \( \Delta \phi = \phi_2 - \phi_1 \) is the difference in latitudes.
+- \( \lambda_1 \) and \( \lambda_2 \) are the longitudes of the departure and arrival points, respectively, in radians.
+- \( \Delta \lambda = \lambda_2 - \lambda_1 \) is the difference in longitudes.
+
+### Conversion to Radians
+
+Since the input coordinates are in degrees, they must be converted to radians before applying the Haversine formula. This conversion is done using the formula:
+
+\[
+\text{radians} = \text{degrees} \times \frac{\pi}{180}
+\]
+
+## Symmetry of Routes
+
+To identify unique flight routes between two cities, we standardize the order of cities in each route. Specifically, we ensure that the lexicographically smaller city name is always listed as the first city (`city1`), and the larger city is listed as the second city (`city2`). This ensures that a flight from City A to City B is treated the same as a flight from City B to City A.
+
+## Average Route Distance
+
+Once the distances for all flights between two cities are computed, the average distance for each city pair is calculated by summing the distances and dividing by the total number of flights between those cities:
+
+\[
+\text{Average Distance} = \frac{\sum \text{Flight Distances}}{\text{Number of Flights}}
+\]
+
+## Conclusion
+
+This method of flight route distance calculation provides a reliable way to determine the great-circle distance between cities based on the coordinates of their respective airports. The use of the Haversine formula ensures accurate results for distances on the Earth's surface, making it ideal for aviation and travel analysis.
+
+Official schema metadata (examples are not exhaustive):
+Official schema and example rows (examples are not exhaustive):
+[{"table_name":"aircrafts_data","column_names":["aircraft_code","model","range"],"column_types":["character(3)","jsonb","INTEGER"],"description":["","",""],"sample_rows":[{"aircraft_code":"319","model":"{\"en\": \"Airbus A319-100\", \"ru\": \"Аэробус A319-100\"}","range":6700},{"aircraft_code":"321","model":"{\"en\": \"Airbus A321-200\", \"ru\": \"Аэробус A321-200\"}","range":5600},{"aircraft_code":"CR2","model":"{\"en\": \"Bombardier CRJ-200\", \"ru\": \"Бомбардье CRJ-200\"}","range":2700},{"aircraft_code":"320","model":"{\"en\": \"Airbus A320-200\", \"ru\": \"Аэробус A320-200\"}","range":5700},{"aircraft_code":"CN1","model":"{\"en\": \"Cessna 208 Caravan\", \"ru\": \"Сессна 208 Караван\"}","range":1200}]},{"table_name":"airports_data","column_names":["airport_code","airport_name","city","coordinates","timezone"],"column_types":["character(3)","jsonb","jsonb","point","TEXT"],"description":["","","","",""],"sample_rows":[{"airport_code":"ESL","airport_name":"{\"en\": \"Elista Airport\", \"ru\": \"Элиста\"}","city":"{\"en\": \"Elista\", \"ru\": \"Элиста\"}","coordinates":"(44.3308982849121094,46.3739013671875)","timezone":"Europe/Moscow"},{"airport_code":"KGP","airport_name":"{\"en\": \"Kogalym International Airport\", \"ru\": \"Когалым\"}","city":"{\"en\": \"Kogalym\", \"ru\": \"Когалым\"}","coordinates":"(74.5337982177734375,62.190399169921875)","timezone":"Asia/Yekaterinburg"},{"airport_code":"UFA","airport_name":"{\"en\": \"Ufa International Airport\", \"ru\": \"Уфа\"}","city":"{\"en\": \"Ufa\", \"ru\": \"Уфа\"}","coordinates":"(55.8744010925289984,54.5574989318850001)","timezone":"Asia/Yekaterinburg"},{"airport_code":"GOJ","airport_name":"{\"en\": \"Nizhny Novgorod Strigino International Airport\", \"ru\": \"Стригино\"}","city":"{\"en\": \"Nizhniy Novgorod\", \"ru\": \"Нижний Новгород\"}","coordinates":"(43.7840003967289988,56.2300987243649999)","timezone":"Europe/Moscow"},{"airport_code":"UUS","airport_name":"{\"en\": \"Yuzhno-Sakhalinsk Airport\", \"ru\": \"Хомутово\"}","city":"{\"en\": \"Yuzhno-Sakhalinsk\", \"ru\": \"Южно-Сахалинск\"}","coordinates":"(142.718002319335938,46.8886985778808594)","timezone":"Asia/Sakhalin"}]},{"table_name":"boarding_passes","column_names":["ticket_no","flight_id","boarding_no","seat_no"],"column_types":["character(13)","INTEGER","INTEGER","character varying(4)"],"description":["","","",""],"sample_rows":[{"ticket_no":"0005433922545","flight_id":24122,"boarding_no":60,"seat_no":"15F"},{"ticket_no":"0005433568978","flight_id":324,"boarding_no":48,"seat_no":"13A"},{"ticket_no":"0005435213164","flight_id":30586,"boarding_no":61,"seat_no":"17E"},{"ticket_no":"0005434163641","flight_id":25246,"boarding_no":124,"seat_no":"27F"},{"ticket_no":"0005435126194","flight_id":31908,"boarding_no":23,"seat_no":"15C"}]},{"table_name":"bookings","column_names":["book_ref","book_date","total_amount"],"column_types":["character(6)","timestamp with time zone","numeric(10,2)"],"description":["","",""],"sample_rows":[{"book_ref":"190B1D","book_date":"2017-08-12 12:22:00+03","total_amount":36600},{"book_ref":"E7232E","book_date":"2017-08-03 02:12:00+03","total_amount":56000},{"book_ref":"C2A4B7","book_date":"2017-07-15 01:42:00+03","total_amount":23200},{"book_ref":"A500EF","book_date":"2017-07-08 11:00:00+03","total_amount":47600},{"book_ref":"B87E08","book_date":"2017-08-01 12:26:00+03","total_amount":70800}]},{"table_name":"flights","column_names":["flight_id","flight_no","scheduled_departure","scheduled_arrival","departure_airport","arrival_airport","status","aircraft_code","actual_departure","actual_arrival"],"column_types":["INTEGER","character(6)","timestamp with time zone","timestamp with time zone","character(3)","character(3)","character varying(20)","character(3)","timestamp with time zone","timestamp with time zone"],"description":["","","","","","","","","",""],"sample_rows":[{"flight_id":28201,"flight_no":"PG0032","scheduled_departure":"2017-08-12 09:00:00+03","scheduled_arrival":"2017-08-12 10:45:00+03","departure_airport":"PEZ","arrival_airport":"DME","status":"Arrived","aircraft_code":"CN1","actual_departure":"2017-08-12 09:04:00+03","actual_arrival":"2017-08-12 10:50:00+03"},{"flight_id":8942,"flight_no":"PG0439","scheduled_departure":"2017-08-23 12:55:00+03","scheduled_arrival":"2017-08-23 16:20:00+03","departure_airport":"LED","arrival_airport":"TBW","status":"Scheduled","aircraft_code":"CN1","actual_departure":"\\N","actual_arrival":"\\N"},{"flight_id":17756,"flight_no":"PG0349","scheduled_departure":"2017-08-17 07:15:00+03","scheduled_arrival":"2017-08-17 09:05:00+03","departure_airport":"OSW","arrival_airport":"HMA","status":"Scheduled","aircraft_code":"CR2","actual_departure":"\\N","actual_arrival":"\\N"},{"flight_id":11014,"flight_no":"PG0588","scheduled_departure":"2017-09-03 08:50:00+03","scheduled_arrival":"2017-09-03 09:15:00+03","departure_airport":"SVX","arrival_airport":"PEE","status":"Scheduled","aircraft_code":"SU9","actual_departure":"\\N","actual_arrival":"\\N"},{"flight_id":5888,"flight_no":"PG0496","scheduled_departure":"2017-08-24 12:45:00+03","scheduled_arrival":"2017-08-24 14:55:00+03","departure_airport":"SVO","arrival_airport":"JOK","status":"Scheduled","aircraft_code":"CN1","actual_departure":"\\N","actual_arrival":"\\N"}]},{"table_name":"seats","column_names":["aircraft_code","seat_no","fare_conditions"],"column_types":["character(3)","character varying(4)","character varying(10)"],"description":["","",""],"sample_rows":[{"aircraft_code":"SU9","seat_no":"1F","fare_conditions":"Business"},{"aircraft_code":"763","seat_no":"28B","fare_conditions":"Economy"},{"aircraft_code":"773","seat_no":"41C","fare_conditions":"Economy"},{"aircraft_code":"773","seat_no":"14A","fare_conditions":"Comfort"},{"aircraft_code":"763","seat_no":"38A","fare_conditions":"Economy"}]},{"table_name":"ticket_flights","column_names":["ticket_no","flight_id","fare_conditions","amount"],"column_types":["character(13)","INTEGER","character varying(10)","numeric(10,2)"],"description":["","","",""],"sample_rows":[{"ticket_no":"0005435706759","flight_id":2459,"fare_conditions":"Business","amount":86800},{"ticket_no":"0005434879825","flight_id":14606,"fare_conditions":"Economy","amount":16600},{"ticket_no":"0005435718911","flight_id":15313,"fare_conditions":"Economy","amount":9000},{"ticket_no":"0005434908381","flight_id":25837,"fare_conditions":"Economy","amount":6300},{"ticket_no":"0005435824987","flight_id":1304,"fare_conditions":"Economy","amount":66600}]},{"table_name":"tickets","column_names":["ticket_no","book_ref","passenger_id"],"column_types":["character(13)","character(6)","character varying(20)"],"description":["","",""],"sample_rows":[{"ticket_no":"0005432383693","book_ref":"1EE239","passenger_id":"8882 721205"},{"ticket_no":"0005432646309","book_ref":"022379","passenger_id":"7401 627389"},{"ticket_no":"0005435097436","book_ref":"0ED676","passenger_id":"1181 314874"},{"ticket_no":"0005433923964","book_ref":"D68325","passenger_id":"2076 240051"},{"ticket_no":"0005433784739","book_ref":"972937","passenger_id":"0556 016120"}]}]
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.
