@@ -249,8 +249,9 @@ class RunSQL:
         if contract_error:
             return ToolResult(call_id="", is_error=True, content=f"Output column contract failed: {contract_error}. SQL executed; revise the projection or verify the contract against the request.\n{rendered}")
         if expected is not None:
-            # Keep the SQL footer intact for execution provenance consumers.
-            rendered = "Output columns validated (projection only).\n" + rendered
+            # Preserve the row-count header and SQL footer consumed by provenance checks.
+            header, remainder = rendered.split("\n", 1)
+            rendered = header + "\nOutput columns validated (projection only).\n" + remainder
         return ToolResult(call_id="", content=rendered)
 
 
