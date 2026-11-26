@@ -1,0 +1,52 @@
+```sql
+WITH RECURSIVE months(month_start) AS (
+    SELECT '2020-01-01'
+    UNION ALL
+    SELECT date(month_start, '+1 month')
+    FROM months
+    WHERE month_start < '2020-12-01'
+),
+customers AS (
+    SELECT DISTINCT customer_id
+    FROM main.customer_nodes
+),
+monthly_activity AS (
+    SELECT customer_id,
+           date(txn_date, 'start of month') AS month_start,
+           SUM(CASE txn_type
+                   WHEN 'deposit' THEN txn_amount
+                   WHEN 'withdrawal' THEN -txn_amount
+               END) AS balance
+    FROM main.customer_transactions
+    WHERE txn_date >= '2020-01-01' AND txn_date < '2021-01-01'
+      AND txn_type IN ('deposit', 'withdrawal')
+    GROUP BY customer_id, month_start
+),
+customer_balances AS (
+    SELECT m.month_start, c.customer_id, COALESCE(a.balance, 0) AS balance
+    FROM months AS m
+    CROSS JOIN customers AS c
+    LEFT JOIN monthly_activity AS a
+      ON a.month_start = m.month_start AND a.customer_id = c.customer_id
+),
+monthly_summary AS (
+    SELECT month_start,
+           COUNT(*) FILTER (WHERE balance > 0) AS positive_customers,
+           AVG(balance) AS average_balance
+    FROM customer_balances
+    GROUP BY month_start
+)
+SELECT strftime('%Y-%m', hi.month_start) AS highest_count_month,
+       hi.positive_customers AS highest_count,
+       hi.average_balance AS highest_count_month_average,
+       strftime('%Y-%m', lo.month_start) AS lowest_count_month,
+       lo.positive_customers AS lowest_count,
+       lo.average_balance AS lowest_count_month_average,
+       hi.average_balance - lo.average_balance AS average_balance_difference
+FROM monthly_summary AS hi
+CROSS JOIN monthly_summary AS lo
+WHERE hi.positive_customers = (SELECT MAX(positive_customers) FROM monthly_summary)
+  AND lo.positive_customers = (SELECT MIN(positive_customers) FROM monthly_summary)
+ORDER BY hi.month_start, lo.month_start
+LIMIT 144
+```
