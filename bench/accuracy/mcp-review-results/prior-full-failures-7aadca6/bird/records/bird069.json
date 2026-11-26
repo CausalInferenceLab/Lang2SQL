@@ -1,0 +1,228 @@
+{
+  "instance_id": "bird069",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "0487f253253dab10cf13aef99f047dd8d1adfb047dbcc32014b2f089a830118a",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 261167,
+      "cached_input_tokens": 244992,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2138,
+      "reasoning_output_tokens": 1009
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"vqyLQlr06zdhvYNsuVmGci4Bkmn_1zGLuKpnh49fII8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "cards"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "vqyLQlr06zdhvYNsuVmGci4Bkmn_1zGLuKpnh49fII8",
+        "sql": "SELECT cards.frameVersion, typeof(cards.frameVersion) AS storage_type,\n       COUNT(*) AS total_cards,\n       COUNT(CASE WHEN cards.convertedManaCost = 0 THEN 1 END) AS zero_cost_cards\nFROM cards\nGROUP BY cards.frameVersion\nORDER BY cards.frameVersion;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nObserved value types (displayed rows): frameVersion=str; storage_type=str; total_cards=int; zero_cost_cards=int\nframeVersion | storage_type | total_cards | zero_cost_cards\n--- | --- | --- | ---\n1993 | text | 5510 | 577\n1997 | text | 9257 | 1032\n2003 | text | 16462 | 2351\n2015 | text | 25500 | 3359\nfuture | text | 93 | 8\nSQL: SELECT cards.frameVersion, typeof(cards.frameVersion) AS storage_type,\n       COUNT(*) AS total_cards,\n       COUNT(CASE WHEN cards.convertedManaCost = 0 THEN 1 END) AS zero_cost_cards\nFROM cards\nGROUP BY cards.frameVersion\nORDER BY cards.frameVersion\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sets"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sets (table)\n- id: INTEGER NOT NULL\n- baseSetSize: INTEGER\n- block: TEXT\n- booster: TEXT\n- code: TEXT NOT NULL\n- isFoilOnly: INTEGER NOT NULL\n- isForeignOnly: INTEGER NOT NULL\n- isNonFoilOnly: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isPartialPreview: INTEGER NOT NULL\n- keyruneCode: TEXT\n- mcmId: INTEGER\n- mcmIdExtras: INTEGER\n- mcmName: TEXT\n- mtgoCode: TEXT\n- name: TEXT\n- parentCode: TEXT\n- releaseDate: DATE\n- tcgplayerGroupId: INTEGER\n- totalSetSize: INTEGER\n- type: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"HAf4HA2p-DqejLRBzf2p62ngcrDOY2NnUk6hflOp-3o\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "HAf4HA2p-DqejLRBzf2p62ngcrDOY2NnUk6hflOp-3o",
+        "sql": "SELECT cards.frameVersion,\n       MIN(sets.releaseDate) AS first_set_release,\n       MAX(sets.releaseDate) AS latest_set_release,\n       SUM(CASE WHEN sets.releaseDate IS NULL THEN 1 ELSE 0 END) AS rows_without_release,\n       COUNT(*) AS joined_rows\nFROM cards\nLEFT JOIN sets ON sets.code = cards.setCode\nGROUP BY cards.frameVersion\nORDER BY first_set_release;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nObserved value types (displayed rows): frameVersion=str; first_set_release=str; latest_set_release=str; rows_without_release=int; joined_rows=int\nframeVersion | first_set_release | latest_set_release | rows_without_release | joined_rows\n--- | --- | --- | --- | ---\n1993 | 1993-08-05 | 1997-05-01 | 0 | 5510\n1997 | 1995-01-01 | 2021-03-19 | 0 | 9257\n2003 | 1995-01-01 | 2020-09-26 | 0 | 16462\n2015 | 1995-01-01 | 2021-02-05 | 0 | 25500\nfuture | 2002-06-24 | 2020-09-26 | 0 | 93\nSQL: SELECT cards.frameVersion,\n       MIN(sets.releaseDate) AS first_set_release,\n       MAX(sets.releaseDate) AS latest_set_release,\n       SUM(CASE WHEN sets.releaseDate IS NULL THEN 1 ELSE 0 END) AS rows_without_release,\n       COUNT(*) AS joined_rows\nFROM cards\nLEFT JOIN sets ON sets.code = cards.setCode\nGROUP BY cards.frameVersion\nORDER BY first_set_release\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"hO-56jgxAr5r6PS6ep7ZCA4n97CU9gQMjoHq8dUlwS0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "hO-56jgxAr5r6PS6ep7ZCA4n97CU9gQMjoHq8dUlwS0",
+        "sql": "SELECT cards.frameVersion, sets.code, sets.name, sets.type, sets.releaseDate,\n       MIN(cards.originalReleaseDate) AS first_original_release,\n       COUNT(*) AS card_count\nFROM cards\nJOIN sets ON sets.code = cards.setCode\nWHERE cards.frameVersion = 'future'\n   OR sets.code IN ('M15', '8ED', 'LEA', 'TMP')\n   OR sets.releaseDate = '1995-01-01'\nGROUP BY cards.frameVersion, sets.code, sets.name, sets.type, sets.releaseDate\nORDER BY cards.frameVersion, sets.releaseDate, sets.code;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "17 row(s):\nObserved value types (displayed rows): frameVersion=str; code=str; name=str; type=str; releaseDate=str; first_original_release=NoneType,str; card_count=int\nframeVersion | code | name | type | releaseDate | first_original_release | card_count\n--- | --- | --- | --- | --- | --- | ---\n1993 | LEA | Limited Edition Alpha | core | 1993-08-05 | None | 294\n1993 | PLGM | DCI Legend Membership | promo | 1995-01-01 | None | 2\n1993 | PMEI | Magazine Inserts | promo | 1995-01-01 | 1995/7/1 | 2\n1997 | PMEI | Magazine Inserts | promo | 1995-01-01 | 1996/11/1 | 16\n1997 | TMP | Tempest | expansion | 1997-10-14 | None | 350\n2003 | PMEI | Magazine Inserts | promo | 1995-01-01 | 2010/11/27 | 6\n2003 | 8ED | Eighth Edition | core | 2003-07-28 | None | 359\n2015 | PMEI | Magazine Inserts | promo | 1995-01-01 | 2019/11/15 | 16\n2015 | 8ED | Eighth Edition | core | 2003-07-28 | None | 2\n2015 | M15 | Magic 2015 | core | 2014-07-18 | None | 284\nfuture | PRM | Magic Online Promos | promo | 2002-06-24 | 2010/11/4 | 2\nfuture | FUT | Future Sight | expansion | 2007-05-04 | None | 81\nfuture | PFUT | Future Sight Promos | promo | 2007-05-04 | 2007/4/21 | 2\nfuture | TD0 | Magic Online Theme Decks | box | 2010-11-08 | None | 1\nfuture | MB1 | Mystery Booster | masters | 2019-11-07 | None | 1\nfuture | FMB1 | Mystery Booster Retail Edition Foils | masters | 2020-03-08 | None | 2\nfuture | PLIST | The List | masters | 2020-09-26 | None | 4\nSQL: SELECT cards.frameVersion, sets.code, sets.name, sets.type, sets.releaseDate,\n       MIN(cards.originalReleaseDate) AS first_original_release,\n       COUNT(*) AS card_count\nFROM cards\nJOIN sets ON sets.code = cards.setCode\nWHERE cards.frameVersion = 'future'\n   OR sets.code IN ('M15', '8ED', 'LEA', 'TMP')\n   OR sets.releaseDate = '1995-01-01'\nGROUP BY cards.frameVersion, sets.code, sets.name, sets.type, sets.releaseDate\nORDER BY cards.frameVersion, sets.releaseDate, sets.code\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ts24tH9S4aVltTQmxy56buk0Iea7kIQaXOmN08mUh3Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ts24tH9S4aVltTQmxy56buk0Iea7kIQaXOmN08mUh3Y",
+        "sql": "WITH ranked_frame_versions AS (\n    SELECT cards.frameVersion,\n           COUNT(*) AS card_count,\n           DENSE_RANK() OVER (\n               ORDER BY CASE cards.frameVersion\n                   WHEN 'future' THEN 2007\n                   ELSE CAST(cards.frameVersion AS INTEGER)\n               END DESC\n           ) AS version_rank\n    FROM cards\n    WHERE cards.frameVersion IS NOT NULL\n    GROUP BY cards.frameVersion\n    HAVING COUNT(CASE WHEN cards.convertedManaCost = 0 THEN 1 END) > 0\n)\nSELECT frameVersion, card_count\nFROM ranked_frame_versions\nWHERE version_rank = 1\nORDER BY frameVersion\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): frameVersion=str; card_count=int\nframeVersion | card_count\n--- | ---\n2015 | 25500\nSQL: WITH ranked_frame_versions AS (\n    SELECT cards.frameVersion,\n           COUNT(*) AS card_count,\n           DENSE_RANK() OVER (\n               ORDER BY CASE cards.frameVersion\n                   WHEN 'future' THEN 2007\n                   ELSE CAST(cards.frameVersion AS INTEGER)\n               END DESC\n           ) AS version_rank\n    FROM cards\n    WHERE cards.frameVersion IS NOT NULL\n    GROUP BY cards.frameVersion\n    HAVING COUNT(CASE WHEN cards.convertedManaCost = 0 THEN 1 END) > 0\n)\nSELECT frameVersion, card_count\nFROM ranked_frame_versions\nWHERE version_rank = 1\nORDER BY frameVersion\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH ranked_frame_versions AS (\n    SELECT cards.frameVersion,\n           COUNT(*) AS card_count,\n           DENSE_RANK() OVER (\n               ORDER BY CASE cards.frameVersion\n                   WHEN 'future' THEN 2007\n                   ELSE CAST(cards.frameVersion AS INTEGER)\n               END DESC\n           ) AS version_rank\n    FROM cards\n    WHERE cards.frameVersion IS NOT NULL\n    GROUP BY cards.frameVersion\n    HAVING COUNT(CASE WHEN cards.convertedManaCost = 0 THEN 1 END) > 0\n)\nSELECT frameVersion, card_count\nFROM ranked_frame_versions\nWHERE version_rank = 1\nORDER BY frameVersion\nLIMIT -1\n```",
+  "rows": 1,
+  "sql": "WITH ranked_frame_versions AS (\n    SELECT cards.frameVersion,\n           COUNT(*) AS card_count,\n           DENSE_RANK() OVER (\n               ORDER BY CASE cards.frameVersion\n                   WHEN 'future' THEN 2007\n                   ELSE CAST(cards.frameVersion AS INTEGER)\n               END DESC\n           ) AS version_rank\n    FROM cards\n    WHERE cards.frameVersion IS NOT NULL\n    GROUP BY cards.frameVersion\n    HAVING COUNT(CASE WHEN cards.convertedManaCost = 0 THEN 1 END) > 0\n)\nSELECT frameVersion, card_count\nFROM ranked_frame_versions\nWHERE version_rank = 1\nORDER BY frameVersion\nLIMIT -1",
+  "seconds": 59.42626145808026
+}

@@ -1,0 +1,228 @@
+{
+  "instance_id": "bird370",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "e123c3b225563636e95462a56636927c9bbd8488d3eb19dc1dfcf23808517c71",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 217371,
+      "cached_input_tokens": 192896,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1327,
+      "reasoning_output_tokens": 485
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hero_power"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hero_power (table)\n- hero_id: INTEGER\n- power_id: INTEGER\nFOREIGN KEY (hero_id) REFERENCES superhero (id)\nFOREIGN KEY (power_id) REFERENCES superpower (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superpower"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superpower (table)\n- id: INTEGER NOT NULL\n- power_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"qIHPiRz1Mn7taaBBj0unM_f8V4aHdNCnfJKCTUk3e_E\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "qIHPiRz1Mn7taaBBj0unM_f8V4aHdNCnfJKCTUk3e_E",
+        "sql": "SELECT h.id, h.weight_kg, typeof(h.weight_kg) AS weight_type,\n       COUNT(hp.hero_id) AS power_links, COUNT(sp.id) AS matched_powers\nFROM superhero AS h\nJOIN publisher AS p ON p.id = h.publisher_id\nLEFT JOIN hero_power AS hp ON hp.hero_id = h.id\nLEFT JOIN superpower AS sp ON sp.id = hp.power_id\nWHERE p.publisher_name = 'George Lucas'\nGROUP BY h.id, h.weight_kg\nORDER BY h.id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "15 row(s):\nObserved value types (displayed rows): id=int; weight_kg=NoneType,int; weight_type=str; power_links=int; matched_powers=int\nid | weight_kg | weight_type | power_links | matched_powers\n--- | --- | --- | --- | ---\n130 | 0 | integer | 11 | 11\n180 | 111 | integer | 0 | 0\n213 | 0 | integer | 14 | 14\n214 | 135 | integer | 26 | 26\n301 | 0 | integer | 1 | 1\n316 | 79 | integer | 5 | 5\n351 | 79 | integer | 3 | 3\n365 | 0 | integer | 4 | 4\n389 | 0 | integer | 0 | 0\n390 | None | null | 4 | 4\n412 | 0 | integer | 23 | 23\n433 | 77 | integer | 25 | 25\n574 | 0 | integer | 6 | 6\n662 | 0 | integer | 2 | 2\n754 | 17 | integer | 19 | 19\nSQL: SELECT h.id, h.weight_kg, typeof(h.weight_kg) AS weight_type,\n       COUNT(hp.hero_id) AS power_links, COUNT(sp.id) AS matched_powers\nFROM superhero AS h\nJOIN publisher AS p ON p.id = h.publisher_id\nLEFT JOIN hero_power AS hp ON hp.hero_id = h.id\nLEFT JOIN superpower AS sp ON sp.id = hp.power_id\nWHERE p.publisher_name = 'George Lucas'\nGROUP BY h.id, h.weight_kg\nORDER BY h.id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"TpDqHs8YImFIU18Z7Hw0cYYJw6OKbjLx-ijJ6VWkl3o\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "TpDqHs8YImFIU18Z7Hw0cYYJw6OKbjLx-ijJ6VWkl3o",
+        "sql": "SELECT CASE WHEN h.weight_kg IS NULL THEN 'NULL'\n            WHEN h.weight_kg = 0 THEN 'zero'\n            WHEN h.weight_kg < 0 THEN 'negative'\n            ELSE 'positive' END AS weight_category,\n       COUNT(*) AS hero_count,\n       COUNT(CASE WHEN h.height_cm = 0 THEN 1 END) AS zero_height_count,\n       COUNT(CASE WHEN h.height_cm IS NULL THEN 1 END) AS null_height_count,\n       GROUP_CONCAT(CASE WHEN p.publisher_name = 'George Lucas'\n                         THEN h.superhero_name END) AS george_lucas_heroes\nFROM superhero AS h\nLEFT JOIN publisher AS p ON p.id = h.publisher_id\nGROUP BY weight_category"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nObserved value types (displayed rows): weight_category=str; hero_count=int; zero_height_count=int; null_height_count=int; george_lucas_heroes=str\nweight_category | hero_count | zero_height_count | null_height_count | george_lucas_heroes\n--- | --- | --- | --- | ---\nNULL | 64 | 0 | 58 | K-2SO\npositive | 514 | 5 | 0 | Chewbacca,Darth Vader,Han Solo,Indiana Jones,Luke Skywalker,Yoda\nzero | 172 | 150 | 0 | Boba Fett,Darth Maul,Greedo,Jar Jar Binks,Jyn Erso,Kylo Ren,Rey,Stormtrooper\nSQL: SELECT CASE WHEN h.weight_kg IS NULL THEN 'NULL'\n            WHEN h.weight_kg = 0 THEN 'zero'\n            WHEN h.weight_kg < 0 THEN 'negative'\n            ELSE 'positive' END AS weight_category,\n       COUNT(*) AS hero_count,\n       COUNT(CASE WHEN h.height_cm = 0 THEN 1 END) AS zero_height_count,\n       COUNT(CASE WHEN h.height_cm IS NULL THEN 1 END) AS null_height_count,\n       GROUP_CONCAT(CASE WHEN p.publisher_name = 'George Lucas'\n                         THEN h.superhero_name END) AS george_lucas_heroes\nFROM superhero AS h\nLEFT JOIN publisher AS p ON p.id = h.publisher_id\nGROUP BY weight_category\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"gQDRw3zr8fGJOpxcL4ygKc4eark3JMp7GhYsqOOBz-M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "gQDRw3zr8fGJOpxcL4ygKc4eark3JMp7GhYsqOOBz-M",
+        "sql": "SELECT ROUND(AVG(NULLIF(h.weight_kg, 0)), 2) AS average_weight_kg\nFROM superhero AS h\nJOIN publisher AS p ON p.id = h.publisher_id\nWHERE p.publisher_name = 'George Lucas'\n  AND h.id IN (\n    SELECT hp.hero_id\n    FROM hero_power AS hp\n    JOIN superpower AS sp ON sp.id = hp.power_id\n  )\nLIMIT 1",
+        "limit": 1
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): average_weight_kg=float\naverage_weight_kg\n---\n77.4\nSQL: SELECT ROUND(AVG(NULLIF(h.weight_kg, 0)), 2) AS average_weight_kg\nFROM superhero AS h\nJOIN publisher AS p ON p.id = h.publisher_id\nWHERE p.publisher_name = 'George Lucas'\n  AND h.id IN (\n    SELECT hp.hero_id\n    FROM hero_power AS hp\n    JOIN superpower AS sp ON sp.id = hp.power_id\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(AVG(NULLIF(h.weight_kg, 0)), 2) AS average_weight_kg\nFROM superhero AS h\nJOIN publisher AS p ON p.id = h.publisher_id\nWHERE p.publisher_name = 'George Lucas'\n  AND h.id IN (\n    SELECT hp.hero_id\n    FROM hero_power AS hp\n    JOIN superpower AS sp ON sp.id = hp.power_id\n  )\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "SELECT ROUND(AVG(NULLIF(h.weight_kg, 0)), 2) AS average_weight_kg\nFROM superhero AS h\nJOIN publisher AS p ON p.id = h.publisher_id\nWHERE p.publisher_name = 'George Lucas'\n  AND h.id IN (\n    SELECT hp.hero_id\n    FROM hero_power AS hp\n    JOIN superpower AS sp ON sp.id = hp.power_id\n  )\nLIMIT 1",
+  "seconds": 43.824587624985725
+}

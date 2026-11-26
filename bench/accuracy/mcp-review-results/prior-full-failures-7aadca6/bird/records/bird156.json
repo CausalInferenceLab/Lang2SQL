@@ -1,0 +1,187 @@
+{
+  "instance_id": "bird156",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "96446a49ee8d6e2310cc057936f7b89888f494a51bf53bcc2ac45fc2505ba1ab",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 197555,
+      "cached_input_tokens": 182400,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1569,
+      "reasoning_output_tokens": 601
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"xSpaDWhCc8eenVSWUAQbnMCGuljv9cQuE4wEYsVCUpA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "xSpaDWhCc8eenVSWUAQbnMCGuljv9cQuE4wEYsVCUpA",
+        "sql": "SELECT\n    ym.Date,\n    COUNT(*) AS monthly_records,\n    COUNT(CASE WHEN ym.Consumption IS NULL THEN 1 END) AS null_consumption,\n    COUNT(CASE WHEN ym.Consumption = 0 THEN 1 END) AS zero_consumption,\n    COUNT(CASE WHEN ym.Consumption < 0 THEN 1 END) AS negative_consumption,\n    COUNT(CASE WHEN typeof(ym.Consumption) = 'text' THEN 1 END) AS text_consumption,\n    COUNT(CASE WHEN c.CustomerID IS NULL THEN 1 END) AS unmatched_customers\nFROM main.yearmonth AS ym\nLEFT JOIN main.customers AS c ON c.CustomerID = ym.CustomerID\nWHERE ym.Date >= '201301' AND ym.Date < '201312'\nGROUP BY ym.Date\nORDER BY ym.Date"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "11 row(s):\nObserved value types (displayed rows): Date=str; monthly_records=int; null_consumption=int; zero_consumption=int; negative_consumption=int; text_consumption=int; unmatched_customers=int\nDate | monthly_records | null_consumption | zero_consumption | negative_consumption | text_consumption | unmatched_customers\n--- | --- | --- | --- | --- | --- | ---\n201301 | 139 | 0 | 2 | 3 | 0 | 0\n201302 | 2415 | 0 | 7 | 10 | 0 | 0\n201303 | 25054 | 0 | 0 | 8 | 0 | 0\n201304 | 25487 | 0 | 1 | 7 | 0 | 0\n201305 | 25506 | 0 | 3 | 13 | 0 | 0\n201306 | 25378 | 0 | 0 | 13 | 0 | 0\n201307 | 25239 | 0 | 3 | 16 | 0 | 0\n201308 | 25052 | 0 | 1 | 13 | 0 | 0\n201309 | 24985 | 0 | 4 | 8 | 0 | 0\n201310 | 24488 | 0 | 1 | 10 | 0 | 0\n201311 | 20723 | 0 | 0 | 2 | 0 | 0\nSQL: SELECT\n    ym.Date,\n    COUNT(*) AS monthly_records,\n    COUNT(CASE WHEN ym.Consumption IS NULL THEN 1 END) AS null_consumption,\n    COUNT(CASE WHEN ym.Consumption = 0 THEN 1 END) AS zero_consumption,\n    COUNT(CASE WHEN ym.Consumption < 0 THEN 1 END) AS negative_consumption,\n    COUNT(CASE WHEN typeof(ym.Consumption) = 'text' THEN 1 END) AS text_consumption,\n    COUNT(CASE WHEN c.CustomerID IS NULL THEN 1 END) AS unmatched_customers\nFROM main.yearmonth AS ym\nLEFT JOIN main.customers AS c ON c.CustomerID = ym.CustomerID\nWHERE ym.Date >= '201301' AND ym.Date < '201312'\nGROUP BY ym.Date\nORDER BY ym.Date\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"42i-f9uDDaBYrxV7rWMche6OTM1CsCQoja1tmcwE03k\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "42i-f9uDDaBYrxV7rWMche6OTM1CsCQoja1tmcwE03k",
+        "sql": "WITH customer_months AS (\n    SELECT ym.CustomerID,\n           COUNT(*) AS recorded_months,\n           COUNT(CASE WHEN ym.Consumption > 0 THEN 1 END) AS positive_months\n    FROM main.yearmonth AS ym\n    WHERE ym.Date >= '201301' AND ym.Date < '201312'\n    GROUP BY ym.CustomerID\n)\nSELECT c.Currency,\n       COUNT(*) AS registered_customers,\n       COUNT(CASE WHEN m.recorded_months = 11 THEN 1 END) AS customers_with_all_months_recorded,\n       COUNT(CASE WHEN m.positive_months = 11 THEN 1 END) AS customers_with_all_months_positive\nFROM main.customers AS c\nLEFT JOIN customer_months AS m ON m.CustomerID = c.CustomerID\nGROUP BY c.Currency"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nObserved value types (displayed rows): Currency=str; registered_customers=int; customers_with_all_months_recorded=int; customers_with_all_months_positive=int\nCurrency | registered_customers | customers_with_all_months_recorded | customers_with_all_months_positive\n--- | --- | --- | ---\nCZK | 30459 | 62 | 61\nEUR | 2002 | 4 | 4\nSQL: WITH customer_months AS (\n    SELECT ym.CustomerID,\n           COUNT(*) AS recorded_months,\n           COUNT(CASE WHEN ym.Consumption > 0 THEN 1 END) AS positive_months\n    FROM main.yearmonth AS ym\n    WHERE ym.Date >= '201301' AND ym.Date < '201312'\n    GROUP BY ym.CustomerID\n)\nSELECT c.Currency,\n       COUNT(*) AS registered_customers,\n       COUNT(CASE WHEN m.recorded_months = 11 THEN 1 END) AS customers_with_all_months_recorded,\n       COUNT(CASE WHEN m.positive_months = 11 THEN 1 END) AS customers_with_all_months_positive\nFROM main.customers AS c\nLEFT JOIN customer_months AS m ON m.CustomerID = c.CustomerID\nGROUP BY c.Currency\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"2zRWTsZauu3hBXiIQqg2UCv1NvfIMPI4HqQwymnRCxc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "2zRWTsZauu3hBXiIQqg2UCv1NvfIMPI4HqQwymnRCxc",
+        "sql": "WITH qualifying_customers AS (\n    SELECT ym.CustomerID\n    FROM main.yearmonth AS ym\n    WHERE ym.Date BETWEEN '201301' AND '201311'\n      AND ym.Consumption > 0\n    GROUP BY ym.CustomerID\n    HAVING COUNT(*) = 11\n)\nSELECT c.Currency, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Currency"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nObserved value types (displayed rows): Currency=str; customer_count=int\nCurrency | customer_count\n--- | ---\nCZK | 61\nEUR | 4\nSQL: WITH qualifying_customers AS (\n    SELECT ym.CustomerID\n    FROM main.yearmonth AS ym\n    WHERE ym.Date BETWEEN '201301' AND '201311'\n      AND ym.Consumption > 0\n    GROUP BY ym.CustomerID\n    HAVING COUNT(*) = 11\n)\nSELECT c.Currency, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Currency\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH qualifying_customers AS (\n    SELECT ym.CustomerID\n    FROM main.yearmonth AS ym\n    WHERE ym.Date BETWEEN '201301' AND '201311'\n      AND ym.Consumption > 0\n    GROUP BY ym.CustomerID\n    HAVING COUNT(*) = 11\n)\nSELECT c.Currency, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Currency\nLIMIT 1000\n```",
+  "rows": 2,
+  "sql": "WITH qualifying_customers AS (\n    SELECT ym.CustomerID\n    FROM main.yearmonth AS ym\n    WHERE ym.Date BETWEEN '201301' AND '201311'\n      AND ym.Consumption > 0\n    GROUP BY ym.CustomerID\n    HAVING COUNT(*) = 11\n)\nSELECT c.Currency, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Currency\nLIMIT 1000",
+  "seconds": 49.29243699996732
+}

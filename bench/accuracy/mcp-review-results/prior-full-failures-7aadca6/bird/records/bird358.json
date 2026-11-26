@@ -1,0 +1,147 @@
+{
+  "instance_id": "bird358",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "43555b944aae75b921b390c5fadb44357271e1062349b732b9e1a69998d06800",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 130821,
+      "cached_input_tokens": 118528,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 922,
+      "reasoning_output_tokens": 448
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"GAbUM0L1ZEkPlO95vhRbXrVUv5rVAHbdbOxv_NK9T9g\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "GAbUM0L1ZEkPlO95vhRbXrVUv5rVAHbdbOxv_NK9T9g",
+        "sql": "SELECT p.id, quote(p.publisher_name) AS stored_name,\n       COUNT(s.id) AS attributed_heroes,\n       COUNT(CASE WHEN s.height_cm > 200 THEN 1 END) AS heroes_over_200\nFROM publisher AS p\nLEFT JOIN superhero AS s ON s.publisher_id = p.id\nGROUP BY p.id, p.publisher_name\nORDER BY p.id",
+        "limit": 100
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "25 row(s):\nObserved value types (displayed rows): id=int; stored_name=str; attributed_heroes=int; heroes_over_200=int\nid | stored_name | attributed_heroes | heroes_over_200\n--- | --- | --- | ---\n1 | '' | 17 | 2\n2 | 'ABC Studios' | 4 | 0\n3 | 'Dark Horse Comics' | 19 | 4\n4 | 'DC Comics' | 224 | 13\n5 | 'George Lucas' | 15 | 3\n6 | 'Hanna-Barbera' | 1 | 0\n7 | 'HarperCollins' | 6 | 0\n8 | 'Icon Comics' | 4 | 0\n9 | 'IDW Publishing' | 4 | 0\n10 | 'Image Comics' | 14 | 1\n11 | 'J. K. Rowling' | 1 | 0\n12 | 'J. R. R. Tolkien' | 1 | 1\n13 | 'Marvel Comics' | 387 | 44\n14 | 'Microsoft' | 1 | 1\n15 | 'NBC - Heroes' | 19 | 0\n16 | 'Rebellion' | 1 | 0\n17 | 'Shueisha' | 4 | 0\n18 | 'Sony Pictures' | 2 | 0\n19 | 'South Park' | 1 | 0\n20 | 'Star Trek' | 6 | 0\n21 | 'SyFy' | 5 | 0\n22 | 'Team Epic TV' | 5 | 0\n23 | 'Titan Books' | 1 | 0\n24 | 'Universal Studios' | 1 | 0\n25 | 'Wildstorm' | 4 | 0\nSQL: SELECT p.id, quote(p.publisher_name) AS stored_name,\n       COUNT(s.id) AS attributed_heroes,\n       COUNT(CASE WHEN s.height_cm > 200 THEN 1 END) AS heroes_over_200\nFROM publisher AS p\nLEFT JOIN superhero AS s ON s.publisher_id = p.id\nGROUP BY p.id, p.publisher_name\nORDER BY p.id\nLIMIT 100"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"J7j92xoOng24rLYDKJ13ZHU4XfGDDIGUyqS_my4WKbs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "J7j92xoOng24rLYDKJ13ZHU4XfGDDIGUyqS_my4WKbs",
+        "sql": "SELECT COUNT(DISTINCT p.id) AS publisher_count\nFROM main.publisher AS p\nJOIN main.superhero AS s ON s.publisher_id = p.id\nWHERE s.height_cm > 200"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): publisher_count=int\npublisher_count\n---\n8\nSQL: SELECT COUNT(DISTINCT p.id) AS publisher_count\nFROM main.publisher AS p\nJOIN main.superhero AS s ON s.publisher_id = p.id\nWHERE s.height_cm > 200\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(DISTINCT p.id) AS publisher_count\nFROM main.publisher AS p\nJOIN main.superhero AS s ON s.publisher_id = p.id\nWHERE s.height_cm > 200\nLIMIT 1000\n```",
+  "rows": 1,
+  "sql": "SELECT COUNT(DISTINCT p.id) AS publisher_count\nFROM main.publisher AS p\nJOIN main.superhero AS s ON s.publisher_id = p.id\nWHERE s.height_cm > 200\nLIMIT 1000",
+  "seconds": 30.998825583024882
+}

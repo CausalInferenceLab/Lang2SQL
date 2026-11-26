@@ -1,0 +1,207 @@
+{
+  "instance_id": "bird294",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "bf50892155fab8bb753b0b91d2e6131f34e0b1b7d5c705894f9d10fbcac72511",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 166452,
+      "cached_input_tokens": 153472,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1174,
+      "reasoning_output_tokens": 317
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "status"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "status (table)\n- statusId: INTEGER\n- status: TEXT NOT NULL\nPRIMARY KEY (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"DnBMTM8dQdJosNsNHAc04fWD2i11LHBiaXDJ5WKXEKc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "DnBMTM8dQdJosNsNHAc04fWD2i11LHBiaXDJ5WKXEKc",
+        "sql": "SELECT r.raceId, s.status, COUNT(*) AS result_rows,\n       COUNT(DISTINCT re.driverId) AS drivers,\n       COUNT(re.position) AS finishing_positions,\n       MIN(re.laps) AS min_laps, MAX(re.laps) AS max_laps\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nLEFT JOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957 AND r.name = 'British Grand Prix'\nGROUP BY r.raceId, s.status\nORDER BY s.status"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nObserved value types (displayed rows): raceId=int; status=str; result_rows=int; drivers=int; finishing_positions=int; min_laps=int; max_laps=int\nraceId | status | result_rows | drivers | finishing_positions | min_laps | max_laps\n--- | --- | --- | --- | --- | --- | ---\n780 | +19 Laps | 1 | 1 | 1 | 71 | 71\n780 | +2 Laps | 2 | 2 | 2 | 88 | 88\n780 | +5 Laps | 1 | 1 | 1 | 85 | 85\n780 | +8 Laps | 2 | 2 | 2 | 82 | 82\n780 | Accident | 1 | 1 | 0 | 0 | 0\n780 | Clutch | 2 | 2 | 0 | 69 | 74\n780 | Engine | 5 | 5 | 0 | 44 | 51\n780 | Finished | 4 | 4 | 4 | 90 | 90\n780 | Gearbox | 1 | 1 | 0 | 18 | 18\n780 | Transmission | 1 | 1 | 0 | 35 | 35\n780 | Water leak | 1 | 1 | 0 | 53 | 53\n780 | Water pump | 1 | 1 | 0 | 39 | 39\nSQL: SELECT r.raceId, s.status, COUNT(*) AS result_rows,\n       COUNT(DISTINCT re.driverId) AS drivers,\n       COUNT(re.position) AS finishing_positions,\n       MIN(re.laps) AS min_laps, MAX(re.laps) AS max_laps\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nLEFT JOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957 AND r.name = 'British Grand Prix'\nGROUP BY r.raceId, s.status\nORDER BY s.status\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8xdb2O2fA-Q6dKQIZJIiOAl1Kfu5ifaKZ7Jv-GBriJs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8xdb2O2fA-Q6dKQIZJIiOAl1Kfu5ifaKZ7Jv-GBriJs",
+        "sql": "SELECT re.driverId, COUNT(*) AS result_rows, GROUP_CONCAT(s.status, ', ') AS statuses\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nJOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957 AND r.name = 'British Grand Prix'\nGROUP BY re.driverId\nORDER BY re.driverId"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "19 row(s):\nObserved value types (displayed rows): driverId=int; result_rows=int; statuses=str\ndriverId | result_rows | statuses\n--- | --- | ---\n347 | 1 | Gearbox\n356 | 1 | Clutch\n427 | 1 | +2 Laps\n456 | 1 | +5 Laps\n475 | 2 | Engine, Finished\n479 | 2 | Finished, Engine\n486 | 1 | Engine\n496 | 1 | Transmission\n501 | 1 | Water pump\n547 | 1 | Accident\n549 | 1 | +19 Laps\n554 | 1 | Clutch\n577 | 1 | Finished\n578 | 1 | Finished\n579 | 1 | Engine\n581 | 2 | Water leak, +2 Laps\n590 | 1 | +8 Laps\n610 | 1 | Engine\n619 | 1 | +8 Laps\nSQL: SELECT re.driverId, COUNT(*) AS result_rows, GROUP_CONCAT(s.status, ', ') AS statuses\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nJOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957 AND r.name = 'British Grand Prix'\nGROUP BY re.driverId\nORDER BY re.driverId\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"LPE7f1W_QotQgVXlmwf7JNei4pkwcQazOhUmwFq-NBI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "LPE7f1W_QotQgVXlmwf7JNei4pkwcQazOhUmwFq-NBI",
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(DISTINCT CASE\n        WHEN s.status = 'Finished'\n          OR s.status GLOB '+[0-9]* Lap'\n          OR s.status GLOB '+[0-9]* Laps'\n        THEN re.driverId\n    END) / COUNT(DISTINCT re.driverId),\n    2\n) AS classified_finisher_percentage\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nLEFT JOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957\n  AND r.name = 'British Grand Prix'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): classified_finisher_percentage=float\nclassified_finisher_percentage\n---\n52.63\nSQL: SELECT ROUND(\n    100.0 * COUNT(DISTINCT CASE\n        WHEN s.status = 'Finished'\n          OR s.status GLOB '+[0-9]* Lap'\n          OR s.status GLOB '+[0-9]* Laps'\n        THEN re.driverId\n    END) / COUNT(DISTINCT re.driverId),\n    2\n) AS classified_finisher_percentage\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nLEFT JOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957\n  AND r.name = 'British Grand Prix'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(DISTINCT CASE\n        WHEN s.status = 'Finished'\n          OR s.status GLOB '+[0-9]* Lap'\n          OR s.status GLOB '+[0-9]* Laps'\n        THEN re.driverId\n    END) / COUNT(DISTINCT re.driverId),\n    2\n) AS classified_finisher_percentage\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nLEFT JOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957\n  AND r.name = 'British Grand Prix'\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(DISTINCT CASE\n        WHEN s.status = 'Finished'\n          OR s.status GLOB '+[0-9]* Lap'\n          OR s.status GLOB '+[0-9]* Laps'\n        THEN re.driverId\n    END) / COUNT(DISTINCT re.driverId),\n    2\n) AS classified_finisher_percentage\nFROM main.races AS r\nJOIN main.results AS re ON re.raceId = r.raceId\nLEFT JOIN main.status AS s ON s.statusId = re.statusId\nWHERE r.year = 1957\n  AND r.name = 'British Grand Prix'\nLIMIT 1",
+  "seconds": 36.105813665897585
+}

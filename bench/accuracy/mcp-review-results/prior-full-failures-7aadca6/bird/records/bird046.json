@@ -1,0 +1,146 @@
+{
+  "instance_id": "bird046",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "f6eb0ab08c03582528a65768547779932b63a055c7a1a98e35ab461654248d04",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165480,
+      "cached_input_tokens": 153216,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 905,
+      "reasoning_output_tokens": 256
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Q2VN2QIuXyVN9FblhUe3q_Hygk41R2X-wGszOOI5JKE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Q2VN2QIuXyVN9FblhUe3q_Hygk41R2X-wGszOOI5JKE",
+        "sql": "SELECT\n    f.\"NSLP Provision Status\" AS provision_status,\n    s.Magnet AS magnet,\n    COUNT(*) AS joined_rows,\n    COUNT(s.City) AS nonnull_cities,\n    SUM(CASE WHEN s.City = '' THEN 1 ELSE 0 END) AS empty_cities\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nGROUP BY f.\"NSLP Provision Status\", s.Magnet\nORDER BY provision_status, magnet"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "14 row(s):\nObserved value types (displayed rows): provision_status=NoneType,str; magnet=NoneType,int; joined_rows=int; nonnull_cities=int; empty_cities=int\nprovision_status | magnet | joined_rows | nonnull_cities | empty_cities\n--- | --- | --- | --- | ---\nNone | None | 52 | 52 | 0\nNone | 0 | 7723 | 7723 | 0\nNone | 1 | 364 | 364 | 0\nBreakfast Provision 2 | 0 | 284 | 284 | 0\nBreakfast Provision 2 | 1 | 1 | 1 | 0\nCEP | 0 | 147 | 147 | 0\nCEP | 1 | 25 | 25 | 0\nLunch Provision 2 | 0 | 5 | 5 | 0\nMultiple Provision Types | 0 | 10 | 10 | 0\nMultiple Provision Types | 1 | 1 | 1 | 0\nProvision 1 | 0 | 7 | 7 | 0\nProvision 2 | 0 | 1252 | 1252 | 0\nProvision 2 | 1 | 113 | 113 | 0\nProvision 3 | 0 | 2 | 2 | 0\nSQL: SELECT\n    f.\"NSLP Provision Status\" AS provision_status,\n    s.Magnet AS magnet,\n    COUNT(*) AS joined_rows,\n    COUNT(s.City) AS nonnull_cities,\n    SUM(CASE WHEN s.City = '' THEN 1 ELSE 0 END) AS empty_cities\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nGROUP BY f.\"NSLP Provision Status\", s.Magnet\nORDER BY provision_status, magnet\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"-PZ6bRWE6GW_0i0NLhZuIF4IckyRQSGqpVXesGA4BAc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "-PZ6bRWE6GW_0i0NLhZuIF4IckyRQSGqpVXesGA4BAc",
+        "sql": "SELECT\n    s.City AS city,\n    COUNT(*) AS magnet_school_count\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.Magnet = 1\n  AND f.\"NSLP Provision Status\" IN (\n      'Provision 2',\n      'Breakfast Provision 2',\n      'Lunch Provision 2'\n  )\nGROUP BY s.City\nORDER BY magnet_school_count DESC, city\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "32 row(s):\nObserved value types (displayed rows): city=str; magnet_school_count=int\ncity | magnet_school_count\n--- | ---\nLos Angeles | 48\nSan Diego | 12\nStockton | 8\nSouth Gate | 6\nHuntington Park | 4\nSun Valley | 3\nBell | 2\nGardena | 2\nNorth Hills | 2\nNorth Hollywood | 2\nPacoima | 2\nVan Nuys | 2\nVentura | 2\nArleta | 1\nCanoga Park | 1\nCarson | 1\nCudahy | 1\nCulver City | 1\nHollywood | 1\nHoopa | 1\nInglewood | 1\nMarina Del Rey | 1\nMission Hills | 1\nMontclair | 1\nMontclair, | 1\nOntario | 1\nPacomia | 1\nSacramento | 1\nSan Fernando | 1\nSanta Barbara | 1\nVenice | 1\nWilmington | 1\nSQL: SELECT\n    s.City AS city,\n    COUNT(*) AS magnet_school_count\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.Magnet = 1\n  AND f.\"NSLP Provision Status\" IN (\n      'Provision 2',\n      'Breakfast Provision 2',\n      'Lunch Provision 2'\n  )\nGROUP BY s.City\nORDER BY magnet_school_count DESC, city\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    s.City AS city,\n    COUNT(*) AS magnet_school_count\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.Magnet = 1\n  AND f.\"NSLP Provision Status\" IN (\n      'Provision 2',\n      'Breakfast Provision 2',\n      'Lunch Provision 2'\n  )\nGROUP BY s.City\nORDER BY magnet_school_count DESC, city\nLIMIT -1\n```",
+  "rows": 32,
+  "sql": "SELECT\n    s.City AS city,\n    COUNT(*) AS magnet_school_count\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE s.Magnet = 1\n  AND f.\"NSLP Provision Status\" IN (\n      'Provision 2',\n      'Breakfast Provision 2',\n      'Lunch Provision 2'\n  )\nGROUP BY s.City\nORDER BY magnet_school_count DESC, city\nLIMIT -1",
+  "seconds": 33.06700024998281
+}
