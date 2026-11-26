@@ -142,3 +142,24 @@ The 95% target was not reached; full-v3 stopped on account credit exhaustion.
 Structured account-quota errors now abort the batch without retrying every
 remaining question. Ordinary transient rate limits keep the configured bounded
 retry. An aborted/partial run cannot publish an accuracy score.
+
+
+## ChatGPT-authenticated Codex MCP experiment
+
+[Same-question comparison and limitations](CODEX_MCP_RESULTS.md).
+The real production MCP path can be evaluated without loading an API key:
+
+```sh
+PYTHONPATH=src:. uv run python -m bench.accuracy.codex_mcp \
+  --root "$SPIDER" --db-dir "$BIRD_DB" \
+  --manifest bench/accuracy/bird-manifest.json \
+  --schema-docs bench/accuracy/bird-schema.json \
+  --split development --output "$RUN"
+```
+
+Use the matching Spider manifest/schema map and DB directory for Spider. Requires
+Codex CLI ChatGPT login. A final SQL block counts as MCP success only if the same
+SQL actually ran through the production `run_sql` tool. Missing definitions are
+not silently seeded or bypassed. The default model is left to Codex; no resolved
+model identifier is asserted. Internal API calls are not observable, so report
+CLI invocations and captured usage separately from API-harness measurements.
