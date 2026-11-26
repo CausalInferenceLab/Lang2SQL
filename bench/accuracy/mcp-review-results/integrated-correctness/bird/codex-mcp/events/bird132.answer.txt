@@ -1,0 +1,19 @@
+```sql
+WITH post_scores_by_editor AS (
+    SELECT p.LastEditorUserId, SUM(p.Score) AS total_score
+    FROM main.posts AS p
+    WHERE p.CreaionDate >= '2012-01-01'
+      AND p.CreaionDate < '2013-01-01'
+    GROUP BY p.LastEditorUserId
+)
+SELECT
+    SUM(CASE WHEN u.Id IS NOT NULL THEN s.total_score END) AS germany_edited_post_score,
+    SUM(CASE WHEN u.Id IS NULL THEN s.total_score END) AS other_post_score,
+    COUNT(u.Id) AS germany_last_editor_count,
+    SUM(u.Reputation) AS germany_last_editor_reputation
+FROM post_scores_by_editor AS s
+LEFT JOIN main.users AS u
+    ON u.Id = s.LastEditorUserId
+   AND (u.Location = 'Germany' OR u.Location LIKE '%, Germany')
+LIMIT 1
+```

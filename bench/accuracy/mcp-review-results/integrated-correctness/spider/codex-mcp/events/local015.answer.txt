@@ -1,0 +1,29 @@
+```sql
+WITH collision_helmet_use AS (
+    SELECT
+        c.case_id,
+        c.motorcyclist_killed_count,
+        MAX(CASE
+            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')
+              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet used', 'passenger, motorcycle helmet used')
+            THEN 1 ELSE 0
+        END) AS helmet_used,
+        MAX(CASE
+            WHEN p.party_safety_equipment_1 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')
+              OR p.party_safety_equipment_2 IN ('driver, motorcycle helmet not used', 'passenger, motorcycle helmet not used')
+            THEN 1 ELSE 0
+        END) AS helmet_not_used
+    FROM main.collisions AS c
+    JOIN main.parties AS p ON p.case_id = c.case_id
+    WHERE c.motorcycle_collision = 1
+      AND p.party_type IN ('driver', 'passenger')
+    GROUP BY c.case_id, c.motorcyclist_killed_count
+)
+SELECT
+    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_used = 1)
+        / NULLIF(COUNT(*) FILTER (WHERE helmet_used = 1), 0) AS helmet_used_fatality_pct,
+    100.0 * SUM(motorcyclist_killed_count) FILTER (WHERE helmet_not_used = 1)
+        / NULLIF(COUNT(*) FILTER (WHERE helmet_not_used = 1), 0) AS helmet_not_used_fatality_pct
+FROM collision_helmet_use
+LIMIT 1
+```

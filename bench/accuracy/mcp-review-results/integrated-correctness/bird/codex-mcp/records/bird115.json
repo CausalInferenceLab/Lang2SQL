@@ -1,0 +1,104 @@
+{
+  "instance_id": "bird115",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "failed",
+  "calls": [],
+  "events_sha256": "9c2d2a9b49908efe74ec2a1008195be32f3452a9b1002598acec827a9fa24ce3",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 95219,
+      "cached_input_tokens": 83200,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 433,
+      "reasoning_output_tokens": 223
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Tables:\n- cards\n- foreign_data\n- legalities\n- rulings\n- set_translations\n- sets"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "set_translations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "set_translations (table)\n- id: INTEGER NOT NULL\n- language: TEXT\n- setCode: TEXT\n- translation: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (setCode) REFERENCES sets (code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sets"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sets (table)\n- id: INTEGER NOT NULL\n- baseSetSize: INTEGER\n- block: TEXT\n- booster: TEXT\n- code: TEXT NOT NULL\n- isFoilOnly: INTEGER NOT NULL\n- isForeignOnly: INTEGER NOT NULL\n- isNonFoilOnly: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isPartialPreview: INTEGER NOT NULL\n- keyruneCode: TEXT\n- mcmId: INTEGER\n- mcmIdExtras: INTEGER\n- mcmName: TEXT\n- mtgoCode: TEXT\n- name: TEXT\n- parentCode: TEXT\n- releaseDate: DATE\n- tcgplayerGroupId: INTEGER\n- totalSetSize: INTEGER\n- type: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "official languages"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"official languages\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    }
+  ],
+  "answer": "Should I count the distinct languages recorded in `set_translations`, or should the official release count also include English when it has no translation row?",
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 18.236615250003524
+}

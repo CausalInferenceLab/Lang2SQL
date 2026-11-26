@@ -1,0 +1,150 @@
+{
+  "instance_id": "bird154",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "77a71c10e2da3a5dfbaee2eeccf6010ecc5089a119206a0f47c6289922549017",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 153030,
+      "cached_input_tokens": 142464,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1089,
+      "reasoning_output_tokens": 307
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"2akxx8i9N-lsvqwbzAOaUIaigN8J0h0umjEl8PXuwNg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "2akxx8i9N-lsvqwbzAOaUIaigN8J0h0umjEl8PXuwNg",
+        "sql": "WITH activity AS (\n    SELECT\n        ym.CustomerID,\n        COUNT(*) AS monthly_rows,\n        COUNT(ym.Consumption) AS recorded_months,\n        MAX(ym.Consumption > 0) AS has_positive_month,\n        MIN(ym.Consumption) AS min_consumption,\n        MIN(ym.Date) AS first_month,\n        MAX(ym.Date) AS last_month\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301' AND ym.Date < '201401'\n    GROUP BY ym.CustomerID\n)\nSELECT\n    c.Segment,\n    COUNT(*) AS customers,\n    COUNT(a.CustomerID) AS customers_with_monthly_rows,\n    COUNT(CASE WHEN a.recorded_months > 0 THEN 1 END) AS customers_with_recorded_amount,\n    COUNT(CASE WHEN a.has_positive_month = 1 THEN 1 END) AS customers_with_positive_amount,\n    SUM(a.monthly_rows - a.recorded_months) AS null_months,\n    MIN(a.min_consumption) AS min_consumption,\n    MIN(a.first_month) AS first_month,\n    MAX(a.last_month) AS last_month\nFROM customers AS c\nLEFT JOIN activity AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; customers=int; customers_with_monthly_rows=int; customers_with_recorded_amount=int; customers_with_positive_amount=int; null_months=int; min_consumption=float; first_month=str; last_month=str\nSegment | customers | customers_with_monthly_rows | customers_with_recorded_amount | customers_with_positive_amount | null_months | min_consumption | first_month | last_month\n--- | --- | --- | --- | --- | --- | --- | --- | ---\nKAM | 2040 | 1836 | 1836 | 1833 | 0 | -582092.86 | 201301 | 201311\nLAM | 3658 | 3541 | 3541 | 3539 | 0 | -2458.05 | 201301 | 201311\nSME | 26763 | 22274 | 22274 | 22246 | 0 | -14896.12 | 201301 | 201311\nSQL: WITH activity AS (\n    SELECT\n        ym.CustomerID,\n        COUNT(*) AS monthly_rows,\n        COUNT(ym.Consumption) AS recorded_months,\n        MAX(ym.Consumption > 0) AS has_positive_month,\n        MIN(ym.Consumption) AS min_consumption,\n        MIN(ym.Date) AS first_month,\n        MAX(ym.Date) AS last_month\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301' AND ym.Date < '201401'\n    GROUP BY ym.CustomerID\n)\nSELECT\n    c.Segment,\n    COUNT(*) AS customers,\n    COUNT(a.CustomerID) AS customers_with_monthly_rows,\n    COUNT(CASE WHEN a.recorded_months > 0 THEN 1 END) AS customers_with_recorded_amount,\n    COUNT(CASE WHEN a.has_positive_month = 1 THEN 1 END) AS customers_with_positive_amount,\n    SUM(a.monthly_rows - a.recorded_months) AS null_months,\n    MIN(a.min_consumption) AS min_consumption,\n    MIN(a.first_month) AS first_month,\n    MAX(a.last_month) AS last_month\nFROM customers AS c\nLEFT JOIN activity AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"KgKq77_coXjywdPGe0of7VAq5ciA4o9Ypv9NcSqfCnM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "KgKq77_coXjywdPGe0of7VAq5ciA4o9Ypv9NcSqfCnM",
+        "expected_columns": [
+          "Segment",
+          "CustomersConsumedFuel2013"
+        ],
+        "sql": "WITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; CustomersConsumedFuel2013=int\nSegment | CustomersConsumedFuel2013\n--- | ---\nKAM | 1836\nLAM | 3541\nSME | 22274\nSQL: WITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1\n```",
+  "rows": 3,
+  "sql": "WITH customers_with_fuel AS (\n    SELECT DISTINCT ym.CustomerID\n    FROM yearmonth AS ym\n    WHERE ym.Date >= '201301'\n      AND ym.Date < '201401'\n      AND ym.Consumption IS NOT NULL\n)\nSELECT\n    c.Segment,\n    COUNT(f.CustomerID) AS CustomersConsumedFuel2013\nFROM customers AS c\nLEFT JOIN customers_with_fuel AS f ON f.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT -1",
+  "seconds": 36.84892525000032
+}

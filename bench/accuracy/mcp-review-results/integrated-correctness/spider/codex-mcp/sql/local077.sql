@@ -1,0 +1,57 @@
+WITH monthly_interest AS (
+    SELECT
+        DATE(PRINTF('%04d-%02d-01', m._year, m._month)) AS month_start,
+        m.interest_id,
+        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition
+    FROM main.interest_metrics AS m
+    WHERE m._year * 100 + m._month BETWEEN 201807 AND 201908
+    GROUP BY m._year, m._month, m.interest_id
+),
+ranked_interest AS (
+    SELECT
+        month_start,
+        interest_id,
+        average_composition,
+        ROW_NUMBER() OVER (
+            PARTITION BY month_start
+            ORDER BY average_composition DESC, interest_id
+        ) AS month_rank
+    FROM monthly_interest
+    WHERE average_composition IS NOT NULL
+),
+monthly_max AS (
+    SELECT
+        r.month_start,
+        i.interest_name,
+        r.average_composition AS max_index_composition
+    FROM ranked_interest AS r
+    JOIN main.interest_map AS i ON i.id = r.interest_id
+    WHERE r.month_rank = 1
+),
+rolling_composition AS (
+    SELECT
+        month_start,
+        interest_name,
+        max_index_composition,
+        AVG(max_index_composition) OVER (
+            ORDER BY month_start ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+        ) AS three_month_rolling_average,
+        LAG(interest_name, 1) OVER (ORDER BY month_start) AS one_month_ago_interest_name,
+        LAG(max_index_composition, 1) OVER (ORDER BY month_start) AS one_month_ago_max_index_composition,
+        LAG(interest_name, 2) OVER (ORDER BY month_start) AS two_months_ago_interest_name,
+        LAG(max_index_composition, 2) OVER (ORDER BY month_start) AS two_months_ago_max_index_composition
+    FROM monthly_max
+)
+SELECT
+    month_start,
+    interest_name,
+    max_index_composition,
+    three_month_rolling_average,
+    one_month_ago_interest_name,
+    one_month_ago_max_index_composition,
+    two_months_ago_interest_name,
+    two_months_ago_max_index_composition
+FROM rolling_composition
+WHERE month_start >= '2018-09-01' AND month_start < '2019-09-01'
+ORDER BY month_start
+LIMIT 12

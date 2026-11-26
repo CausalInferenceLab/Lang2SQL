@@ -1,0 +1,270 @@
+{
+  "instance_id": "local355",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "a9ff56f3441040dc142be9311cc5a7aef73f94d89e6023b9c8154f29d90ab344",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 362700,
+      "cached_input_tokens": 338048,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 3206,
+      "reasoning_output_tokens": 1040
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Tables:\n- circuits\n- circuits_ext\n- constructor_results\n- constructor_standings\n- constructors\n- constructors_ext\n- driver_standings\n- driver_standings_ext\n- drivers\n- drivers_ext\n- drives\n- lap_positions\n- lap_time_stats\n- lap_times\n- lap_times_ext\n- liveries\n- pit_stops\n- qualifying\n- races\n- races_ext\n- results\n- retirements\n- seasons\n- short_constructor_names\n- short_grand_prix_names\n- sprint_results\n- status\n- tdr_overrides\n- team_driver_ranks"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- result_id: INTEGER NOT NULL\n- race_id: INTEGER NOT NULL\n- driver_id: INTEGER NOT NULL\n- constructor_id: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- position_text: VARCHAR(255) NOT NULL\n- position_order: INTEGER NOT NULL\n- points: FLOAT NOT NULL\n- laps: INTEGER NOT NULL\n- time: VARCHAR(255)\n- milliseconds: INTEGER\n- fastest_lap: INTEGER\n- rank: INTEGER\n- fastest_lap_time: VARCHAR(255)\n- fastest_lap_speed: VARCHAR(255)\n- status_id: INTEGER NOT NULL\nPRIMARY KEY (result_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- race_id: INTEGER NOT NULL\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuit_id: INTEGER NOT NULL\n- name: VARCHAR(255) NOT NULL\n- date: DATE NOT NULL\n- time: TIME\n- url: VARCHAR(255)\n- fp1_date: VARCHAR(255)\n- fp1_time: VARCHAR(255)\n- fp2_date: VARCHAR(255)\n- fp2_time: VARCHAR(255)\n- fp3_date: VARCHAR(255)\n- fp3_time: VARCHAR(255)\n- quali_date: VARCHAR(255)\n- quali_time: VARCHAR(255)\n- sprint_date: VARCHAR(255)\n- sprint_time: VARCHAR(255)\nPRIMARY KEY (race_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drives"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drives (table)\n- year: INTEGER\n- driver_id: INTEGER\n- drive_id: NULL\n- constructor_id: INTEGER\n- first_round: INTEGER\n- last_round: INTEGER\n- is_first_drive_of_season: NULL\n- is_final_drive_of_season: NULL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"UTA4yyyB8gki68cfiPlN7V6fucHan4mjllM09F22usE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "UTA4yyyB8gki68cfiPlN7V6fucHan4mjllM09F22usE",
+        "sql": "WITH driver_races AS (\n    SELECT race_id, driver_id, COUNT(*) AS entries,\n           COUNT(DISTINCT constructor_id) AS constructors\n    FROM main.results\n    GROUP BY race_id, driver_id\n),\nseason_rounds AS (\n    SELECT year, COUNT(*) AS races, COUNT(DISTINCT round) AS rounds,\n           MIN(round) AS first_round, MAX(round) AS last_round\n    FROM main.races\n    GROUP BY year\n),\nresult_races AS (\n    SELECT DISTINCT race_id\n    FROM main.results\n)\nSELECT\n    (SELECT COUNT(*) FROM season_rounds\n     WHERE races <> rounds OR first_round <> 1 OR last_round <> rounds) AS years_with_irregular_rounds,\n    (SELECT COUNT(*) FROM driver_races WHERE entries > 1) AS driver_races_with_multiple_results,\n    (SELECT COUNT(*) FROM driver_races WHERE constructors > 1) AS driver_races_with_multiple_constructors,\n    (SELECT COUNT(*) FROM main.races AS r LEFT JOIN result_races AS rr ON rr.race_id = r.race_id\n     WHERE rr.race_id IS NULL) AS races_without_results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): years_with_irregular_rounds=int; driver_races_with_multiple_results=int; driver_races_with_multiple_constructors=int; races_without_results=int\nyears_with_irregular_rounds | driver_races_with_multiple_results | driver_races_with_multiple_constructors | races_without_results\n--- | --- | --- | ---\n0 | 85 | 16 | 12\nSQL: WITH driver_races AS (\n    SELECT race_id, driver_id, COUNT(*) AS entries,\n           COUNT(DISTINCT constructor_id) AS constructors\n    FROM main.results\n    GROUP BY race_id, driver_id\n),\nseason_rounds AS (\n    SELECT year, COUNT(*) AS races, COUNT(DISTINCT round) AS rounds,\n           MIN(round) AS first_round, MAX(round) AS last_round\n    FROM main.races\n    GROUP BY year\n),\nresult_races AS (\n    SELECT DISTINCT race_id\n    FROM main.results\n)\nSELECT\n    (SELECT COUNT(*) FROM season_rounds\n     WHERE races <> rounds OR first_round <> 1 OR last_round <> rounds) AS years_with_irregular_rounds,\n    (SELECT COUNT(*) FROM driver_races WHERE entries > 1) AS driver_races_with_multiple_results,\n    (SELECT COUNT(*) FROM driver_races WHERE constructors > 1) AS driver_races_with_multiple_constructors,\n    (SELECT COUNT(*) FROM main.races AS r LEFT JOIN result_races AS rr ON rr.race_id = r.race_id\n     WHERE rr.race_id IS NULL) AS races_without_results\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NOo-CVQNuDZcU-nWcqqEN-Y-ztNG0dl-Ie68XW36wTI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NOo-CVQNuDZcU-nWcqqEN-Y-ztNG0dl-Ie68XW36wTI",
+        "sql": "SELECT r.year, r.round, r.name, r.date\nFROM main.races AS r\nLEFT JOIN (SELECT DISTINCT race_id FROM main.results) AS rr ON rr.race_id = r.race_id\nWHERE rr.race_id IS NULL\nORDER BY r.year, r.round"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): year=int; round=int; name=str; date=str\nyear | round | name | date\n--- | --- | --- | ---\n2024 | 13 | Hungarian Grand Prix | 2024-07-21\n2024 | 14 | Belgian Grand Prix | 2024-07-28\n2024 | 15 | Dutch Grand Prix | 2024-08-25\n2024 | 16 | Italian Grand Prix | 2024-09-01\n2024 | 17 | Azerbaijan Grand Prix | 2024-09-15\n2024 | 18 | Singapore Grand Prix | 2024-09-22\n2024 | 19 | United States Grand Prix | 2024-10-20\n2024 | 20 | Mexico City Grand Prix | 2024-10-27\n2024 | 21 | São Paulo Grand Prix | 2024-11-03\n2024 | 22 | Las Vegas Grand Prix | 2024-11-23\n2024 | 23 | Qatar Grand Prix | 2024-12-01\n2024 | 24 | Abu Dhabi Grand Prix | 2024-12-08\nSQL: SELECT r.year, r.round, r.name, r.date\nFROM main.races AS r\nLEFT JOIN (SELECT DISTINCT race_id FROM main.results) AS rr ON rr.race_id = r.race_id\nWHERE rr.race_id IS NULL\nORDER BY r.year, r.round\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"pWZXsr-7_YTJSpCz8YoTO6qIN23pU2OLlhW5jVcIzWo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "pWZXsr-7_YTJSpCz8YoTO6qIN23pU2OLlhW5jVcIzWo",
+        "sql": "WITH appearances AS (\n    SELECT r.year, s.driver_id, r.round,\n           COUNT(DISTINCT s.constructor_id) AS constructors,\n           MIN(s.constructor_id) AS constructor_id\n    FROM main.results AS s\n    JOIN main.races AS r ON r.race_id = s.race_id\n    GROUP BY r.year, s.driver_id, r.round\n),\ndriver_seasons AS (\n    SELECT year, driver_id, MIN(round) AS first_appearance, MAX(round) AS last_appearance\n    FROM appearances\n    GROUP BY year, driver_id\n),\nrecorded_races AS (\n    SELECT r.year, r.round\n    FROM main.races AS r\n    WHERE r.race_id IN (SELECT race_id FROM main.results)\n),\nmissed AS (\n    SELECT d.year, d.driver_id, r.round,\n           r.round BETWEEN d.first_appearance AND d.last_appearance AS is_internal\n    FROM driver_seasons AS d\n    JOIN recorded_races AS r ON r.year = d.year\n    LEFT JOIN appearances AS a\n      ON a.year = d.year AND a.driver_id = d.driver_id AND a.round = r.round\n    WHERE a.driver_id IS NULL\n),\ncandidate_bounds AS (\n    SELECT 'all' AS race_scope, year, driver_id, MIN(round) AS first_missed, MAX(round) AS last_missed\n    FROM missed\n    GROUP BY year, driver_id\n    HAVING COUNT(*) < 3\n    UNION ALL\n    SELECT 'internal', year, driver_id, MIN(round), MAX(round)\n    FROM missed\n    WHERE is_internal\n    GROUP BY year, driver_id\n    HAVING COUNT(*) < 3\n)\nSELECT m.race_scope, COUNT(*) AS driver_years_with_appearances_at_both_ends,\n       SUM(b.constructors > 1 OR a.constructors > 1) AS multiple_constructor_boundary_driver_years,\n       SUM(b.constructor_id <> a.constructor_id) AS changed_single_or_min_constructor,\n       AVG(CASE WHEN b.constructor_id <> a.constructor_id THEN m.first_missed END) AS avg_first,\n       AVG(CASE WHEN b.constructor_id <> a.constructor_id THEN m.last_missed END) AS avg_last\nFROM candidate_bounds AS m\nJOIN appearances AS b ON b.year = m.year AND b.driver_id = m.driver_id AND b.round = m.first_missed - 1\nJOIN appearances AS a ON a.year = m.year AND a.driver_id = m.driver_id AND a.round = m.last_missed + 1\nGROUP BY m.race_scope"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): race_scope=str; driver_years_with_appearances_at_both_ends=int; multiple_constructor_boundary_driver_years=int; changed_single_or_min_constructor=int; avg_first=float; avg_last=float\nrace_scope | driver_years_with_appearances_at_both_ends | multiple_constructor_boundary_driver_years | changed_single_or_min_constructor | avg_first | avg_last\n--- | --- | --- | --- | --- | ---\nall | 217 | 0 | 21 | 7.476190476190476 | 8.619047619047619\ninternal | 479 | 0 | 67 | 6.82089552238806 | 7.537313432835821\nSQL: WITH appearances AS (\n    SELECT r.year, s.driver_id, r.round,\n           COUNT(DISTINCT s.constructor_id) AS constructors,\n           MIN(s.constructor_id) AS constructor_id\n    FROM main.results AS s\n    JOIN main.races AS r ON r.race_id = s.race_id\n    GROUP BY r.year, s.driver_id, r.round\n),\ndriver_seasons AS (\n    SELECT year, driver_id, MIN(round) AS first_appearance, MAX(round) AS last_appearance\n    FROM appearances\n    GROUP BY year, driver_id\n),\nrecorded_races AS (\n    SELECT r.year, r.round\n    FROM main.races AS r\n    WHERE r.race_id IN (SELECT race_id FROM main.results)\n),\nmissed AS (\n    SELECT d.year, d.driver_id, r.round,\n           r.round BETWEEN d.first_appearance AND d.last_appearance AS is_internal\n    FROM driver_seasons AS d\n    JOIN recorded_races AS r ON r.year = d.year\n    LEFT JOIN appearances AS a\n      ON a.year = d.year AND a.driver_id = d.driver_id AND a.round = r.round\n    WHERE a.driver_id IS NULL\n),\ncandidate_bounds AS (\n    SELECT 'all' AS race_scope, year, driver_id, MIN(round) AS first_missed, MAX(round) AS last_missed\n    FROM missed\n    GROUP BY year, driver_id\n    HAVING COUNT(*) < 3\n    UNION ALL\n    SELECT 'internal', year, driver_id, MIN(round), MAX(round)\n    FROM missed\n    WHERE is_internal\n    GROUP BY year, driver_id\n    HAVING COUNT(*) < 3\n)\nSELECT m.race_scope, COUNT(*) AS driver_years_with_appearances_at_both_ends,\n       SUM(b.constructors > 1 OR a.constructors > 1) AS multiple_constructor_boundary_driver_years,\n       SUM(b.constructor_id <> a.constructor_id) AS changed_single_or_min_constructor,\n       AVG(CASE WHEN b.constructor_id <> a.constructor_id THEN m.first_missed END) AS avg_first,\n       AVG(CASE WHEN b.constructor_id <> a.constructor_id THEN m.last_missed END) AS avg_last\nFROM candidate_bounds AS m\nJOIN appearances AS b ON b.year = m.year AND b.driver_id = m.driver_id AND b.round = m.first_missed - 1\nJOIN appearances AS a ON a.year = m.year AND a.driver_id = m.driver_id AND a.round = m.last_missed + 1\nGROUP BY m.race_scope\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"LVN55TAxsw-A6mJbZ3z29ikt47eX8wN678jz7tXvtvU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "LVN55TAxsw-A6mJbZ3z29ikt47eX8wN678jz7tXvtvU",
+        "expected_columns": [
+          "avg_first_missed_round",
+          "avg_last_missed_round"
+        ],
+        "sql": "WITH recorded_races AS (\n    SELECT r.race_id, r.year, r.round\n    FROM main.races AS r\n    WHERE r.race_id IN (SELECT race_id FROM main.results)\n),\nappearances AS (\n    SELECT r.year, r.round, s.driver_id, s.constructor_id\n    FROM recorded_races AS r\n    JOIN main.results AS s ON s.race_id = r.race_id\n),\ndriver_seasons AS (\n    SELECT DISTINCT year, driver_id\n    FROM appearances\n),\nmissed_rounds AS (\n    SELECT d.year, d.driver_id,\n           MIN(r.round) AS first_missed_round,\n           MAX(r.round) AS last_missed_round\n    FROM driver_seasons AS d\n    JOIN recorded_races AS r ON r.year = d.year\n    LEFT JOIN appearances AS a\n      ON a.year = d.year\n     AND a.driver_id = d.driver_id\n     AND a.round = r.round\n    WHERE a.driver_id IS NULL\n    GROUP BY d.year, d.driver_id\n    HAVING COUNT(*) < 3\n),\nteam_changes AS (\n    SELECT DISTINCT m.year, m.driver_id, m.first_missed_round, m.last_missed_round\n    FROM missed_rounds AS m\n    JOIN appearances AS before_gap\n      ON before_gap.year = m.year\n     AND before_gap.driver_id = m.driver_id\n     AND before_gap.round = m.first_missed_round - 1\n    JOIN appearances AS after_gap\n      ON after_gap.year = m.year\n     AND after_gap.driver_id = m.driver_id\n     AND after_gap.round = m.last_missed_round + 1\n    WHERE before_gap.constructor_id <> after_gap.constructor_id\n)\nSELECT AVG(first_missed_round) AS avg_first_missed_round,\n       AVG(last_missed_round) AS avg_last_missed_round\nFROM team_changes\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): avg_first_missed_round=float; avg_last_missed_round=float\navg_first_missed_round | avg_last_missed_round\n--- | ---\n7.476190476190476 | 8.619047619047619\nSQL: WITH recorded_races AS (\n    SELECT r.race_id, r.year, r.round\n    FROM main.races AS r\n    WHERE r.race_id IN (SELECT race_id FROM main.results)\n),\nappearances AS (\n    SELECT r.year, r.round, s.driver_id, s.constructor_id\n    FROM recorded_races AS r\n    JOIN main.results AS s ON s.race_id = r.race_id\n),\ndriver_seasons AS (\n    SELECT DISTINCT year, driver_id\n    FROM appearances\n),\nmissed_rounds AS (\n    SELECT d.year, d.driver_id,\n           MIN(r.round) AS first_missed_round,\n           MAX(r.round) AS last_missed_round\n    FROM driver_seasons AS d\n    JOIN recorded_races AS r ON r.year = d.year\n    LEFT JOIN appearances AS a\n      ON a.year = d.year\n     AND a.driver_id = d.driver_id\n     AND a.round = r.round\n    WHERE a.driver_id IS NULL\n    GROUP BY d.year, d.driver_id\n    HAVING COUNT(*) < 3\n),\nteam_changes AS (\n    SELECT DISTINCT m.year, m.driver_id, m.first_missed_round, m.last_missed_round\n    FROM missed_rounds AS m\n    JOIN appearances AS before_gap\n      ON before_gap.year = m.year\n     AND before_gap.driver_id = m.driver_id\n     AND before_gap.round = m.first_missed_round - 1\n    JOIN appearances AS after_gap\n      ON after_gap.year = m.year\n     AND after_gap.driver_id = m.driver_id\n     AND after_gap.round = m.last_missed_round + 1\n    WHERE before_gap.constructor_id <> after_gap.constructor_id\n)\nSELECT AVG(first_missed_round) AS avg_first_missed_round,\n       AVG(last_missed_round) AS avg_last_missed_round\nFROM team_changes\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH recorded_races AS (\n    SELECT r.race_id, r.year, r.round\n    FROM main.races AS r\n    WHERE r.race_id IN (SELECT race_id FROM main.results)\n),\nappearances AS (\n    SELECT r.year, r.round, s.driver_id, s.constructor_id\n    FROM recorded_races AS r\n    JOIN main.results AS s ON s.race_id = r.race_id\n),\ndriver_seasons AS (\n    SELECT DISTINCT year, driver_id\n    FROM appearances\n),\nmissed_rounds AS (\n    SELECT d.year, d.driver_id,\n           MIN(r.round) AS first_missed_round,\n           MAX(r.round) AS last_missed_round\n    FROM driver_seasons AS d\n    JOIN recorded_races AS r ON r.year = d.year\n    LEFT JOIN appearances AS a\n      ON a.year = d.year\n     AND a.driver_id = d.driver_id\n     AND a.round = r.round\n    WHERE a.driver_id IS NULL\n    GROUP BY d.year, d.driver_id\n    HAVING COUNT(*) < 3\n),\nteam_changes AS (\n    SELECT DISTINCT m.year, m.driver_id, m.first_missed_round, m.last_missed_round\n    FROM missed_rounds AS m\n    JOIN appearances AS before_gap\n      ON before_gap.year = m.year\n     AND before_gap.driver_id = m.driver_id\n     AND before_gap.round = m.first_missed_round - 1\n    JOIN appearances AS after_gap\n      ON after_gap.year = m.year\n     AND after_gap.driver_id = m.driver_id\n     AND after_gap.round = m.last_missed_round + 1\n    WHERE before_gap.constructor_id <> after_gap.constructor_id\n)\nSELECT AVG(first_missed_round) AS avg_first_missed_round,\n       AVG(last_missed_round) AS avg_last_missed_round\nFROM team_changes\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "WITH recorded_races AS (\n    SELECT r.race_id, r.year, r.round\n    FROM main.races AS r\n    WHERE r.race_id IN (SELECT race_id FROM main.results)\n),\nappearances AS (\n    SELECT r.year, r.round, s.driver_id, s.constructor_id\n    FROM recorded_races AS r\n    JOIN main.results AS s ON s.race_id = r.race_id\n),\ndriver_seasons AS (\n    SELECT DISTINCT year, driver_id\n    FROM appearances\n),\nmissed_rounds AS (\n    SELECT d.year, d.driver_id,\n           MIN(r.round) AS first_missed_round,\n           MAX(r.round) AS last_missed_round\n    FROM driver_seasons AS d\n    JOIN recorded_races AS r ON r.year = d.year\n    LEFT JOIN appearances AS a\n      ON a.year = d.year\n     AND a.driver_id = d.driver_id\n     AND a.round = r.round\n    WHERE a.driver_id IS NULL\n    GROUP BY d.year, d.driver_id\n    HAVING COUNT(*) < 3\n),\nteam_changes AS (\n    SELECT DISTINCT m.year, m.driver_id, m.first_missed_round, m.last_missed_round\n    FROM missed_rounds AS m\n    JOIN appearances AS before_gap\n      ON before_gap.year = m.year\n     AND before_gap.driver_id = m.driver_id\n     AND before_gap.round = m.first_missed_round - 1\n    JOIN appearances AS after_gap\n      ON after_gap.year = m.year\n     AND after_gap.driver_id = m.driver_id\n     AND after_gap.round = m.last_missed_round + 1\n    WHERE before_gap.constructor_id <> after_gap.constructor_id\n)\nSELECT AVG(first_missed_round) AS avg_first_missed_round,\n       AVG(last_missed_round) AS avg_last_missed_round\nFROM team_changes\nLIMIT 1",
+  "seconds": 79.9444900000235
+}

@@ -1,0 +1,150 @@
+{
+  "instance_id": "bird141",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "a4d71ca293a4eba4923a014b172c800d9c89d5dd5f1e5535d72a93da1d6f73a8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167688,
+      "cached_input_tokens": 138880,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1593,
+      "reasoning_output_tokens": 768
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "postLinks"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "postLinks (table)\n- Id: INTEGER NOT NULL\n- CreationDate: DATETIME\n- PostId: INTEGER\n- RelatedPostId: INTEGER\n- LinkTypeId: INTEGER\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (RelatedPostId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"RubO2ECMDu_rg17XiBQixhs8RIwoeEgNfqH0zW5HL9M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "RubO2ECMDu_rg17XiBQixhs8RIwoeEgNfqH0zW5HL9M",
+        "sql": "WITH matches AS (\n    SELECT p.Id, p.Title\n    FROM posts AS p\n    WHERE p.Title LIKE '%principal component scores%'\n)\nSELECT m.Id, m.Title, 'PostId' AS matched_column, l.LinkTypeId,\n       COUNT(l.Id) AS link_count, COUNT(DISTINCT l.RelatedPostId) AS other_post_count,\n       SUM(CASE WHEN l.RelatedPostId = m.Id THEN 1 ELSE 0 END) AS self_links\nFROM matches AS m\nLEFT JOIN postLinks AS l ON l.PostId = m.Id\nGROUP BY m.Id, m.Title, l.LinkTypeId\nUNION ALL\nSELECT m.Id, m.Title, 'RelatedPostId', l.LinkTypeId,\n       COUNT(l.Id), COUNT(DISTINCT l.PostId),\n       SUM(CASE WHEN l.PostId = m.Id THEN 1 ELSE 0 END)\nFROM matches AS m\nLEFT JOIN postLinks AS l ON l.RelatedPostId = m.Id\nGROUP BY m.Id, m.Title, l.LinkTypeId\nORDER BY 1, 3, 4"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Id=int; Title=str; matched_column=str; LinkTypeId=NoneType,int; link_count=int; other_post_count=int; self_links=int\nId | Title | matched_column | LinkTypeId | link_count | other_post_count | self_links\n--- | --- | --- | --- | --- | --- | ---\n222 | What are principal component scores? | PostId | 1 | 2 | 2 | 0\n222 | What are principal component scores? | RelatedPostId | 1 | 4 | 4 | 0\n12389 | Calculating principal component scores after PC analysis | PostId | None | 0 | 0 | 0\n12389 | Calculating principal component scores after PC analysis | RelatedPostId | None | 0 | 0 | 0\n27753 | Using principal component scores as predictors in mixed-model | PostId | None | 0 | 0 | 0\n27753 | Using principal component scores as predictors in mixed-model | RelatedPostId | None | 0 | 0 | 0\n70307 | How do I analyse principal component scores? | PostId | 1 | 2 | 2 | 0\n70307 | How do I analyse principal component scores? | PostId | 3 | 1 | 1 | 0\n70307 | How do I analyse principal component scores? | RelatedPostId | None | 0 | 0 | 0\nSQL: WITH matches AS (\n    SELECT p.Id, p.Title\n    FROM posts AS p\n    WHERE p.Title LIKE '%principal component scores%'\n)\nSELECT m.Id, m.Title, 'PostId' AS matched_column, l.LinkTypeId,\n       COUNT(l.Id) AS link_count, COUNT(DISTINCT l.RelatedPostId) AS other_post_count,\n       SUM(CASE WHEN l.RelatedPostId = m.Id THEN 1 ELSE 0 END) AS self_links\nFROM matches AS m\nLEFT JOIN postLinks AS l ON l.PostId = m.Id\nGROUP BY m.Id, m.Title, l.LinkTypeId\nUNION ALL\nSELECT m.Id, m.Title, 'RelatedPostId', l.LinkTypeId,\n       COUNT(l.Id), COUNT(DISTINCT l.PostId),\n       SUM(CASE WHEN l.PostId = m.Id THEN 1 ELSE 0 END)\nFROM matches AS m\nLEFT JOIN postLinks AS l ON l.RelatedPostId = m.Id\nGROUP BY m.Id, m.Title, l.LinkTypeId\nORDER BY 1, 3, 4\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"pg0sy7ayRB42GX9Czym_Y-psEoGMqrFOfRzUEFUjL8o\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "pg0sy7ayRB42GX9Czym_Y-psEoGMqrFOfRzUEFUjL8o",
+        "sql": "WITH related_counts AS (\n    SELECT p.Id,\n           p.Title AS post_title,\n           COUNT(DISTINCT l.RelatedPostId) AS related_post_count\n    FROM posts AS p\n    LEFT JOIN postLinks AS l\n        ON l.PostId = p.Id\n       AND l.RelatedPostId <> p.Id\n    WHERE p.Title LIKE '%principal component scores%'\n    GROUP BY p.Id, p.Title\n)\nSELECT post_title, related_post_count\nFROM related_counts\nWHERE related_post_count = (\n    SELECT MAX(related_post_count)\n    FROM related_counts\n)\nORDER BY post_title, Id",
+        "expected_columns": [
+          "post_title",
+          "related_post_count"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): post_title=str; related_post_count=int\npost_title | related_post_count\n--- | ---\nHow do I analyse principal component scores? | 2\nWhat are principal component scores? | 2\nSQL: WITH related_counts AS (\n    SELECT p.Id,\n           p.Title AS post_title,\n           COUNT(DISTINCT l.RelatedPostId) AS related_post_count\n    FROM posts AS p\n    LEFT JOIN postLinks AS l\n        ON l.PostId = p.Id\n       AND l.RelatedPostId <> p.Id\n    WHERE p.Title LIKE '%principal component scores%'\n    GROUP BY p.Id, p.Title\n)\nSELECT post_title, related_post_count\nFROM related_counts\nWHERE related_post_count = (\n    SELECT MAX(related_post_count)\n    FROM related_counts\n)\nORDER BY post_title, Id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH related_counts AS (\n    SELECT p.Id,\n           p.Title AS post_title,\n           COUNT(DISTINCT l.RelatedPostId) AS related_post_count\n    FROM posts AS p\n    LEFT JOIN postLinks AS l\n        ON l.PostId = p.Id\n       AND l.RelatedPostId <> p.Id\n    WHERE p.Title LIKE '%principal component scores%'\n    GROUP BY p.Id, p.Title\n)\nSELECT post_title, related_post_count\nFROM related_counts\nWHERE related_post_count = (\n    SELECT MAX(related_post_count)\n    FROM related_counts\n)\nORDER BY post_title, Id\nLIMIT 1000\n```",
+  "rows": 2,
+  "sql": "WITH related_counts AS (\n    SELECT p.Id,\n           p.Title AS post_title,\n           COUNT(DISTINCT l.RelatedPostId) AS related_post_count\n    FROM posts AS p\n    LEFT JOIN postLinks AS l\n        ON l.PostId = p.Id\n       AND l.RelatedPostId <> p.Id\n    WHERE p.Title LIKE '%principal component scores%'\n    GROUP BY p.Id, p.Title\n)\nSELECT post_title, related_post_count\nFROM related_counts\nWHERE related_post_count = (\n    SELECT MAX(related_post_count)\n    FROM related_counts\n)\nORDER BY post_title, Id\nLIMIT 1000",
+  "seconds": 44.30925149994437
+}

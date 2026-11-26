@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird107",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "ff59a932cdfa48a7f1daa4c58b3e862071f4ac3fc0a9aa8cf3719008fdac388d",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 126107,
+      "cached_input_tokens": 111232,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1758,
+      "reasoning_output_tokens": 847
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "cards"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"42C1EPVAwvA4aVMOX4eAt17J5uW1zQqFfegJh3orrws\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "rulings"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "rulings (table)\n- id: INTEGER NOT NULL\n- date: DATE\n- text: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "foreign_data"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "foreign_data (table)\n- id: INTEGER NOT NULL\n- flavorText: TEXT\n- language: TEXT\n- multiverseid: INTEGER\n- name: TEXT\n- text: TEXT\n- type: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "42C1EPVAwvA4aVMOX4eAt17J5uW1zQqFfegJh3orrws",
+        "sql": "WITH japanese_printings AS (\n    SELECT DISTINCT f.name AS japanese_name, c.type AS english_type,\n           c.uuid, c.watermark\n    FROM main.cards AS c\n    JOIN main.foreign_data AS f ON f.uuid = c.uuid\n    WHERE f.language = 'Japanese'\n),\neligible AS (\n    SELECT DISTINCT japanese_name, english_type\n    FROM japanese_printings\n    WHERE watermark = 'boros'\n)\nSELECT COUNT(*) AS japanese_printings_for_eligible_cards,\n       COUNT(DISTINCT p.uuid) AS distinct_printing_uuids,\n       COUNT(CASE WHEN p.watermark = 'boros' THEN 1 END) AS boros_printings,\n       COUNT(CASE WHEN p.japanese_name IS NULL OR p.english_type IS NULL THEN 1 END) AS missing_identity,\n       COUNT(DISTINCT CASE WHEN p.watermark IS NOT 'boros' THEN r.id END) AS ruling_entries_on_other_printings\nFROM japanese_printings AS p\nJOIN eligible AS e ON e.japanese_name IS p.japanese_name\n                  AND e.english_type IS p.english_type\nLEFT JOIN main.rulings AS r ON r.uuid = p.uuid"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): japanese_printings_for_eligible_cards=int; distinct_printing_uuids=int; boros_printings=int; missing_identity=int; ruling_entries_on_other_printings=int\njapanese_printings_for_eligible_cards | distinct_printing_uuids | boros_printings | missing_identity | ruling_entries_on_other_printings\n--- | --- | --- | --- | ---\n366 | 179 | 270 | 0 | 81\nSQL: WITH japanese_printings AS (\n    SELECT DISTINCT f.name AS japanese_name, c.type AS english_type,\n           c.uuid, c.watermark\n    FROM main.cards AS c\n    JOIN main.foreign_data AS f ON f.uuid = c.uuid\n    WHERE f.language = 'Japanese'\n),\neligible AS (\n    SELECT DISTINCT japanese_name, english_type\n    FROM japanese_printings\n    WHERE watermark = 'boros'\n)\nSELECT COUNT(*) AS japanese_printings_for_eligible_cards,\n       COUNT(DISTINCT p.uuid) AS distinct_printing_uuids,\n       COUNT(CASE WHEN p.watermark = 'boros' THEN 1 END) AS boros_printings,\n       COUNT(CASE WHEN p.japanese_name IS NULL OR p.english_type IS NULL THEN 1 END) AS missing_identity,\n       COUNT(DISTINCT CASE WHEN p.watermark IS NOT 'boros' THEN r.id END) AS ruling_entries_on_other_printings\nFROM japanese_printings AS p\nJOIN eligible AS e ON e.japanese_name IS p.japanese_name\n                  AND e.english_type IS p.english_type\nLEFT JOIN main.rulings AS r ON r.uuid = p.uuid\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"qqMz58rKtGiq24S_XM0MvPRzoTLRcJ3Q9i_gtCBk2zI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "qqMz58rKtGiq24S_XM0MvPRzoTLRcJ3Q9i_gtCBk2zI",
+        "sql": "WITH japanese_printings AS (\n    SELECT f.name AS japanese_name,\n           c.type AS english_type,\n           c.uuid,\n           MAX(c.watermark IS 'boros') AS has_boros_watermark\n    FROM main.cards AS c\n    JOIN main.foreign_data AS f ON f.uuid = c.uuid\n    WHERE f.language = 'Japanese'\n    GROUP BY f.name, c.type, c.uuid\n)\nSELECT p.japanese_name,\n       p.english_type,\n       COUNT(r.id) AS total_rulings\nFROM japanese_printings AS p\nLEFT JOIN main.rulings AS r ON r.uuid = p.uuid\nGROUP BY p.japanese_name, p.english_type\nHAVING MAX(p.has_boros_watermark) = 1\nORDER BY p.japanese_name, p.english_type",
+        "expected_columns": [
+          "japanese_name",
+          "english_type",
+          "total_rulings"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "96 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=96; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): japanese_name=str; english_type=str; total_rulings=int\njapanese_name | english_type | total_rulings\n--- | --- | ---\nHide // Seek | Instant | 0\nそびえ立つ雷拳 | Creature — Giant Soldier | 1\nウォジェクの古参兵、アグルス・コス | Legendary Creature — Human Soldier | 2\nウォジェクの号笛 | Instant | 0\nウォジェクの燃えさし魔道士 | Creature — Human Wizard | 0\nウォジェクの矛槍兵 | Creature — Human Soldier | 3\nウォジェクの薬剤師 | Creature — Human Cleric | 0\nウォジェクの護衛 | Creature — Human Soldier | 8\nオルドルーンの古参兵 | Creature — Minotaur Soldier | 3\nオルドルーンの猛士 | Creature — Minotaur Soldier | 0\nオレリアの憤怒 | Instant | 3\nゴブリンの旗持ち | Creature — Goblin Soldier | 0\nサンホームのギルド魔道士 | Creature — Human Wizard | 3\nサンホームの処罰者 | Creature — Giant Soldier | 0\nサンホームの重鎮 | Creature — Human Soldier | 3\nパルヘリオンの巡視兵 | Creature — Human Knight | 0\nボロスのギルド門 | Land — Gate | 18\nボロスのギルド魔道士 | Creature — Human Wizard | 0\nボロスのロケット | Artifact | 0\nボロスの印鑑 | Artifact | 0\nボロスの反攻者 | Creature — Minotaur Wizard | 9\nボロスの大天使、ラジア | Legendary Creature — Angel | 4\nボロスの導き石 | Artifact | 0\nボロスの布陣者 | Creature — Minotaur Soldier | 5\nボロスの怒りの盾 | Instant | 1\nボロスの挑戦者 | Creature — Human Soldier | 3\nボロスの猛犬 | Creature — Dog | 3\nボロスの精鋭 | Creature — Human Soldier | 6\nボロスの補充兵 | Creature — Goblin Soldier | 0\nボロスの速太刀 | Creature — Human Soldier | 0\nボロスの駐屯地 | Land | 12\nボロスの魔鍵 | Artifact | 4\nボロスの魔除け | Instant | 14\nラジアの浄化 | Sorcery | 2\nヴィーアシーノの初太刀 | Creature — Viashino Soldier | 0\n光り輝く炎 | Sorcery | 12\n刃の教官 | Creature — Human Soldier | 3\n初々しい補充兵 | Creature — Human Soldier | 0\n前線の衛生兵 | Creature — Human Cleric | 8\n反応 // 反正 | Instant | 2\n反応 // 反正 | Sorcery | 2\n太陽打ちの槌 | Artifact — Equipment | 15\n完全 // 間隙 | Instant | 2\n恐慌の扇動 | Sorcery | 6\n戦いの烈光 | Enchantment | 2\n戦場操作 | Instant | 4\n戦導者のらせん | Instant | 1\n戦導者オレリア | Legendary Creature — Angel | 6\n戦心の歩兵 | Creature — Elemental Soldier | 3\n手練れの戦術 | Instant | 12\nSQL: WITH japanese_printings AS (\n    SELECT f.name AS japanese_name,\n           c.type AS english_type,\n           c.uuid,\n           MAX(c.watermark IS 'boros') AS has_boros_watermark\n    FROM main.cards AS c\n    JOIN main.foreign_data AS f ON f.uuid = c.uuid\n    WHERE f.language = 'Japanese'\n    GROUP BY f.name, c.type, c.uuid\n)\nSELECT p.japanese_name,\n       p.english_type,\n       COUNT(r.id) AS total_rulings\nFROM japanese_printings AS p\nLEFT JOIN main.rulings AS r ON r.uuid = p.uuid\nGROUP BY p.japanese_name, p.english_type\nHAVING MAX(p.has_boros_watermark) = 1\nORDER BY p.japanese_name, p.english_type\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH japanese_printings AS (\n    SELECT f.name AS japanese_name,\n           c.type AS english_type,\n           c.uuid,\n           MAX(c.watermark IS 'boros') AS has_boros_watermark\n    FROM main.cards AS c\n    JOIN main.foreign_data AS f ON f.uuid = c.uuid\n    WHERE f.language = 'Japanese'\n    GROUP BY f.name, c.type, c.uuid\n)\nSELECT p.japanese_name,\n       p.english_type,\n       COUNT(r.id) AS total_rulings\nFROM japanese_printings AS p\nLEFT JOIN main.rulings AS r ON r.uuid = p.uuid\nGROUP BY p.japanese_name, p.english_type\nHAVING MAX(p.has_boros_watermark) = 1\nORDER BY p.japanese_name, p.english_type\nLIMIT 1000\n```",
+  "rows": 96,
+  "sql": "WITH japanese_printings AS (\n    SELECT f.name AS japanese_name,\n           c.type AS english_type,\n           c.uuid,\n           MAX(c.watermark IS 'boros') AS has_boros_watermark\n    FROM main.cards AS c\n    JOIN main.foreign_data AS f ON f.uuid = c.uuid\n    WHERE f.language = 'Japanese'\n    GROUP BY f.name, c.type, c.uuid\n)\nSELECT p.japanese_name,\n       p.english_type,\n       COUNT(r.id) AS total_rulings\nFROM japanese_printings AS p\nLEFT JOIN main.rulings AS r ON r.uuid = p.uuid\nGROUP BY p.japanese_name, p.english_type\nHAVING MAX(p.has_boros_watermark) = 1\nORDER BY p.japanese_name, p.english_type\nLIMIT 1000",
+  "seconds": 44.993534500012174
+}

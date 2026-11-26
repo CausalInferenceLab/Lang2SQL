@@ -1,0 +1,44 @@
+WITH RECURSIVE period_expenses AS (
+    SELECT e.link_to_member AS member_id,
+           e.expense_description,
+           e.cost
+    FROM expense AS e
+    WHERE e.expense_date >= '2019-10-01'
+      AND e.expense_date < '2019-12-01'
+),
+split_items(member_id, item, remainder) AS (
+    SELECT p.member_id, NULL, p.expense_description || ','
+    FROM period_expenses AS p
+    UNION ALL
+    SELECT s.member_id,
+           LOWER(TRIM(SUBSTR(s.remainder, 1, INSTR(s.remainder, ',') - 1))),
+           SUBSTR(s.remainder, INSTR(s.remainder, ',') + 1)
+    FROM split_items AS s
+    WHERE s.remainder <> ''
+),
+item_counts AS (
+    SELECT s.member_id, COUNT(DISTINCT s.item) AS kind_count
+    FROM split_items AS s
+    WHERE s.item <> ''
+    GROUP BY s.member_id
+),
+spending AS (
+    SELECT p.member_id, ROUND(SUM(p.cost), 2) AS total_spending
+    FROM period_expenses AS p
+    GROUP BY p.member_id
+),
+ranked_members AS (
+    SELECT m.member_id,
+           m.first_name || ' ' || m.last_name AS full_name,
+           i.kind_count,
+           s.total_spending,
+           DENSE_RANK() OVER (ORDER BY i.kind_count DESC) AS kind_rank
+    FROM member AS m
+    JOIN item_counts AS i ON i.member_id = m.member_id
+    JOIN spending AS s ON s.member_id = m.member_id
+)
+SELECT r.full_name, r.kind_count, r.total_spending
+FROM ranked_members AS r
+WHERE r.kind_rank = 1
+ORDER BY r.full_name, r.member_id
+LIMIT 1000
