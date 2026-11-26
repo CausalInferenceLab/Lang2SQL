@@ -76,7 +76,11 @@ async def run(args):
         args.output / "settings.json",
         {
             "profiles": [
-                {"name": "codex-mcp", "model": "Codex CLI default (no override)"}
+                {
+                    "name": "codex-mcp",
+                    "model": args.model,
+                    "reasoning_effort": args.reasoning_effort,
+                }
             ],
             "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
             "revision": (
@@ -118,7 +122,7 @@ async def run(args):
             record = {
                 "instance_id": ident,
                 "profile": "codex-mcp",
-                "model": "Codex CLI default",
+                "model": args.model,
                 "status": "started",
                 "calls": [],
             }
@@ -131,6 +135,7 @@ async def run(args):
             )
             settings.update(
                 {
+                    "model_reasoning_effort": args.reasoning_effort,
                     "features.shell_tool": False,
                     "features.unified_exec": False,
                     "features.apps": False,
@@ -141,6 +146,8 @@ async def run(args):
                 "codex",
                 "exec",
                 "--ignore-user-config",
+                "--model",
+                args.model,
                 "--ephemeral",
                 "--skip-git-repo-check",
                 "--json",
@@ -263,6 +270,8 @@ def main():
     parser.add_argument(
         "--split", choices=["development", "all"], default="development"
     )
+    parser.add_argument("--model", required=True)
+    parser.add_argument("--reasoning-effort", default="high")
     parser.add_argument("--concurrency", type=int, default=2)
     parser.add_argument("--case-timeout", type=float, default=600)
     parser.add_argument("--sql-timeout", type=float, default=30)

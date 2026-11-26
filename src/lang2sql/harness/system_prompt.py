@@ -12,7 +12,7 @@ import json
 
 from .context import HarnessContext
 
-_BASE = """\
+BASE_INSTRUCTIONS = """\
 You are Lang2SQL, a read-only data analytics agent.
 
 Rules:
@@ -33,6 +33,7 @@ Data verification:
 - When several columns or tables describe a similar concept, inspect each candidate and prefer the explicitly named field/source. Do not silently substitute a convenient near-synonym.
 - Profile relevant stored values with small read-only queries before deciding numeric casts, date formats or missing-value handling. SQL NULL, empty strings, sentinel values and genuine zero are different; use documented meanings and observed values, not invented cleaning rules.
 - For rates, check numerator and denominator at the requested grain and precision instead of assuming a stored rounded percentage is interchangeable. Preserve requested identifiers and categorical strings verbatim; do not prettify their case or change types.
+- Before running a correlated subquery over large tables, inspect join-key indexes or use a preaggregated/set-based join to avoid repeated full scans.
 - Check the effect of every join on row counts. Do not invent DISTINCT, extra legal/status restrictions, zero-filled groups, or implicit deduplication when the question does not request them.
 
 Clarification rule:
@@ -45,7 +46,7 @@ Clarification rule:
 
 
 async def build_system_prompt(ctx: HarnessContext) -> str:
-    parts: list[str] = [_BASE]
+    parts: list[str] = [BASE_INSTRUCTIONS]
 
     if ctx.explorer is not None:
         dialect = getattr(ctx.explorer, "dialect", "")

@@ -167,7 +167,9 @@ async def test_missing_definition_never_reaches_database(tmp_path):
         )
         assert guessed.isError and "NOT executed" in guessed.content[0].text
         empty = await client.call_tool("resolve_business_terms", {"terms": []})
-        assert empty.isError
+        assert (
+            not empty.isError
+        )  # No lookup needed for an explicitly specified literal query.
     with sqlite3.connect(store) as conn:
         assert (
             conn.execute(
@@ -255,3 +257,22 @@ async def test_memory_survives_stdio_restart_and_isolates_team(tmp_path):
     async with connected(db, store, team="finance") as client:
         result = await client.call_tool("recall_memory", {"query": "cutoff"})
         assert "No remembered notes" in result.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_literal_query_without_catalog_still_requires_single_use_receipt(
+    tmp_path,
+):
+    db = fixture_db(tmp_path)
+    async with connected(db, tmp_path / "metadata.db") as client:
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        assert not check.isError
+        token = json.loads(check.content[0].text)["definition_check_id"]
+        args = {"sql": "SELECT COUNT(*) AS n FROM orders", "definition_check_id": token}
+        result = await client.call_tool("run_sql", args)
+        assert not result.isError and "2" in result.content[0].text
+        assert (await client.call_tool("run_sql", args)).isError
+        missing = await client.call_tool(
+            "resolve_business_terms", {"terms": ["undefined_net_revenue"]}
+        )
+        assert missing.isError and "DEFINITION_REQUIRED" in missing.content[0].text

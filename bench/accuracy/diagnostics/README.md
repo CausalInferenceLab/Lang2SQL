@@ -140,3 +140,33 @@ raises a terminal quota error, and the batch cancels remaining tasks and records
 `aborted`. Tests cover terminal quota versus transient rate-limit retries,
 case-level error propagation and prevention of queued case starts. Incomplete
 attempts are retained without a full-set score; see the measured report.
+
+## MCP bottleneck correction
+
+The first Codex pilot was not model-controlled: Codex ran without an explicit
+model/effort, and ephemeral sessions did not retain a resolved model identifier.
+The older API baseline explicitly used GPT-6.2 Sol/high. Do not attribute the
+score difference to model quality. New Codex runs require a model argument and
+record its requested identifier and reasoning effort.
+
+The internal harness had request-aware clarification instructions while MCP
+required every query to name a nonempty set of registered terms. With empty
+metadata this made even explicit field queries impossible. MCP now shares the
+harness correctness/clarification instructions. A check with `terms=[]` is valid
+for literal diagnostics or queries fully specified by explicit request criteria;
+named unresolved business terms still require confirmed scoped definitions.
+The same one-use receipt, scope checks, Oracle-view contract and read-only
+execution remain. Request criteria are not persisted as approved definitions.
+
+This is a deliberate contract correction, not proof that a server can detect an
+LLM omitting an ambiguous term. Term classification remains the agent's
+responsibility (as naming the complete term list already was). A receipt does
+not certify semantic correctness. Unit tests verify empty-catalog literal
+queries, missing named definitions, forged/reused receipts and scope changes.
+
+Observed SQL errors: bird036 emitted numeric 0.9833 as text via printf, local062
+included 7,712 customers with no December purchases as zero-profit customers,
+and bird058's unindexed correlated EXISTS exceeded the 30s SQL budget. Shared
+instructions already cover numeric types and population; MCP previously did not
+receive those instructions. A general set-based query/index-check instruction
+addresses repeated correlated scans. No case-specific SQL is injected.

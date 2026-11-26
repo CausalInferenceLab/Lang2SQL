@@ -27,10 +27,11 @@ class ResolveBusinessTerms:
         return ToolSpec(
             name="resolve_business_terms",
             description=(
-                "Before every business SQL query, submit ALL business terms in the user's "
+                "Before every SQL query, submit business terms requiring stored definitions from the user's "
                 "question verbatim. Business terms are domain metrics/concepts, not literal dates, "
                 "numbers, SQL identifiers or ordinary filters; for example a calendar month is "
                 "a filter, but fiscal-period rules require a business definition. "
+                "Use terms=[] for schema/data diagnostics or a query fully specified by explicit user criteria and supplied documentation. Never omit an unresolved business term to bypass clarification. Explicit request criteria apply only to this request, not as approved reusable metadata. "
                 "Returns exact current-scope definitions and a single-use "
                 "definition_check_id. If missing or unconfirmed, ask the user for the exact "
                 "definition and scope; NEVER invent/register a definition just to unblock SQL. "
@@ -42,7 +43,7 @@ class ResolveBusinessTerms:
                     "terms": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "minItems": 1,
+                        "minItems": 0,
                     }
                 },
                 "required": ["terms"],
@@ -97,7 +98,6 @@ class ResolveBusinessTerms:
         terms = args.get("terms")
         if (
             not isinstance(terms, list)
-            or not terms
             or any(not isinstance(t, str) or not t.strip() for t in terms)
         ):
             return await self.reject(ctx, "Supply all business terms as nonempty names")

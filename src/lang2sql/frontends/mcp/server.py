@@ -14,6 +14,7 @@ from mcp.server.stdio import stdio_server
 
 from ...core.identity import Identity
 from ...harness.context import HarnessContext
+from ...harness.system_prompt import BASE_INSTRUCTIONS
 from ...tenancy.tool_runtime import build_tool_context
 from ...tools.resolve_business_terms import DefinitionCheckedSQL, ResolveBusinessTerms
 from ..metadata_options import parse_metadata_args
@@ -27,8 +28,12 @@ def create_server(ctx: HarnessContext) -> Server:
     ctx.tools.register(DefinitionCheckedSQL(resolver))
     server = Server(
         "lang2sql",
-        instructions=(
-            "Before EVERY query, call resolve_business_terms with ALL business terms from the question. "
+        instructions=BASE_INSTRUCTIONS
+        + "\nMCP execution contract:\n"
+        + (
+            "Before EVERY query, call resolve_business_terms for terms requiring stored definitions. "
+            "For a literal schema/data diagnostic or a question fully specified by explicit user criteria and supplied documentation, use terms=[]. "
+            "Never omit an unresolved business term merely to execute SQL. Request-specific criteria are not automatically approved reusable definitions. "
             "Business terms mean domain metrics/concepts; literal dates, numbers and SQL identifiers are not business terms. "
             "Calendar dates are filters unless the user asks for domain-specific fiscal-period rules. "
             "An explicit calendar year/month determines its first day and next month's first day; do not ask the user to repeat an unambiguous period. "
@@ -45,7 +50,7 @@ def create_server(ctx: HarnessContext) -> Server:
             "Ask the user directly when definitions are ambiguous. "
             "run_sql preserves the existing read-only safety checks. "
             "term_custom and remember change Lang2SQL metadata, not the source DB. "
-            "This server has one operator-configured connection and identity."
+            "This server has one operator-configured connection and identity; do not ask users to choose a scope already configured by the operator."
         ),
     )
     # Existing SQLite KV operations are synchronous. Serialize the shared store
