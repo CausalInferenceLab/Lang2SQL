@@ -101,8 +101,8 @@ async def query_metric(ctx, entry, args):
             raise ValueError(
                 "Supply period_start and exclusive period_end only; free-form SQL is disabled for this metric"
             )
-        if "expected_columns" in args:
-            raise ValueError("expected_columns is supported only for SQL mode, not bound metrics")
+        if "expected_columns" in args or "expected_rows" in args:
+            raise ValueError("Output contracts are supported only for SQL mode, not bound metrics")
         sql, params = metric_query(
             binding["contract"], args["period_start"], args["period_end"]
         )

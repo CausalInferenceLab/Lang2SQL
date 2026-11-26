@@ -1,0 +1,29 @@
+"""MCP contract replay only, not a model attempt or benchmark repair score."""
+import asyncio
+import importlib.util
+import json
+import tempfile
+from pathlib import Path
+
+spec=importlib.util.spec_from_file_location('mcp_test_helpers',Path.cwd()/'tests/test_mcp.py')
+helpers=importlib.util.module_from_spec(spec)
+spec.loader.exec_module(helpers)
+root=Path('/Users/seyoung/workspace/benchmarks')
+old=json.loads((root/'codex-mcp-integrated-pilot-backlog-20261127/bird-gpt-6.2-astra/codex-mcp/records/bird146.json').read_text())
+new=json.loads((root/'codex-mcp-output-row-contract-20261127/bird-gpt-6.2-astra/codex-mcp/records/bird146.json').read_text())
+async def main():
+ results=[]
+ with tempfile.TemporaryDirectory(prefix='lang2sql-row-contract-') as temp:
+  uri='file:'+str(root/'bird-sqlite/codebase_community.sqlite')+'?mode=ro&uri=true'
+  async with helpers.connected(uri,Path(temp)/'metadata.db') as client:
+   for label,record in [('prior_12_row_sql',old),('new_1_row_sql',new)]:
+    resolved=await client.call_tool('resolve_business_terms',{'terms':[]})
+    args={'sql':record['sql'],'definition_check_id':json.loads(resolved.content[0].text)['definition_check_id'],'expected_rows':1}
+    result=await client.call_tool('run_sql',args)
+    results.append({'variant':label,'sql':record['sql'],'declared_expected_rows':1,'is_error':bool(result.isError),'content':result.content[0].text})
+ assert results[0]['is_error'] and 'expected=1; observed=12' in results[0]['content']
+ assert not results[1]['is_error'] and 'Output row count validated' in results[1]['content']
+ out=root/'codex-mcp-output-row-contract-20261127'
+ (out/'offline-contract-replay.json').write_text(json.dumps({'scope':'Offline MCP replay, caller explicitly declares1row; not model inference or a benchmark repair score. Original DB opened read-only.','results':results},indent=2)+'\n')
+ print('Prior12-rowSQL rejected; new1-rowSQL validated through actual MCP stdio')
+asyncio.run(main())

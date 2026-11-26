@@ -49,6 +49,11 @@ class RunSQL:
                         "uniqueItems": True,
                         "description": "Optional exact, ordered output column labels derived from the user request. Missing, extra or reordered columns return an error. This verifies projection only, not semantic correctness. SQL mode only.",
                     },
+                    "expected_rows": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "description": "Optional exact executed-result row count derived from the requested final output, not intermediate groups. Use 1 when only one overall aggregate row is requested; 0 can assert an empty result. A mismatch returns an error, never truncates to fit. Must not exceed limit. This checks declared cardinality only, not semantic correctness or uncapped source size. SQL mode only.",
+                    },
                     "metric_term": {
                         "type": "string",
                         "description": "Exact confirmed Oracle metric. Provide its date interval instead of SQL.",
@@ -77,6 +82,12 @@ class RunSQL:
         ):
             logger.warning("invalid output columns scope=%s", ctx.identity.session_key())
             return ToolResult(call_id="", is_error=True, content="Invalid expected_columns: supply unique nonempty column labels. SQL was NOT executed.")
+        expected_rows = args.get("expected_rows")
+        if "expected_rows" in args and (
+            type(expected_rows) is not int or expected_rows < 0
+        ):
+            logger.warning("invalid output row count scope=%s", ctx.identity.session_key())
+            return ToolResult(call_id="", is_error=True, content="Invalid expected_rows: supply a nonnegative integer. SQL was NOT executed.")
         metric = args.get("metric_term")
         question = next(
             (
@@ -144,6 +155,10 @@ class RunSQL:
                 call_id="", is_error=True,
                 content="Invalid limit: supply a positive maximum row count. SQL was NOT executed.",
             )
+
+        if expected_rows is not None and expected_rows > limit:
+            logger.warning("output row count exceeds fetch budget scope=%s", ctx.identity.session_key())
+            return ToolResult(call_id="", is_error=True, content="Invalid expected_rows: expectation exceeds limit; provide a sufficient fetch limit to verify the complete result. SQL was NOT executed.")
 
         if ctx.safety is None:
             return ToolResult(
@@ -215,6 +230,7 @@ class RunSQL:
         if actual_columns is None and rows:
             actual_columns = tuple(rows[0])
         contract_error = None
+        contract_kind = "column"
         if expected is not None:
             if actual_columns is None:
                 contract_error = "column metadata unavailable for this empty result"
@@ -222,11 +238,18 @@ class RunSQL:
                 missing = [c for c in expected if c not in actual_columns]
                 unexpected = [c for c in actual_columns if c not in expected]
                 contract_error = f"missing={missing!r}; unexpected={unexpected!r}; expected order={expected!r}; actual order={list(actual_columns)!r}"
-            if contract_error:
-                logger.warning("run_sql output contract failed scope=%s reason=%s", scope, contract_error)
-            else:
+            if not contract_error:
                 logger.info("run_sql output columns validated scope=%s", scope)
         fetch_truncated = len(rows) > limit
+        if not contract_error and expected_rows is not None:
+            if len(rows) != expected_rows:
+                contract_kind = "row count"
+                observed = "at least " if fetch_truncated else ""
+                contract_error = f"expected={expected_rows}; observed={observed}{len(rows)}"
+            else:
+                logger.info("run_sql output row count validated scope=%s expected=%d", scope, expected_rows)
+        if contract_error:
+            logger.warning("run_sql output contract failed scope=%s reason=%s", scope, contract_error)
         rows = rows[:limit]
         logger.info("run_sql completed scope=%s rows=%d fetch_truncated=%s", scope, len(rows), fetch_truncated)
 
@@ -247,11 +270,16 @@ class RunSQL:
             query_timeout_scope=ctx.explorer.query_timeout_scope if timeout_enforced else "unsupported",
         )
         if contract_error:
-            return ToolResult(call_id="", is_error=True, content=f"Output column contract failed: {contract_error}. SQL executed; revise the projection or verify the contract against the request.\n{rendered}")
-        if expected is not None:
+            return ToolResult(call_id="", is_error=True, content=f"Output {contract_kind} contract failed: {contract_error}. SQL executed; revise the output structure or verify the contract against the request.\n{rendered}")
+        if expected is not None or expected_rows is not None:
             # Preserve the row-count header and SQL footer consumed by provenance checks.
+            notes = []
+            if expected is not None:
+                notes.append("Output columns validated (projection only).")
+            if expected_rows is not None:
+                notes.append("Output row count validated (executed SQL only).")
             header, remainder = rendered.split("\n", 1)
-            rendered = header + "\nOutput columns validated (projection only).\n" + remainder
+            rendered = "\n".join([header, *notes, remainder])
         return ToolResult(call_id="", content=rendered)
 
 

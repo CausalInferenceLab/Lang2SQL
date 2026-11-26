@@ -486,3 +486,83 @@ async def test_fixed_decimal_compiler_stdio_execution(tmp_path):
         result = await client.call_tool("run_sql", {"sql": sql, "definition_check_id": token})
         assert not result.isError
         assert "ok | 1.2" in result.content[0].text
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('sql, expected, limit, error, fragment', [
+    ('SELECT SUM(amount) AS value FROM orders', 1, 1000, False, '1 row(s):'),
+    ('SELECT amount AS value FROM orders LIMIT -1', 1, 1000, True, 'expected=1; observed=2'),
+    ('SELECT amount AS value FROM orders WHERE 0', 0, 1000, False, '(0 rows)'),
+    ('SELECT amount AS value FROM orders LIMIT -1', 1, 1, True, 'observed=at least 2'),
+    ('SELECT amount AS value FROM orders LIMIT -1', 2, 2, False, '2 row(s):'),
+    ('WITH RECURSIVE n(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM n WHERE value<60) SELECT value FROM n LIMIT -1', 60, 100, False, 'displayed_rows=50'),
+    ('WITH RECURSIVE n(value) AS (SELECT 1 UNION ALL SELECT value+1 FROM n WHERE value<60) SELECT value FROM n LIMIT -1', 50, 50, True, 'observed=at least 51'),
+])
+async def test_output_cardinality_stdio(tmp_path, sql, expected, limit, error, fragment):
+    from bench.accuracy.codex_mcp import executed_sql
+
+    async with connected(fixture_db(tmp_path), tmp_path / 'metadata.db') as client:
+        check = await client.call_tool('resolve_business_terms', {'terms': []})
+        result = await client.call_tool('run_sql', {
+            'definition_check_id': json.loads(check.content[0].text)['definition_check_id'],
+            'sql': sql, 'expected_columns': ['value'], 'expected_rows': expected, 'limit': limit,
+        })
+        text = result.content[0].text
+        assert result.isError == error
+        assert fragment in text
+        events = [{'type': 'item.completed', 'item': {
+            'type': 'mcp_tool_call', 'tool': 'run_sql', 'server': 'lang2sql',
+            'status': 'completed', 'arguments': {'sql': sql},
+            'result': {'content': [{'text': text}]},
+        }}]
+        if error:
+            assert text.startswith('Output row count contract failed:')
+            with pytest.raises(ValueError, match='not executed through'):
+                executed_sql('```sql\n' + sql + '\n```', events)
+        else:
+            assert 'Output columns validated' in text
+            assert 'Output row count validated (executed SQL only).' in text
+            assert executed_sql('```sql\n' + sql + '\n```', events) == text.rsplit('\nSQL: ', 1)[1]
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('args', [
+    {'expected_rows': None}, {'expected_rows': True}, {'expected_rows': False},
+    {'expected_rows': -1}, {'expected_rows': 1.0}, {'expected_rows': '1'},
+    {'expected_rows': []}, {'expected_rows': 2, 'limit': 1},
+])
+async def test_invalid_cardinality_never_executes(args):
+    from lang2sql.tools.run_sql import RunSQL
+
+    class NeverExecute:
+        async def execute(self, sql, limit):
+            pytest.fail('Invalid cardinality contract reached database')
+
+    ctx = build_tool_context(Identity(user_id='analyst'), explorer=NeverExecute())
+    try:
+        result = await RunSQL().run({'sql': 'SELECT 1 AS n', **args}, ctx)
+        assert result.is_error and 'NOT executed' in result.content
+    finally:
+        ctx.store.close()
+
+
+@pytest.mark.asyncio
+async def test_cardinality_failure_is_audited_without_changing_sql():
+    from lang2sql.tools.run_sql import RunSQL
+
+    class TwoRows:
+        async def execute(self, sql, limit):
+            assert sql == 'SELECT 1 AS n UNION ALL SELECT 2 AS n LIMIT -1'
+            return [{'n': 1}, {'n': 2}]
+
+    ctx = build_tool_context(Identity(user_id='analyst'), explorer=TwoRows())
+    try:
+        result = await RunSQL().run({
+            'sql': 'SELECT 1 AS n UNION ALL SELECT 2 AS n LIMIT -1', 'expected_rows': 1,
+        }, ctx)
+        assert result.is_error
+        assert '2 row(s):' in result.content  # No truncation to the declared one-row target.
+        events = await ctx.store.query('analyst')
+        assert any(e.action == 'run_sql_contract_failed' and 'expected=1' in e.detail['contract_error'] for e in events)
+    finally:
+        ctx.store.close()

@@ -1,0 +1,475 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-integrated-pilot-backlog-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "b4042a9cdd4bb79e959b4077ff1e2f321873f4845fed694c9689672b0dde8628",
+      "scores_sha256": "221b9abc627016bf71a8a38bf3771c9427233ada5dd493b361ecc05379b3678b",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "1a1e2e544110ccc0f8f9f7545f9f69ab0f9da009",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-output-row-contract-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "b4042a9cdd4bb79e959b4077ff1e2f321873f4845fed694c9689672b0dde8628",
+      "scores_sha256": "221b9abc627016bf71a8a38bf3771c9427233ada5dd493b361ecc05379b3678b",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "79b08744087f1cb13fcb9279363174f29141c02c",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 0": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird146",
+        "db": "codebase_community",
+        "question": "For each month of 2010, how many posts that have no more than two answers received a link during that month? A month with none counts as zero. Give me the average across all twelve months of 2010, rounded to two decimals.",
+        "evidence": "A link is a recorded connection that associates one post with another post of the site."
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,24 +1,12 @@\n-WITH RECURSIVE months(month_start) AS (\n-    SELECT '2010-01-01'\n-    UNION ALL\n-    SELECT date(month_start, '+1 month')\n-    FROM months\n-    WHERE month_start < '2010-12-01'\n-),\n-monthly_counts AS (\n-    SELECT m.month_start, COUNT(DISTINCT p.Id) AS post_count\n-    FROM months AS m\n-    LEFT JOIN main.postLinks AS l\n-        ON l.CreationDate >= m.month_start\n-       AND l.CreationDate < date(m.month_start, '+1 month')\n-    LEFT JOIN main.posts AS p\n-        ON p.Id = l.RelatedPostId\n-       AND p.AnswerCount <= 2\n-    GROUP BY m.month_start\n+WITH monthly_counts AS (\n+    SELECT COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\n+    FROM main.postLinks AS l\n+    JOIN main.posts AS p ON p.Id = l.RelatedPostId\n+    WHERE l.CreationDate >= '2010-01-01'\n+      AND l.CreationDate < '2011-01-01'\n+      AND p.AnswerCount <= 2\n+    GROUP BY strftime('%Y-%m', l.CreationDate)\n )\n-SELECT strftime('%Y-%m', month_start) AS month,\n-       post_count,\n-       ROUND(AVG(post_count) OVER (), 2) AS average_monthly_posts\n+SELECT ROUND(TOTAL(receiving_posts) / 12, 2) AS average_posts_per_month\n FROM monthly_counts\n-ORDER BY month_start\n-LIMIT 12\n+LIMIT 1",
+      "before": {
+        "score": 0,
+        "record_sha256": "dcf47fd031fe145c591b707797ccb9a15d5ecc38abc8403087015c30e53017f8",
+        "record": {
+          "instance_id": "bird146",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "201001d0077f3d7145caabfe1d6eb1b75beeb402720f135c6a31d15989837cdc",
+          "events_sha256": "ef2ca893ae6958675e4f012718a014b577ffcb70a3b688de9a20947b57e075ff",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 173565,
+              "cached_input_tokens": 160768,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 904,
+              "reasoning_output_tokens": 19
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "postLinks"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "postLinks (table)\n- Id: INTEGER NOT NULL\n- CreationDate: DATETIME\n- PostId: INTEGER\n- RelatedPostId: INTEGER\n- LinkTypeId: INTEGER\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (RelatedPostId) REFERENCES posts (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"p5NWWeigjloE6_wPLj4Lvm-DQ45iCFTNBQ34cmmZJXA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "posts"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "p5NWWeigjloE6_wPLj4Lvm-DQ45iCFTNBQ34cmmZJXA",
+                "sql": "SELECT MIN(l.CreationDate) AS first_link, MAX(l.CreationDate) AS last_link,\n       COUNT(*) AS links, COUNT(p.Id) AS matched_targets,\n       COUNT(p.AnswerCount) AS known_answer_counts,\n       MIN(p.AnswerCount) AS min_answers, MAX(p.AnswerCount) AS max_answers\nFROM main.postLinks AS l\nLEFT JOIN main.posts AS p ON p.Id = l.RelatedPostId\nWHERE l.CreationDate >= '2010-01-01' AND l.CreationDate < '2011-01-01'"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_link=str; last_link=str; links=int; matched_targets=int; known_answer_counts=int; min_answers=int; max_answers=int\nfirst_link | last_link | links | matched_targets | known_answer_counts | min_answers | max_answers\n--- | --- | --- | --- | --- | --- | ---\n2010-07-21 14:47:33.0 | 2010-12-31 13:17:04.0 | 255 | 255 | 255 | 0 | 136\nSQL: SELECT MIN(l.CreationDate) AS first_link, MAX(l.CreationDate) AS last_link,\n       COUNT(*) AS links, COUNT(p.Id) AS matched_targets,\n       COUNT(p.AnswerCount) AS known_answer_counts,\n       MIN(p.AnswerCount) AS min_answers, MAX(p.AnswerCount) AS max_answers\nFROM main.postLinks AS l\nLEFT JOIN main.posts AS p ON p.Id = l.RelatedPostId\nWHERE l.CreationDate >= '2010-01-01' AND l.CreationDate < '2011-01-01'\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"vYZBEfFyOSZMfSk-IVVejY5Jf1KFbALcQNwoA02-AxA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "vYZBEfFyOSZMfSk-IVVejY5Jf1KFbALcQNwoA02-AxA",
+                "sql": "WITH RECURSIVE months(month_start) AS (\n    SELECT '2010-01-01'\n    UNION ALL\n    SELECT date(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2010-12-01'\n),\nmonthly_counts AS (\n    SELECT m.month_start, COUNT(DISTINCT p.Id) AS post_count\n    FROM months AS m\n    LEFT JOIN main.postLinks AS l\n        ON l.CreationDate >= m.month_start\n       AND l.CreationDate < date(m.month_start, '+1 month')\n    LEFT JOIN main.posts AS p\n        ON p.Id = l.RelatedPostId\n       AND p.AnswerCount <= 2\n    GROUP BY m.month_start\n)\nSELECT strftime('%Y-%m', month_start) AS month,\n       post_count,\n       ROUND(AVG(post_count) OVER (), 2) AS average_monthly_posts\nFROM monthly_counts\nORDER BY month_start\nLIMIT 12"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "12 row(s):\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month=str; post_count=int; average_monthly_posts=float\nmonth | post_count | average_monthly_posts\n--- | --- | ---\n2010-01 | 0 | 5.33\n2010-02 | 0 | 5.33\n2010-03 | 0 | 5.33\n2010-04 | 0 | 5.33\n2010-05 | 0 | 5.33\n2010-06 | 0 | 5.33\n2010-07 | 0 | 5.33\n2010-08 | 10 | 5.33\n2010-09 | 7 | 5.33\n2010-10 | 24 | 5.33\n2010-11 | 12 | 5.33\n2010-12 | 11 | 5.33\nSQL: WITH RECURSIVE months(month_start) AS (\n    SELECT '2010-01-01'\n    UNION ALL\n    SELECT date(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2010-12-01'\n),\nmonthly_counts AS (\n    SELECT m.month_start, COUNT(DISTINCT p.Id) AS post_count\n    FROM months AS m\n    LEFT JOIN main.postLinks AS l\n        ON l.CreationDate >= m.month_start\n       AND l.CreationDate < date(m.month_start, '+1 month')\n    LEFT JOIN main.posts AS p\n        ON p.Id = l.RelatedPostId\n       AND p.AnswerCount <= 2\n    GROUP BY m.month_start\n)\nSELECT strftime('%Y-%m', month_start) AS month,\n       post_count,\n       ROUND(AVG(post_count) OVER (), 2) AS average_monthly_posts\nFROM monthly_counts\nORDER BY month_start\nLIMIT 12"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH RECURSIVE months(month_start) AS (\n    SELECT '2010-01-01'\n    UNION ALL\n    SELECT date(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2010-12-01'\n),\nmonthly_counts AS (\n    SELECT m.month_start, COUNT(DISTINCT p.Id) AS post_count\n    FROM months AS m\n    LEFT JOIN main.postLinks AS l\n        ON l.CreationDate >= m.month_start\n       AND l.CreationDate < date(m.month_start, '+1 month')\n    LEFT JOIN main.posts AS p\n        ON p.Id = l.RelatedPostId\n       AND p.AnswerCount <= 2\n    GROUP BY m.month_start\n)\nSELECT strftime('%Y-%m', month_start) AS month,\n       post_count,\n       ROUND(AVG(post_count) OVER (), 2) AS average_monthly_posts\nFROM monthly_counts\nORDER BY month_start\nLIMIT 12\n```",
+          "event_parse_errors": [],
+          "rows": 12,
+          "sql": "WITH RECURSIVE months(month_start) AS (\n    SELECT '2010-01-01'\n    UNION ALL\n    SELECT date(month_start, '+1 month')\n    FROM months\n    WHERE month_start < '2010-12-01'\n),\nmonthly_counts AS (\n    SELECT m.month_start, COUNT(DISTINCT p.Id) AS post_count\n    FROM months AS m\n    LEFT JOIN main.postLinks AS l\n        ON l.CreationDate >= m.month_start\n       AND l.CreationDate < date(m.month_start, '+1 month')\n    LEFT JOIN main.posts AS p\n        ON p.Id = l.RelatedPostId\n       AND p.AnswerCount <= 2\n    GROUP BY m.month_start\n)\nSELECT strftime('%Y-%m', month_start) AS month,\n       post_count,\n       ROUND(AVG(post_count) OVER (), 2) AS average_monthly_posts\nFROM monthly_counts\nORDER BY month_start\nLIMIT 12",
+          "seconds": 32.79361287492793
+        },
+        "result": {
+          "columns": [
+            "month",
+            "post_count",
+            "average_monthly_posts"
+          ],
+          "row_count": 12,
+          "preview": [
+            [
+              "2010-01",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-02",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-03",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-04",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-05",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-06",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-07",
+              "0",
+              "5.33"
+            ],
+            [
+              "2010-08",
+              "10",
+              "5.33"
+            ],
+            [
+              "2010-09",
+              "7",
+              "5.33"
+            ],
+            [
+              "2010-10",
+              "24",
+              "5.33"
+            ],
+            [
+              "2010-11",
+              "12",
+              "5.33"
+            ],
+            [
+              "2010-12",
+              "11",
+              "5.33"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "f7a6a8ba3b0703160b52e27e7ea4d1bdcb4352d982dd4c072379be9d7b1c576e"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "8dfec014cc036dcfb96124ad28acd9f59cbe572704ac6ff8caaebb37370f0bc5",
+        "record": {
+          "instance_id": "bird146",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "201001d0077f3d7145caabfe1d6eb1b75beeb402720f135c6a31d15989837cdc",
+          "events_sha256": "fb992bc4d916831571c6a7bd722e8ec2b1e787bb7162957c399d37b7efef7c8d",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 173117,
+              "cached_input_tokens": 160640,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 776,
+              "reasoning_output_tokens": 35
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "postLinks"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "postLinks (table)\n- Id: INTEGER NOT NULL\n- CreationDate: DATETIME\n- PostId: INTEGER\n- RelatedPostId: INTEGER\n- LinkTypeId: INTEGER\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (RelatedPostId) REFERENCES posts (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"5vtI18cYZdPfAsAxntHzjIFck13zYCUo_cD7F8STbHw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "posts"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "5vtI18cYZdPfAsAxntHzjIFck13zYCUo_cD7F8STbHw",
+                "sql": "SELECT strftime('%m', l.CreationDate) AS month,\n       COUNT(*) AS qualifying_links,\n       COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\nFROM main.postLinks AS l\nJOIN main.posts AS p ON p.Id = l.RelatedPostId\nWHERE l.CreationDate >= '2010-01-01'\n  AND l.CreationDate < '2011-01-01'\n  AND p.AnswerCount <= 2\nGROUP BY month\nORDER BY month;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "5 row(s):\nResult coverage: fetched_rows=5; displayed_rows=5; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month=str; qualifying_links=int; receiving_posts=int\nmonth | qualifying_links | receiving_posts\n--- | --- | ---\n08 | 10 | 10\n09 | 8 | 7\n10 | 29 | 24\n11 | 12 | 12\n12 | 11 | 11\nSQL: SELECT strftime('%m', l.CreationDate) AS month,\n       COUNT(*) AS qualifying_links,\n       COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\nFROM main.postLinks AS l\nJOIN main.posts AS p ON p.Id = l.RelatedPostId\nWHERE l.CreationDate >= '2010-01-01'\n  AND l.CreationDate < '2011-01-01'\n  AND p.AnswerCount <= 2\nGROUP BY month\nORDER BY month\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"4uW5-1BhdbcqEBfDNK5rRQex-6dmr9ATT1RjylKJtE8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "4uW5-1BhdbcqEBfDNK5rRQex-6dmr9ATT1RjylKJtE8",
+                "expected_rows": 1,
+                "expected_columns": [
+                  "average_posts_per_month"
+                ],
+                "sql": "WITH monthly_counts AS (\n    SELECT COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\n    FROM main.postLinks AS l\n    JOIN main.posts AS p ON p.Id = l.RelatedPostId\n    WHERE l.CreationDate >= '2010-01-01'\n      AND l.CreationDate < '2011-01-01'\n      AND p.AnswerCount <= 2\n    GROUP BY strftime('%Y-%m', l.CreationDate)\n)\nSELECT ROUND(TOTAL(receiving_posts) / 12, 2) AS average_posts_per_month\nFROM monthly_counts\nLIMIT 1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_posts_per_month=float\naverage_posts_per_month\n---\n5.33\nSQL: WITH monthly_counts AS (\n    SELECT COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\n    FROM main.postLinks AS l\n    JOIN main.posts AS p ON p.Id = l.RelatedPostId\n    WHERE l.CreationDate >= '2010-01-01'\n      AND l.CreationDate < '2011-01-01'\n      AND p.AnswerCount <= 2\n    GROUP BY strftime('%Y-%m', l.CreationDate)\n)\nSELECT ROUND(TOTAL(receiving_posts) / 12, 2) AS average_posts_per_month\nFROM monthly_counts\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH monthly_counts AS (\n    SELECT COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\n    FROM main.postLinks AS l\n    JOIN main.posts AS p ON p.Id = l.RelatedPostId\n    WHERE l.CreationDate >= '2010-01-01'\n      AND l.CreationDate < '2011-01-01'\n      AND p.AnswerCount <= 2\n    GROUP BY strftime('%Y-%m', l.CreationDate)\n)\nSELECT ROUND(TOTAL(receiving_posts) / 12, 2) AS average_posts_per_month\nFROM monthly_counts\nLIMIT 1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH monthly_counts AS (\n    SELECT COUNT(DISTINCT l.RelatedPostId) AS receiving_posts\n    FROM main.postLinks AS l\n    JOIN main.posts AS p ON p.Id = l.RelatedPostId\n    WHERE l.CreationDate >= '2010-01-01'\n      AND l.CreationDate < '2011-01-01'\n      AND p.AnswerCount <= 2\n    GROUP BY strftime('%Y-%m', l.CreationDate)\n)\nSELECT ROUND(TOTAL(receiving_posts) / 12, 2) AS average_posts_per_month\nFROM monthly_counts\nLIMIT 1",
+          "seconds": 35.423090083990246
+        },
+        "result": {
+          "columns": [
+            "average_posts_per_month"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "5.33"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "c3feccefde04abccac47cf509f77192fbd1506bac604ce1cb6b32fb598589a7c"
+        }
+      }
+    }
+  ]
+}
