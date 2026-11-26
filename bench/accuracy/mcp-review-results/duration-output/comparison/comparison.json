@@ -1,0 +1,530 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-unobserved-20261127/checkpoints/008/bird",
+      "manifest_sha256": "2b2b02dfaf26f91692ceff1e0145c281dcfbb9012981a54a63cd15ca716ef9f9",
+      "scores_sha256": "048fafb18eceb1311786a03f881b4232fa63fded060ca84632a6c8d502d6029a",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "0c7953905ee455c7611652924cb341e596d7937a",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-duration-output-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "52bd01163708712dc0eb0bdb1aedf81d9eefd4d0422bb15990500af936d8679c",
+      "scores_sha256": "5d5b59f65f28bd828abd02493d122bdc37eb4f341bd8b8ec66ac6043476f5a01",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "0d7be046fb64471b9c8659bdbecb6402562c0e0d",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 1": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird278",
+        "db": "formula_1",
+        "question": "For my monthly recap I need the fastest pit stop made during any F1 race held in September 2016. Please tell me the driver's full name, the pit stop time, the name of the race where it happened, the circuit name, and the circuit location. If two or more pit stops share the fastest time, list each of them with its own driver, race, circuit name and circuit location.",
+        "evidence": "By pit stop time I mean the elapsed time of a pit stop, from the car arriving at its pit to rejoining the race."
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,12 +1,12 @@\n WITH september_stops AS (\n-    SELECT p.driverId, p.milliseconds, r.name AS race_name, r.circuitId,\n+    SELECT p.driverId, p.duration, p.milliseconds, r.name AS race_name, r.circuitId,\n            MIN(p.milliseconds) OVER () AS fastest_ms\n     FROM pitStops AS p\n     JOIN races AS r ON r.raceId = p.raceId\n     WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n )\n SELECT d.forename || ' ' || d.surname AS driver_name,\n-       s.milliseconds / 1000.0 AS pit_stop_seconds,\n+       s.duration AS pit_stop_time,\n        s.race_name,\n        c.name AS circuit_name,\n        c.location AS circuit_location\n@@ -14,4 +14,4 @@\n JOIN drivers AS d ON d.driverId = s.driverId\n JOIN circuits AS c ON c.circuitId = s.circuitId\n WHERE s.milliseconds = s.fastest_ms\n-LIMIT -1\n+LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "6c17f54711b91fe7ad9b01776bb09216d67d2bd3c167d8e7f4445308e334b4d2",
+        "record": {
+          "instance_id": "bird278",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "35b45db7fdb0141963f3c2d9ab78bdfdb7a329c1143d2f62ae7b4485ce7d7781",
+          "events_sha256": "5560699cc1f393bd75439bc98336abcaa9865707b4fb0c18f586121ac9458301",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 187560,
+              "cached_input_tokens": 175616,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 993,
+              "reasoning_output_tokens": 136
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "drivers"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "circuits"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "circuits (table)\n- circuitId: INTEGER\n- circuitRef: TEXT NOT NULL\n- name: TEXT NOT NULL\n- location: TEXT\n- country: TEXT\n- lat: REAL\n- lng: REAL\n- alt: INTEGER\n- url: TEXT NOT NULL\nPRIMARY KEY (circuitId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "pitStops"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "pitStops (table)\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- stop: INTEGER NOT NULL\n- lap: INTEGER NOT NULL\n- time: TEXT NOT NULL\n- duration: TEXT\n- milliseconds: INTEGER\nPRIMARY KEY (raceId, driverId, stop)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "races"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"38tbX_f2ZjRVVAdc-wVXIRmTsAuHXCN1w8sIodnOPD0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "38tbX_f2ZjRVVAdc-wVXIRmTsAuHXCN1w8sIodnOPD0",
+                "sql": "SELECT r.date, COUNT(*) AS stops, COUNT(d.driverId) AS matched_drivers,\n       COUNT(c.circuitId) AS matched_circuits, COUNT(p.milliseconds) AS timed_stops,\n       MIN(p.milliseconds) AS minimum_ms\nFROM races AS r\nJOIN pitStops AS p ON p.raceId = r.raceId\nLEFT JOIN drivers AS d ON d.driverId = p.driverId\nLEFT JOIN circuits AS c ON c.circuitId = r.circuitId\nWHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\nGROUP BY r.raceId, r.date"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; stops=int; matched_drivers=int; matched_circuits=int; timed_stops=int; minimum_ms=int\ndate | stops | matched_drivers | matched_circuits | timed_stops | minimum_ms\n--- | --- | --- | --- | --- | ---\n2016-09-04 | 39 | 39 | 39 | 39 | 23633\n2016-09-18 | 68 | 68 | 68 | 68 | 24308\nSQL: SELECT r.date, COUNT(*) AS stops, COUNT(d.driverId) AS matched_drivers,\n       COUNT(c.circuitId) AS matched_circuits, COUNT(p.milliseconds) AS timed_stops,\n       MIN(p.milliseconds) AS minimum_ms\nFROM races AS r\nJOIN pitStops AS p ON p.raceId = r.raceId\nLEFT JOIN drivers AS d ON d.driverId = p.driverId\nLEFT JOIN circuits AS c ON c.circuitId = r.circuitId\nWHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\nGROUP BY r.raceId, r.date\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"g_nsf9XpYiLxxyamQv539b4JrZthoEjKur-FA6Rcy1g\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_8",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "g_nsf9XpYiLxxyamQv539b4JrZthoEjKur-FA6Rcy1g",
+                "sql": "WITH september_stops AS (\n    SELECT p.driverId, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.milliseconds / 1000.0 AS pit_stop_seconds,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT -1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): driver_name=str; pit_stop_seconds=float; race_name=str; circuit_name=str; circuit_location=str\ndriver_name | pit_stop_seconds | race_name | circuit_name | circuit_location\n--- | --- | --- | --- | ---\nLewis Hamilton | 23.633 | Italian Grand Prix | Autodromo Nazionale di Monza | Monza\nDaniel Ricciardo | 23.633 | Italian Grand Prix | Autodromo Nazionale di Monza | Monza\nSQL: WITH september_stops AS (\n    SELECT p.driverId, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.milliseconds / 1000.0 AS pit_stop_seconds,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT -1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH september_stops AS (\n    SELECT p.driverId, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.milliseconds / 1000.0 AS pit_stop_seconds,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT -1\n```",
+          "event_parse_errors": [],
+          "rows": 2,
+          "sql": "WITH september_stops AS (\n    SELECT p.driverId, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.milliseconds / 1000.0 AS pit_stop_seconds,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT -1",
+          "seconds": 37.20333024999127
+        },
+        "result": {
+          "columns": [
+            "driver_name",
+            "pit_stop_seconds",
+            "race_name",
+            "circuit_name",
+            "circuit_location"
+          ],
+          "row_count": 2,
+          "preview": [
+            [
+              "Lewis Hamilton",
+              "23.633",
+              "Italian Grand Prix",
+              "Autodromo Nazionale di Monza",
+              "Monza"
+            ],
+            [
+              "Daniel Ricciardo",
+              "23.633",
+              "Italian Grand Prix",
+              "Autodromo Nazionale di Monza",
+              "Monza"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "7b34a38f8e6f017a626f32d9eed4d30dc480458d84d3fa8c5543dd08e7bb5b08"
+        }
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "43f30bc4239e2142793f17924cd40077608c2694f9df847795fb5c2b5282ab86",
+        "record": {
+          "instance_id": "bird278",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "35b45db7fdb0141963f3c2d9ab78bdfdb7a329c1143d2f62ae7b4485ce7d7781",
+          "events_sha256": "5a284d2ce93a15fbcc9ec75b64da39c04a0b298d337e4348475d23a49c9aa391",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 162673,
+              "cached_input_tokens": 150784,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 934,
+              "reasoning_output_tokens": 56
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "races"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"SNQ5dzLmMatjB7RU82JtadqoEgbbLL7uhpZwfliVqVA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "pitStops"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "pitStops (table)\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- stop: INTEGER NOT NULL\n- lap: INTEGER NOT NULL\n- time: TEXT NOT NULL\n- duration: TEXT\n- milliseconds: INTEGER\nPRIMARY KEY (raceId, driverId, stop)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "circuits"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "circuits (table)\n- circuitId: INTEGER\n- circuitRef: TEXT NOT NULL\n- name: TEXT NOT NULL\n- location: TEXT\n- country: TEXT\n- lat: REAL\n- lng: REAL\n- alt: INTEGER\n- url: TEXT NOT NULL\nPRIMARY KEY (circuitId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "drivers"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "SNQ5dzLmMatjB7RU82JtadqoEgbbLL7uhpZwfliVqVA",
+                "sql": "SELECT r.date, typeof(p.milliseconds) AS storage_type, COUNT(*) AS stops,\n       COUNT(d.driverId) AS matched_drivers, COUNT(c.circuitId) AS matched_circuits,\n       COUNT(p.duration) AS durations, MIN(p.milliseconds) AS fastest_ms\nFROM races AS r\nJOIN pitStops AS p ON p.raceId = r.raceId\nLEFT JOIN drivers AS d ON d.driverId = p.driverId\nLEFT JOIN circuits AS c ON c.circuitId = r.circuitId\nWHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\nGROUP BY r.date, typeof(p.milliseconds)"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; storage_type=str; stops=int; matched_drivers=int; matched_circuits=int; durations=int; fastest_ms=int\ndate | storage_type | stops | matched_drivers | matched_circuits | durations | fastest_ms\n--- | --- | --- | --- | --- | --- | ---\n2016-09-04 | integer | 39 | 39 | 39 | 39 | 23633\n2016-09-18 | integer | 68 | 68 | 68 | 68 | 24308\nSQL: SELECT r.date, typeof(p.milliseconds) AS storage_type, COUNT(*) AS stops,\n       COUNT(d.driverId) AS matched_drivers, COUNT(c.circuitId) AS matched_circuits,\n       COUNT(p.duration) AS durations, MIN(p.milliseconds) AS fastest_ms\nFROM races AS r\nJOIN pitStops AS p ON p.raceId = r.raceId\nLEFT JOIN drivers AS d ON d.driverId = p.driverId\nLEFT JOIN circuits AS c ON c.circuitId = r.circuitId\nWHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\nGROUP BY r.date, typeof(p.milliseconds)\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"irh6NzgBP3foOAR21OaLluog2JedzDy1ECUBMzAJDFE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_8",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "irh6NzgBP3foOAR21OaLluog2JedzDy1ECUBMzAJDFE",
+                "expected_columns": [
+                  "driver_name",
+                  "pit_stop_time",
+                  "race_name",
+                  "circuit_name",
+                  "circuit_location"
+                ],
+                "sql": "WITH september_stops AS (\n    SELECT p.driverId, p.duration, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.duration AS pit_stop_time,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms",
+                "limit": 1000
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "2 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): driver_name=str; pit_stop_time=str; race_name=str; circuit_name=str; circuit_location=str\ndriver_name | pit_stop_time | race_name | circuit_name | circuit_location\n--- | --- | --- | --- | ---\nLewis Hamilton | 23.633 | Italian Grand Prix | Autodromo Nazionale di Monza | Monza\nDaniel Ricciardo | 23.633 | Italian Grand Prix | Autodromo Nazionale di Monza | Monza\nSQL: WITH september_stops AS (\n    SELECT p.driverId, p.duration, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.duration AS pit_stop_time,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH september_stops AS (\n    SELECT p.driverId, p.duration, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.duration AS pit_stop_time,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 2,
+          "sql": "WITH september_stops AS (\n    SELECT p.driverId, p.duration, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.duration AS pit_stop_time,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT 1000",
+          "seconds": 38.099518625065684
+        },
+        "result": {
+          "columns": [
+            "driver_name",
+            "pit_stop_time",
+            "race_name",
+            "circuit_name",
+            "circuit_location"
+          ],
+          "row_count": 2,
+          "preview": [
+            [
+              "Lewis Hamilton",
+              "23.633",
+              "Italian Grand Prix",
+              "Autodromo Nazionale di Monza",
+              "Monza"
+            ],
+            [
+              "Daniel Ricciardo",
+              "23.633",
+              "Italian Grand Prix",
+              "Autodromo Nazionale di Monza",
+              "Monza"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "e3ff22b761f5f614d0bc679b4e417e3ac69941e7a9dfb5f8b33bd49b36bd1858"
+        }
+      }
+    }
+  ]
+}
