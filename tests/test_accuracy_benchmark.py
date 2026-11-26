@@ -116,7 +116,7 @@ def test_failed_predictions_stay_in_denominator(tmp_path):
 async def test_transport_retry_is_logged_bounded_and_does_not_retry_answers(
     monkeypatch,
 ):
-    import litellm
+    litellm = pytest.importorskip("litellm")
 
     from bench.spider2.providers import MeasuredLLM
     from lang2sql.core.types import Message, Role
