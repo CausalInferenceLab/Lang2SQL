@@ -418,6 +418,7 @@ async def test_output_contract_legacy_empty_result_is_not_verified():
     try:
         result = await RunSQL().run({'sql': 'SELECT 1 AS n', 'expected_columns': ['n']}, ctx)
         assert result.is_error and 'metadata unavailable' in result.content
+        assert any(e.action == 'run_sql_contract_failed' for e in await ctx.store.query('analyst'))
         unchecked = await RunSQL().run({'sql': 'SELECT 1 AS n'}, ctx)
         assert not unchecked.is_error
     finally:
