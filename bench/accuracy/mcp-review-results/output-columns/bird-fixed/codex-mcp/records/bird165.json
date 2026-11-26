@@ -1,0 +1,150 @@
+{
+  "instance_id": "bird165",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "d3ebf7a31afb200a5ce57ab2ea54116fda25b2861e16f994d8948561aa8699aa",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 174502,
+      "cached_input_tokens": 161152,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 783,
+      "reasoning_output_tokens": 84
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Player"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Player (table)\n- id: INTEGER\n- player_api_id: INTEGER\n- player_name: TEXT\n- player_fifa_api_id: INTEGER\n- birthday: TEXT\n- height: INTEGER\n- weight: INTEGER\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Player_Attributes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Player_Attributes (table)\n- id: INTEGER\n- player_fifa_api_id: INTEGER\n- player_api_id: INTEGER\n- date: TEXT\n- overall_rating: INTEGER\n- potential: INTEGER\n- preferred_foot: TEXT\n- attacking_work_rate: TEXT\n- defensive_work_rate: TEXT\n- crossing: INTEGER\n- finishing: INTEGER\n- heading_accuracy: INTEGER\n- short_passing: INTEGER\n- volleys: INTEGER\n- dribbling: INTEGER\n- curve: INTEGER\n- free_kick_accuracy: INTEGER\n- long_passing: INTEGER\n- ball_control: INTEGER\n- acceleration: INTEGER\n- sprint_speed: INTEGER\n- agility: INTEGER\n- reactions: INTEGER\n- balance: INTEGER\n- shot_power: INTEGER\n- jumping: INTEGER\n- stamina: INTEGER\n- strength: INTEGER\n- long_shots: INTEGER\n- aggression: INTEGER\n- interceptions: INTEGER\n- positioning: INTEGER\n- vision: INTEGER\n- penalties: INTEGER\n- marking: INTEGER\n- standing_tackle: INTEGER\n- sliding_tackle: INTEGER\n- gk_diving: INTEGER\n- gk_handling: INTEGER\n- gk_kicking: INTEGER\n- gk_positioning: INTEGER\n- gk_reflexes: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (player_api_id) REFERENCES Player (player_api_id)\nFOREIGN KEY (player_fifa_api_id) REFERENCES Player (player_fifa_api_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8t0wSPsbPLcGrUF0z44eJQs55_TxTXMg7p4CDiQ1Gog\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8t0wSPsbPLcGrUF0z44eJQs55_TxTXMg7p4CDiQ1Gog",
+        "sql": "SELECT\n    (SELECT COUNT(*) - COUNT(DISTINCT p.player_api_id)\n     FROM Player AS p WHERE p.height > 180) AS repeated_or_missing_player_ids,\n    (SELECT GROUP_CONCAT(DISTINCT TYPEOF(p.height))\n     FROM Player AS p) AS height_types,\n    (SELECT GROUP_CONCAT(DISTINCT TYPEOF(pa.heading_accuracy))\n     FROM Player_Attributes AS pa) AS heading_accuracy_types,\n    (SELECT COUNT(*) FROM Player_Attributes AS pa\n     WHERE EXISTS (\n         SELECT 1 FROM Player AS p\n         WHERE p.player_api_id = pa.player_api_id AND p.height > 180\n     )) AS matching_attribute_rows,\n    (SELECT COUNT(*) FROM Player_Attributes AS pa\n     JOIN Player AS p ON p.player_api_id = pa.player_api_id\n     WHERE p.height > 180) AS joined_attribute_rows"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): repeated_or_missing_player_ids=int; height_types=str; heading_accuracy_types=str; matching_attribute_rows=int; joined_attribute_rows=int\nrepeated_or_missing_player_ids | height_types | heading_accuracy_types | matching_attribute_rows | joined_attribute_rows\n--- | --- | --- | --- | ---\n0 | integer | integer,null | 98019 | 98019\nSQL: SELECT\n    (SELECT COUNT(*) - COUNT(DISTINCT p.player_api_id)\n     FROM Player AS p WHERE p.height > 180) AS repeated_or_missing_player_ids,\n    (SELECT GROUP_CONCAT(DISTINCT TYPEOF(p.height))\n     FROM Player AS p) AS height_types,\n    (SELECT GROUP_CONCAT(DISTINCT TYPEOF(pa.heading_accuracy))\n     FROM Player_Attributes AS pa) AS heading_accuracy_types,\n    (SELECT COUNT(*) FROM Player_Attributes AS pa\n     WHERE EXISTS (\n         SELECT 1 FROM Player AS p\n         WHERE p.player_api_id = pa.player_api_id AND p.height > 180\n     )) AS matching_attribute_rows,\n    (SELECT COUNT(*) FROM Player_Attributes AS pa\n     JOIN Player AS p ON p.player_api_id = pa.player_api_id\n     WHERE p.height > 180) AS joined_attribute_rows\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"s3I3L3jaWgM1IO_6K-CiUG4emzirHl-Q_jpSI3uUlT4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "s3I3L3jaWgM1IO_6K-CiUG4emzirHl-Q_jpSI3uUlT4",
+        "expected_columns": [
+          "player_name",
+          "mean_heading_accuracy"
+        ],
+        "sql": "SELECT\n    p.player_name,\n    AVG(pa.heading_accuracy) AS mean_heading_accuracy\nFROM Player AS p\nJOIN Player_Attributes AS pa\n    ON pa.player_api_id = p.player_api_id\nWHERE p.height > 180\n  AND pa.heading_accuracy IS NOT NULL\nGROUP BY p.player_api_id, p.player_name\nORDER BY mean_heading_accuracy DESC, p.player_api_id ASC\nLIMIT 10"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): player_name=str; mean_heading_accuracy=float\nplayer_name | mean_heading_accuracy\n--- | ---\nMichael Ballack | 91.8\nFernando Llorente | 91.52380952380952\nJohn Terry | 91.33333333333333\nNaldo | 90.39285714285714\nLuca Toni | 90.26470588235294\nPer Mertesacker | 90.26470588235294\nDidier Drogba | 90.23529411764706\nMiroslav Klose | 90.17647058823529\nDaniel van Buyten | 90.17647058823529\nFernando Morientes | 89.8\nSQL: SELECT\n    p.player_name,\n    AVG(pa.heading_accuracy) AS mean_heading_accuracy\nFROM Player AS p\nJOIN Player_Attributes AS pa\n    ON pa.player_api_id = p.player_api_id\nWHERE p.height > 180\n  AND pa.heading_accuracy IS NOT NULL\nGROUP BY p.player_api_id, p.player_name\nORDER BY mean_heading_accuracy DESC, p.player_api_id ASC\nLIMIT 10"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    p.player_name,\n    AVG(pa.heading_accuracy) AS mean_heading_accuracy\nFROM Player AS p\nJOIN Player_Attributes AS pa\n    ON pa.player_api_id = p.player_api_id\nWHERE p.height > 180\n  AND pa.heading_accuracy IS NOT NULL\nGROUP BY p.player_api_id, p.player_name\nORDER BY mean_heading_accuracy DESC, p.player_api_id ASC\nLIMIT 10\n```",
+  "rows": 10,
+  "sql": "SELECT\n    p.player_name,\n    AVG(pa.heading_accuracy) AS mean_heading_accuracy\nFROM Player AS p\nJOIN Player_Attributes AS pa\n    ON pa.player_api_id = p.player_api_id\nWHERE p.height > 180\n  AND pa.heading_accuracy IS NOT NULL\nGROUP BY p.player_api_id, p.player_name\nORDER BY mean_heading_accuracy DESC, p.player_api_id ASC\nLIMIT 10",
+  "seconds": 27.917710500070825
+}
