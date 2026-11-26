@@ -297,3 +297,22 @@ async def test_missing_definitions_are_reported_together_and_revoke_receipt(tmp_
             "sql": "SELECT COUNT(*) FROM orders", "definition_check_id": token
         })
         assert rejected.isError
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("limit", [-1, 0])
+async def test_invalid_fetch_limit_rejected_before_database_access(tmp_path, limit):
+    from unittest.mock import AsyncMock
+
+    from lang2sql.tools.run_sql import RunSQL
+
+    explorer = AsyncMock()
+    ctx = build_tool_context(Identity(user_id="analyst", guild_id="demo"), store_path=":memory:", explorer=explorer)
+    try:
+        result = await RunSQL().run({"sql": "SELECT 1", "limit": limit}, ctx)
+        assert result.is_error
+        assert "positive maximum row count" in result.content
+        explorer.execute.assert_not_called()
+        assert RunSQL().spec.parameters["properties"]["limit"]["minimum"] == 1
+    finally:
+        ctx.store.close()

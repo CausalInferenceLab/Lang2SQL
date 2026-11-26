@@ -53,7 +53,8 @@ class RunSQL:
                     },
                     "limit": {
                         "type": "integer",
-                        "description": "max rows (default 1000)",
+                        "minimum": 1,
+                        "description": "Positive maximum number of rows to fetch (default 1000); unlike SQLite SQL LIMIT, -1 is not supported.",
                     },
                 },
             },
@@ -111,7 +112,7 @@ class RunSQL:
             )
         sql = (args.get("sql") or "").strip()
         try:
-            limit = int(args.get("limit") or 1000)
+            limit = int(args.get("limit", 1000))
         except (TypeError, ValueError) as exc:
             logger.warning(
                 "invalid row limit scope=%s error=%s: %s",
@@ -120,6 +121,13 @@ class RunSQL:
                 exc,
             )
             limit = 1000  # tolerate a malformed limit from the model
+
+        if limit <= 0:
+            logger.warning("invalid nonpositive row limit scope=%s", ctx.identity.session_key())
+            return ToolResult(
+                call_id="", is_error=True,
+                content="Invalid limit: supply a positive maximum row count. SQL was NOT executed.",
+            )
 
         if ctx.safety is None:
             return ToolResult(
