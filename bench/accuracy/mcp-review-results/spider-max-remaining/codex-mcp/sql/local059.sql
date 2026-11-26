@@ -1,0 +1,20 @@
+WITH product_totals AS (
+    SELECT product_code, SUM(sold_quantity) AS total_quantity
+    FROM main.hardware_fact_sales_monthly
+    WHERE date >= '2021-01-01'
+      AND date < '2022-01-01'
+    GROUP BY product_code
+),
+ranked_products AS (
+    SELECT t.total_quantity,
+           ROW_NUMBER() OVER (
+               PARTITION BY p.division
+               ORDER BY t.total_quantity DESC, t.product_code
+           ) AS division_rank
+    FROM product_totals AS t
+    JOIN main.hardware_dim_product AS p ON p.product_code = t.product_code
+)
+SELECT AVG(total_quantity) AS overall_average_quantity_sold
+FROM ranked_products
+WHERE division_rank <= 3
+LIMIT 1

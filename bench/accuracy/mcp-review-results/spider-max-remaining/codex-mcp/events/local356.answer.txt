@@ -1,0 +1,54 @@
+```sql
+WITH race_positions AS (
+    SELECT p.race_id, p.driver_id, p.lap, p.position
+    FROM main.lap_positions AS p
+    JOIN main.races_ext AS r ON r.race_id = p.race_id
+    WHERE p.lap_type = 'Race'
+      AND r.is_pit_data_available = 1
+),
+pit_laps AS (
+    SELECT race_id, driver_id, lap FROM main.pit_stops
+    UNION
+    SELECT race_id, driver_id, lap + 1 FROM main.pit_stops
+),
+on_track_laps AS (
+    SELECT curr.race_id, curr.driver_id, curr.lap,
+           prev.position AS previous_position,
+           curr.position AS current_position
+    FROM race_positions AS curr
+    JOIN race_positions AS prev
+      ON prev.race_id = curr.race_id
+     AND prev.driver_id = curr.driver_id
+     AND prev.lap = curr.lap - 1
+    LEFT JOIN pit_laps AS pit
+      ON pit.race_id = curr.race_id
+     AND pit.driver_id = curr.driver_id
+     AND pit.lap = curr.lap
+    WHERE curr.lap > 1
+      AND pit.driver_id IS NULL
+),
+overtakes AS (
+    SELECT passing.driver_id AS passing_driver_id,
+           passed.driver_id AS passed_driver_id
+    FROM on_track_laps AS passing
+    JOIN on_track_laps AS passed
+      ON passed.race_id = passing.race_id
+     AND passed.lap = passing.lap
+     AND passing.previous_position > passed.previous_position
+     AND passing.current_position < passed.current_position
+),
+driver_events AS (
+    SELECT passed_driver_id AS driver_id, 1 AS times_overtaken, 0 AS passes_made
+    FROM overtakes
+    UNION ALL
+    SELECT passing_driver_id, 0, 1
+    FROM overtakes
+)
+SELECT d.full_name
+FROM driver_events AS e
+JOIN main.drivers AS d ON d.driver_id = e.driver_id
+GROUP BY d.driver_id, d.full_name
+HAVING SUM(e.times_overtaken) > SUM(e.passes_made)
+ORDER BY d.full_name
+LIMIT 1000
+```

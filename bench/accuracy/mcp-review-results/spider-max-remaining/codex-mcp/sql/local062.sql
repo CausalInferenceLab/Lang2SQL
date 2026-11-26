@@ -1,0 +1,52 @@
+WITH customer_profits AS (
+    SELECT
+        c.cust_id,
+        -- Customers without December purchases have zero monthly profit.
+        COALESCE(SUM(
+            s.quantity_sold * CAST(ROUND((k.unit_price - k.unit_cost) * 100) AS INTEGER)
+        ), 0) AS profit_cents
+    FROM main.customers AS c
+    JOIN main.countries AS n ON n.country_id = c.country_id
+    LEFT JOIN main.sales AS s
+        ON s.cust_id = c.cust_id
+       AND s.time_id >= '2021-12-01'
+       AND s.time_id < '2022-01-01'
+    LEFT JOIN main.costs AS k
+        ON k.prod_id = s.prod_id
+       AND k.time_id = s.time_id
+       AND k.channel_id = s.channel_id
+       AND k.promo_id = s.promo_id
+    WHERE n.country_iso_code = 'IT'
+    GROUP BY c.cust_id
+),
+profit_range AS (
+    SELECT
+        cust_id,
+        profit_cents,
+        MIN(profit_cents) OVER () AS low_cents,
+        MAX(profit_cents) OVER () AS high_cents
+    FROM customer_profits
+),
+bucketed_customers AS (
+    SELECT
+        cust_id,
+        profit_cents,
+        CASE
+            WHEN high_cents = low_cents THEN 1
+            ELSE MIN(10, 1 + 10 * (profit_cents - low_cents) / (high_cents - low_cents))
+        END AS bucket
+    FROM profit_range
+),
+buckets(bucket) AS (
+    VALUES (1), (2), (3), (4), (5), (6), (7), (8), (9), (10)
+)
+SELECT
+    b.bucket,
+    COUNT(p.cust_id) AS customer_count,
+    MIN(p.profit_cents) / 100.0 AS min_total_profit,
+    MAX(p.profit_cents) / 100.0 AS max_total_profit
+FROM buckets AS b
+LEFT JOIN bucketed_customers AS p ON p.bucket = b.bucket
+GROUP BY b.bucket
+ORDER BY b.bucket
+LIMIT 10
