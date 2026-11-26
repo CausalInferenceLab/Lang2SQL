@@ -1,0 +1,248 @@
+{
+  "instance_id": "bird357",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "284678d1b215e8abc38be48ab30f33416af7782d73fbb363aab52d80d261cb33",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 203879,
+      "cached_input_tokens": 191360,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1843,
+      "reasoning_output_tokens": 593
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "race"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "race (table)\n- id: INTEGER NOT NULL\n- race: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "gender"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "gender (table)\n- id: INTEGER NOT NULL\n- gender: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"d49wfT32ESFThr-Kiz51YaMnC1wXCaco38sOO91Dt5s\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "d49wfT32ESFThr-Kiz51YaMnC1wXCaco38sOO91Dt5s",
+        "sql": "SELECT\n    (SELECT GROUP_CONCAT(QUOTE(gender)) FROM main.gender) AS gender_labels,\n    COUNT(*) AS hero_count,\n    COUNT(*) - COUNT(h.weight_kg) AS null_weights,\n    COUNT(CASE WHEN h.weight_kg <= 0 THEN 1 END) AS nonpositive_weights,\n    COUNT(CASE WHEN typeof(h.weight_kg) NOT IN ('integer', 'real', 'null') THEN 1 END) AS nonnumeric_weights,\n    MIN(h.weight_kg) AS minimum_weight,\n    COUNT(CASE WHEN r.id IS NULL THEN 1 END) AS unmatched_races,\n    COUNT(CASE WHEN r.race = '-' THEN 1 END) AS dash_races,\n    COUNT(CASE WHEN r.race = '-' AND g.gender = 'Female' THEN 1 END) AS female_dash_races\nFROM main.superhero AS h\nLEFT JOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN main.gender AS g ON g.id = h.gender_id;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): gender_labels=str; hero_count=int; null_weights=int; nonpositive_weights=int; nonnumeric_weights=int; minimum_weight=int; unmatched_races=int; dash_races=int; female_dash_races=int\ngender_labels | hero_count | null_weights | nonpositive_weights | nonnumeric_weights | minimum_weight | unmatched_races | dash_races | female_dash_races\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n'Male','Female','N/A' | 750 | 64 | 172 | 0 | 0 | 4 | 295 | 97\nSQL: SELECT\n    (SELECT GROUP_CONCAT(QUOTE(gender)) FROM main.gender) AS gender_labels,\n    COUNT(*) AS hero_count,\n    COUNT(*) - COUNT(h.weight_kg) AS null_weights,\n    COUNT(CASE WHEN h.weight_kg <= 0 THEN 1 END) AS nonpositive_weights,\n    COUNT(CASE WHEN typeof(h.weight_kg) NOT IN ('integer', 'real', 'null') THEN 1 END) AS nonnumeric_weights,\n    MIN(h.weight_kg) AS minimum_weight,\n    COUNT(CASE WHEN r.id IS NULL THEN 1 END) AS unmatched_races,\n    COUNT(CASE WHEN r.race = '-' THEN 1 END) AS dash_races,\n    COUNT(CASE WHEN r.race = '-' AND g.gender = 'Female' THEN 1 END) AS female_dash_races\nFROM main.superhero AS h\nLEFT JOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN main.gender AS g ON g.id = h.gender_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Vzs_AfCuZqH7_EwFqDYZNLVxrEbwHuWy31H5zCe8_-M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Vzs_AfCuZqH7_EwFqDYZNLVxrEbwHuWy31H5zCe8_-M",
+        "sql": "WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT\n    CASE WHEN r.id IS NULL THEN 'unmatched race'\n         WHEN f.race_id IS NULL THEN 'race with no female heroes'\n         ELSE 'race with female heroes' END AS population,\n    COUNT(*) AS heroes,\n    SUM(h.weight_kg IS NULL) AS null_weights,\n    SUM(h.weight_kg IS 0) AS zero_weights,\n    SUM(h.weight_kg IS 0 AND h.height_cm IS 0) AS zero_weight_and_height,\n    SUM(h.weight_kg IS 0 AND h.height_cm > 0) AS zero_weight_positive_height,\n    SUBSTR(GROUP_CONCAT(CASE WHEN h.weight_kg IS 0 THEN h.superhero_name END, ', '), 1, 450) AS zero_weight_examples\nFROM main.superhero AS h\nLEFT JOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nGROUP BY population;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nObserved value types (displayed rows): population=str; heroes=int; null_weights=int; zero_weights=int; zero_weight_and_height=int; zero_weight_positive_height=int; zero_weight_examples=NoneType,str\npopulation | heroes | null_weights | zero_weights | zero_weight_and_height | zero_weight_positive_height | zero_weight_examples\n--- | --- | --- | --- | --- | --- | ---\nrace with female heroes | 653 | 61 | 140 | 127 | 13 | Adam Monroe, Alex Mercer, Alex Woolsly, Ando Masahashi, Angela, Anti-Spawn, Aquababy, Arsenal, Azrael, Aztar, Bananaman, Batgirl III, Beetle, Ben 10, Big Daddy, Bill Harken, Bionic Woman, Bird-Brain, Blizzard, Bloodhawk, Bloodwraith, Blue Beetle, Blue Beetle III, Bomb Queen, Box IV, Brundlefly, Bushido, Cameron Hicks, Captain Cold, Captain Epic, Captain Hindsight, Cerebra, Chameleon, Claire Bennet, Clea, Cogliostro, Crimson Crusader, Cy-Gor, Cybo\nrace with no female heroes | 93 | 3 | 32 | 23 | 9 | Abraxas, Angel, Beyonder, Birdman, Black Flash, Boba Fett, Captain Planet, Captain Universe, Darth Maul, Data, Dr Manhattan, Greedo, Jar Jar Binks, King Shark, Living Tribunal, Man of Miracles, Master Chief, Mister Knife, Mister Mxyzptlk, Mogo, One-Above-All, Parademon, Q, Sauron, Spectre, Spider-Carnage, Surtur, Swamp Thing, The Presence, Trigon, Venompool, Ymir\nunmatched race | 4 | 0 | 0 | 0 | 0 | None\nSQL: WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT\n    CASE WHEN r.id IS NULL THEN 'unmatched race'\n         WHEN f.race_id IS NULL THEN 'race with no female heroes'\n         ELSE 'race with female heroes' END AS population,\n    COUNT(*) AS heroes,\n    SUM(h.weight_kg IS NULL) AS null_weights,\n    SUM(h.weight_kg IS 0) AS zero_weights,\n    SUM(h.weight_kg IS 0 AND h.height_cm IS 0) AS zero_weight_and_height,\n    SUM(h.weight_kg IS 0 AND h.height_cm > 0) AS zero_weight_positive_height,\n    SUBSTR(GROUP_CONCAT(CASE WHEN h.weight_kg IS 0 THEN h.superhero_name END, ', '), 1, 450) AS zero_weight_examples\nFROM main.superhero AS h\nLEFT JOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nGROUP BY population\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8yuHsFUjK5Nhwndhj4zmFf4XYmZZZOBbne_wAMz-U7A\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8yuHsFUjK5Nhwndhj4zmFf4XYmZZZOBbne_wAMz-U7A",
+        "sql": "SELECT\n    CASE WHEN weight_kg IS NULL THEN 'NULL'\n         WHEN weight_kg = 0 THEN 'zero'\n         ELSE 'positive' END AS weight_status,\n    COUNT(*) AS heroes,\n    COUNT(CASE WHEN height_cm IS NULL THEN 1 END) AS null_heights,\n    COUNT(CASE WHEN height_cm = 0 THEN 1 END) AS zero_heights,\n    COUNT(CASE WHEN height_cm > 0 THEN 1 END) AS positive_heights\nFROM main.superhero\nGROUP BY weight_status;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nObserved value types (displayed rows): weight_status=str; heroes=int; null_heights=int; zero_heights=int; positive_heights=int\nweight_status | heroes | null_heights | zero_heights | positive_heights\n--- | --- | --- | --- | ---\nNULL | 64 | 58 | 0 | 6\npositive | 514 | 0 | 5 | 509\nzero | 172 | 0 | 150 | 22\nSQL: SELECT\n    CASE WHEN weight_kg IS NULL THEN 'NULL'\n         WHEN weight_kg = 0 THEN 'zero'\n         ELSE 'positive' END AS weight_status,\n    COUNT(*) AS heroes,\n    COUNT(CASE WHEN height_cm IS NULL THEN 1 END) AS null_heights,\n    COUNT(CASE WHEN height_cm = 0 THEN 1 END) AS zero_heights,\n    COUNT(CASE WHEN height_cm > 0 THEN 1 END) AS positive_heights\nFROM main.superhero\nGROUP BY weight_status\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"dMNIl4QTwKTveMtWHIj1YtR1fkn395wN3unKsdn402k\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "dMNIl4QTwKTveMtWHIj1YtR1fkn395wN3unKsdn402k",
+        "sql": "WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT AVG(NULLIF(h.weight_kg, 0)) AS average_weight_kg\nFROM main.superhero AS h\nJOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nWHERE f.race_id IS NULL;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): average_weight_kg=float\naverage_weight_kg\n---\n156709.08620689655\nSQL: WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT AVG(NULLIF(h.weight_kg, 0)) AS average_weight_kg\nFROM main.superhero AS h\nJOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nWHERE f.race_id IS NULL\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT AVG(NULLIF(h.weight_kg, 0)) AS average_weight_kg\nFROM main.superhero AS h\nJOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nWHERE f.race_id IS NULL;\n```",
+  "rows": 1,
+  "sql": "WITH female_races AS (\n    SELECT DISTINCT h.race_id\n    FROM main.superhero AS h\n    JOIN main.gender AS g ON g.id = h.gender_id\n    WHERE g.gender = 'Female'\n)\nSELECT AVG(NULLIF(h.weight_kg, 0)) AS average_weight_kg\nFROM main.superhero AS h\nJOIN main.race AS r ON r.id = h.race_id\nLEFT JOIN female_races AS f ON f.race_id = r.id\nWHERE f.race_id IS NULL;",
+  "seconds": 50.78523987508379
+}

@@ -1,0 +1,269 @@
+{
+  "instance_id": "bird365",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "dc26dac152c57c29e60d0b98aaaa6351ced790e7a4042aeb6694560b17d77fb1",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 278689,
+      "cached_input_tokens": 251520,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 3590,
+      "reasoning_output_tokens": 2019
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "gender"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "gender (table)\n- id: INTEGER NOT NULL\n- gender: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superpower"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superpower (table)\n- id: INTEGER NOT NULL\n- power_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hero_power"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hero_power (table)\n- hero_id: INTEGER\n- power_id: INTEGER\nFOREIGN KEY (hero_id) REFERENCES superhero (id)\nFOREIGN KEY (power_id) REFERENCES superpower (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Ga1dGgDvVfyuNTHTpsCNzlv-6H59ekVYbSrMtg5pAak\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Ga1dGgDvVfyuNTHTpsCNzlv-6H59ekVYbSrMtg5pAak",
+        "sql": "SELECT s.id, g.gender, s.superhero_name, s.full_name\nFROM main.superhero AS s\nJOIN main.gender AS g ON g.id = s.gender_id\nWHERE g.gender IN ('Male', 'Female')\nORDER BY s.id",
+        "limit": 1000
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "722 row(s):\nObserved value types (displayed rows): id=int; gender=str; superhero_name=str; full_name=NoneType,str\nid | gender | superhero_name | full_name\n--- | --- | --- | ---\n1 | Male | 3-D Man | Charles Chandler\n2 | Male | A-Bomb | Richard Milhouse Jones\n3 | Male | Abe Sapien | Abraham Sapien\n4 | Male | Abin Sur | -\n5 | Male | Abomination | Emil Blonsky\n6 | Male | Abraxas | Abraxas\n7 | Male | Absorbing Man | None\n8 | Male | Adam Monroe | -\n9 | Male | Adam Strange | Adam Strange\n10 | Female | Agent 13 | Sharon Carter\n11 | Male | Agent Bob | Bob\n12 | Male | Agent Zero | Christoph Nord\n13 | Male | Air-Walker | Gabriel Lan\n14 | Male | Ajax | None\n15 | Male | Alan Scott | None\n16 | Male | Alex Mercer | Alexander J. Mercer\n17 | Male | Alex Woolsly | Alex Woolsly\n18 | Male | Alfred Pennyworth | Alfred Thaddeus Crane Pennyworth\n19 | Male | Alien | Xenomorph\n20 | Male | Allan Quatermain | None\n21 | Male | Amazo | -\n22 | Male | Ammo | -\n23 | Male | Ando Masahashi | Ando Masahashi\n24 | Male | Angel | Liam\n25 | Male | Angel | Liam\n26 | Female | Angel Dust | Christina\n27 | Female | Angel Salvadore | Angel Salvadore Bohusk\n28 | Female | Angela | -\n29 | Male | Animal Man | Bernhard Baker\n30 | Male | Annihilus | Annihilus\n31 | Male | Ant-Man | Henry Jonathan Pym\n32 | Male | Ant-Man II | Scott Lang\n33 | Male | Anti-Monitor | None\n34 | Male | Anti-Spawn | Jason Wynn\n35 | Male | Anti-Venom | Edward Charles Allan Brock\n36 | Male | Apocalypse | En Sabah Nur\n37 | Male | Aquababy | Arthur Curry, Jr.\n38 | Male | Aqualad | Garth\n39 | Male | Aquaman | Orin\n40 | Female | Arachne | Julia Carpenter\n41 | Male | Archangel | Warren Kenneth Worthington III\n42 | Female | Arclight | Philippa Sontag\n43 | Female | Ardina | -\n44 | Male | Ares | -\n45 | Male | Ares | -\n46 | Female | Ariel | Ariel\n47 | Female | Armor | Hisako Ichiki\n48 | Male | Arsenal | Roy William Harper, Jr.\n49 | Male | Astro Boy | None\n50 | Male | Atlas | -\n… (722 rows total)\nSQL: SELECT s.id, g.gender, s.superhero_name, s.full_name\nFROM main.superhero AS s\nJOIN main.gender AS g ON g.id = s.gender_id\nWHERE g.gender IN ('Male', 'Female')\nORDER BY s.id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rQTynVQQn61hinlPvdsFc7msrEEkErozz5Aebm3HJ2Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rQTynVQQn61hinlPvdsFc7msrEEkErozz5Aebm3HJ2Y",
+        "sql": "SELECT (s.id - 1) / 25 AS batch,\n       GROUP_CONCAT(s.id || ': ' || TRIM(s.full_name) ||\n             CASE WHEN s.superhero_name = TRIM(s.full_name) THEN ' [same]' ELSE '' END, ' / ') AS names\nFROM main.superhero AS s\nJOIN main.gender AS g ON g.id = s.gender_id\nWHERE g.gender IN ('Male', 'Female')\n  AND (TRIM(s.full_name) LIKE '% %' OR s.full_name GLOB '*' || CHAR(9) || '*')\nGROUP BY batch\nORDER BY batch"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "31 row(s):\nObserved value types (displayed rows): batch=int; names=str\nbatch | names\n--- | ---\n0 | 1: Charles Chandler / 2: Richard Milhouse Jones / 3: Abraham Sapien / 5: Emil Blonsky / 9: Adam Strange [same] / 10: Sharon Carter / 12: Christoph Nord / 13: Gabriel Lan / 16: Alexander J. Mercer / 17: Alex Woolsly [same] / 18: Alfred Thaddeus Crane Pennyworth / 23: Ando Masahashi [same]\n1 | 27: Angel Salvadore Bohusk / 29: Bernhard Baker / 31: Henry Jonathan Pym / 32: Scott Lang / 34: Jason Wynn / 35: Edward Charles Allan Brock / 36: En Sabah Nur / 37: Arthur Curry, Jr. / 40: Julia Carpenter / 41: Warren Kenneth Worthington III / 42: Philippa Sontag / 47: Hisako Ichiki / 48: Roy William Harper, Jr.\n2 | 52: Erik Stephan Josten / 53: Erik Stephan Josten / 54: Albert Pratt / 55: Salu Digby / 56: Raymond Palmer / 58: Ryan Choi / 59: Jeanne-Marie Beaubier / 61: Michael Washington Lane / 65: Sean Cassidy / 66: Roberto Velasquez / 67: Mary Elizabeth Kane / 68: Barbara Gordon / 69: Helena Rosa Bertinelli / 70: Cassandra Cain / 72: Stephanie Brown / 73: Bruce Wayne / 74: Richard John Grayson / 75: Terrence McGinnis\n3 | 76: Lemar Hoskins / 79: Henry Philip McCoy / 80: Garfield Mark Logan / 82: Benjamin Kirby Tennyson / 83: Beta Ray Bill (translation of his Korbinite name) / 86: Barda Free / 87: Damon Macready / 88: Frederick Foswell / 91: Carol Susan Jane Danvers / 92: Jamie Wells Sommers / 96: Ray Randal / 97: Lucas Bishop\n4 | 101: Blackagar Boltagon / 102: Dinah Drake Lance / 103: Dinah Laurel Lance / 104: Felicia Hardy / 107: Dane Whitman / 108: Jefferson Pierce / 109: Tanya Sealy / 113: Yelena Belova / 115: Joseph Manfredi / 117: Eric Brooks / 120: Clarice Ferguson / 122: Donald Gill / 123: Frederick J. Dukes / 124: Jackie Lukus / 125: Lemuel Krug\n5 | 126: Sean Dolan / 127: Daniel Garrett / 128: Theodore Kord / 129: Jaime Reyes / 133: Tabitha Smith / 135: Michael Jon Carter / 139: Vril Dox / 140: Querl Dox / 141: Jericho Drumm / 143: Sethaniel Brundle / 144: Buffy Anne Summers / 146: Karen Beecher-Duncan / 148: Ryuko Orsono / 149: Nathan Christopher Charles Summers Dayspring\n6 | 153: Steven Grant Rogers / 154: Nathaniel Christopher Adam / 155: Brian Braddock / 156: Leonard Snart / 158: Jack Brolin / 162: Frederick Christopher Freeman / 167: Shirlee Bryant / 169: Selina Kyle / 172: Shakti Haddad / 173: Jonothon Evan Starsmore / 174: Dmitri Anatoly Nikolayevich Smerdyakov / 175: Dmitri Anatoly Nikolayevich Smerdyakov\n7 | 176: Kevin Sidney / 177: Priscilla Rich / 178: Deborah Domaine / 179: Barbara Ann Minerva / 183: Nathaniel Heywood / 184: Claire Bennet [same] / 186: Tyrone Johnson / 187: William Tockman / 191: Piotr Nikolaievitch Rasputin / 192: Vanessa Carlysle / 193: Christopher Summers / 194: Burchell Clemens / 195: Rory Destine / 196: Anton Vanko / 197: Crystallia Amaquelin Maximoff / 200: Victor Stone\n8 | 201: Henry Henshaw / 202: Scott Summers / 204: Tandy Bowen / 206: Daphne Powell [same] / 208: Christopher Powell / 209: Peyton Westlake / 212: Laynia Petrovna / 214: Anakin Skywalker / 215: Dashiell Robert Parr / 217: Alison Blaire / 218: Boston Brand / 220: Floyd Lawton / 221: Luther Manning / 222: Slade Joseph Wilson / 225: Willis Stryker\n9 | 226: Daniel Lawrence Hawkins / 227: Leonard Samson / 228: Victor von Doom / 229: Kristoff Vernard / 230: Kent Nelson / 231: Otto Octavius / 232: Stephen Vincent Strange / 233: Neena Thurman / 235: Donna Hinckley Stacey Troy / 239: Jonathan Osterman / 240: Arthur Sampson Douglas / 242: Helen Parr / 243: Maxwell Dillon / 244: Elektra Natchios / 246: Ralph Dibny / 247: Emma Frost [same]\n10 | 252: Jason Blood / 254: Dargin Bokk / 255: Bennet du Paris / 257: Samuel Thomas Wilson / 259: Faora Hu-Ul / 263: Bonita Juarez / 265: Angelica Jones / 266: Jason Rusch / 267: Ronald Raymond / 269: Jason Peter Garrick / 271: Bartholomew Henry Allen / 272: Wallace Rudolph West / 273: Bartholomew Allen II / 275: Franklin Benjamin Richards\n11 | 277: Joanna Cargill / 280: Remy Etienne LeBeau / 281: Gamora Zen Whoberi Ben Titan / 282: Richard Ethan Morse / 283: Gary Bell [same] / 285: Tyler Dayspring / 288: Henry Jonathan Pym / 290: Doris Zuel / 292: Madelyne Jennifer Pryor / 300: Greg Willis\n12 | 302: Oliver Jonas Queen / 304: Harold Osborn / 306: Phillip Benjamin Urich / 307: Alan Ladd Wellington Scott / 308: Guy Darrin Gardner / 309: John Stewart / 311: Jessica Viviana Cruz / 313: Dr. James McDonald Hudson / 316: Han Solo [same] / 317: John Hancock / 318: Harleen Francis Quinzel / 321: Henry Hall / 322: Clinton Francis Barton / 323: Katherine Elizabeth Bishop / 325: Carter Hall\n13 | 326: Shayera Hol / 327: Sharon Parker / 328: Shayera Thal / 330: Mick Rory / 332: Anung Un Rama / 334: Daimon Hellstrom / 336: Hiro Nakamura [same] / 337: Mindy McCready / 338: Roderick Kingsley / 339: Monet St. Croix / 340: Hope Summers [same] / 341: Howard (Last name unrevealed) / 342: Robert Bruce Banner / 343: Jonathan Lowell Spencer Storm / 344: Helena Rosa Bertinelli / 345: Paige Elisabeth Guthrie / 347: Morris Bench / 349: Robert Louis Drake / 350: Bartholomew Allen II\n14 | 351: Henry Walton Jones Jr. / 353: Eric Gitter / 355: Daniel Thomas Rand-K'ai / 356: Anthony Edward Stark / 357: Obadiah Stane / 358: Adrianna Tomaz / 360: Jonathan Hart / 361: Jac-jack Parr / 363: James Bond / 364: James Tiberius Kirk / 368: Jean Grey-Summers / 370: Jennifer Kale [same] / 371: Jessica Belle Chambers / 375: Billy Russo\n15 | 376: Jim Powell [same] / 377: JJ Powell [same] / 379: John Constantine [same] / 381: John Wraith [same] / 382: Jack Napier / 383: Helen Takahama / 384: Jubilation Lee / 385: Joseph Dredd / 386: Cain Marko / 388: Vance Astrovik / 391: Nathaniel Richards / 393: Kathryn M. Janeway / 395: Kevin Ethan Levin / 396: Dave Lizewski / 397: Wallace Rudolph West / 398: Bartholomew Allen II / 399: Waylon Jones\n16 | 404: Wilson Grant Fisk / 405: Ulysses Klaw / 408: Alyosha Kravinoff / 410: Krypto the Superdog / 414: Yuriko Oyama / 415: Samuel Sterns / 419: Alexander 'Lex' Joseph Luthor / 420: Ayla Ranzz / 421: Garth Ranzz / 422: Mekt Ranzz / 425: Elizabeth Anne Sherman\n17 | 426: Curtis Connors / 428: Loki Laufeyson / 431: Luke Cage [same] / 433: Luke Skywalker [same] / 434: Luna Maximoff / 436: Abner Jenkins / 438: Erik Magnus Lensherr / 439: David Reid / 442: Robert Kirkland Langstrom / 443: Dr. Theodore Sallis / 444: John Jameson / 447: J'onn J'onzz / 448: Rachel Anne Summers\n18 | 451: Kent Connor / 452: Matthew Parkman / 453: Christopher Bradley / 455: Maya Herrera [same] / 456: Medusalith Amaquelin Boltagon / 457: Tabitha Smith / 460: John Corben / 461: Rex Mason / 464: Micah Sanders [same] / 466: Gim Allon / 467: Calvin Montgomery Rankin / 469: Charlotte Gage-Radcliffe / 470: M'gann M'orzz / 471: Reed Richards / 472: Victor Fries / 474: Mr. Mxyzptlk / 475: Dr. Nathaniel Essex\n19 | 476: Victor Zsasz / 477: Barbara Morse / 482: Edgar William Jacobi / 483: Mark Raxton / 484: Nathaniel Christopher Adam / 485: Monica Dawson [same] / 486: Marc Spector / 487: Dr. Karla Sofen / 489: Kevin Sydney / 490: Moses Magnum [same] / 492: Robert Parr / 493: Sharon Ventura / 494: James Arthur / 495: Quentin Beck / 496: Raven Darkholme / 498: Aquaria Nautica Neptunia / 499: Namorita Prentiss\n20 | 504: Nicholas Joseph Fury / 505: Kurt Wagner / 506: Richard John Grayson / 507: Nicole Sanders / 509: Daniel Dreiberg / 510: Jean-Paul Beaubier / 511: Richard Rider / 514: Luke O'Brian / 515: Arkady Gregorivich / 520: Barbara Gordon / 521: Amon Tomaz / 523: Adrian Alexander Veidt\n21 | 528: Robert Baldwin / 529: Oswald Chesterfield Cobblepot / 530: Peter Petrelli [same] / 531: Christopher Walker / 532: Tinya Wazzo / 534: Jean Grey-Summers / 537: Patrick O'Brian / 538: Bette Sans Souci / 539: Pamela Lillian Isley / 540: Lorna Sally Dane / 541: Kara Zor-L / 544: Charles Francis Xavier / 545: Eobard Thawne / 546: Nels Van Adder / 547: Elizabeth Braddock / 548: Francis Castiglione / 549: Zebediah Killgrave / 550: St. John Allerdyce\n22 | 552: Daisy Louise Johnson / 554: Charles Victor Szasz / 555: Pietro Django Maximoff / 556: Maxwell Jordan / 557: Ra's Al Ghul [same] / 561: Rachel Roth / 562: Raymond C. Terrill / 563: Douglas Scott / 565: Jason Peter Todd / 566: Thaddeus E. Ross / 567: Chris Genovese / 568: Timothy Jackson Drake / 569: Johann Shmidt / 575: Aleksei Mikhailovich Sytsevich\n23 | 576: Richard Rogers Flag / 577: Edward Nigma / 580: Richard John Grayson / 581: Jason Peter Todd / 582: Timothy Jackson Drake / 583: Damian Wayne / 584: Carrie Kelley / 585: Alexander James Murphy / 586: Rocket Raccoon [same] / 587: Anna Marie / 589: Walter Joseph Kovacs / 590: Victor Creed / 593: Walter Langkowski / 594: Imra Ardeen-Ranzz / 597: Jonathan Crane / 598: Benjamin Reilly / 599: Kaine Parker / 600: Wanda Maximoff\n24 | 601: Elaine Coll / 602: MacDonald Gargan / 603: Sebastian Hiram Shaw / 604: Robert Reynolds / 608: Katherine Pryde / 610: Gaveedra Seven / 611: William Joseph Batson / 612: Jennifer Walters / 614: Sharon Ventura / 615: Herman Schultz / 616: Frances Louise Barrison / 621: Laurie Juspeczyk / 622: Norrin Radd / 623: Maria de Guadalupe Santiago / 625: Thaal Sinestro\n25 | 628: Theresa Rourke Cassidy / 632: Yurrd the Unknown / 633: Cyrus Gold / 634: Melissa Joan Gold / 635: Thaddeus Bach / 636: Al Simmons / 640: Thea Dearden Queen / 641: Benjamin Reilly / 642: May 'Mayday' Parker / 643: Gwendolyne Stacy / 644: Peter Benjamin Parker / 646: Jessica Drew / 648: Martha Franklin\n26 | 653: Peter Jason Quill / 656: Courtney Whitmore / 657: Virgil Ovid Hawkins / 658: John Henry Irons / 659: Stephanie Powell [same] / 661: Ororo Munroe / 663: Roberto DaCosta / 664: Kon-El / Conner Kent / 666: Kara Zor-El / 667: Clark Joseph Kent (Kal-El) / 669: Alec Holland / 670: Fritz von Meyer / 671: Gabriel Gray / 672: Everett Thomas / 673: Cyberdyne Systems Series 1000 Terminator / 674: Cyberdyne Systems Series 800 Terminator Model 101 / 675: Cyberdyne Systems Series 850 Terminator\n27 | 676: Cyberdyne Systems Series X Terminator / 678: Angel Salvadore Bohusk / 682: Edward Morgen Blake / 684: Benjamin Jacob Grimm / 685: Thor Odinson / 687: John Proudstar / 690: Eric Kevin Masterson / 692: Todd Arliss / 693: Greer Grant Nelson / 694: Phineas Mason / 696: Mortimer Toynbee / 698: Tracy Strauss [same]\n28 | 701: Luornu Durgo / 703: Harvey Dent / 712: Edward Charles Allan Brock / 713: Angelo Fortunato / 714: MacDonald Gargan / 717: Francisco Paco Ramon / 719: Heather McNeil Hudson / 721: Violet Parr [same] / 724: Mari Jiwe McCabe / 725: Gabriel Summers\n29 | 726: Adrian Toomes / 727: Hubert Carpent / 728: James Rupert Rhodes / 730: Adam Warlock / 731: Emil LaSalle / 732: James Proudstar / 733: Janet Van Dyne / 735: Weapon XI [same] / 737: Emma Grace Frost / 738: Drake Burroughs / 741: Rahne Sinclair / 742: James Howlett / 743: Cassandra Elizabeth Sandsmark / 744: Simon Williams / 745: Diana of Themyscira / 747: Wyatt Wingfoot [same] / 748: Laura Kinney / 749: Nate Grey\n30 | 752: Rita DeMara / 756: Hunter Zolomon\nSQL: SELECT (s.id - 1) / 25 AS batch,\n       GROUP_CONCAT(s.id || ': ' || TRIM(s.full_name) ||\n             CASE WHEN s.superhero_name = TRIM(s.full_name) THEN ' [same]' ELSE '' END, ' / ') AS names\nFROM main.superhero AS s\nJOIN main.gender AS g ON g.id = s.gender_id\nWHERE g.gender IN ('Male', 'Female')\n  AND (TRIM(s.full_name) LIKE '% %' OR s.full_name GLOB '*' || CHAR(9) || '*')\nGROUP BY batch\nORDER BY batch\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"fFVB9_Gt6KS6R2J0PEvJDxuU2qMdIlowPpwte2JQEMk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "fFVB9_Gt6KS6R2J0PEvJDxuU2qMdIlowPpwte2JQEMk",
+        "sql": "WITH power_counts AS (\n    SELECT hp.hero_id, COUNT(*) AS record_count, COUNT(DISTINCT p.id) AS power_count\n    FROM main.hero_power AS hp\n    LEFT JOIN main.superpower AS p ON p.id = hp.power_id\n    GROUP BY hp.hero_id\n),\nnames AS (\n    SELECT s.id, g.gender, s.superhero_name, TRIM(s.full_name) AS full_name, pc.record_count, pc.power_count\n    FROM main.superhero AS s\n    JOIN main.gender AS g ON g.id = s.gender_id\n    LEFT JOIN power_counts AS pc ON pc.hero_id = s.id\n    WHERE g.gender IN ('Male', 'Female')\n)\nSELECT gender, 'all heroes' AS category, COUNT(*) AS heroes,\n       COUNT(record_count) AS heroes_with_power_records, SUM(COALESCE(power_count, 0)) AS powers,\n       SUM(COALESCE(record_count - power_count, 0)) AS extra_power_records\nFROM names\nGROUP BY gender\nUNION ALL\nSELECT gender, 'space in full name', COUNT(*), COUNT(record_count), SUM(COALESCE(power_count, 0)),\n       SUM(COALESCE(record_count - power_count, 0))\nFROM names\nWHERE full_name LIKE '% %'\nGROUP BY gender\nUNION ALL\nSELECT gender, COALESCE(full_name, '[NULL]'), 1, record_count IS NOT NULL, COALESCE(power_count, 0),\n       COALESCE(record_count - power_count, 0)\nFROM names\nWHERE id IN (83, 341, 410, 431, 474, 557, 586, 587, 610, 632, 673, 674, 675, 676, 730, 735, 745)\n   OR (full_name NOT LIKE '% %' AND full_name GLOB '*[^a-zA-Z-]*')"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "24 row(s):\nObserved value types (displayed rows): gender=str; category=str; heroes=int; heroes_with_power_records=int; powers=int; extra_power_records=int\ngender | category | heroes | heroes_with_power_records | powers | extra_power_records\n--- | --- | --- | --- | --- | ---\nFemale | all heroes | 203 | 175 | 1295 | 0\nMale | all heroes | 519 | 460 | 4350 | 0\nFemale | space in full name | 133 | 120 | 914 | 0\nMale | space in full name | 306 | 279 | 2408 | 0\nMale | Beta Ray Bill (translation of his Korbinite name) | 1 | 1 | 7 | 0\nMale | T'Challa | 1 | 1 | 13 | 0\nMale | Howard (Last name unrevealed) | 1 | 0 | 0 | 0\nMale | Krypto the Superdog | 1 | 1 | 14 | 0\nMale | Luke Cage | 1 | 1 | 6 | 0\nMale | John-117 | 1 | 1 | 11 | 0\nMale | Mr. Mxyzptlk | 1 | 1 | 31 | 0\nMale | Ra's Al Ghul | 1 | 1 | 8 | 0\nMale | Rocket Raccoon | 1 | 1 | 11 | 0\nFemale | Anna Marie | 1 | 1 | 2 | 0\nMale | Gaveedra Seven | 1 | 1 | 6 | 0\nMale | Yurrd the Unknown | 1 | 1 | 2 | 0\nFemale | Koriand'r | 1 | 1 | 7 | 0\nMale | Cyberdyne Systems Series 1000 Terminator | 1 | 1 | 32 | 0\nMale | Cyberdyne Systems Series 800 Terminator Model 101 | 1 | 1 | 16 | 0\nMale | Cyberdyne Systems Series 850 Terminator | 1 | 1 | 17 | 0\nFemale | Cyberdyne Systems Series X Terminator | 1 | 1 | 33 | 0\nMale | Adam Warlock | 1 | 1 | 9 | 0\nMale | Weapon XI | 1 | 1 | 7 | 0\nFemale | Diana of Themyscira | 1 | 1 | 30 | 0\nSQL: WITH power_counts AS (\n    SELECT hp.hero_id, COUNT(*) AS record_count, COUNT(DISTINCT p.id) AS power_count\n    FROM main.hero_power AS hp\n    LEFT JOIN main.superpower AS p ON p.id = hp.power_id\n    GROUP BY hp.hero_id\n),\nnames AS (\n    SELECT s.id, g.gender, s.superhero_name, TRIM(s.full_name) AS full_name, pc.record_count, pc.power_count\n    FROM main.superhero AS s\n    JOIN main.gender AS g ON g.id = s.gender_id\n    LEFT JOIN power_counts AS pc ON pc.hero_id = s.id\n    WHERE g.gender IN ('Male', 'Female')\n)\nSELECT gender, 'all heroes' AS category, COUNT(*) AS heroes,\n       COUNT(record_count) AS heroes_with_power_records, SUM(COALESCE(power_count, 0)) AS powers,\n       SUM(COALESCE(record_count - power_count, 0)) AS extra_power_records\nFROM names\nGROUP BY gender\nUNION ALL\nSELECT gender, 'space in full name', COUNT(*), COUNT(record_count), SUM(COALESCE(power_count, 0)),\n       SUM(COALESCE(record_count - power_count, 0))\nFROM names\nWHERE full_name LIKE '% %'\nGROUP BY gender\nUNION ALL\nSELECT gender, COALESCE(full_name, '[NULL]'), 1, record_count IS NOT NULL, COALESCE(power_count, 0),\n       COALESCE(record_count - power_count, 0)\nFROM names\nWHERE id IN (83, 341, 410, 431, 474, 557, 586, 587, 610, 632, 673, 674, 675, 676, 730, 735, 745)\n   OR (full_name NOT LIKE '% %' AND full_name GLOB '*[^a-zA-Z-]*')\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"dmnHTDx5sPZcyy2BPFPHgLq3udPp47wIdY-02-Q8gxE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_13",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "dmnHTDx5sPZcyy2BPFPHgLq3udPp47wIdY-02-Q8gxE",
+        "sql": "WITH hero_power_counts AS (\n    SELECT s.id, g.gender, COUNT(hp.power_id) AS power_count\n    FROM main.superhero AS s\n    JOIN main.gender AS g ON g.id = s.gender_id\n    LEFT JOIN main.hero_power AS hp ON hp.hero_id = s.id\n    WHERE g.gender = 'Male'\n       OR (\n           g.gender = 'Female'\n           AND TRIM(s.full_name) LIKE '% %'\n           AND TRIM(s.full_name) NOT IN (\n               'Anna Marie',\n               'Cyberdyne Systems Series X Terminator',\n               'Diana of Themyscira'\n           )\n       )\n    GROUP BY s.id, g.gender\n)\nSELECT ROUND(AVG(CASE WHEN gender = 'Male' THEN power_count END), 2) AS male_average,\n       ROUND(AVG(CASE WHEN gender = 'Female' THEN power_count END), 2) AS female_average\nFROM hero_power_counts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): male_average=float; female_average=float\nmale_average | female_average\n--- | ---\n8.38 | 6.53\nSQL: WITH hero_power_counts AS (\n    SELECT s.id, g.gender, COUNT(hp.power_id) AS power_count\n    FROM main.superhero AS s\n    JOIN main.gender AS g ON g.id = s.gender_id\n    LEFT JOIN main.hero_power AS hp ON hp.hero_id = s.id\n    WHERE g.gender = 'Male'\n       OR (\n           g.gender = 'Female'\n           AND TRIM(s.full_name) LIKE '% %'\n           AND TRIM(s.full_name) NOT IN (\n               'Anna Marie',\n               'Cyberdyne Systems Series X Terminator',\n               'Diana of Themyscira'\n           )\n       )\n    GROUP BY s.id, g.gender\n)\nSELECT ROUND(AVG(CASE WHEN gender = 'Male' THEN power_count END), 2) AS male_average,\n       ROUND(AVG(CASE WHEN gender = 'Female' THEN power_count END), 2) AS female_average\nFROM hero_power_counts\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH hero_power_counts AS (\n    SELECT s.id, g.gender, COUNT(hp.power_id) AS power_count\n    FROM main.superhero AS s\n    JOIN main.gender AS g ON g.id = s.gender_id\n    LEFT JOIN main.hero_power AS hp ON hp.hero_id = s.id\n    WHERE g.gender = 'Male'\n       OR (\n           g.gender = 'Female'\n           AND TRIM(s.full_name) LIKE '% %'\n           AND TRIM(s.full_name) NOT IN (\n               'Anna Marie',\n               'Cyberdyne Systems Series X Terminator',\n               'Diana of Themyscira'\n           )\n       )\n    GROUP BY s.id, g.gender\n)\nSELECT ROUND(AVG(CASE WHEN gender = 'Male' THEN power_count END), 2) AS male_average,\n       ROUND(AVG(CASE WHEN gender = 'Female' THEN power_count END), 2) AS female_average\nFROM hero_power_counts\nLIMIT 1000\n```",
+  "rows": 1,
+  "sql": "WITH hero_power_counts AS (\n    SELECT s.id, g.gender, COUNT(hp.power_id) AS power_count\n    FROM main.superhero AS s\n    JOIN main.gender AS g ON g.id = s.gender_id\n    LEFT JOIN main.hero_power AS hp ON hp.hero_id = s.id\n    WHERE g.gender = 'Male'\n       OR (\n           g.gender = 'Female'\n           AND TRIM(s.full_name) LIKE '% %'\n           AND TRIM(s.full_name) NOT IN (\n               'Anna Marie',\n               'Cyberdyne Systems Series X Terminator',\n               'Diana of Themyscira'\n           )\n       )\n    GROUP BY s.id, g.gender\n)\nSELECT ROUND(AVG(CASE WHEN gender = 'Male' THEN power_count END), 2) AS male_average,\n       ROUND(AVG(CASE WHEN gender = 'Female' THEN power_count END), 2) AS female_average\nFROM hero_power_counts\nLIMIT 1000",
+  "seconds": 86.99616091698408
+}

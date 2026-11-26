@@ -1,0 +1,207 @@
+{
+  "instance_id": "bird371",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "652981ee85e17aa6764d32302621dffefb609ab978f3346422fe03d6e9d224ec",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 203226,
+      "cached_input_tokens": 191104,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1068,
+      "reasoning_output_tokens": 242
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "alignment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "alignment (table)\n- id: INTEGER NOT NULL\n- alignment: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "gender"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "gender (table)\n- id: INTEGER NOT NULL\n- gender: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"3I2-GibAnhe337l5TJRvYRFX1AcL1MRkmkKaFDAuanA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "3I2-GibAnhe337l5TJRvYRFX1AcL1MRkmkKaFDAuanA",
+        "sql": "SELECT g.gender,\n       a.alignment,\n       COUNT(*) AS character_count,\n       COUNT(s.weight_kg) AS non_null_weights,\n       MIN(s.weight_kg) AS min_weight,\n       SUM(CASE WHEN s.weight_kg = 0 THEN 1 ELSE 0 END) AS zero_weights,\n       SUM(CASE WHEN s.weight_kg < 0 THEN 1 ELSE 0 END) AS negative_weights,\n       SUM(CASE WHEN s.weight_kg IS NOT NULL AND typeof(s.weight_kg) NOT IN ('integer', 'real') THEN 1 ELSE 0 END) AS non_numeric_weights\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nGROUP BY g.gender, a.alignment\nORDER BY g.gender, a.alignment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9 row(s):\nObserved value types (displayed rows): gender=str; alignment=str; character_count=int; non_null_weights=int; min_weight=int; zero_weights=int; negative_weights=int; non_numeric_weights=int\ngender | alignment | character_count | non_null_weights | min_weight | zero_weights | negative_weights | non_numeric_weights\n--- | --- | --- | --- | --- | --- | --- | ---\nFemale | Bad | 35 | 34 | 0 | 8 | 0 | 0\nFemale | Good | 164 | 148 | 0 | 32 | 0 | 0\nFemale | Neutral | 4 | 4 | 0 | 2 | 0 | 0\nMale | Bad | 170 | 158 | 0 | 39 | 0 | 0\nMale | Good | 322 | 290 | 0 | 73 | 0 | 0\nMale | Neutral | 22 | 22 | 0 | 5 | 0 | 0\nN/A | Bad | 7 | 6 | 0 | 3 | 0 | 0\nN/A | Good | 18 | 16 | 0 | 5 | 0 | 0\nN/A | Neutral | 2 | 2 | 0 | 2 | 0 | 0\nSQL: SELECT g.gender,\n       a.alignment,\n       COUNT(*) AS character_count,\n       COUNT(s.weight_kg) AS non_null_weights,\n       MIN(s.weight_kg) AS min_weight,\n       SUM(CASE WHEN s.weight_kg = 0 THEN 1 ELSE 0 END) AS zero_weights,\n       SUM(CASE WHEN s.weight_kg < 0 THEN 1 ELSE 0 END) AS negative_weights,\n       SUM(CASE WHEN s.weight_kg IS NOT NULL AND typeof(s.weight_kg) NOT IN ('integer', 'real') THEN 1 ELSE 0 END) AS non_numeric_weights\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nGROUP BY g.gender, a.alignment\nORDER BY g.gender, a.alignment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rAHgF-ULrxmiotPzaOv0Ff3A2crnrd_HPGcw6Gma53s\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rAHgF-ULrxmiotPzaOv0Ff3A2crnrd_HPGcw6Gma53s",
+        "sql": "SELECT s.superhero_name, s.full_name, s.height_cm, s.weight_kg\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE g.gender = 'Female'\n  AND a.alignment = 'Good'\n  AND (s.weight_kg = 0 OR s.weight_kg IS NULL)\nORDER BY s.weight_kg, s.superhero_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "48 row(s):\nObserved value types (displayed rows): superhero_name=str; full_name=NoneType,str; height_cm=NoneType,int; weight_kg=NoneType,int\nsuperhero_name | full_name | height_cm | weight_kg\n--- | --- | --- | ---\nBatgirl V | None | None | None\nBatwoman V | None | 178 | None\nBoomer | None | None | None\nCat II | None | None | None\nFighting Spirit | None | None | None\nJessica Cruz | None | None | None\nJessica Sanders | None | None | None\nMeteorite | None | None | None\nMinna Murray | None | None | None\nPenance I | None | None | None\nRenata Soliz | None | None | None\nShrinking Violet | None | None | None\nSilk Spectre | None | None | None\nSpider-Woman II | None | None | None\nStacy X | None | None | None\nWondra | None | None | None\nBatgirl III | Helena Rosa Bertinelli | 0 | 0\nBionic Woman | Jamie Wells Sommers | 0 | 0\nCerebra | Shakti Haddad | 0 | 0\nClaire Bennet | Claire Bennet | 0 | 0\nDaphne Powell | Daphne Powell | 0 | 0\nEnergy | - | 0 | 0\nGreen Lantern V | Jessica Viviana Cruz | 0 | 0\nHawkwoman II | Sharon Parker | 0 | 0\nHit-Girl | Mindy McCready | 0 | 0\nHollow | Monet St. Croix | 170 | 0\nIsis | Adrianna Tomaz | 0 | 0\nJesse Quick | Jessica Belle Chambers | 0 | 0\nJyn Erso | - | 0 | 0\nKathryn Janeway | Kathryn M. Janeway | 0 | 0\nKatniss Everdeen | - | 0 | 0\nLiz Sherman | Elizabeth Anne Sherman | 0 | 0\nLuna | Luna Maximoff | 0 | 0\nLyja | Lyja | 0 | 0\nMaya Herrera | Maya Herrera | 0 | 0\nMisfit | Charlotte Gage-Radcliffe | 0 | 0\nMonica Dawson | Monica Dawson | 0 | 0\nNegasonic Teenage Warhead | - | 0 | 0\nNiki Sanders | Nicole Sanders | 0 | 0\nNina Theroux | - | 0 | 0\nRachel Pirzad | - | 0 | 0\nRey | - | 297 | 0\nShe-Ra | - | 0 | 0\nSilk | - | 0 | 0\nSilk Spectre II | Laurie Juspeczyk | 0 | 0\nSpeedy | Thea Dearden Queen | 0 | 0\nStephanie Powell | Stephanie Powell | 0 | 0\nTracy Strauss | Tracy Strauss | 0 | 0\nSQL: SELECT s.superhero_name, s.full_name, s.height_cm, s.weight_kg\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE g.gender = 'Female'\n  AND a.alignment = 'Good'\n  AND (s.weight_kg = 0 OR s.weight_kg IS NULL)\nORDER BY s.weight_kg, s.superhero_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ayEpXKgFBCgiHw2qSIdZkNadhq5Fl67arrtIluam3Gc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ayEpXKgFBCgiHw2qSIdZkNadhq5Fl67arrtIluam3Gc",
+        "sql": "SELECT ROUND(AVG(s.weight_kg), 2) AS average_weight_kg\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE g.gender = 'Female'\n  AND a.alignment = 'Good'\n  AND s.weight_kg > 0\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): average_weight_kg=float\naverage_weight_kg\n---\n70.76\nSQL: SELECT ROUND(AVG(s.weight_kg), 2) AS average_weight_kg\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE g.gender = 'Female'\n  AND a.alignment = 'Good'\n  AND s.weight_kg > 0\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(AVG(s.weight_kg), 2) AS average_weight_kg\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE g.gender = 'Female'\n  AND a.alignment = 'Good'\n  AND s.weight_kg > 0\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "SELECT ROUND(AVG(s.weight_kg), 2) AS average_weight_kg\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nJOIN alignment AS a ON a.id = s.alignment_id\nWHERE g.gender = 'Female'\n  AND a.alignment = 'Good'\n  AND s.weight_kg > 0\nLIMIT 1",
+  "seconds": 37.15503629203886
+}

@@ -1,0 +1,146 @@
+{
+  "instance_id": "bird127",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "e60d596fd6b6450377bfae45818fbd36d23b709a96743db26b177c0705f853bc",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 161868,
+      "cached_input_tokens": 140160,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 625,
+      "reasoning_output_tokens": 189
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"oA5hVCZIPV6TbaG6P7lCjDAb8_9leD3n1OoJGDCOcOo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "oA5hVCZIPV6TbaG6P7lCjDAb8_9leD3n1OoJGDCOcOo",
+        "sql": "SELECT u.Location, COUNT(*) AS profile_count\nFROM users AS u\nWHERE u.Location LIKE '%United Kingdom%'\nGROUP BY u.Location\nORDER BY profile_count DESC, u.Location\nLIMIT 40"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "40 row(s):\nObserved value types (displayed rows): Location=str; profile_count=int\nLocation | profile_count\n--- | ---\nLondon, United Kingdom | 281\nUnited Kingdom | 209\nCambridge, United Kingdom | 51\nEdinburgh, United Kingdom | 36\nOxford, United Kingdom | 28\nEngland, United Kingdom | 23\nManchester, United Kingdom | 23\nBristol, United Kingdom | 17\nGlasgow, United Kingdom | 12\nSheffield, United Kingdom | 11\nBirmingham, United Kingdom | 10\nBrighton, United Kingdom | 9\nLiverpool, United Kingdom | 7\nNottingham, United Kingdom | 7\nScotland, United Kingdom | 6\nYork, United Kingdom | 6\nBath, United Kingdom | 5\nBelfast, United Kingdom | 5\nCardiff, United Kingdom | 4\nLeeds, United Kingdom | 4\nNewcastle upon Tyne, United Kingdom | 4\nSouthampton, United Kingdom | 4\nCoventry, United Kingdom | 3\nLeicester, United Kingdom | 3\nNewcastle Upon Tyne, United Kingdom | 3\nNewcastle, United Kingdom | 3\nPeterborough, United Kingdom | 3\nPlymouth, United Kingdom | 3\nReading, United Kingdom | 3\nSwansea, United Kingdom | 3\nAberdeen, United Kingdom | 2\nChannel Islands, United Kingdom | 2\nExeter, United Kingdom | 2\nFarnborough, United Kingdom | 2\nLancaster, United Kingdom | 2\nMilton Keynes, United Kingdom | 2\nNorthampton, United Kingdom | 2\nNorwich, United Kingdom | 2\nSt. Andrews, United Kingdom | 2\nWarrington, United Kingdom | 2\nSQL: SELECT u.Location, COUNT(*) AS profile_count\nFROM users AS u\nWHERE u.Location LIKE '%United Kingdom%'\nGROUP BY u.Location\nORDER BY profile_count DESC, u.Location\nLIMIT 40"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"fDc2DkU50R_IEyCBAY_f7VgFyvPq2YmT1JJq6RNYW6A\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "fDc2DkU50R_IEyCBAY_f7VgFyvPq2YmT1JJq6RNYW6A",
+        "sql": "SELECT SUM(u.Reputation) AS total_reputation\nFROM users AS u\nWHERE u.Location LIKE '%United Kingdom%'\n  AND u.Id IN (\n    SELECT p.OwnerUserId\n    FROM posts AS p\n  );"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): total_reputation=int\ntotal_reputation\n---\n87153\nSQL: SELECT SUM(u.Reputation) AS total_reputation\nFROM users AS u\nWHERE u.Location LIKE '%United Kingdom%'\n  AND u.Id IN (\n    SELECT p.OwnerUserId\n    FROM posts AS p\n  )\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT SUM(u.Reputation) AS total_reputation\nFROM users AS u\nWHERE u.Location LIKE '%United Kingdom%'\n  AND u.Id IN (\n    SELECT p.OwnerUserId\n    FROM posts AS p\n  )\nLIMIT 1000\n```",
+  "rows": 1,
+  "sql": "SELECT SUM(u.Reputation) AS total_reputation\nFROM users AS u\nWHERE u.Location LIKE '%United Kingdom%'\n  AND u.Id IN (\n    SELECT p.OwnerUserId\n    FROM posts AS p\n  )\nLIMIT 1000",
+  "seconds": 24.89534662500955
+}

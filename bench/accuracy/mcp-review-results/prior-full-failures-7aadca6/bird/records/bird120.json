@@ -1,0 +1,127 @@
+{
+  "instance_id": "bird120",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "ffbb5184df29aadda8a9a11abd5eea6ac3bcff013d17b9645f77735e7ed27185",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 136457,
+      "cached_input_tokens": 125440,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 553,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "badges"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "badges (table)\n- Id: INTEGER NOT NULL\n- UserId: INTEGER\n- Name: TEXT\n- Date: DATETIME\nPRIMARY KEY (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"f0lV94Gbsci0rlfT9p-JDv_2SjJjzoDMj6GhIZBa0Ts\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "SELECT\n    STRFTIME('%Y', b.\"Date\") AS award_year,\n    COUNT(*) AS badge_count,\n    MIN(b.\"Date\") AS first_award,\n    MAX(b.\"Date\") AS last_award\nFROM main.badges AS b\nWHERE b.Name = 'Student'\nGROUP BY STRFTIME('%Y', b.\"Date\")\nORDER BY award_year",
+        "definition_check_id": "f0lV94Gbsci0rlfT9p-JDv_2SjJjzoDMj6GhIZBa0Ts",
+        "limit": 30
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nObserved value types (displayed rows): award_year=str; badge_count=int; first_award=str; last_award=str\naward_year | badge_count | first_award | last_award\n--- | --- | --- | ---\n2010 | 542 | 2010-07-19 19:39:07.0 | 2010-12-31 16:22:44.0\n2011 | 1959 | 2011-01-01 10:23:44.0 | 2011-12-31 12:52:04.0\n2012 | 3349 | 2012-01-01 11:32:13.0 | 2012-12-31 23:51:18.0\n2013 | 4725 | 2013-01-01 00:06:17.0 | 2013-12-31 23:35:18.0\n2014 | 4272 | 2014-01-01 09:22:12.0 | 2014-09-14 01:41:18.0\nSQL: SELECT\n    STRFTIME('%Y', b.\"Date\") AS award_year,\n    COUNT(*) AS badge_count,\n    MIN(b.\"Date\") AS first_award,\n    MAX(b.\"Date\") AS last_award\nFROM main.badges AS b\nWHERE b.Name = 'Student'\nGROUP BY STRFTIME('%Y', b.\"Date\")\nORDER BY award_year\nLIMIT 30"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lGpYreahHSBzmfn2aYfo5aXK1W3liImmIMN159qZLps\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "SELECT\n    100.0 * (\n        COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2010' THEN 1 END)\n        - COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2011' THEN 1 END)\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges AS b\nWHERE b.Name = 'Student'\nLIMIT 1",
+        "definition_check_id": "lGpYreahHSBzmfn2aYfo5aXK1W3liImmIMN159qZLps"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): percentage_point_difference=float\npercentage_point_difference\n---\n-9.544015626052401\nSQL: SELECT\n    100.0 * (\n        COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2010' THEN 1 END)\n        - COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2011' THEN 1 END)\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges AS b\nWHERE b.Name = 'Student'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    100.0 * (\n        COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2010' THEN 1 END)\n        - COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2011' THEN 1 END)\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges AS b\nWHERE b.Name = 'Student'\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "SELECT\n    100.0 * (\n        COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2010' THEN 1 END)\n        - COUNT(CASE WHEN STRFTIME('%Y', b.\"Date\") = '2011' THEN 1 END)\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges AS b\nWHERE b.Name = 'Student'\nLIMIT 1",
+  "seconds": 23.498523708083667
+}

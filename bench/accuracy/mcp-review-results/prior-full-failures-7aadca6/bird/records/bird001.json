@@ -1,0 +1,127 @@
+{
+  "instance_id": "bird001",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "failed",
+  "calls": [],
+  "events_sha256": "2c4cd5f0857e1a9a505fd501a4321f5bf462421e04c63f9159a1bcf9db363e75",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 139897,
+      "cached_input_tokens": 118272,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 846,
+      "reasoning_output_tokens": 249
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"DjVpP3Ei4UE8ps564Evt55PdlFnKlKeQSQlZ9YFzEnw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "SELECT s.FundingType AS directory_funding_type,\n       f.\"Charter Funding Type\" AS frpm_funding_type,\n       COUNT(s.CDSCode) AS directory_rows,\n       COUNT(f.CDSCode) AS frpm_rows,\n       COUNT(CASE WHEN s.CDSCode IS NULL THEN 1 END) AS frpm_rows_without_directory,\n       COUNT(CASE WHEN s.CDSCode IS NOT NULL AND s.School IS NULL THEN 1 END) AS directory_rows_without_name,\n       COUNT(f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\") AS enrollment_differences,\n       AVG(f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\") AS average_difference\nFROM frpm AS f\nLEFT JOIN schools AS s ON s.CDSCode = f.CDSCode\nGROUP BY s.FundingType, f.\"Charter Funding Type\"\nUNION ALL\nSELECT s.FundingType, NULL, COUNT(*), 0, 0,\n       COUNT(CASE WHEN s.School IS NULL THEN 1 END), 0, NULL\nFROM schools AS s\nLEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE f.CDSCode IS NULL\nGROUP BY s.FundingType;",
+        "definition_check_id": "DjVpP3Ei4UE8ps564Evt55PdlFnKlKeQSQlZ9YFzEnw"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nObserved value types (displayed rows): directory_funding_type=NoneType,str; frpm_funding_type=NoneType,str; directory_rows=int; frpm_rows=int; frpm_rows_without_directory=int; directory_rows_without_name=int; enrollment_differences=int; average_difference=NoneType,float\ndirectory_funding_type | frpm_funding_type | directory_rows | frpm_rows | frpm_rows_without_directory | directory_rows_without_name | enrollment_differences | average_difference\n--- | --- | --- | --- | --- | --- | --- | ---\nNone | None | 8785 | 8785 | 0 | 45 | 8777 | 14.974136948843569\nDirectly funded | None | 2 | 2 | 0 | 0 | 2 | 0.5\nDirectly funded | Directly funded | 828 | 828 | 0 | 0 | 828 | 29.78985507246377\nDirectly funded | Locally funded | 8 | 8 | 0 | 0 | 7 | 11.142857142857142\nLocally funded | None | 28 | 28 | 0 | 0 | 28 | 9.821428571428571\nLocally funded | Directly funded | 10 | 10 | 0 | 0 | 10 | 5.4\nLocally funded | Locally funded | 320 | 320 | 0 | 0 | 315 | 17.692063492063493\nLocally funded | Not in CS funding model | 1 | 1 | 0 | 0 | 1 | 10.0\nNot in CS funding model | None | 4 | 4 | 0 | 0 | 4 | 19.5\nNone | None | 7259 | 0 | 0 | 1324 | 0 | None\nDirectly funded | None | 338 | 0 | 0 | 0 | 0 | None\nLocally funded | None | 101 | 0 | 0 | 0 | 0 | None\nNot in CS funding model | None | 2 | 0 | 0 | 0 | 0 | None\nSQL: SELECT s.FundingType AS directory_funding_type,\n       f.\"Charter Funding Type\" AS frpm_funding_type,\n       COUNT(s.CDSCode) AS directory_rows,\n       COUNT(f.CDSCode) AS frpm_rows,\n       COUNT(CASE WHEN s.CDSCode IS NULL THEN 1 END) AS frpm_rows_without_directory,\n       COUNT(CASE WHEN s.CDSCode IS NOT NULL AND s.School IS NULL THEN 1 END) AS directory_rows_without_name,\n       COUNT(f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\") AS enrollment_differences,\n       AVG(f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\") AS average_difference\nFROM frpm AS f\nLEFT JOIN schools AS s ON s.CDSCode = f.CDSCode\nGROUP BY s.FundingType, f.\"Charter Funding Type\"\nUNION ALL\nSELECT s.FundingType, NULL, COUNT(*), 0, 0,\n       COUNT(CASE WHEN s.School IS NULL THEN 1 END), 0, NULL\nFROM schools AS s\nLEFT JOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE f.CDSCode IS NULL\nGROUP BY s.FundingType\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "locally funded schools"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"locally funded schools\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    }
+  ],
+  "answer": "Which field should define “locally funded” for both the school list and the average: `schools.FundingType` or `frpm.\"Charter Funding Type\"`? Both contain `Locally funded`, but they identify different sets of schools.",
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 29.878416166990064
+}

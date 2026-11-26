@@ -1,0 +1,146 @@
+{
+  "instance_id": "bird273",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "b390dbc56ce11489e6f1fea3efc8ce7563d624ccf9692f87c2aefc14930ae977",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 164167,
+      "cached_input_tokens": 152192,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 873,
+      "reasoning_output_tokens": 262
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"WbzxjB5lvzKCXi1jJHFowFxjM_FSXRYmIi4yiMprDAM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "WbzxjB5lvzKCXi1jJHFowFxjM_FSXRYmIi4yiMprDAM",
+        "sql": "SELECT\n    COUNT(DISTINCT CASE WHEN d.forename = 'Peter' THEN d.driverId END) AS Peter,\n    COUNT(DISTINCT CASE WHEN d.forename = 'John' THEN d.driverId END) AS John\nFROM main.drivers AS d\nJOIN main.results AS r ON r.driverId = d.driverId\nWHERE d.forename IN ('Peter', 'John')\n  AND r.position = 1;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): Peter=int; John=int\nPeter | John\n--- | ---\n3 | 2\nSQL: SELECT\n    COUNT(DISTINCT CASE WHEN d.forename = 'Peter' THEN d.driverId END) AS Peter,\n    COUNT(DISTINCT CASE WHEN d.forename = 'John' THEN d.driverId END) AS John\nFROM main.drivers AS d\nJOIN main.results AS r ON r.driverId = d.driverId\nWHERE d.forename IN ('Peter', 'John')\n  AND r.position = 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"YJG_yfW4SXx2JIASLisrwB4fcmXglRRmVfeh0Ly2hAs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "YJG_yfW4SXx2JIASLisrwB4fcmXglRRmVfeh0Ly2hAs",
+        "sql": "SELECT\n    COUNT(DISTINCT CASE WHEN d.forename = 'Peter' THEN d.driverId END) AS Peter,\n    COUNT(DISTINCT CASE WHEN d.forename = 'John' THEN d.driverId END) AS John\nFROM main.drivers AS d\nJOIN main.results AS r ON r.driverId = d.driverId\nWHERE d.forename IN ('Peter', 'John')\n  AND r.position = 1\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): Peter=int; John=int\nPeter | John\n--- | ---\n3 | 2\nSQL: SELECT\n    COUNT(DISTINCT CASE WHEN d.forename = 'Peter' THEN d.driverId END) AS Peter,\n    COUNT(DISTINCT CASE WHEN d.forename = 'John' THEN d.driverId END) AS John\nFROM main.drivers AS d\nJOIN main.results AS r ON r.driverId = d.driverId\nWHERE d.forename IN ('Peter', 'John')\n  AND r.position = 1\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    COUNT(DISTINCT CASE WHEN d.forename = 'Peter' THEN d.driverId END) AS Peter,\n    COUNT(DISTINCT CASE WHEN d.forename = 'John' THEN d.driverId END) AS John\nFROM main.drivers AS d\nJOIN main.results AS r ON r.driverId = d.driverId\nWHERE d.forename IN ('Peter', 'John')\n  AND r.position = 1\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "SELECT\n    COUNT(DISTINCT CASE WHEN d.forename = 'Peter' THEN d.driverId END) AS Peter,\n    COUNT(DISTINCT CASE WHEN d.forename = 'John' THEN d.driverId END) AS John\nFROM main.drivers AS d\nJOIN main.results AS r ON r.driverId = d.driverId\nWHERE d.forename IN ('Peter', 'John')\n  AND r.position = 1\nLIMIT 1",
+  "seconds": 30.590871541993693
+}

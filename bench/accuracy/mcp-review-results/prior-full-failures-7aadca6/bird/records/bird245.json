@@ -1,0 +1,187 @@
+{
+  "instance_id": "bird245",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "064222e2033b559e2e31b451cb4ee5a972cc0ee70d03b48dc6fdef3792773ecc",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 217720,
+      "cached_input_tokens": 203904,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1577,
+      "reasoning_output_tokens": 479
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ug1QI3hB4w40DuOBZEnNtBoW6Iw_UuK1skS5_A7SNL8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ug1QI3hB4w40DuOBZEnNtBoW6Iw_UuK1skS5_A7SNL8",
+        "sql": "SELECT\n    typeof(res.milliseconds) AS milliseconds_type,\n    typeof(res.time) AS time_type,\n    COUNT(*) AS winner_rows,\n    COUNT(DISTINCT res.raceId) AS races,\n    MIN(res.milliseconds) AS min_milliseconds,\n    MAX(res.milliseconds) AS max_milliseconds,\n    MIN(res.time) AS min_time,\n    MAX(res.time) AS max_time,\n    SUM(CASE WHEN res.positionOrder = 1 AND res.position = 1 THEN 0 ELSE 1 END) AS position_disagreements\nFROM main.races AS r\nJOIN main.results AS res ON res.raceId = r.raceId\nWHERE r.year < 1975\n  AND (res.position = 1 OR res.positionOrder = 1)\nGROUP BY typeof(res.milliseconds), typeof(res.time)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): milliseconds_type=str; time_type=str; winner_rows=int; races=int; min_milliseconds=int; max_milliseconds=int; min_time=str; max_time=str; position_disagreements=int\nmilliseconds_type | time_type | winner_rows | races | min_milliseconds | max_milliseconds | min_time | max_time | position_disagreements\n--- | --- | --- | --- | --- | --- | --- | --- | ---\ninteger | text | 253 | 250 | 4692600 | 14258050 | 1:18:12.60 | 3:57:38.05 | 0\nSQL: SELECT\n    typeof(res.milliseconds) AS milliseconds_type,\n    typeof(res.time) AS time_type,\n    COUNT(*) AS winner_rows,\n    COUNT(DISTINCT res.raceId) AS races,\n    MIN(res.milliseconds) AS min_milliseconds,\n    MAX(res.milliseconds) AS max_milliseconds,\n    MIN(res.time) AS min_time,\n    MAX(res.time) AS max_time,\n    SUM(CASE WHEN res.positionOrder = 1 AND res.position = 1 THEN 0 ELSE 1 END) AS position_disagreements\nFROM main.races AS r\nJOIN main.results AS res ON res.raceId = r.raceId\nWHERE r.year < 1975\n  AND (res.position = 1 OR res.positionOrder = 1)\nGROUP BY typeof(res.milliseconds), typeof(res.time)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"RmXmTn19HBVVnqwTC64dbMxb8MWwwuSlaKoclaq0FkE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "RmXmTn19HBVVnqwTC64dbMxb8MWwwuSlaKoclaq0FkE",
+        "sql": "WITH winners AS (\n    SELECT r.year, r.raceId, r.name, res.driverId, res.position, res.positionOrder,\n           res.time, res.milliseconds, COUNT(*) OVER (PARTITION BY r.raceId) AS winner_rows\n    FROM main.races AS r\n    JOIN main.results AS res ON res.raceId = r.raceId\n    WHERE r.year < 1975 AND res.position = 1\n)\nSELECT year, raceId, name, driverId, position, positionOrder, time, milliseconds\nFROM winners\nWHERE winner_rows > 1\nORDER BY year, raceId, driverId"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nObserved value types (displayed rows): year=int; raceId=int; name=str; driverId=int; position=int; positionOrder=int; time=str; milliseconds=int\nyear | raceId | name | driverId | position | positionOrder | time | milliseconds\n--- | --- | --- | --- | --- | --- | --- | ---\n1951 | 828 | French Grand Prix | 579 | 1 | 1 | 3:22:11.0 | 12131000\n1951 | 828 | French Grand Prix | 786 | 1 | 1 | 3:22:11.0 | 12131000\n1956 | 784 | Argentine Grand Prix | 577 | 1 | 1 | 3:00:03.7 | 10803700\n1956 | 784 | Argentine Grand Prix | 579 | 1 | 1 | 3:00:03.7 | 10803700\n1957 | 780 | British Grand Prix | 475 | 1 | 1 | 3:06:37.8 | 11197800\n1957 | 780 | British Grand Prix | 479 | 1 | 1 | 3:06:37.8 | 11197800\nSQL: WITH winners AS (\n    SELECT r.year, r.raceId, r.name, res.driverId, res.position, res.positionOrder,\n           res.time, res.milliseconds, COUNT(*) OVER (PARTITION BY r.raceId) AS winner_rows\n    FROM main.races AS r\n    JOIN main.results AS res ON res.raceId = r.raceId\n    WHERE r.year < 1975 AND res.position = 1\n)\nSELECT year, raceId, name, driverId, position, positionOrder, time, milliseconds\nFROM winners\nWHERE winner_rows > 1\nORDER BY year, raceId, driverId\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"k7lZaeabgYrUmt8Cc5lRQtG5-PwOOEGRllvaIqBS8lY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "k7lZaeabgYrUmt8Cc5lRQtG5-PwOOEGRllvaIqBS8lY",
+        "sql": "WITH race_winner_times AS (\n    SELECT DISTINCT r.year, r.raceId, res.milliseconds\n    FROM main.races AS r\n    JOIN main.results AS res ON res.raceId = r.raceId\n    WHERE r.year < 1975\n      AND res.position = 1\n      AND res.milliseconds IS NOT NULL\n),\nyearly_totals AS (\n    SELECT year, SUM(milliseconds) AS total_ms, COUNT(*) AS race_count\n    FROM race_winner_times\n    GROUP BY year\n)\nSELECT\n    year,\n    ((total_ms + 5 * race_count) / (10 * race_count)) / 100.0\n        AS mean_winner_elapsed_seconds\nFROM yearly_totals\nORDER BY year\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "25 row(s):\nObserved value types (displayed rows): year=int; mean_winner_elapsed_seconds=float\nyear | mean_winner_elapsed_seconds\n--- | ---\n1950 | 9712.6\n1951 | 10712.97\n1952 | 11061.59\n1953 | 10828.48\n1954 | 11213.07\n1955 | 10792.33\n1956 | 10880.14\n1957 | 11339.01\n1958 | 8380.19\n1959 | 8745.95\n1960 | 8772.15\n1961 | 8258.54\n1962 | 8411.16\n1963 | 8281.24\n1964 | 8005.47\n1965 | 8165.67\n1966 | 7834.69\n1967 | 7645.84\n1968 | 7626.58\n1969 | 7006.87\n1970 | 6520.59\n1971 | 6111.99\n1972 | 6526.21\n1973 | 6236.23\n1974 | 6047.11\nSQL: WITH race_winner_times AS (\n    SELECT DISTINCT r.year, r.raceId, res.milliseconds\n    FROM main.races AS r\n    JOIN main.results AS res ON res.raceId = r.raceId\n    WHERE r.year < 1975\n      AND res.position = 1\n      AND res.milliseconds IS NOT NULL\n),\nyearly_totals AS (\n    SELECT year, SUM(milliseconds) AS total_ms, COUNT(*) AS race_count\n    FROM race_winner_times\n    GROUP BY year\n)\nSELECT\n    year,\n    ((total_ms + 5 * race_count) / (10 * race_count)) / 100.0\n        AS mean_winner_elapsed_seconds\nFROM yearly_totals\nORDER BY year\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH race_winner_times AS (\n    SELECT DISTINCT r.year, r.raceId, res.milliseconds\n    FROM main.races AS r\n    JOIN main.results AS res ON res.raceId = r.raceId\n    WHERE r.year < 1975\n      AND res.position = 1\n      AND res.milliseconds IS NOT NULL\n),\nyearly_totals AS (\n    SELECT year, SUM(milliseconds) AS total_ms, COUNT(*) AS race_count\n    FROM race_winner_times\n    GROUP BY year\n)\nSELECT\n    year,\n    ((total_ms + 5 * race_count) / (10 * race_count)) / 100.0\n        AS mean_winner_elapsed_seconds\nFROM yearly_totals\nORDER BY year\nLIMIT -1\n```",
+  "rows": 25,
+  "sql": "WITH race_winner_times AS (\n    SELECT DISTINCT r.year, r.raceId, res.milliseconds\n    FROM main.races AS r\n    JOIN main.results AS res ON res.raceId = r.raceId\n    WHERE r.year < 1975\n      AND res.position = 1\n      AND res.milliseconds IS NOT NULL\n),\nyearly_totals AS (\n    SELECT year, SUM(milliseconds) AS total_ms, COUNT(*) AS race_count\n    FROM race_winner_times\n    GROUP BY year\n)\nSELECT\n    year,\n    ((total_ms + 5 * race_count) / (10 * race_count)) / 100.0\n        AS mean_winner_elapsed_seconds\nFROM yearly_totals\nORDER BY year\nLIMIT -1",
+  "seconds": 48.08438104193192
+}

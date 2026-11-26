@@ -1,0 +1,146 @@
+{
+  "instance_id": "bird002",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "2843ad80acedba96e1289431ad4eb46c2916e66f77b132f48a37fede86c62bab",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165183,
+      "cached_input_tokens": 153216,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 699,
+      "reasoning_output_tokens": 44
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NwziGWeAHW5t1QaEYogw5WOc1DTqcaZW4Kt2KZBpylA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NwziGWeAHW5t1QaEYogw5WOc1DTqcaZW4Kt2KZBpylA",
+        "sql": "SELECT\n    s.SOC,\n    f.\"Academic Year\",\n    s.School,\n    f.\"School Name\",\n    f.\"FRPM Count (K-12)\",\n    f.\"Enrollment (K-12)\",\n    f.\"Percent (%) Eligible FRPM (K-12)\",\n    ROUND(f.\"FRPM Count (K-12)\" / f.\"Enrollment (K-12)\", 6) AS calculated_rate,\n    ROUND(f.\"Percent (%) Eligible FRPM (K-12)\", 6) AS stored_rate\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nWHERE s.SOC = '66'\nORDER BY f.\"FRPM Count (K-12)\" DESC, f.CDSCode\nLIMIT 6"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nObserved value types (displayed rows): SOC=str; Academic Year=str; School=str; School Name=str; FRPM Count (K-12)=float; Enrollment (K-12)=float; Percent (%) Eligible FRPM (K-12)=float; calculated_rate=float; stored_rate=float\nSOC | Academic Year | School | School Name | FRPM Count (K-12) | Enrollment (K-12) | Percent (%) Eligible FRPM (K-12) | calculated_rate | stored_rate\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n66 | 2014-2015 | Paramount High | Paramount High | 4419.0 | 4814.0 | 0.917947652679684 | 0.917948 | 0.917948\n66 | 2014-2015 | Calexico High | Calexico High | 2979.0 | 2981.0 | 0.999329084199933 | 0.999329 | 0.999329\n66 | 2014-2015 | Bell Senior High | Bell Senior High | 2919.0 | 3256.0 | 0.896498771498772 | 0.896499 | 0.896499\n66 | 2014-2015 | Anaheim High | Anaheim High | 2872.0 | 3206.0 | 0.895820336868372 | 0.89582 | 0.89582\n66 | 2014-2015 | Bell Gardens High | Bell Gardens High | 2727.0 | 2983.0 | 0.914180355346966 | 0.91418 | 0.91418\n66 | 2014-2015 | Chaffey High | Chaffey High | 2679.0 | 3530.0 | 0.758923512747875 | 0.758924 | 0.758924\nSQL: SELECT\n    s.SOC,\n    f.\"Academic Year\",\n    s.School,\n    f.\"School Name\",\n    f.\"FRPM Count (K-12)\",\n    f.\"Enrollment (K-12)\",\n    f.\"Percent (%) Eligible FRPM (K-12)\",\n    ROUND(f.\"FRPM Count (K-12)\" / f.\"Enrollment (K-12)\", 6) AS calculated_rate,\n    ROUND(f.\"Percent (%) Eligible FRPM (K-12)\", 6) AS stored_rate\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nWHERE s.SOC = '66'\nORDER BY f.\"FRPM Count (K-12)\" DESC, f.CDSCode\nLIMIT 6"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"gEMmg1k0eRPupu7QxDX8_hMf_Kx9ftGLhFoNd7sdDc0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "gEMmg1k0eRPupu7QxDX8_hMf_Kx9ftGLhFoNd7sdDc0",
+        "sql": "SELECT\n    s.School AS school_name,\n    ROUND(f.\"Percent (%) Eligible FRPM (K-12)\", 6) AS eligible_meal_rate\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nWHERE s.SOC = '66'\nORDER BY f.\"FRPM Count (K-12)\" DESC, f.CDSCode\nLIMIT 5;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nObserved value types (displayed rows): school_name=str; eligible_meal_rate=float\nschool_name | eligible_meal_rate\n--- | ---\nParamount High | 0.917948\nCalexico High | 0.999329\nBell Senior High | 0.896499\nAnaheim High | 0.89582\nBell Gardens High | 0.91418\nSQL: SELECT\n    s.School AS school_name,\n    ROUND(f.\"Percent (%) Eligible FRPM (K-12)\", 6) AS eligible_meal_rate\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nWHERE s.SOC = '66'\nORDER BY f.\"FRPM Count (K-12)\" DESC, f.CDSCode\nLIMIT 5;"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    s.School AS school_name,\n    ROUND(f.\"Percent (%) Eligible FRPM (K-12)\", 6) AS eligible_meal_rate\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nWHERE s.SOC = '66'\nORDER BY f.\"FRPM Count (K-12)\" DESC, f.CDSCode\nLIMIT 5;\n```",
+  "rows": 5,
+  "sql": "SELECT\n    s.School AS school_name,\n    ROUND(f.\"Percent (%) Eligible FRPM (K-12)\", 6) AS eligible_meal_rate\nFROM main.frpm AS f\nJOIN main.schools AS s ON s.CDSCode = f.CDSCode\nWHERE s.SOC = '66'\nORDER BY f.\"FRPM Count (K-12)\" DESC, f.CDSCode\nLIMIT 5;",
+  "seconds": 27.338907624944113
+}

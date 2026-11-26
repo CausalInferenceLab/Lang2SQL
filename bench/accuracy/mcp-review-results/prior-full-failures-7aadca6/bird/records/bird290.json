@@ -1,0 +1,164 @@
+{
+  "instance_id": "bird290",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "0c3d468cf6c6aa9d013549f41ab7e0a53588a1812426b0bafc6747c3a044b36e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165922,
+      "cached_input_tokens": 152960,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1427,
+      "reasoning_output_tokens": 342
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Tables:\n- circuits\n- constructorResults\n- constructorStandings\n- constructors\n- driverStandings\n- drivers\n- lapTimes\n- pitStops\n- qualifying\n- races\n- results\n- seasons\n- status"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "circuits"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "circuits (table)\n- circuitId: INTEGER\n- circuitRef: TEXT NOT NULL\n- name: TEXT NOT NULL\n- location: TEXT\n- country: TEXT\n- lat: REAL\n- lng: REAL\n- alt: INTEGER\n- url: TEXT NOT NULL\nPRIMARY KEY (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"IRxdE6UnEcbVhO1lNYydTyoQLWgHmXiUp99bAVdQj1I\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "IRxdE6UnEcbVhO1lNYydTyoQLWgHmXiUp99bAVdQj1I",
+        "sql": "SELECT\n    COUNT(*) AS race_count,\n    COUNT(c.circuitId) AS matched_circuits,\n    COUNT(DISTINCT r.year) AS season_count,\n    COUNT(DISTINCT CASE WHEN time(r.time) IS NOT NULL THEN r.year END) AS seasons_with_times,\n    COUNT(r.time) AS nonnull_times,\n    COUNT(time(r.time)) AS parsed_times,\n    COUNT(CASE WHEN r.time GLOB '[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' AND substr(r.time, 1, 2) < '24' THEN 1 END) AS clock_times,\n    GROUP_CONCAT(DISTINCT CASE WHEN r.time IS NOT NULL AND time(r.time) IS NULL THEN quote(r.time) END) AS unparsed_values,\n    MIN(time(r.time)) AS first_clock_time,\n    MAX(time(r.time)) AS last_clock_time\nFROM races AS r\nLEFT JOIN circuits AS c ON c.circuitId = r.circuitId"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): race_count=int; matched_circuits=int; season_count=int; seasons_with_times=int; nonnull_times=int; parsed_times=int; clock_times=int; unparsed_values=NoneType; first_clock_time=str; last_clock_time=str\nrace_count | matched_circuits | season_count | seasons_with_times | nonnull_times | parsed_times | clock_times | unparsed_values | first_clock_time | last_clock_time\n--- | --- | --- | --- | --- | --- | --- | --- | --- | ---\n954 | 954 | 68 | 13 | 232 | 232 | 232 | None | 04:30:00 | 20:00:00\nSQL: SELECT\n    COUNT(*) AS race_count,\n    COUNT(c.circuitId) AS matched_circuits,\n    COUNT(DISTINCT r.year) AS season_count,\n    COUNT(DISTINCT CASE WHEN time(r.time) IS NOT NULL THEN r.year END) AS seasons_with_times,\n    COUNT(r.time) AS nonnull_times,\n    COUNT(time(r.time)) AS parsed_times,\n    COUNT(CASE WHEN r.time GLOB '[0-2][0-9]:[0-5][0-9]:[0-5][0-9]' AND substr(r.time, 1, 2) < '24' THEN 1 END) AS clock_times,\n    GROUP_CONCAT(DISTINCT CASE WHEN r.time IS NOT NULL AND time(r.time) IS NULL THEN quote(r.time) END) AS unparsed_values,\n    MIN(time(r.time)) AS first_clock_time,\n    MAX(time(r.time)) AS last_clock_time\nFROM races AS r\nLEFT JOIN circuits AS c ON c.circuitId = r.circuitId\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"QaLiEJVd9ZHJFil-ObLWrolaBRZ1ndjhW_Qj0KpWc4A\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "QaLiEJVd9ZHJFil-ObLWrolaBRZ1ndjhW_Qj0KpWc4A",
+        "sql": "WITH extremes AS (\n    SELECT MIN(r.time) AS earliest_time, MAX(r.time) AS latest_time\n    FROM races AS r\n),\nextreme_circuits AS (\n    SELECT DISTINCT r.time AS start_time, c.circuitRef AS circuit_ref\n    FROM races AS r\n    JOIN circuits AS c ON c.circuitId = r.circuitId\n    CROSS JOIN extremes AS e\n    WHERE r.time IN (e.earliest_time, e.latest_time)\n)\nSELECT\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.earliest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS earliest_circuit_refs,\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.latest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS latest_circuit_refs,\n    CAST(strftime('%s', e.latest_time) AS INTEGER)\n        - CAST(strftime('%s', e.earliest_time) AS INTEGER) AS gap_seconds\nFROM extremes AS e\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): earliest_circuit_refs=str; latest_circuit_refs=str; gap_seconds=int\nearliest_circuit_refs | latest_circuit_refs | gap_seconds\n--- | --- | ---\nfuji | americas | 55800\nSQL: WITH extremes AS (\n    SELECT MIN(r.time) AS earliest_time, MAX(r.time) AS latest_time\n    FROM races AS r\n),\nextreme_circuits AS (\n    SELECT DISTINCT r.time AS start_time, c.circuitRef AS circuit_ref\n    FROM races AS r\n    JOIN circuits AS c ON c.circuitId = r.circuitId\n    CROSS JOIN extremes AS e\n    WHERE r.time IN (e.earliest_time, e.latest_time)\n)\nSELECT\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.earliest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS earliest_circuit_refs,\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.latest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS latest_circuit_refs,\n    CAST(strftime('%s', e.latest_time) AS INTEGER)\n        - CAST(strftime('%s', e.earliest_time) AS INTEGER) AS gap_seconds\nFROM extremes AS e\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH extremes AS (\n    SELECT MIN(r.time) AS earliest_time, MAX(r.time) AS latest_time\n    FROM races AS r\n),\nextreme_circuits AS (\n    SELECT DISTINCT r.time AS start_time, c.circuitRef AS circuit_ref\n    FROM races AS r\n    JOIN circuits AS c ON c.circuitId = r.circuitId\n    CROSS JOIN extremes AS e\n    WHERE r.time IN (e.earliest_time, e.latest_time)\n)\nSELECT\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.earliest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS earliest_circuit_refs,\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.latest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS latest_circuit_refs,\n    CAST(strftime('%s', e.latest_time) AS INTEGER)\n        - CAST(strftime('%s', e.earliest_time) AS INTEGER) AS gap_seconds\nFROM extremes AS e\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "WITH extremes AS (\n    SELECT MIN(r.time) AS earliest_time, MAX(r.time) AS latest_time\n    FROM races AS r\n),\nextreme_circuits AS (\n    SELECT DISTINCT r.time AS start_time, c.circuitRef AS circuit_ref\n    FROM races AS r\n    JOIN circuits AS c ON c.circuitId = r.circuitId\n    CROSS JOIN extremes AS e\n    WHERE r.time IN (e.earliest_time, e.latest_time)\n)\nSELECT\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.earliest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS earliest_circuit_refs,\n    (\n        SELECT group_concat(circuit_ref, ', ')\n        FROM (\n            SELECT ec.circuit_ref\n            FROM extreme_circuits AS ec\n            WHERE ec.start_time = e.latest_time\n            ORDER BY ec.circuit_ref\n        )\n    ) AS latest_circuit_refs,\n    CAST(strftime('%s', e.latest_time) AS INTEGER)\n        - CAST(strftime('%s', e.earliest_time) AS INTEGER) AS gap_seconds\nFROM extremes AS e\nLIMIT 1",
+  "seconds": 42.86856595904101
+}
