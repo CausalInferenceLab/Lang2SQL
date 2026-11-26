@@ -205,3 +205,24 @@ async def test_review_is_measured_and_does_not_override_clarification(
         assert "List item values" in prompts[1]
         assert len(record["reviews"]) == 1
         assert record["rows"] == 1
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "-- explanation\nSELECT 1",
+        "/* note */ WITH x AS (SELECT 1) SELECT * FROM x",
+        "SELECT '--literal' AS value",
+    ],
+)
+def test_final_sql_accepts_comments_without_rewriting_query(sql):
+    from bench.spider2.evaluate import final_sql
+
+    assert final_sql("```sql\n" + sql + "\n```") == sql
+
+
+def test_final_sql_still_rejects_commented_write():
+    from bench.spider2.evaluate import final_sql
+
+    with pytest.raises(ValueError, match="SELECT/WITH"):
+        final_sql("```sql\n-- note\nDELETE FROM items\n```")

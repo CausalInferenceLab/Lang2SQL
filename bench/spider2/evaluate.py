@@ -20,6 +20,7 @@ from pathlib import Path
 from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 from lang2sql.core.identity import Identity
 from lang2sql.harness.loop import agent_loop
+from lang2sql.safety.layers.whitelist import _strip_comments
 from lang2sql.tenancy.concierge import ContextConcierge
 
 from .providers import MeasuredLLM
@@ -50,7 +51,7 @@ def final_sql(answer: str) -> str:
             "Final answer must contain exactly one SQL block; no last-tool fallback"
         )
     sql = blocks[0].strip()
-    if not re.match(r"^(SELECT|WITH)\b", sql, re.IGNORECASE):
+    if not re.match(r"^(SELECT|WITH)\b", _strip_comments(sql), re.IGNORECASE):
         raise ValueError("Final SQL is not SELECT/WITH")
     return sql
 
