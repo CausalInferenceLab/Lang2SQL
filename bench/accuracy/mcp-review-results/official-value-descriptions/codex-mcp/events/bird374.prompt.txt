@@ -1,0 +1,327 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I want to know about the lightest superhero whose weight has actually been recorded. Among all heroes sharing that lightest weight, give me the largest number of superpowers any of them has. If such a hero has no powers, that counts as 0. Please return just that one number.
+Provided evidence:
+A superpower is one power a hero has, identified by its name.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `alignment` (
+    `id` INTEGER, -- the unique identifier of the alignment; example: [1, 2]
+    `alignment` TEXT, -- the alignment of the superhero; example: ['Good', 'Bad']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `attribute` (
+    `id` INTEGER, -- the unique identifier of the attribute; example: [1, 2]
+    `attribute_name` TEXT, -- the attribute; example: ['Intelligence', 'Strength']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `colour` (
+    `id` INTEGER, -- the unique identifier of the color; example: [1, 2]
+    `colour` TEXT, -- the color of the superhero's skin/eye/hair/etc; example: ['No Colour', 'Amber']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `gender` (
+    `id` INTEGER, -- the unique identifier of the gender; example: [1, 2]
+    `gender` TEXT, -- the gender of the superhero; example: ['Male', 'Female']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `publisher` (
+    `id` INTEGER, -- the unique identifier of the publisher; example: [1, 2]
+    `publisher_name` TEXT, -- the name of the publisher; example: ['', 'ABC Studios']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `race` (
+    `id` INTEGER, -- the unique identifier of the race; example: [1, 2]
+    `race` TEXT, -- the race of the superhero; example: ['-', 'Alien']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `superhero` (
+    `id` INTEGER, -- the unique identifier of the superhero; example: [1, 2]
+    `superhero_name` TEXT, -- the name of the superhero; example: ['3-D Man', 'A-Bomb']
+    `full_name` TEXT, -- the full name of the superhero; example: ['Charles Chandler', 'Richard Milhouse Jones']
+    `gender_id` INTEGER, -- the id of the superhero's gender; example: [1]
+    `eye_colour_id` INTEGER, -- the id of the superhero's eye color; example: [9, 33]
+    `hair_colour_id` INTEGER, -- the id of the superhero's hair color; example: [13, 1]
+    `skin_colour_id` INTEGER, -- the id of the superhero's skin color; example: [1, 7]
+    `race_id` INTEGER, -- the id of the superhero's race; example: [1, 24]
+    `publisher_id` INTEGER, -- the id of the publisher; example: [13, 3]
+    `alignment_id` INTEGER, -- the id of the superhero's alignment; example: [1, 2]
+    `height_cm` INTEGER, -- the height of the superhero; example: [188, 203]
+    `weight_kg` INTEGER, -- the weight of the superhero; example: [90, 441]
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`skin_colour_id`) REFERENCES `colour` (`id`),
+    FOREIGN KEY (`race_id`) REFERENCES `race` (`id`),
+    FOREIGN KEY (`publisher_id`) REFERENCES `publisher` (`id`),
+    FOREIGN KEY (`hair_colour_id`) REFERENCES `colour` (`id`),
+    FOREIGN KEY (`gender_id`) REFERENCES `gender` (`id`),
+    FOREIGN KEY (`eye_colour_id`) REFERENCES `colour` (`id`),
+    FOREIGN KEY (`alignment_id`) REFERENCES `alignment` (`id`)
+);
+
+CREATE TABLE `hero_attribute` (
+    `hero_id` INTEGER, -- the id of the hero Maps to superhero(id); example: [1, 2]
+    `attribute_id` INTEGER, -- the id of the attribute Maps to attribute(id); example: [1]
+    `attribute_value` INTEGER, -- the attribute value; example: [80, 75]
+    FOREIGN KEY (`hero_id`) REFERENCES `superhero` (`id`),
+    FOREIGN KEY (`attribute_id`) REFERENCES `attribute` (`id`)
+);
+
+CREATE TABLE `superpower` (
+    `id` INTEGER, -- the unique identifier of the superpower; example: [1, 2]
+    `power_name` TEXT, -- the superpower name; example: ['Agility', 'Accelerated Healing']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `hero_power` (
+    `hero_id` INTEGER, -- the id of the hero Maps to superhero(id); example: [1, 2]
+    `power_id` INTEGER, -- the id of the power Maps to superpower(id); example: [1, 18]
+    FOREIGN KEY (`power_id`) REFERENCES `superpower` (`id`),
+    FOREIGN KEY (`hero_id`) REFERENCES `superhero` (`id`)
+);
+
+
+Official column/value descriptions (2024 Dev release):
+{
+  "alignment": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the alignment",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "alignment",
+      "column_name": "",
+      "column_description": "the alignment of the superhero",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nAlignment refers to a character's moral and ethical stance and can be used to describe the overall attitude or behavior of a superhero. Some common alignments for superheroes include:\nGood: These superheroes are typically kind, selfless, and dedicated to protecting others and upholding justice. Examples of good alignments include Superman, Wonder Woman, and Spider-Man.\nNeutral: These superheroes may not always prioritize the greater good, but they are not necessarily evil either. They may act in their own self-interest or make decisions based on their own moral code. Examples of neutral alignments include the Hulk and Deadpool.\n\tBad: These superheroes are typically selfish, manipulative, and willing to harm others in pursuit of their own goals. Examples of evil alignments include Lex Luthor and the Joker."
+    }
+  ],
+  "attribute": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the attribute",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "attribute_name",
+      "column_name": "attribute name",
+      "column_description": "the attribute",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nA superhero's attribute is a characteristic or quality that defines who they are and what they are capable of. This could be a physical trait, such as superhuman strength or the ability to fly, or a personal trait, such as extraordinary intelligence or exceptional bravery. "
+    }
+  ],
+  "colour": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the color",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "colour",
+      "column_name": "",
+      "column_description": "the color of the superhero's skin/eye/hair/etc",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "gender": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the gender",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "gender",
+      "column_name": "",
+      "column_description": "the gender of the superhero",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "hero_attribute": [
+    {
+      "original_column_name": "hero_id",
+      "column_name": "hero id",
+      "column_description": "the id of the hero\nMaps to superhero(id)",
+      "data_format": "",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "attribute_id",
+      "column_name": "attribute id",
+      "column_description": "the id of the attribute\nMaps to attribute(id)",
+      "data_format": "",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "attribute_value",
+      "column_name": "attribute value",
+      "column_description": "the attribute value",
+      "data_format": "",
+      "value_description": "commonsense evidence:\nIf a superhero has a higher attribute value on a particular attribute, it means that they are more skilled or powerful in that area compared to other superheroes. For example, if a superhero has a higher attribute value for strength, they may be able to lift heavier objects or deliver more powerful punches than other superheroes."
+    }
+  ],
+  "hero_power": [
+    {
+      "original_column_name": "hero_id",
+      "column_name": "hero id",
+      "column_description": "the id of the hero\nMaps to superhero(id)",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "power_id",
+      "column_name": "power id",
+      "column_description": "the id of the power\nMaps to superpower(id)",
+      "data_format": "integer",
+      "value_description": "commonsense evidence:\nIn general, a superhero's attributes provide the foundation for their abilities and help to define who they are, while their powers are the specific abilities that they use to fight crime and protect others."
+    }
+  ],
+  "publisher": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the publisher",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "publisher_name",
+      "column_name": "",
+      "column_description": "the name of the publisher",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "race": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the race",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "race",
+      "column_name": "",
+      "column_description": "the race of the superhero",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nIn the context of superheroes, a superhero's race would refer to the particular group of people that the superhero belongs to base on these physical characteristics"
+    }
+  ],
+  "superhero": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the superhero",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "superhero_name",
+      "column_name": "superhero name",
+      "column_description": "the name of the superhero",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "full_name",
+      "column_name": "full name",
+      "column_description": "the full name of the superhero",
+      "data_format": "text",
+      "value_description": "commonsense evidence:\nThe full name of a person typically consists of their given name, also known as their first name or personal name, and their surname, also known as their last name or family name. For example, if someone's given name is \"John\" and their surname is \"Smith,\" their full name would be \"John Smith.\""
+    },
+    {
+      "original_column_name": "gender_id",
+      "column_name": "gender id",
+      "column_description": "the id of the superhero's gender",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "eye_colour_id",
+      "column_name": "eye colour id",
+      "column_description": "the id of the superhero's eye color",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "hair_colour_id",
+      "column_name": "hair colour id",
+      "column_description": "the id of the superhero's hair color",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "skin_colour_id",
+      "column_name": "skin colour id",
+      "column_description": "the id of the superhero's skin color",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "race_id",
+      "column_name": "race id",
+      "column_description": "the id of the superhero's race",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "publisher_id",
+      "column_name": "publisher id",
+      "column_description": "the id of the publisher",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "alignment_id",
+      "column_name": "alignment id",
+      "column_description": "the id of the superhero's alignment",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "height_cm",
+      "column_name": "height cm",
+      "column_description": "the height of the superhero",
+      "data_format": "integer",
+      "value_description": "commonsense evidence:\nThe unit of height is centimeter. If the height_cm is NULL or 0, it means the height of the superhero is missing. "
+    },
+    {
+      "original_column_name": "weight_kg",
+      "column_name": "weight kg",
+      "column_description": "the weight of the superhero",
+      "data_format": "integer",
+      "value_description": "commonsense evidence:\nThe unit of weight is kilogram. If the weight_kg is NULL or 0, it means the weight of the superhero is missing."
+    }
+  ],
+  "superpower": [
+    {
+      "original_column_name": "id",
+      "column_name": "",
+      "column_description": "the unique identifier of the superpower",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "power_name",
+      "column_name": "power name",
+      "column_description": "the superpower name",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ]
+}
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

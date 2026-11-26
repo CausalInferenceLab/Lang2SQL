@@ -1,0 +1,22 @@
+```sql
+WITH requested_types(bond_type, sort_order) AS (
+    VALUES ('-', 1), ('=', 2), ('#', 3)
+),
+bond_counts AS (
+    SELECT b.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count
+    FROM bond AS b
+    JOIN molecule AS m ON m.molecule_id = b.molecule_id
+    JOIN connected AS c ON c.bond_id = b.bond_id
+    JOIN atom AS a1 ON a1.atom_id = c.atom_id
+    JOIN atom AS a2 ON a2.atom_id = c.atom_id2
+    WHERE m.label = '+'
+      AND a1.element = 'c'
+      AND a2.element = 'c'
+    GROUP BY b.bond_type
+)
+SELECT t.bond_type, COALESCE(bc.bond_count, 0) AS bond_count
+FROM requested_types AS t
+LEFT JOIN bond_counts AS bc ON bc.bond_type = t.bond_type
+ORDER BY t.sort_order
+LIMIT 1000
+```

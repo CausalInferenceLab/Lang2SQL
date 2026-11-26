@@ -1,0 +1,504 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I need to find out where our pre-1997 long-term mortgage exposure is concentrated geographically. Long-term means a loan duration of more than 24 months, and "opened before 1997" should exclude anything opened during 1997. Please tell me: for each region, which districts have at least one such account, and give me the region whose qualifying districts have the largest combined number of inhabitants. Along with the region's name, I want the number of those districts in it, their combined population, and the total number of those accounts in the region. If two regions tie on combined population, pick the one whose name comes first alphabetically.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `account` (
+    `account_id` INTEGER, -- the id of the account; example: [1, 2]
+    `district_id` INTEGER, -- location of branch; example: [18, 1]
+    `frequency` TEXT, -- frequency of the acount; example: ['POPLATEK MESICNE']
+    `date` DATE, -- the creation date of the account; example: ['1995-03-24', '1993-02-26']
+    PRIMARY KEY (`account_id`),
+    FOREIGN KEY (`district_id`) REFERENCES `district` (`district_id`)
+);
+
+CREATE TABLE `card` (
+    `card_id` INTEGER, -- id number of credit card; example: [1, 2]
+    `disp_id` INTEGER, -- disposition id; example: [9, 19]
+    `type` TEXT, -- type of credit card; example: ['gold', 'classic']
+    `issued` DATE, -- the date when the credit card issued; example: ['1998-10-16', '1998-03-13']
+    PRIMARY KEY (`card_id`),
+    FOREIGN KEY (`disp_id`) REFERENCES `disp` (`disp_id`)
+);
+
+CREATE TABLE `client` (
+    `client_id` INTEGER, -- the unique number; example: [1, 2]
+    `gender` TEXT, -- example: ['F', 'M']
+    `birth_date` DATE, -- birth date; example: ['1970-12-13', '1945-02-04']
+    `district_id` INTEGER, -- location of branch; example: [18, 1]
+    PRIMARY KEY (`client_id`),
+    FOREIGN KEY (`district_id`) REFERENCES `district` (`district_id`)
+);
+
+CREATE TABLE `disp` (
+    `disp_id` INTEGER, -- unique number of identifying this row of record; example: [1, 2]
+    `client_id` INTEGER, -- id number of client; example: [1, 2]
+    `account_id` INTEGER, -- id number of account; example: [1, 2]
+    `type` TEXT, -- type of disposition; example: ['OWNER', 'DISPONENT']
+    PRIMARY KEY (`disp_id`),
+    FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+CREATE TABLE `district` (
+    `district_id` INTEGER, -- location of branch; example: [1, 2]
+    `A2` TEXT, -- district_name; example: ['Hl.m. Praha', 'Benesov']
+    `A3` TEXT, -- region; example: ['Prague', 'central Bohemia']
+    `A4` TEXT, -- number of inhabitants; example: ['1204953', '88884']
+    `A5` TEXT, -- municipality < district < region; example: ['0', '80']
+    `A6` TEXT, -- municipality < district < region; example: ['0', '26']
+    `A7` TEXT, -- municipality < district < region; example: ['0', '6']
+    `A8` INTEGER, -- municipality < district < region; example: [1, 2]
+    `A9` INTEGER, -- example: [1, 5]
+    `A10` REAL, -- ratio of urban inhabitants; example: [100.0, 46.7]
+    `A11` INTEGER, -- average salary; example: [12541, 8507]
+    `A12` REAL, -- unemployment rate 1995; example: [0.2, 1.6]
+    `A13` REAL, -- unemployment rate 1996; example: [0.43, 1.85]
+    `A14` INTEGER, -- no. of entrepreneurs per 1000 inhabitants; example: [167, 132]
+    `A15` INTEGER, -- no. of committed crimes 1995; example: [85677, 2159]
+    `A16` INTEGER, -- no. of committed crimes 1996; example: [99107, 2674]
+    PRIMARY KEY (`district_id`)
+);
+
+CREATE TABLE `loan` (
+    `loan_id` INTEGER, -- the id number identifying the loan data; example: [4959, 4961]
+    `account_id` INTEGER, -- the id number identifying the account; example: [2, 19]
+    `date` DATE, -- the date when the loan is approved; example: ['1994-01-05', '1996-04-29']
+    `amount` INTEGER, -- approved amount; example: [80952, 30276]
+    `duration` INTEGER, -- loan duration; example: [24, 12]
+    `payments` REAL, -- monthly payments; example: [3373.0, 2523.0]
+    `status` TEXT, -- repayment status; example: ['A', 'B']
+    PRIMARY KEY (`loan_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+CREATE TABLE `order` (
+    `order_id` INTEGER, -- identifying the unique order; example: [29401, 29402]
+    `account_id` INTEGER, -- id number of account; example: [1, 2]
+    `bank_to` TEXT, -- bank of the recipient; example: ['YZ', 'ST']
+    `account_to` INTEGER, -- account of the recipient; example: [87144583, 89597016]
+    `amount` REAL, -- debited amount; example: [2452.0, 3372.7]
+    `k_symbol` TEXT, -- purpose of the payment; example: ['SIPO', 'UVER']
+    PRIMARY KEY (`order_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+CREATE TABLE `trans` (
+    `trans_id` INTEGER, -- transaction id; example: [1, 5]
+    `account_id` INTEGER, -- example: [1]
+    `date` DATE, -- date of transaction; example: ['1995-03-24', '1995-04-13']
+    `type` TEXT, -- +/- transaction; example: ['PRIJEM']
+    `operation` TEXT, -- mode of transaction; example: ['VKLAD', 'PREVOD Z UCTU']
+    `amount` INTEGER, -- amount of money; example: [1000, 3679]
+    `balance` INTEGER, -- balance after transaction; example: [1000, 4679]
+    `k_symbol` TEXT, -- characterization of the transaction; example: []
+    `bank` TEXT, -- bank of the partner; example: ['AB']
+    `account` INTEGER, -- account of the partner; example: [41403269]
+    PRIMARY KEY (`trans_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+
+Official column/value descriptions (2024 Dev release):
+{
+  "account": [
+    {
+      "original_column_name": "account_id",
+      "column_name": "account id",
+      "column_description": "the id of the account",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "district_id",
+      "column_name": "location of branch",
+      "column_description": "location of branch",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "frequency",
+      "column_name": "frequency",
+      "column_description": "frequency of the acount",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "date",
+      "column_name": "date",
+      "column_description": "the creation date of the account",
+      "data_format": "date",
+      "value_description": "in the form YYMMDD"
+    }
+  ],
+  "card": [
+    {
+      "original_column_name": "card_id",
+      "column_name": "credit card id",
+      "column_description": "id number of credit card",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "disp_id",
+      "column_name": "disposition id",
+      "column_description": "disposition id",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "type",
+      "column_name": "",
+      "column_description": "type of credit card",
+      "data_format": "text",
+      "value_description": "\"junior\": junior class of credit card; \n\"classic\": standard class of credit card; \n\"gold\": high-level credit card"
+    },
+    {
+      "original_column_name": "issued",
+      "column_name": "",
+      "column_description": "the date when the credit card issued ",
+      "data_format": "date",
+      "value_description": "in the form YYMMDD"
+    }
+  ],
+  "client": [
+    {
+      "original_column_name": "client_id",
+      "column_name": "",
+      "column_description": "the unique number",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "gender",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "F：female \nM：male "
+    },
+    {
+      "original_column_name": "birth_date",
+      "column_name": "",
+      "column_description": "birth date",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "district_id",
+      "column_name": "location of branch",
+      "column_description": "location of branch",
+      "data_format": "integer",
+      "value_description": ""
+    }
+  ],
+  "disp": [
+    {
+      "original_column_name": "disp_id",
+      "column_name": "disposition id",
+      "column_description": "unique number of identifying this row of record",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "client_id",
+      "column_name": "",
+      "column_description": "id number of client",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "account_id",
+      "column_name": "",
+      "column_description": "id number of account",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "type",
+      "column_name": "",
+      "column_description": "type of disposition",
+      "data_format": "text",
+      "value_description": "\"OWNER\" : \"USER\" : \"DISPONENT\"\ncommonsense evidence:\nthe account can only have the right to issue permanent orders or apply for loans"
+    }
+  ],
+  "district": [
+    {
+      "original_column_name": "district_id",
+      "column_name": "location of branch",
+      "column_description": "location of branch",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A2",
+      "column_name": "district_name",
+      "column_description": "district_name",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A3",
+      "column_name": "region",
+      "column_description": "region",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A4",
+      "column_name": "number of inhabitants ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A5",
+      "column_name": "no. of municipalities with inhabitants < 499",
+      "column_description": "municipality < district < region",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A6",
+      "column_name": "no. of municipalities with inhabitants 500-1999",
+      "column_description": "municipality < district < region",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A7",
+      "column_name": "no. of municipalities with inhabitants 2000-9999",
+      "column_description": "municipality < district < region",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A8",
+      "column_name": "no. of municipalities with inhabitants > 10000",
+      "column_description": "municipality < district < region",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A9",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "integer",
+      "value_description": "not useful"
+    },
+    {
+      "original_column_name": "A10",
+      "column_name": "ratio of urban inhabitants",
+      "column_description": "ratio of urban inhabitants",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A11",
+      "column_name": "average salary",
+      "column_description": "average salary",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A12",
+      "column_name": "unemployment rate 1995",
+      "column_description": "unemployment rate 1995",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A13",
+      "column_name": "unemployment rate 1996",
+      "column_description": "unemployment rate 1996",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A14",
+      "column_name": "no. of entrepreneurs per 1000 inhabitants",
+      "column_description": "no. of entrepreneurs per 1000 inhabitants",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A15",
+      "column_name": "no. of committed crimes 1995",
+      "column_description": "no. of committed crimes 1995",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "A16",
+      "column_name": "no. of committed crimes 1996",
+      "column_description": "no. of committed crimes 1996",
+      "data_format": "integer",
+      "value_description": ""
+    }
+  ],
+  "loan": [
+    {
+      "original_column_name": "loan_id",
+      "column_name": "",
+      "column_description": "the id number identifying the loan data",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "account_id",
+      "column_name": "",
+      "column_description": "the id number identifying the account",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "date",
+      "column_name": "",
+      "column_description": "the date when the loan is approved",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "amount",
+      "column_name": "",
+      "column_description": "approved amount",
+      "data_format": "integer",
+      "value_description": "unit：US dollar"
+    },
+    {
+      "original_column_name": "duration",
+      "column_name": "",
+      "column_description": "loan duration",
+      "data_format": "integer",
+      "value_description": "unit：month"
+    },
+    {
+      "original_column_name": "payments",
+      "column_name": "monthly payments",
+      "column_description": "monthly payments",
+      "data_format": "real",
+      "value_description": "unit：month"
+    },
+    {
+      "original_column_name": "status",
+      "column_name": "",
+      "column_description": "repayment status",
+      "data_format": "text",
+      "value_description": "'A' stands for contract finished, no problems;\n'B' stands for contract finished, loan not paid;\n'C' stands for running contract, OK so far;\n'D' stands for running contract, client in debt"
+    }
+  ],
+  "order": [
+    {
+      "original_column_name": "order_id",
+      "column_name": "",
+      "column_description": "identifying the unique order",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "account_id",
+      "column_name": "",
+      "column_description": "id number of account",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "bank_to",
+      "column_name": "bank of the recipient",
+      "column_description": "bank of the recipient",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "account_to",
+      "column_name": "account of the recipient",
+      "column_description": "account of the recipient",
+      "data_format": "integer",
+      "value_description": "each bank has unique two-letter code"
+    },
+    {
+      "original_column_name": "amount",
+      "column_name": "debited amount",
+      "column_description": "debited amount",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "k_symbol",
+      "column_name": "characterization of the payment",
+      "column_description": "purpose of the payment",
+      "data_format": "text",
+      "value_description": "\"POJISTNE\" stands for insurance payment\n\"SIPO\" stands for household payment\n\"LEASING\" stands for leasing\n\"UVER\" stands for loan payment"
+    }
+  ],
+  "trans": [
+    {
+      "original_column_name": "trans_id",
+      "column_name": "transaction id",
+      "column_description": "transaction id",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "account_id",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "date",
+      "column_name": "date of transaction",
+      "column_description": "date of transaction",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "type",
+      "column_name": "+/- transaction",
+      "column_description": "+/- transaction",
+      "data_format": "text",
+      "value_description": "\"PRIJEM\" stands for credit\n\"VYDAJ\" stands for withdrawal"
+    },
+    {
+      "original_column_name": "operation",
+      "column_name": "mode of transaction",
+      "column_description": "mode of transaction",
+      "data_format": "text",
+      "value_description": "\"VYBER KARTOU\": credit card withdrawal\n\"VKLAD\": credit in cash\n\"PREVOD Z UCTU\" :collection from another bank\n\"VYBER\": withdrawal in cash\n\"PREVOD NA UCET\": remittance to another bank"
+    },
+    {
+      "original_column_name": "amount",
+      "column_name": "amount of money",
+      "column_description": "amount of money",
+      "data_format": "integer",
+      "value_description": "Unit：USD"
+    },
+    {
+      "original_column_name": "balance",
+      "column_name": "balance after transaction",
+      "column_description": "balance after transaction",
+      "data_format": "integer",
+      "value_description": "Unit：USD"
+    },
+    {
+      "original_column_name": "k_symbol",
+      "column_name": "characterization of the transaction",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "\"POJISTNE\": stands for insurrance payment\n\"SLUZBY\": stands for payment for statement\n\"UROK\": stands for interest credited\n\"SANKC. UROK\": sanction interest if negative balance\n\"SIPO\": stands for household\n\"DUCHOD\": stands for old-age pension\n\"UVER\": stands for loan payment"
+    },
+    {
+      "original_column_name": "bank",
+      "column_name": "bank of the partner",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "each bank has unique two-letter code"
+    },
+    {
+      "original_column_name": "account",
+      "column_name": "account of the partner",
+      "column_description": "",
+      "data_format": "integer",
+      "value_description": ""
+    }
+  ]
+}
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

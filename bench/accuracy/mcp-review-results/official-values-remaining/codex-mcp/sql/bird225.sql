@@ -1,0 +1,43 @@
+WITH account_loans AS (
+    SELECT account_id, COUNT(*) AS loan_count, SUM(amount) AS total_borrowed
+    FROM main.loan
+    GROUP BY account_id
+),
+profiles AS (
+    SELECT
+        cl.client_id,
+        cl.gender,
+        cl.birth_date,
+        c.type AS card_type,
+        CAST(strftime('%Y', c.issued) AS INTEGER)
+            - CAST(strftime('%Y', cl.birth_date) AS INTEGER) AS age_at_issue,
+        COALESCE(l.loan_count, 0) AS loan_count,
+        COALESCE(l.total_borrowed, 0) AS total_borrowed,
+        dt.A2 AS district_name,
+        dt.A11 AS district_average_salary
+    FROM main.card AS c
+    JOIN main.disp AS d ON d.disp_id = c.disp_id
+    JOIN main.client AS cl ON cl.client_id = d.client_id
+    JOIN main.district AS dt ON dt.district_id = cl.district_id
+    LEFT JOIN account_loans AS l ON l.account_id = d.account_id
+    WHERE c.issued >= '1994-01-01' AND c.issued < '1995-01-01'
+)
+SELECT
+    client_id,
+    gender,
+    birth_date,
+    card_type,
+    age_at_issue,
+    loan_count,
+    total_borrowed,
+    CASE
+        WHEN loan_count > 0 AND age_at_issue < 30 THEN 'Young borrower'
+        WHEN loan_count > 0 AND age_at_issue >= 30 THEN 'Mature borrower'
+        ELSE 'Non-borrower'
+    END AS borrower_classification,
+    district_name,
+    district_average_salary,
+    RANK() OVER (PARTITION BY gender ORDER BY age_at_issue DESC) AS age_rank_within_gender
+FROM profiles
+ORDER BY client_id
+LIMIT 1000

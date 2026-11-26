@@ -1,0 +1,24 @@
+WITH career_results AS (
+    SELECT x.driverId, x.raceId, x.position, r.name, r.date
+    FROM results AS x
+    JOIN races AS r ON r.raceId = x.raceId
+    WHERE r.year BETWEEN 1950 AND 2017
+),
+first_win AS (
+    SELECT d.driverId,
+           d.forename || ' ' || d.surname AS full_name,
+           d.nationality,
+           w.name AS first_win_race,
+           w.date AS first_win_date
+    FROM career_results AS w
+    JOIN drivers AS d ON d.driverId = w.driverId
+    WHERE w.position = 1 AND d.dob IS NOT NULL
+    ORDER BY d.dob, full_name, d.driverId, w.date, w.name
+    LIMIT 1
+)
+SELECT f.full_name, f.nationality, f.first_win_race, f.first_win_date,
+       (SELECT COUNT(DISTINCT c.raceId)
+        FROM career_results AS c
+        WHERE c.driverId = f.driverId) AS career_starts
+FROM first_win AS f
+LIMIT 1

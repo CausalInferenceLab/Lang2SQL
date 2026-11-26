@@ -1,0 +1,541 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'm reviewing confirmed SLE cases for a study of neurologic involvement. Among patients whose examination lists SLE among the diagnosed diseases and who have a symptom recorded at such an examination, I need the case detail of the youngest such patient. Please send me the symptom recorded at that qualifying examination and that patient's overall diagnosis (their overall diagnosis, not the diagnosis written at the examination). If two patients share the same birth date, use the one with the smaller patient ID; and if that patient has more than one qualifying examination, use the most recent one.
+Provided evidence:
+SLE is systemic lupus erythematosus. A disease name followed by 'susp' means the disease was only suspected, not diagnosed.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `Examination` (
+    `ID` INTEGER, -- identification of the patient; example: [14872, 48473]
+    `Examination Date` DATE, -- Examination Date; example: ['1997-05-27', '1992-12-21']
+    `aCL IgG` REAL, -- anti-Cardiolipin antibody (IgG) concentration; example: [1.3, 4.3]
+    `aCL IgM` REAL, -- anti-Cardiolipin antibody (IgM) concentration; example: [1.6, 4.6]
+    `ANA` INTEGER, -- anti-nucleus antibody concentration; example: [256, 0]
+    `ANA Pattern` TEXT, -- pattern observed in the sheet of ANA examination; example: ['P', 'P,S']
+    `aCL IgA` INTEGER, -- anti-Cardiolipin antibody (IgA) concentration; example: [0, 3]
+    `Diagnosis` TEXT, -- disease names; example: ['MCTD, AMI', 'SLE']
+    `KCT` TEXT, -- measure of degree of coagulation; example: ['-']
+    `RVVT` TEXT, -- measure of degree of coagulation; example: ['-']
+    `LAC` TEXT, -- measure of degree of coagulation; example: ['-']
+    `Symptoms` TEXT, -- other symptoms observed; example: ['AMI']
+    `Thrombosis` INTEGER, -- degree of thrombosis; example: [1, 0]
+    FOREIGN KEY (`ID`) REFERENCES `Patient` (`ID`)
+);
+
+CREATE TABLE `Patient` (
+    `ID` INTEGER, -- identification of the patient; example: [2110, 11408]
+    `SEX` TEXT, -- Sex; example: ['F']
+    `Birthday` DATE, -- Birthday; example: ['1934-02-13', '1937-05-02']
+    `Description` DATE, -- the first date when a patient data was recorded; example: ['1994-02-14', '1996-12-01']
+    `First Date` DATE, -- the date when a patient came to the hospital; example: ['1993-02-10', '1973-01-01']
+    `Admission` TEXT, -- patient was admitted to the hospital (+) or followed at the outpatient clinic (-); example: ['+']
+    `Diagnosis` TEXT, -- disease names; example: ['RA susp.', 'PSS']
+    PRIMARY KEY (`ID`)
+);
+
+CREATE TABLE `Laboratory` (
+    `ID` INTEGER, -- identification of the patient; example: [27654]
+    `Date` DATE, -- Date of the laboratory tests (YYMMDD); example: ['1991-09-11', '1991-09-17']
+    `GOT` INTEGER, -- AST glutamic oxaloacetic transaminase; example: [34, 29]
+    `GPT` INTEGER, -- ALT glutamic pyruvic transaminase; example: [36, 31]
+    `LDH` INTEGER, -- lactate dehydrogenase; example: [567, 579]
+    `ALP` INTEGER, -- alkaliphophatase; example: [166, 154]
+    `TP` REAL, -- total protein; example: [4.5, 5.1]
+    `ALB` REAL, -- albumin; example: [3.3, 3.4]
+    `UA` REAL, -- uric acid; example: [3.8, 4.2]
+    `UN` INTEGER, -- urea nitrogen; example: [29, 36]
+    `CRE` REAL, -- creatinine; example: [0.8, 0.9]
+    `T-BIL` REAL, -- total bilirubin; example: [0.3, 0.2]
+    `T-CHO` INTEGER, -- total cholesterol; example: [165, 134]
+    `TG` INTEGER, -- triglyceride; example: []
+    `CPK` INTEGER, -- creatinine phosphokinase; example: [9, 10]
+    `GLU` INTEGER, -- blood glucose; example: [88]
+    `WBC` REAL, -- White blood cell; example: [5.0, 10.4]
+    `RBC` REAL, -- Red blood cell; example: [2.6, 2.9]
+    `HGB` REAL, -- Hemoglobin; example: [6.4, 6.7]
+    `HCT` REAL, -- Hematoclit; example: [20.3, 21.6]
+    `PLT` INTEGER, -- platelet; example: [227, 242]
+    `PT` REAL, -- prothrombin time; example: []
+    `APTT` INTEGER, -- activated partial prothrombin time; example: []
+    `FG` REAL, -- fibrinogen; example: []
+    `PIC` INTEGER, -- example: []
+    `TAT` INTEGER, -- example: []
+    `TAT2` INTEGER, -- example: []
+    `U-PRO` TEXT, -- proteinuria; example: []
+    `IGG` INTEGER, -- Ig G; example: [339, 771]
+    `IGA` INTEGER, -- Ig A; example: [145, 188]
+    `IGM` INTEGER, -- Ig M; example: [46, 132]
+    `CRP` TEXT, -- C-reactive protein; example: ['0.6', '2.7']
+    `RA` TEXT, -- Rhuematoid Factor; example: []
+    `RF` TEXT, -- RAHA; example: []
+    `C3` INTEGER, -- complement 3; example: []
+    `C4` INTEGER, -- complement 4; example: []
+    `RNP` TEXT, -- anti-ribonuclear protein; example: []
+    `SM` TEXT, -- anti-SM; example: []
+    `SC170` TEXT, -- anti-scl70; example: []
+    `SSA` TEXT, -- anti-SSA; example: []
+    `SSB` TEXT, -- anti-SSB; example: []
+    `CENTROMEA` TEXT, -- anti-centromere; example: []
+    `DNA` TEXT, -- anti-DNA; example: []
+    `DNA-II` INTEGER, -- anti-DNA; example: []
+    PRIMARY KEY (`ID`, `Date`),
+    FOREIGN KEY (`ID`) REFERENCES `Patient` (`ID`)
+);
+
+
+Official column/value descriptions (2024 Dev release):
+{
+  "Examination": [
+    {
+      "original_column_name": "ID",
+      "column_name": "",
+      "column_description": "identification of the patient",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Examination Date",
+      "column_name": "",
+      "column_description": "Examination Date",
+      "data_format": "date ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "aCL IgG",
+      "column_name": "anti-Cardiolipin antibody (IgG) ",
+      "column_description": "anti-Cardiolipin antibody (IgG) concentration",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "aCL IgM",
+      "column_name": "anti-Cardiolipin antibody (IgM) ",
+      "column_description": "anti-Cardiolipin antibody (IgM) concentration",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "ANA",
+      "column_name": "anti-nucleus antibody ",
+      "column_description": "anti-nucleus antibody concentration",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "ANA Pattern",
+      "column_name": "pattern observed in the sheet of ANA examination",
+      "column_description": "pattern observed in the sheet of ANA examination",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "aCL IgA",
+      "column_name": "anti-Cardiolipin antibody (IgA) concentration",
+      "column_description": "anti-Cardiolipin antibody (IgA) concentration",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Diagnosis",
+      "column_name": "",
+      "column_description": "disease names",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "KCT",
+      "column_name": "measure of degree of coagulation",
+      "column_description": "measure of degree of coagulation",
+      "data_format": "text",
+      "value_description": "+: positive\n\n-: negative"
+    },
+    {
+      "original_column_name": "RVVT",
+      "column_name": "measure of degree of coagulation",
+      "column_description": "measure of degree of coagulation",
+      "data_format": "text",
+      "value_description": "+: positive\n\n-: negative"
+    },
+    {
+      "original_column_name": "LAC",
+      "column_name": "measure of degree of coagulation",
+      "column_description": "measure of degree of coagulation",
+      "data_format": "text",
+      "value_description": "+: positive\n\n-: negative"
+    },
+    {
+      "original_column_name": "Symptoms",
+      "column_name": "",
+      "column_description": "other symptoms observed",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Thrombosis",
+      "column_name": "",
+      "column_description": "degree of thrombosis",
+      "data_format": "integer",
+      "value_description": "0: negative (no thrombosis)\n1: positive (the most serious)\n2: positive (severe)3: positive (mild)"
+    }
+  ],
+  "Laboratory": [
+    {
+      "original_column_name": "ID",
+      "column_name": "",
+      "column_description": "identification of the patient",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Date",
+      "column_name": "",
+      "column_description": "Date of the laboratory tests (YYMMDD)",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "GOT",
+      "column_name": "AST glutamic oxaloacetic transaminase",
+      "column_description": "AST glutamic oxaloacetic transaminase",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 60"
+    },
+    {
+      "original_column_name": "GPT",
+      "column_name": "ALT glutamic pyruvic transaminase",
+      "column_description": "ALT glutamic pyruvic transaminase",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 60"
+    },
+    {
+      "original_column_name": "LDH",
+      "column_name": "lactate dehydrogenase",
+      "column_description": "lactate dehydrogenase",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 500"
+    },
+    {
+      "original_column_name": "ALP",
+      "column_name": "alkaliphophatase",
+      "column_description": "alkaliphophatase",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 300"
+    },
+    {
+      "original_column_name": "TP",
+      "column_name": "total protein",
+      "column_description": "total protein",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: 6.0 < N < 8.5"
+    },
+    {
+      "original_column_name": "ALB",
+      "column_name": "albumin",
+      "column_description": "albumin",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: 3.5 < N < 5.5"
+    },
+    {
+      "original_column_name": "UA",
+      "column_name": "uric acid",
+      "column_description": "uric acid",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: N > 8.0 (Male)N > 6.5 (Female)"
+    },
+    {
+      "original_column_name": "UN",
+      "column_name": "urea nitrogen",
+      "column_description": "urea nitrogen",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 30"
+    },
+    {
+      "original_column_name": "CRE",
+      "column_name": "creatinine",
+      "column_description": "creatinine",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 1.5"
+    },
+    {
+      "original_column_name": "T-BIL",
+      "column_name": "total bilirubin",
+      "column_description": "total bilirubin",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 2.0"
+    },
+    {
+      "original_column_name": "T-CHO",
+      "column_name": "total cholesterol",
+      "column_description": "total cholesterol",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\nNormal range: N < 250"
+    },
+    {
+      "original_column_name": "TG",
+      "column_name": "triglyceride",
+      "column_description": "triglyceride",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 200"
+    },
+    {
+      "original_column_name": "CPK",
+      "column_name": "creatinine phosphokinase",
+      "column_description": "creatinine phosphokinase",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\nNormal range: N < 250"
+    },
+    {
+      "original_column_name": "GLU",
+      "column_name": "blood glucose",
+      "column_description": "blood glucose",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\nNormal range: N < 180"
+    },
+    {
+      "original_column_name": "WBC",
+      "column_name": "White blood cell",
+      "column_description": "White blood cell",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\nNormal range: 3.5 < N < 9.0"
+    },
+    {
+      "original_column_name": "RBC",
+      "column_name": "Red blood cell",
+      "column_description": "Red blood cell",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: 3.5 < N < 6.0"
+    },
+    {
+      "original_column_name": "HGB",
+      "column_name": "Hemoglobin",
+      "column_description": "Hemoglobin",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: 10 < N < 17"
+    },
+    {
+      "original_column_name": "HCT",
+      "column_name": "Hematoclit",
+      "column_description": "Hematoclit",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\nNormal range: 29 < N < 52"
+    },
+    {
+      "original_column_name": "PLT",
+      "column_name": "platelet",
+      "column_description": "platelet",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: 100 < N < 400"
+    },
+    {
+      "original_column_name": "PT",
+      "column_name": "prothrombin time",
+      "column_description": "prothrombin time",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 14"
+    },
+    {
+      "original_column_name": "APTT",
+      "column_name": "activated partial prothrombin time",
+      "column_description": "activated partial prothrombin time",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 45"
+    },
+    {
+      "original_column_name": "FG",
+      "column_name": "fibrinogen",
+      "column_description": "fibrinogen",
+      "data_format": "real",
+      "value_description": "Commonsense evidence:\n\nNormal range: 150 < N < 450"
+    },
+    {
+      "original_column_name": "PIC",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "TAT",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "TAT2",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "U-PRO",
+      "column_name": "proteinuria",
+      "column_description": "proteinuria",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: 0 < N < 30"
+    },
+    {
+      "original_column_name": "IGG",
+      "column_name": "Ig G",
+      "column_description": "Ig G",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: 900 < N < 2000"
+    },
+    {
+      "original_column_name": "IGA",
+      "column_name": "Ig A",
+      "column_description": "Ig A",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: 80 < N < 500"
+    },
+    {
+      "original_column_name": "IGM",
+      "column_name": "Ig M",
+      "column_description": "Ig M",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: 40 < N < 400"
+    },
+    {
+      "original_column_name": "CRP",
+      "column_name": "C-reactive protein",
+      "column_description": "C-reactive protein",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-, or N < 1.0"
+    },
+    {
+      "original_column_name": "RA",
+      "column_name": "Rhuematoid Factor",
+      "column_description": "Rhuematoid Factor",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "RF",
+      "column_name": "RAHA",
+      "column_description": "RAHA",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 20"
+    },
+    {
+      "original_column_name": "C3",
+      "column_name": "complement 3",
+      "column_description": "complement 3",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N > 35"
+    },
+    {
+      "original_column_name": "C4",
+      "column_name": "complement 4",
+      "column_description": "complement 4",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N > 10"
+    },
+    {
+      "original_column_name": "RNP",
+      "column_name": "anti-ribonuclear protein",
+      "column_description": "anti-ribonuclear protein",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "SM",
+      "column_name": "anti-SM",
+      "column_description": "anti-SM",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "SC170",
+      "column_name": "anti-scl70",
+      "column_description": "anti-scl70",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "SSA",
+      "column_name": "anti-SSA",
+      "column_description": "anti-SSA",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "SSB",
+      "column_name": "anti-SSB",
+      "column_description": "anti-SSB",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "CENTROMEA",
+      "column_name": "anti-centromere",
+      "column_description": "anti-centromere",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N= -, +-"
+    },
+    {
+      "original_column_name": "DNA",
+      "column_name": "anti-DNA",
+      "column_description": "anti-DNA",
+      "data_format": "text",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 8"
+    },
+    {
+      "original_column_name": "DNA-II",
+      "column_name": "anti-DNA",
+      "column_description": "anti-DNA",
+      "data_format": "integer",
+      "value_description": "Commonsense evidence:\n\nNormal range: N < 8"
+    }
+  ],
+  "Patient": [
+    {
+      "original_column_name": "ID",
+      "column_name": "",
+      "column_description": "identification of the patient",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "SEX",
+      "column_name": "",
+      "column_description": "Sex",
+      "data_format": "text",
+      "value_description": "F: female; M: male"
+    },
+    {
+      "original_column_name": "Birthday",
+      "column_name": "",
+      "column_description": "Birthday",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Description",
+      "column_name": "",
+      "column_description": "the first date when a patient data was recorded",
+      "data_format": "date",
+      "value_description": "null or empty: not recorded"
+    },
+    {
+      "original_column_name": "First Date",
+      "column_name": "",
+      "column_description": "the date when a patient came to the hospital",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "Admission",
+      "column_name": "",
+      "column_description": "patient was admitted to the hospital (+) or followed at the outpatient clinic (-)",
+      "data_format": "text",
+      "value_description": "patient was admitted to the hospital (+) or followed at the outpatient clinic (-)"
+    },
+    {
+      "original_column_name": "Diagnosis",
+      "column_name": "",
+      "column_description": "disease names",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ]
+}
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird452",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "4afa797ca0162e9cc7ac755578cc80f5a14fbf81f5d747b076e4a35ec414217b",
+  "events_sha256": "25cd6fc59b2671ae8f7125cbbd233c5f4f7babb8d97c228eefa23151a177fe9c",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 193868,
+      "cached_input_tokens": 178304,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 693,
+      "reasoning_output_tokens": 43
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Examination"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Examination (table)\n- ID: INTEGER\n- Examination Date: DATE\n- aCL IgG: REAL\n- aCL IgM: REAL\n- ANA: INTEGER\n- ANA Pattern: TEXT\n- aCL IgA: INTEGER\n- Diagnosis: TEXT\n- KCT: TEXT\n- RVVT: TEXT\n- LAC: TEXT\n- Symptoms: TEXT\n- Thrombosis: INTEGER\nFOREIGN KEY (ID) REFERENCES Patient (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"3Yv131NoHgucUMokIFU-q6YPf11CYIqFd2vJs-GSSyE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "3Yv131NoHgucUMokIFU-q6YPf11CYIqFd2vJs-GSSyE",
+        "sql": "SELECT e.Diagnosis, COUNT(*) AS exams, GROUP_CONCAT(DISTINCT e.Symptoms) AS symptoms\nFROM Examination AS e\nWHERE e.Diagnosis LIKE '%sle%' OR e.Diagnosis LIKE '%lupus%'\nGROUP BY e.Diagnosis"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nResult coverage: fetched_rows=13; displayed_rows=13; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Diagnosis=str; exams=int; symptoms=NoneType,str\nDiagnosis | exams | symptoms\n--- | --- | ---\nJRA->SLE | 1 | None\nSLE | 17 | thrombophlebitis,thrombocytopenia,CNS lupus,Apo\nSLE susp | 1 | None\nSLE+ABN+LIVER D+PM0 | 1 | None\nSLE+PH | 1 | PH\nSLE+Psy | 1 | CNS susp\nSLE, AIHA | 1 | None\nSLE, ITP, LA(-) | 1 | None\nSLE, NS | 1 | None\nSLE, PM, SjS | 1 | None\nSLE, SjS | 2 | None\nSLE, SjS, ITP | 1 | None\nSLE, SjS, vertigo | 1 | None\nSQL: SELECT e.Diagnosis, COUNT(*) AS exams, GROUP_CONCAT(DISTINCT e.Symptoms) AS symptoms\nFROM Examination AS e\nWHERE e.Diagnosis LIKE '%sle%' OR e.Diagnosis LIKE '%lupus%'\nGROUP BY e.Diagnosis\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"uKl6lGqmrCmy6bCcn_MIhvVtzvF9lMhx1szCxvu8rWc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "uKl6lGqmrCmy6bCcn_MIhvVtzvF9lMhx1szCxvu8rWc",
+        "expected_columns": [
+          "Symptoms",
+          "overall_diagnosis"
+        ],
+        "expected_rows": 1,
+        "sql": "SELECT e.Symptoms, p.Diagnosis AS overall_diagnosis\nFROM Examination AS e\nJOIN Patient AS p ON p.ID = e.ID\nWHERE TRIM(e.Symptoms) <> ''\n  AND p.Birthday IS NOT NULL\n  AND (',' || REPLACE(REPLACE(REPLACE(e.Diagnosis, ' ', ''), '+', ','), '->', ',') || ',')\n      LIKE '%,SLE,%'\nORDER BY p.Birthday DESC, p.ID ASC, e.\"Examination Date\" DESC\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Symptoms=str; overall_diagnosis=str\nSymptoms | overall_diagnosis\n--- | ---\nCNS susp | SLE\nSQL: SELECT e.Symptoms, p.Diagnosis AS overall_diagnosis\nFROM Examination AS e\nJOIN Patient AS p ON p.ID = e.ID\nWHERE TRIM(e.Symptoms) <> ''\n  AND p.Birthday IS NOT NULL\n  AND (',' || REPLACE(REPLACE(REPLACE(e.Diagnosis, ' ', ''), '+', ','), '->', ',') || ',')\n      LIKE '%,SLE,%'\nORDER BY p.Birthday DESC, p.ID ASC, e.\"Examination Date\" DESC\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT e.Symptoms, p.Diagnosis AS overall_diagnosis\nFROM Examination AS e\nJOIN Patient AS p ON p.ID = e.ID\nWHERE TRIM(e.Symptoms) <> ''\n  AND p.Birthday IS NOT NULL\n  AND (',' || REPLACE(REPLACE(REPLACE(e.Diagnosis, ' ', ''), '+', ','), '->', ',') || ',')\n      LIKE '%,SLE,%'\nORDER BY p.Birthday DESC, p.ID ASC, e.\"Examination Date\" DESC\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT e.Symptoms, p.Diagnosis AS overall_diagnosis\nFROM Examination AS e\nJOIN Patient AS p ON p.ID = e.ID\nWHERE TRIM(e.Symptoms) <> ''\n  AND p.Birthday IS NOT NULL\n  AND (',' || REPLACE(REPLACE(REPLACE(e.Diagnosis, ' ', ''), '+', ','), '->', ',') || ',')\n      LIKE '%,SLE,%'\nORDER BY p.Birthday DESC, p.ID ASC, e.\"Examination Date\" DESC\nLIMIT 1",
+  "seconds": 28.420506791910157
+}

@@ -259,6 +259,40 @@ def test_schema_input_is_pinned_and_separate_from_gold(tmp_path):
         load_schema_documents(Path("bench/accuracy/bird-schema.json"), "spider2")
 
 
+def test_official_value_descriptions_are_reproducible_and_pinned(tmp_path):
+    import json
+    from pathlib import Path
+
+    from bench.accuracy.build_bird_descriptions import build_documents
+    from bench.accuracy.evaluate import load_schema_documents
+
+    root = Path("bench/accuracy")
+    baseline = load_schema_documents(root / "bird-schema.json", "bird")
+    enriched = load_schema_documents(root / "bird-schema-with-values.json", "bird")
+    assert enriched == build_documents(root / "bird-value-descriptions", baseline)
+    assert all(enriched[db].startswith(text) for db, text in baseline.items())
+    assert "0: negative (no thrombosis)" in enriched["thrombosis_prediction"]
+    assert "If the weight_kg is NULL or 0" in enriched["superhero"]
+    enriched["superhero"] += "\nSELECT 42 -- injected answer"
+    modified = tmp_path / "modified.json"
+    modified.write_text(json.dumps(enriched))
+    with pytest.raises(ValueError, match="pinned"):
+        load_schema_documents(modified, "bird")
+
+
+def test_description_builder_rejects_changed_source(tmp_path):
+    import json
+
+    from bench.accuracy.build_bird_descriptions import build_documents
+
+    (tmp_path / "table.csv").write_text("modified")
+    (tmp_path / "provenance.json").write_text(
+        json.dumps({"files": {"table.csv": "not-the-file-hash"}})
+    )
+    with pytest.raises(ValueError, match="Official description changed"):
+        build_documents(tmp_path, {})
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("quota", [True, False])
 async def test_account_quota_stops_without_retry_but_rate_limit_can_retry(

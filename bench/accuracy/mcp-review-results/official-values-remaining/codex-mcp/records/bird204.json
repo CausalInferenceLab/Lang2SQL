@@ -1,0 +1,172 @@
+{
+  "instance_id": "bird204",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "86068cc366664d5d7d117abe1b91684c3ba55838a055d9a60e8a6c89a7e6419e",
+  "events_sha256": "4dfa0963e44c68b65394a89c88bf2b7d6e92750c211997636022f5d4c5c527fd",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 188301,
+      "cached_input_tokens": 173568,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 640,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "disp"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "disp (table)\n- disp_id: INTEGER NOT NULL\n- client_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- type: TEXT NOT NULL\nPRIMARY KEY (disp_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)\nFOREIGN KEY (client_id) REFERENCES client (client_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"p_LhlkKQgWuoqePUcUofjAf5WvqlQMHTWM0vuojq2wM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "trans"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "trans (table)\n- trans_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- type: TEXT NOT NULL\n- operation: TEXT\n- amount: INTEGER NOT NULL\n- balance: INTEGER NOT NULL\n- k_symbol: TEXT\n- bank: TEXT\n- account: INTEGER\nPRIMARY KEY (trans_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "client"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "client (table)\n- client_id: INTEGER NOT NULL\n- gender: TEXT NOT NULL\n- birth_date: DATE NOT NULL\n- district_id: INTEGER NOT NULL\nPRIMARY KEY (client_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "p_LhlkKQgWuoqePUcUofjAf5WvqlQMHTWM0vuojq2wM",
+        "sql": "SELECT 'purpose' AS field, quote(t.k_symbol) AS value FROM main.trans AS t GROUP BY t.k_symbol\nUNION ALL\nSELECT 'role', d.type FROM main.disp AS d GROUP BY d.type\nUNION ALL\nSELECT c.gender, MIN(c.birth_date) FROM main.client AS c GROUP BY c.gender"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nResult coverage: fetched_rows=13; displayed_rows=13; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): field=str; value=str\nfield | value\n--- | ---\npurpose | NULL\npurpose | ' '\npurpose | 'DUCHOD'\npurpose | 'POJISTNE'\npurpose | 'SANKC. UROK'\npurpose | 'SIPO'\npurpose | 'SLUZBY'\npurpose | 'UROK'\npurpose | 'UVER'\nrole | DISPONENT\nrole | OWNER\nF | 1914-03-01\nM | 1911-08-20\nSQL: SELECT 'purpose' AS field, quote(t.k_symbol) AS value FROM main.trans AS t GROUP BY t.k_symbol\nUNION ALL\nSELECT 'role', d.type FROM main.disp AS d GROUP BY d.type\nUNION ALL\nSELECT c.gender, MIN(c.birth_date) FROM main.client AS c GROUP BY c.gender\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"vH90H6NM3AQ2Bb4xhTbDPI4OgaDlqLXFzOzJrAtdirQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "vH90H6NM3AQ2Bb4xhTbDPI4OgaDlqLXFzOzJrAtdirQ",
+        "expected_rows": 1,
+        "expected_columns": [
+          "transaction_count"
+        ],
+        "sql": "SELECT COUNT(*) AS transaction_count\nFROM main.trans AS t\nWHERE (t.k_symbol IS NULL OR TRIM(t.k_symbol) = '')\n  AND t.account_id IN (\n      SELECT d.account_id\n      FROM main.disp AS d\n      JOIN main.client AS c ON c.client_id = d.client_id\n      WHERE d.type = 'OWNER'\n        AND c.gender = 'M'\n        AND c.birth_date >= '1974-01-01'\n        AND c.birth_date < '1977-01-01'\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): transaction_count=int\ntransaction_count\n---\n17195\nSQL: SELECT COUNT(*) AS transaction_count\nFROM main.trans AS t\nWHERE (t.k_symbol IS NULL OR TRIM(t.k_symbol) = '')\n  AND t.account_id IN (\n      SELECT d.account_id\n      FROM main.disp AS d\n      JOIN main.client AS c ON c.client_id = d.client_id\n      WHERE d.type = 'OWNER'\n        AND c.gender = 'M'\n        AND c.birth_date >= '1974-01-01'\n        AND c.birth_date < '1977-01-01'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS transaction_count\nFROM main.trans AS t\nWHERE (t.k_symbol IS NULL OR TRIM(t.k_symbol) = '')\n  AND t.account_id IN (\n      SELECT d.account_id\n      FROM main.disp AS d\n      JOIN main.client AS c ON c.client_id = d.client_id\n      WHERE d.type = 'OWNER'\n        AND c.gender = 'M'\n        AND c.birth_date >= '1974-01-01'\n        AND c.birth_date < '1977-01-01'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS transaction_count\nFROM main.trans AS t\nWHERE (t.k_symbol IS NULL OR TRIM(t.k_symbol) = '')\n  AND t.account_id IN (\n      SELECT d.account_id\n      FROM main.disp AS d\n      JOIN main.client AS c ON c.client_id = d.client_id\n      WHERE d.type = 'OWNER'\n        AND c.gender = 'M'\n        AND c.birth_date >= '1974-01-01'\n        AND c.birth_date < '1977-01-01'\n  )\nLIMIT 1",
+  "seconds": 27.336785792023875
+}
