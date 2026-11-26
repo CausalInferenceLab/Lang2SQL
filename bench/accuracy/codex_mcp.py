@@ -91,6 +91,25 @@ def review_evidence(record):
     )
 
 
+def failed_cases(cases, source):
+    """Select failures from one completed run; never pass grading data to inference."""
+    prior = json.loads((source / "manifest.json").read_text())["cases"]
+    status = json.loads((source / "codex-mcp/status.json").read_text())
+    if status.get("status") != "completed":
+        raise ValueError("Failure selection requires a completed source run")
+    scores = json.loads((source / "codex-mcp/scores.json").read_text())
+    by_id = {row["instance_id"]: row for row in scores}
+    prior_ids = {case["instance_id"] for case in prior}
+    if len(by_id) != len(scores) or set(by_id) != prior_ids:
+        raise ValueError("Source scores must cover every source case exactly once")
+    if any(row["score"] not in (0, 1) for row in scores):
+        raise ValueError("Source scores must be binary execution grades")
+    current = {case["instance_id"]: case for case in cases}
+    if any(current.get(case["instance_id"]) != case for case in prior):
+        raise ValueError("Source cases must match current questions and inputs")
+    return [case for case in prior if by_id[case["instance_id"]]["score"] == 0]
+
+
 async def run(args):
     repo = Path(__file__).resolve().parents[2]
     manifest = json.loads(args.manifest.read_text())
@@ -102,6 +121,12 @@ async def run(args):
     manifest["cases"] = [
         c for c in manifest["cases"] if selected is None or c["instance_id"] in selected
     ]
+    if args.failures_from:
+        manifest["cases"] = failed_cases(manifest["cases"], args.failures_from)
+        logger.info("Failed-case selection source=%s selected=%d", args.failures_from, len(manifest["cases"]))
+        if not manifest["cases"]:
+            logger.info("No failed cases remain in the source run; no model calls made")
+            return
     if args.output.exists():
         raise ValueError("Use a fresh output directory; never overwrite attempts")
     args.output.mkdir(parents=True)
@@ -142,6 +167,11 @@ async def run(args):
             },
             "schema_document_sha256": digest(args.schema_docs),
             "review_source": str(args.review_source) if args.review_source else None,
+            "failure_selection": {
+                "source": str(args.failures_from),
+                "scores_sha256": digest(args.failures_from / "codex-mcp/scores.json"),
+                "metric": "repair rate on prior failures, not full benchmark accuracy",
+            } if args.failures_from else None,
             "split": args.split,
             "concurrency": args.concurrency,
             "case_timeout": args.case_timeout,
@@ -340,6 +370,7 @@ def main():
         "--split", choices=["development", "all"], default="development"
     )
     parser.add_argument("--review-source", type=Path, help="Prior run directory; pass only prior model answer/tool observations, never scores")
+    parser.add_argument("--failures-from", type=Path, help="Run only score=0 cases from this completed run; grades select cases but never enter model prompts")
     parser.add_argument("--model", required=True)
     parser.add_argument("--reasoning-effort", default="high")
     parser.add_argument("--concurrency", type=int, default=2)
