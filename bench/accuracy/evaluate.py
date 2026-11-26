@@ -36,6 +36,8 @@ SCHEMA_SHA = {
     "bird": (
         "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
         "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
+        # Optional cited domain-document condition, not an official task annotation.
+        "68be30a7d9e1101d2373ecbf23966200e9cb0a13fb7fa48a3a6eac267e860d67",
     ),
     "spider2": ("195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",),
 }
@@ -111,7 +113,7 @@ def load_schema_documents(path, suite):
         return {}
     schema_sha = digest(path)
     if schema_sha not in SCHEMA_SHA.get(suite, ()):
-        raise ValueError("Schema documentation must match the pinned benchmark release")
+        raise ValueError("Schema documentation must match a pinned benchmark input variant")
     documents = json.loads(path.read_text())
     if not isinstance(documents, dict) or not all(
         isinstance(db, str) and isinstance(doc, str) for db, doc in documents.items()

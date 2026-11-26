@@ -293,6 +293,24 @@ def test_description_builder_rejects_changed_source(tmp_path):
         build_documents(tmp_path, {})
 
 
+def test_cited_frame_document_is_separate_and_reproducible():
+    import hashlib
+    import json
+    from pathlib import Path
+
+    from bench.accuracy.evaluate import load_schema_documents
+
+    root = Path("bench/accuracy")
+    source = root / "card-frame-document/sources.json"
+    assert hashlib.sha256(source.read_bytes()).hexdigest() == "c6b1a1cf3e8ae32288d0feb38e205e0cf64aa171d00c2a3e0d90c4aa19ae59d3"
+    metadata = json.loads(source.read_text())
+    baseline = load_schema_documents(root / "bird-schema-with-values.json", "bird")
+    variant = load_schema_documents(root / "bird-schema-with-frame-document.json", "bird")
+    baseline["card_games"] += "\n\n" + metadata["text"]
+    assert variant == baseline
+    assert len(metadata["sources"]) == 4
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("quota", [True, False])
 async def test_account_quota_stops_without_retry_but_rate_limit_can_retry(
