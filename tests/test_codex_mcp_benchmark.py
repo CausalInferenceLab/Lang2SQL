@@ -231,7 +231,8 @@ async def test_selection_contract_precedes_output_and_inference(
 
 @pytest.mark.asyncio
 @pytest.mark.parametrize("timeout", [False, True])
-async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monkeypatch, timeout):
+@pytest.mark.parametrize("cache_columns", [False, True])
+async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monkeypatch, timeout, cache_columns):
     import asyncio
     import hashlib
     import json
@@ -245,7 +246,10 @@ async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monk
     schema = tmp_path / "schema.json"
     schema.write_text("{}")
     monkeypatch.setattr(runner, "validate_inputs", lambda *a: None)
-    monkeypatch.setattr(runner, "load_schema_documents", lambda *a: {"fixture": "fixture schema"})
+    document = "fixture schema" + runner.DESCRIPTION_MARKER + json.dumps({
+        "fixture": [{"original_column_name": "value", "column_description": "Exact source description"}],
+    })
+    monkeypatch.setattr(runner, "load_schema_documents", lambda *a: {"fixture": document})
     monkeypatch.setattr(runner.subprocess, "check_output", lambda *a, **k: "test-version")
     monkeypatch.setattr(runner, "export_result", lambda *a: 1)
     raw_event = json.dumps({"type": "item.completed", "item": event()["item"]}) + "\n"
@@ -271,6 +275,15 @@ async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monk
     process = Process()
 
     async def spawn(*command, **kwargs):
+        if cache_columns:
+            from lang2sql.adapters.storage.sqlite_store import SqliteStore
+            configured = next(v for v in command if v.startswith("mcp_servers.lang2sql.args="))
+            server_args = json.loads(configured.split("=", 1)[1])
+            cache = SqliteStore(server_args[server_args.index("--store") + 1])
+            try:
+                assert "Exact source description" in cache.kv_get("benchmark", "enriched_desc:fixture:value")
+            finally:
+                cache.close()
         kwargs["stdout"].write(raw_event.encode())
         kwargs["stdout"].flush()
         Path(command[command.index("--output-last-message") + 1]).write_text("```sql\nSELECT 1\n```")
@@ -283,7 +296,7 @@ async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monk
         root=tmp_path, schema_docs=schema, split="all", output=tmp_path / "run",
         model="test-model", reasoning_effort="high", concurrency=1,
         case_timeout=0.01 if timeout else 1, sql_timeout=1, max_rows=100,
-        review_source=None, expected_cases=1,
+        review_source=None, expected_cases=1, cache_official_columns=cache_columns,
     )
     await runner.run(args)
     root = args.output / "codex-mcp"
@@ -382,3 +395,24 @@ def test_repeated_request_alias_binds_to_latest_successful_execution():
     assert executed_sql("```sql\nSELECT x FROM t\n```", calls) == "SELECT x FROM t LIMIT 5"
     # An earlier executed SQL is still valid when the final answer names it explicitly.
     assert executed_sql("```sql\nSELECT x FROM t LIMIT 2\n```", calls) == "SELECT x FROM t LIMIT 2"
+
+
+@pytest.mark.asyncio
+async def test_official_cache_rejects_baseline_metadata_before_model_calls(tmp_path, monkeypatch):
+    import json
+    from pathlib import Path
+    from types import SimpleNamespace
+
+    from bench.accuracy import codex_mcp as runner
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"suite": "bird", "cases": [], "db_sha256": {}}))
+    monkeypatch.setattr(runner, "validate_inputs", lambda *a: None)
+    args = SimpleNamespace(
+        exclude_passed_from=[], failures_from=None, manifest=manifest, db_dir=tmp_path,
+        schema_docs=Path("bench/accuracy/bird-schema.json"), cache_official_columns=True,
+        output=tmp_path / "run",
+    )
+    with pytest.raises(ValueError, match="requires the pinned BIRD"):
+        await runner.run(args)
+    assert not args.output.exists()
