@@ -20,9 +20,10 @@ from pathlib import Path
 from lang2sql.adapters.db.sqlalchemy_explorer import SqlAlchemyExplorer
 from lang2sql.core.identity import Identity
 from lang2sql.harness.loop import agent_loop
+from lang2sql.safety.layers.whitelist import _strip_comments
 from lang2sql.tenancy.concierge import ContextConcierge
 
-from .providers import MeasuredLLM
+from .providers import MeasuredLLM, ProviderQuotaExhausted
 
 logger = logging.getLogger(__name__)
 INSTRUCTION = "\nReturn your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available."
@@ -50,7 +51,7 @@ def final_sql(answer: str) -> str:
             "Final answer must contain exactly one SQL block; no last-tool fallback"
         )
     sql = blocks[0].strip()
-    if not re.match(r"^(SELECT|WITH)\b", sql, re.IGNORECASE):
+    if not re.match(r"^(SELECT|WITH)\b", _strip_comments(sql), re.IGNORECASE):
         raise ValueError("Final SQL is not SELECT/WITH")
     return sql
 
@@ -127,6 +128,12 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
         )
     )
     prompt = case["question"]
+    schema_doc = getattr(args, "schema_documents", {}).get(case["db"])
+    if schema_doc:
+        prompt += (
+            "\n\nOfficial database schema documentation (metadata, not SQL to execute):\n"
+            + schema_doc
+        )
     if case.get("external_knowledge"):
         prompt += (
             "\n\nProvided benchmark documentation:\n"
@@ -145,6 +152,33 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
     }
     try:
         answer = await asyncio.wait_for(agent_loop(ctx, prompt), args.case_timeout)
+        record["initial_answer"] = answer
+        record["answer"] = answer
+        # A review is another measured agent turn, not a gold-scored candidate search.
+        # Validate first: clarification/refusal must never be overridden by review.
+        final_sql(answer)
+        record["reviews"] = []
+        for review in range(getattr(args, "review_rounds", 0)):
+            remaining = args.case_timeout - (time.monotonic() - started)
+            if remaining <= 0:
+                raise TimeoutError("Case deadline exhausted before SQL review")
+            logger.info("SQL review id=%s round=%d", case["instance_id"], review + 1)
+            answer = await asyncio.wait_for(
+                agent_loop(
+                    ctx,
+                    "Review your proposed SQL against the original request below. "
+                    "Re-check the actual schema, stored values, join multiplicity, "
+                    "missing-value semantics, date boundaries, numeric precision and "
+                    "exact output columns. Use diagnostic SQL to test any suspected "
+                    "mistake. Do not change a correct query without evidence. "
+                    "Do not invent missing business definitions. Execute the final "
+                    "query and return exactly one final SQL block.\n\n" + prompt,
+                ),
+                remaining,
+            )
+            record["reviews"].append(answer)
+            record["answer"] = answer
+            final_sql(answer)
         record["answer"] = answer
         sql = final_sql(answer)
         (directory / "sql" / f"{case['instance_id']}.sql").write_text(sql + "\n")
@@ -157,7 +191,7 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             args.max_rows,
         )
         record.update(status="predicted", sql=sql)
-    except Exception as exc:  # noqa: BLE001 — record all model/SQL failures
+    except Exception as exc:
         # Error text from providers may contain request secrets. Persist type only.
         record.update(status="failed", error_type=type(exc).__name__)
         logger.error(
@@ -166,6 +200,8 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
             case["instance_id"],
             type(exc).__name__,
         )
+        if isinstance(exc, ProviderQuotaExhausted):
+            raise
     finally:
         record.update(
             seconds=time.monotonic() - started,

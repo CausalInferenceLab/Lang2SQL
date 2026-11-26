@@ -101,3 +101,65 @@ configuration. Changing the model, prompt, budget or source creates a new
 experiment; historical scores under different configurations are not paired
 improvement measurements. `--split all` is for a new explicitly reported full
 public-dev run, not a way to hide development-set selection.
+
+
+## Accuracy improvement experiment
+
+See [diagnostics](diagnostics/README.md) for all baseline errors and the new
+protocol. Old holdout questions have now been inspected: subsequent replays are
+**development-exposed public-set results**, not independent held-out accuracy.
+
+New optional flags (baseline defaults remain unchanged):
+
+```sh
+# Choose the appropriate pinned schema map for the suite.
+--schema-docs bench/accuracy/bird-schema.json
+--schema-docs bench/accuracy/spider2-schema.json
+# Number of additional measured SQL-review turns; 0 by default.
+--review-rounds 1
+```
+
+Review uses the existing agent loop and the same total API/time budget. It does
+not see gold, and the last answer is scored even if review makes it worse. A
+clarifying/non-SQL answer is never overridden to force a prediction. Schema maps
+contain official metadata/examples only; their exact file hashes are validated
+before any model call and recorded in settings. Optional context changes are
+reported as part of the treatment, not attributed solely to model or prompt.
+
+
+An optional profile `"api": "responses"` (see `models-responses.json`) compares
+Responses with Chat Completions. It retains provider-returned opaque reasoning
+items across tool calls for the exact message prefix and tool definitions, with
+`store=false`; it does not add provider types to the core domain or enable a
+second retry loop. The cache is bounded by the case call budget and is never
+shared between cases. Profile settings and returned/replayed item counts are
+recorded. Higher reasoning effort is an experiment, not an assumed improvement.
+The production frontend/provider default is unchanged.
+
+
+Latest outcome: [investigation and incomplete follow-up](IMPROVEMENT_RESULTS.md).
+The 95% target was not reached; full-v3 stopped on account credit exhaustion.
+Structured account-quota errors now abort the batch without retrying every
+remaining question. Ordinary transient rate limits keep the configured bounded
+retry. An aborted/partial run cannot publish an accuracy score.
+
+
+## ChatGPT-authenticated Codex MCP experiment
+
+[Same-question comparison and limitations](CODEX_MCP_RESULTS.md).
+The real production MCP path can be evaluated without loading an API key:
+
+```sh
+PYTHONPATH=src:. uv run python -m bench.accuracy.codex_mcp \
+  --root "$SPIDER" --db-dir "$BIRD_DB" \
+  --manifest bench/accuracy/bird-manifest.json \
+  --schema-docs bench/accuracy/bird-schema.json \
+  --split development --output "$RUN"
+```
+
+Use the matching Spider manifest/schema map and DB directory for Spider. Requires
+Codex CLI ChatGPT login. A final SQL block counts as MCP success only if the same
+SQL actually ran through the production `run_sql` tool. Missing definitions are
+not silently seeded or bypassed. The default model is left to Codex; no resolved
+model identifier is asserted. Internal API calls are not observable, so report
+CLI invocations and captured usage separately from API-harness measurements.

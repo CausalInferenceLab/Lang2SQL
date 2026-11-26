@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import time
 from collections.abc import Sequence
@@ -14,7 +15,30 @@ from lang2sql.adapters.llm.openai_ import (
 )
 from lang2sql.core.types import Message, ToolSpec
 
+from .responses import ResponsesCodec
+
 logger = logging.getLogger(__name__)
+
+
+class ProviderQuotaExhausted(RuntimeError):
+    """Account quota requires intervention, not another prediction attempt."""
+
+
+def quota_exhausted(exc):
+    body = getattr(exc, "body", None)
+    if not isinstance(body, dict):
+        response = getattr(exc, "response", None)
+        try:
+            body = response.json() if response is not None else json.loads(body or "{}")
+        except (ValueError, TypeError):
+            return False
+    if not isinstance(body, dict):
+        return False
+    error = body.get("error", body)
+    return isinstance(error, dict) and any(
+        error.get(field) in {"insufficient_quota", "credit_balance_exhausted"}
+        for field in ("code", "type")
+    )
 
 
 class MeasuredLLM:
@@ -23,6 +47,7 @@ class MeasuredLLM:
         self.timeout, self.max_calls = timeout, max_calls
         self.calls: list[dict] = []
         self.provider_messages: dict[str, dict] = {}
+        self.responses = ResponsesCodec(max_calls)
 
     async def complete(
         self, messages: Sequence[Message], tools: Sequence[ToolSpec] = ()
@@ -55,6 +80,24 @@ class MeasuredLLM:
             kwargs["api_base"] = self.profile["api_base"]
         if tools:
             kwargs["tools"] = [_encode_tool(t) for t in tools]
+        api = acompletion
+        if self.profile.get("api") == "responses":
+            from litellm import aresponses
+
+            items, response_tools = self.responses.encode(messages, tools)
+            kwargs.pop("messages")
+            kwargs.pop("reasoning_effort", None)
+            kwargs.pop("tools", None)
+            kwargs["input"] = items
+            kwargs["max_output_tokens"] = kwargs.pop("max_completion_tokens")
+            kwargs["store"] = False
+            kwargs["include"] = ["reasoning.encrypted_content"]
+            kwargs["reasoning"] = {
+                "effort": self.profile.get("reasoning_effort", "high")
+            }
+            if response_tools:
+                kwargs["tools"] = response_tools
+            api = aresponses
         retries = self.profile.get("transport_retries", 0)
         for attempt in range(retries + 1):
             if len(self.calls) >= self.max_calls:
@@ -70,11 +113,34 @@ class MeasuredLLM:
             self.calls.append(entry)
             start = time.monotonic()
             try:
-                response = await acompletion(**kwargs)
-                raw = response.model_dump()
+                response = await api(**kwargs)
+                raw = (
+                    response.model_dump(by_alias=True, exclude_none=True)
+                    if self.profile.get("api") == "responses"
+                    else response.model_dump()
+                )
                 entry.update(
                     status="ok", usage=raw.get("usage"), response_model=raw.get("model")
                 )
+                if self.profile.get("api") == "responses":
+                    if entry["usage"] is not None:
+                        for source, target in (
+                            ("input_tokens", "prompt_tokens"),
+                            ("output_tokens", "completion_tokens"),
+                        ):
+                            if source in entry["usage"]:
+                                entry["usage"][target] = entry["usage"][source]
+                    entry["response_status"] = raw.get("status")
+                    entry["reasoning_items_returned"] = sum(
+                        item.get("type") == "reasoning"
+                        for item in raw.get("output", [])
+                    )
+                    entry["reasoning_items_replayed"] = sum(
+                        item.get("type") == "reasoning" for item in kwargs["input"]
+                    )
+                    entry["incomplete_details"] = raw.get("incomplete_details")
+                    return self.responses.decode(raw, messages, tools)
+                entry["finish_reason"] = raw["choices"][0].get("finish_reason")
                 msg = raw["choices"][0]["message"]
                 for call in msg.get("tool_calls") or []:
                     self.provider_messages[call["id"]] = {
@@ -83,6 +149,12 @@ class MeasuredLLM:
                 return _decode_completion(raw)
             except Exception as exc:
                 entry.update(status="error", error_type=type(exc).__name__)
+                if quota_exhausted(exc):
+                    entry["error_category"] = "quota_exhausted"
+                    logger.error("API quota exhausted profile=%s", self.profile["name"])
+                    raise ProviderQuotaExhausted(
+                        "Provider account quota exhausted"
+                    ) from None
                 retry = (
                     isinstance(exc, (Timeout, APIConnectionError, RateLimitError))
                     and attempt < retries

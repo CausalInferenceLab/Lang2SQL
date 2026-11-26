@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 _KV_PREFIX = "enriched_desc"
 
 
-def _apply_enrichment_cache(table: Table, ctx: "HarnessContext") -> Table:
+def _apply_enrichment_cache(table: Table, ctx: HarnessContext) -> Table:
     """Overlay KV-cached descriptions onto columns that lack one."""
     if ctx.store is None:
         return table
@@ -38,7 +38,7 @@ class ExploreSchema:
     def spec(self) -> ToolSpec:
         return ToolSpec(
             name="explore_schema",
-            description="List tables and views, or describe one object's columns. Call before writing SQL.",
+            description="List tables and views, or describe one object's columns, primary key and foreign keys. Call before writing SQL.",
             parameters={
                 "type": "object",
                 "properties": {
@@ -50,7 +50,7 @@ class ExploreSchema:
             },
         )
 
-    async def run(self, args: dict[str, Any], ctx: "HarnessContext") -> ToolResult:
+    async def run(self, args: dict[str, Any], ctx: HarnessContext) -> ToolResult:
         if ctx.explorer is None:
             return ToolResult(
                 call_id="", content="no DB connected (use /connect)", is_error=True
@@ -78,4 +78,21 @@ class ExploreSchema:
             )
             or "(no columns)"
         )
-        return ToolResult(call_id="", content=f"{t.qualified} ({t.kind})\n{cols}")
+        constraints = []
+        if t.primary_key:
+            constraints.append("PRIMARY KEY (" + ", ".join(t.primary_key) + ")")
+        for fk in t.foreign_keys:
+            target = (
+                fk.referred_schema + "." if fk.referred_schema else ""
+            ) + fk.referred_table
+            constraints.append(
+                "FOREIGN KEY ("
+                + ", ".join(fk.columns)
+                + ") REFERENCES "
+                + target
+                + " ("
+                + ", ".join(fk.referred_columns)
+                + ")"
+            )
+        detail = "\n".join([f"{t.qualified} ({t.kind})", cols, *constraints])
+        return ToolResult(call_id="", content=detail)

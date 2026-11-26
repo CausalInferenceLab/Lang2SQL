@@ -27,10 +27,15 @@ from bench.spider2.evaluate import (
 from bench.spider2.evaluate import (
     score as score_spider,
 )
+from bench.spider2.providers import ProviderQuotaExhausted
 
 logger = logging.getLogger(__name__)
 BIRD_REVISION = "5b256b5a9c17478f06ed6912612e9a14d17065c8"
 BIRD_QUESTIONS_SHA = "926af2a0d1b47e5d0d15a7aa8a34d4721007f4550a881555b6a89496b54a2606"
+SCHEMA_SHA = {
+    "bird": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+    "spider2": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+}
 SEED = 20261126
 INPUT_KEYS = {
     "instance_id",
@@ -97,11 +102,30 @@ def validate_inputs(manifest, db_dir):
             raise ValueError("Database changed: " + db)
 
 
+def load_schema_documents(path, suite):
+    """Only the pinned official schema map is accepted, never annotated SQL rows."""
+    if path is None:
+        return {}
+    if digest(path) != SCHEMA_SHA.get(suite):
+        raise ValueError("Schema documentation must match the pinned benchmark release")
+    documents = json.loads(path.read_text())
+    if not isinstance(documents, dict) or not all(
+        isinstance(db, str) and isinstance(doc, str) for db, doc in documents.items()
+    ):
+        raise ValueError("Schema documentation must be a database-to-text map")
+    return documents
+
+
 async def run(args):
     from dotenv import dotenv_values
 
     manifest = json.loads(args.manifest.read_text())
     validate_inputs(manifest, args.db_dir)
+    args.schema_documents = load_schema_documents(args.schema_docs, manifest["suite"])
+    if args.schema_documents and any(
+        c["db"] not in args.schema_documents for c in manifest["cases"]
+    ):
+        raise ValueError("Missing database schema documentation")
     if manifest["suite"] == "spider2":
         validate_manifest(manifest, args.root, args.db_dir)
     if args.split != "all":
@@ -127,6 +151,9 @@ async def run(args):
         "split": args.split,
         "product_commit": args.product_commit,
         "manifest_sha256": digest(args.manifest),
+        "schema_document_sha256": digest(args.schema_docs)
+        if args.schema_docs
+        else None,
         "sources": {str(p): digest(p) for p in Path("bench").rglob("*.py")},
         "limits": {
             k: getattr(args, k)
@@ -137,6 +164,7 @@ async def run(args):
                 "sql_timeout",
                 "max_rows",
                 "concurrency",
+                "review_rounds",
             )
         },
     }
@@ -147,23 +175,52 @@ async def run(args):
         for sub in ("sql", "csv", "records"):
             (directory / sub).mkdir(parents=True)
         semaphore = asyncio.Semaphore(args.concurrency)
+        exhausted = asyncio.Event()
 
         async def bounded(
-            case, semaphore=semaphore, directory=directory, profile=profile
+            case,
+            semaphore=semaphore,
+            directory=directory,
+            profile=profile,
+            exhausted=exhausted,
         ):
             async with semaphore:
-                await run_case(
-                    case,
-                    args.root,
-                    args.db_dir,
-                    directory,
-                    profile,
-                    env[profile["api_key_env"]],
-                    args,
-                )
+                if exhausted.is_set():
+                    raise ProviderQuotaExhausted("Provider account quota exhausted")
+                try:
+                    await run_case(
+                        case,
+                        args.root,
+                        args.db_dir,
+                        directory,
+                        profile,
+                        env[profile["api_key_env"]],
+                        args,
+                    )
+                except ProviderQuotaExhausted:
+                    exhausted.set()
+                    raise
 
         started = time.monotonic()
-        await asyncio.gather(*(bounded(case) for case in manifest["cases"]))
+        tasks = [asyncio.create_task(bounded(case)) for case in manifest["cases"]]
+        try:
+            await asyncio.gather(*tasks)
+        except ProviderQuotaExhausted:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+            write_json(
+                directory / "status.json",
+                {
+                    "status": "aborted",
+                    "reason": "quota_exhausted",
+                    "wall_seconds": time.monotonic() - started,
+                },
+            )
+            logger.error(
+                "Benchmark aborted profile=%s reason=quota_exhausted", profile["name"]
+            )
+            raise
         write_json(
             directory / "status.json",
             {"status": "completed", "wall_seconds": time.monotonic() - started},
@@ -268,6 +325,7 @@ def main():
         "env-file",
         "questions",
         "evaluator",
+        "schema-docs",
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument(
@@ -277,6 +335,7 @@ def main():
         "--product-commit", default="e7f0b0644883b6e3fa760e706fd396cc6730e846"
     )
     parser.add_argument("--pilot-size", type=int, default=20)
+    parser.add_argument("--review-rounds", type=int, choices=[0, 1, 2], default=0)
     parser.add_argument("--max-calls", type=int, default=16)
     parser.add_argument("--call-timeout", type=float, default=180)
     parser.add_argument("--case-timeout", type=float, default=900)

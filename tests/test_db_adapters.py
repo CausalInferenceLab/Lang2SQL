@@ -175,3 +175,47 @@ async def test_view_discovery_and_qualified_columns(tmp_path):
     assert objects["net_sales"].kind == "view"
     view = await exp.describe_table("main.net_sales")
     assert view.kind == "view" and [c.name for c in view.columns] == ["amount"]
+
+
+@pytest.mark.asyncio
+async def test_composite_keys_reach_schema_tool_without_guessing(tmp_path):
+    from sqlalchemy import create_engine, text
+
+    from lang2sql.core.identity import Identity
+    from lang2sql.tenancy.concierge import ContextConcierge
+    from lang2sql.tools.explore_schema import ExploreSchema
+
+    db = tmp_path / "keys.db"
+    engine = create_engine(f"sqlite:///{db}")
+    with engine.begin() as conn:
+        conn.execute(
+            text(
+                "CREATE TABLE parent (tenant TEXT, id INTEGER, PRIMARY KEY (tenant, id))"
+            )
+        )
+        conn.execute(
+            text(
+                "CREATE TABLE child (tenant TEXT, parent_id INTEGER, FOREIGN KEY (tenant, parent_id) REFERENCES parent (tenant, id))"
+            )
+        )
+        conn.execute(text("CREATE VIEW child_view AS SELECT * FROM child"))
+    exp = SqlAlchemyExplorer(f"sqlite:///{db}")
+    assert (await exp.describe_table("parent")).primary_key == ["tenant", "id"]
+    child = await exp.describe_table("child")
+    assert child.foreign_keys[0].columns == ["tenant", "parent_id"]
+    assert child.foreign_keys[0].referred_columns == ["tenant", "id"]
+    assert (await exp.describe_table("child_view")).foreign_keys == []
+    concierge = ContextConcierge(explorer=exp)
+    try:
+        ctx = await concierge.build_context(Identity(user_id="test"))
+        result = await ExploreSchema().run({"table": "child"}, ctx)
+        assert (
+            "FOREIGN KEY (tenant, parent_id) REFERENCES parent (tenant, id)"
+            in result.content
+        )
+        result = await ExploreSchema().run({"table": "parent"}, ctx)
+        assert "PRIMARY KEY (tenant, id)" in result.content
+    finally:
+        concierge.store.close()
+        engine.dispose()
+        exp._engine.dispose()

@@ -18,6 +18,7 @@ def mcp_settings(server_args, *, tools=READ_TOOLS, extra_env=()):
         "approval_policy": "never",
         "sandbox_mode": "read-only",
         "mcp_servers.lang2sql.command": sys.executable,
+        "mcp_servers.lang2sql.required": True,
         "mcp_servers.lang2sql.args": [
             "-m",
             "lang2sql.frontends.mcp.server",

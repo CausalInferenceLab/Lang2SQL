@@ -24,12 +24,22 @@ class Column:
 
 
 @dataclass
+class ForeignKey:
+    columns: list[str]
+    referred_table: str
+    referred_columns: list[str]
+    referred_schema: str = ""
+
+
+@dataclass
 class Table:
     name: str
     schema: str = "public"
     columns: list[Column] = field(default_factory=list)
     description: str = ""
     kind: str = "table"
+    primary_key: list[str] = field(default_factory=list)
+    foreign_keys: list[ForeignKey] = field(default_factory=list)
 
     @property
     def qualified(self) -> str:
