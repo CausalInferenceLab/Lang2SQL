@@ -372,3 +372,71 @@ async def test_duplicate_result_columns_are_not_silently_overwritten(tmp_path):
         assert not result.isError
         assert "original | incremented" in result.content[0].text
         assert "10 | 11" in result.content[0].text
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    'sql, expected, error, fragment',
+    [
+        ('SELECT amount FROM orders', ['amount'], False, 'Output columns validated'),
+        ('SELECT amount FROM orders', ['amount', 'growth'], True, 'missing'),
+        ('SELECT amount, 1 AS extra FROM orders', ['amount'], True, 'unexpected'),
+        ('SELECT amount FROM orders WHERE 0', ['amount'], False, 'Output columns validated'),
+        ('SELECT amount FROM orders WHERE 0', ['growth'], True, 'missing'),
+        ('SELECT amount, 1 AS extra FROM orders', ['extra', 'amount'], True, 'order'),
+    ],
+)
+async def test_output_columns_contract_stdio(tmp_path, sql, expected, error, fragment):
+    async with connected(fixture_db(tmp_path), tmp_path / 'metadata.db') as client:
+        check = await client.call_tool('resolve_business_terms', {'terms': []})
+        token = json.loads(check.content[0].text)['definition_check_id']
+        result = await client.call_tool('run_sql', {
+            'sql': sql, 'definition_check_id': token, 'expected_columns': expected,
+        })
+        assert result.isError == error
+        assert fragment in result.content[0].text
+        if error:
+            assert 'Output column contract failed' in result.content[0].text
+        else:
+            from bench.accuracy.codex_mcp import executed_sql
+
+            events = [{'type': 'item.completed', 'item': {
+                'type': 'mcp_tool_call', 'tool': 'run_sql', 'server': 'lang2sql',
+                'status': 'completed', 'arguments': {'sql': sql},
+                'result': {'content': [{'text': result.content[0].text}]},
+            }}]
+            assert executed_sql('```sql\n' + sql + '\n```', events) == sql
+
+@pytest.mark.asyncio
+async def test_output_contract_legacy_empty_result_is_not_verified():
+    from lang2sql.tools.run_sql import RunSQL
+
+    class LegacyExplorer:
+        async def execute(self, sql, limit):
+            return []
+
+    ctx = build_tool_context(Identity(user_id='analyst'), explorer=LegacyExplorer())
+    try:
+        result = await RunSQL().run({'sql': 'SELECT 1 AS n', 'expected_columns': ['n']}, ctx)
+        assert result.is_error and 'metadata unavailable' in result.content
+        assert any(e.action == 'run_sql_contract_failed' for e in await ctx.store.query('analyst'))
+        unchecked = await RunSQL().run({'sql': 'SELECT 1 AS n'}, ctx)
+        assert not unchecked.is_error
+    finally:
+        ctx.store.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize('expected', [None, [], ['n', 'n'], [''], [1], 'n', [{}]])
+async def test_invalid_output_contract_never_executes(expected):
+    from lang2sql.tools.run_sql import RunSQL
+
+    class NeverExecute:
+        async def execute(self, sql, limit):
+            pytest.fail('Invalid contract reached database')
+
+    ctx = build_tool_context(Identity(user_id='analyst'), explorer=NeverExecute())
+    try:
+        result = await RunSQL().run({'sql': 'SELECT 1 AS n', 'expected_columns': expected}, ctx)
+        assert result.is_error and 'NOT executed' in result.content
+    finally:
+        ctx.store.close()

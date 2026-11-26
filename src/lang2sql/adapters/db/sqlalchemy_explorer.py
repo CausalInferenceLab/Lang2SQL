@@ -20,7 +20,7 @@ from collections import Counter
 from contextlib import contextmanager
 from typing import Any
 
-from ...core.ports.explorer import Column, DataAccessError, ForeignKey, Table
+from ...core.ports.explorer import Column, DataAccessError, ForeignKey, QueryRows, Table
 
 logger = logging.getLogger(__name__)
 
@@ -233,4 +233,4 @@ class SqlAlchemyExplorer:
                     + ", ".join(duplicates)
                 )
             rows = result.mappings().fetchmany(limit)
-            return [dict(r) for r in rows]
+            return QueryRows((dict(r) for r in rows), columns=result.keys())

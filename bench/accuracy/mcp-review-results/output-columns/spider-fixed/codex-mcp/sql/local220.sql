@@ -1,0 +1,52 @@
+WITH team_lineups AS (
+    SELECT m.match_api_id,
+           CASE WHEN m.home_team_goal > m.away_team_goal THEN 'win' ELSE 'loss' END AS outcome,
+           json_array(
+               m.home_player_1, m.home_player_2, m.home_player_3,
+               m.home_player_4, m.home_player_5, m.home_player_6,
+               m.home_player_7, m.home_player_8, m.home_player_9,
+               m.home_player_10, m.home_player_11
+           ) AS players
+    FROM main."Match" AS m
+    WHERE m.home_team_goal <> m.away_team_goal
+
+    UNION ALL
+
+    SELECT m.match_api_id,
+           CASE WHEN m.away_team_goal > m.home_team_goal THEN 'win' ELSE 'loss' END AS outcome,
+           json_array(
+               m.away_player_1, m.away_player_2, m.away_player_3,
+               m.away_player_4, m.away_player_5, m.away_player_6,
+               m.away_player_7, m.away_player_8, m.away_player_9,
+               m.away_player_10, m.away_player_11
+           ) AS players
+    FROM main."Match" AS m
+    WHERE m.home_team_goal <> m.away_team_goal
+),
+player_totals AS (
+    SELECT l.outcome,
+           slot.value AS player_api_id,
+           COUNT(DISTINCT l.match_api_id) AS match_count
+    FROM team_lineups AS l
+    CROSS JOIN json_each(l.players) AS slot
+    WHERE slot.value IS NOT NULL
+    GROUP BY l.outcome, slot.value
+),
+ranked_players AS (
+    SELECT outcome,
+           player_api_id,
+           RANK() OVER (PARTITION BY outcome ORDER BY match_count DESC) AS outcome_rank
+    FROM player_totals
+),
+leaders AS (
+    SELECT r.outcome, p.player_name
+    FROM ranked_players AS r
+    JOIN main.Player AS p ON p.player_api_id = r.player_api_id
+    WHERE r.outcome_rank = 1
+)
+SELECT w.player_name AS most_winning_matches_player,
+       l.player_name AS most_losing_matches_player
+FROM leaders AS w
+CROSS JOIN leaders AS l
+WHERE w.outcome = 'win' AND l.outcome = 'loss'
+LIMIT 1000

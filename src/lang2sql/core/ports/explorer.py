@@ -15,6 +15,14 @@ class DataAccessError(RuntimeError):
     """Requested data is unavailable to this DB identity; do not probe alternatives."""
 
 
+class QueryRows(list[dict]):
+    """List-compatible result with ordered column labels, including empty results."""
+
+    def __init__(self, rows, *, columns):
+        super().__init__(rows)
+        self.columns = tuple(columns)
+
+
 @dataclass
 class Column:
     name: str

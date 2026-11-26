@@ -74,6 +74,8 @@ async def test_scoped_view_lifecycle(tmp_path):
         assert (
             await query(period_start="2025-11-01", period_end="2025-10-01")
         ).is_error
+        unsupported = await query(**period, expected_columns=["metric_value"])
+        assert unsupported.is_error and "SQL mode" in unsupported.content
         db.stamp = "replaced"
         assert (await query(**period)).is_error
         assert db.reads == 1

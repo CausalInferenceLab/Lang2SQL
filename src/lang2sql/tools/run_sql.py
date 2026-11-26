@@ -42,6 +42,13 @@ class RunSQL:
                         "type": "string",
                         "description": "a single SELECT or WITH query",
                     },
+                    "expected_columns": {
+                        "type": "array",
+                        "items": {"type": "string", "minLength": 1},
+                        "minItems": 1,
+                        "uniqueItems": True,
+                        "description": "Optional exact, ordered output column labels derived from the user request. Missing, extra or reordered columns return an error. This verifies projection only, not semantic correctness. SQL mode only.",
+                    },
                     "metric_term": {
                         "type": "string",
                         "description": "Exact confirmed Oracle metric. Provide its date interval instead of SQL.",
@@ -62,6 +69,14 @@ class RunSQL:
         )
 
     async def run(self, args: dict[str, Any], ctx: HarnessContext) -> ToolResult:
+        expected = args.get("expected_columns")
+        if "expected_columns" in args and (
+            not isinstance(expected, list) or not expected
+            or any(not isinstance(c, str) or not c for c in expected)
+            or len(set(expected)) != len(expected)
+        ):
+            logger.warning("invalid output columns scope=%s", ctx.identity.session_key())
+            return ToolResult(call_id="", is_error=True, content="Invalid expected_columns: supply unique nonempty column labels. SQL was NOT executed.")
         metric = args.get("metric_term")
         question = next(
             (
@@ -196,6 +211,21 @@ class RunSQL:
                     content="요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
                 )
             raise
+        actual_columns = getattr(rows, "columns", None)
+        if actual_columns is None and rows:
+            actual_columns = tuple(rows[0])
+        contract_error = None
+        if expected is not None:
+            if actual_columns is None:
+                contract_error = "column metadata unavailable for this empty result"
+            elif list(actual_columns) != expected:
+                missing = [c for c in expected if c not in actual_columns]
+                unexpected = [c for c in actual_columns if c not in expected]
+                contract_error = f"missing={missing!r}; unexpected={unexpected!r}; expected order={expected!r}; actual order={list(actual_columns)!r}"
+            if contract_error:
+                logger.warning("run_sql output contract failed scope=%s reason=%s", scope, contract_error)
+            else:
+                logger.info("run_sql output columns validated scope=%s", scope)
         fetch_truncated = len(rows) > limit
         rows = rows[:limit]
         logger.info("run_sql completed scope=%s rows=%d fetch_truncated=%s", scope, len(rows), fetch_truncated)
@@ -204,18 +234,25 @@ class RunSQL:
             await ctx.audit.record(
                 AuditEvent(
                     actor=ctx.identity.user_id,
-                    action="run_sql",
+                    action="run_sql_contract_failed" if contract_error else "run_sql",
                     scope=ctx.identity.session_key(),
-                    detail={"sql": decision.sql},
+                    detail={"sql": decision.sql, **({"contract_error": contract_error} if contract_error else {})},
                 )
             )
 
-        return ToolResult(call_id="", content=_render_rows(
+        rendered = _render_rows(
             decision.sql, rows, fetch_truncated=fetch_truncated,
             sql_rewritten=decision.sql != sql,
             query_timeout_enforced=timeout_enforced,
             query_timeout_scope=ctx.explorer.query_timeout_scope if timeout_enforced else "unsupported",
-        ))
+        )
+        if contract_error:
+            return ToolResult(call_id="", is_error=True, content=f"Output column contract failed: {contract_error}. SQL executed; revise the projection or verify the contract against the request.\n{rendered}")
+        if expected is not None:
+            # Preserve the row-count header and SQL footer consumed by provenance checks.
+            header, remainder = rendered.split("\n", 1)
+            rendered = header + "\nOutput columns validated (projection only).\n" + remainder
+        return ToolResult(call_id="", content=rendered)
 
 
 def _render_rows(sql: str, rows: list[dict], *, fetch_truncated=False, sql_rewritten=False, query_timeout_enforced=False, query_timeout_scope="unsupported") -> str:
