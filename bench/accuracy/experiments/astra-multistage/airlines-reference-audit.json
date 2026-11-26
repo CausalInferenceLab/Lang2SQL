@@ -1,0 +1,104 @@
+{
+  "instance_id": "local010",
+  "scope": "Offline reference/input audit; not a model prediction, no grading override and no inference feedback",
+  "question": "Distribute all the unique city pairs into the distance ranges 0, 1000, 2000, 3000, 4000, 5000, and 6000+, based on their average distance of all routes between them. Then how many pairs are there in the distance range with the fewest unique city paires?",
+  "database_sha256": "83dd643367785c6b38b5379eecaf2c37128babac96805a48362783ff0cafc0a1",
+  "zip_member": "spider2-localdb.zip:Airlines.sqlite",
+  "document": "haversine_formula.md",
+  "document_sha256": "5205954f1ca74ed724d121772e2bf4bc86c2cfc163f6e3fdd6afeec79c33ffec",
+  "document_rule": "The Symmetry of Routes section explicitly standardizes city order so a flight A->B is treated the same as B->A.",
+  "reference_sha256": "109bc4ccdeaaccb405d52e5db6fbe1831b5cede629b5aafce07b1f5a4be8c623",
+  "reference_csv": "output\n6",
+  "variants": [
+    {
+      "label": "documented_unordered_pairs",
+      "sql": "WITH airport_coordinates AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_distances AS (\n    SELECT MIN(departure.city, arrival.city) AS city1,\n           MAX(departure.city, arrival.city) AS city2,\n           2.0 * 6371.0 * asin(sqrt(MIN(1.0,\n               pow(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n               + cos(departure.latitude) * cos(arrival.latitude)\n                 * pow(sin((arrival.longitude - departure.longitude) / 2.0), 2)\n           ))) AS distance_km\n    FROM main.flights AS flight\n    JOIN airport_coordinates AS departure ON departure.airport_code = flight.departure_airport\n    JOIN airport_coordinates AS arrival ON arrival.airport_code = flight.arrival_airport\n),\ncity_pair_distances AS (\n    SELECT city1, city2, AVG(distance_km) AS average_distance_km\n    FROM flight_distances\n    GROUP BY city1, city2\n),\ndistance_ranges (lower_km, upper_km) AS (\n    VALUES (0, 1000), (1000, 2000), (2000, 3000), (3000, 4000),\n           (4000, 5000), (5000, 6000), (6000, NULL)\n),\nrange_counts AS (\n    SELECT distance_ranges.lower_km, COUNT(city_pair_distances.average_distance_km) AS pair_count\n    FROM distance_ranges\n    LEFT JOIN city_pair_distances\n      ON city_pair_distances.average_distance_km >= distance_ranges.lower_km\n     AND (city_pair_distances.average_distance_km < distance_ranges.upper_km\n          OR distance_ranges.upper_km IS NULL)\n    GROUP BY distance_ranges.lower_km\n)\nSELECT pair_count\nFROM range_counts\nORDER BY pair_count\nLIMIT 1\n",
+      "result": [
+        [
+          3
+        ]
+      ],
+      "bins": [
+        [
+          0,
+          92
+        ],
+        [
+          1000,
+          93
+        ],
+        [
+          2000,
+          37
+        ],
+        [
+          3000,
+          20
+        ],
+        [
+          4000,
+          6
+        ],
+        [
+          5000,
+          3
+        ],
+        [
+          6000,
+          7
+        ]
+      ]
+    },
+    {
+      "label": "directional_pairs_counterfactual",
+      "sql": "WITH airport_coordinates AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_distances AS (\n    SELECT departure.city AS city1,\n           arrival.city AS city2,\n           2.0 * 6371.0 * asin(sqrt(MIN(1.0,\n               pow(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n               + cos(departure.latitude) * cos(arrival.latitude)\n                 * pow(sin((arrival.longitude - departure.longitude) / 2.0), 2)\n           ))) AS distance_km\n    FROM main.flights AS flight\n    JOIN airport_coordinates AS departure ON departure.airport_code = flight.departure_airport\n    JOIN airport_coordinates AS arrival ON arrival.airport_code = flight.arrival_airport\n),\ncity_pair_distances AS (\n    SELECT city1, city2, AVG(distance_km) AS average_distance_km\n    FROM flight_distances\n    GROUP BY city1, city2\n),\ndistance_ranges (lower_km, upper_km) AS (\n    VALUES (0, 1000), (1000, 2000), (2000, 3000), (3000, 4000),\n           (4000, 5000), (5000, 6000), (6000, NULL)\n),\nrange_counts AS (\n    SELECT distance_ranges.lower_km, COUNT(city_pair_distances.average_distance_km) AS pair_count\n    FROM distance_ranges\n    LEFT JOIN city_pair_distances\n      ON city_pair_distances.average_distance_km >= distance_ranges.lower_km\n     AND (city_pair_distances.average_distance_km < distance_ranges.upper_km\n          OR distance_ranges.upper_km IS NULL)\n    GROUP BY distance_ranges.lower_km\n)\nSELECT pair_count\nFROM range_counts\nORDER BY pair_count\nLIMIT 1\n",
+      "result": [
+        [
+          6
+        ]
+      ],
+      "bins": [
+        [
+          0,
+          184
+        ],
+        [
+          1000,
+          186
+        ],
+        [
+          2000,
+          74
+        ],
+        [
+          3000,
+          40
+        ],
+        [
+          4000,
+          12
+        ],
+        [
+          5000,
+          6
+        ],
+        [
+          6000,
+          14
+        ]
+      ]
+    }
+  ],
+  "independent_python_bins": {
+    "0": 92,
+    "1000": 93,
+    "2000": 37,
+    "3000": 20,
+    "4000": 6,
+    "5000": 3,
+    "6000": 7
+  },
+  "python_check": "Independent Haversine calculation, averaging all flight distances by sorted city-name pair, reproduces every SQL unordered-pair bin.",
+  "conclusion": "Under the pinned database and supplied symmetry rule the minimum is3. The reference6 is obtained when counting the two directions separately; all seven bins exactly double. This is a documented reference/input inconsistency, not a local DB mutation. Official grade remains0.",
+  "audit_script_sha256": "f981b394f97448c45153985f1259f73c0862ac121539707a312e64955f3ffcf7"
+}

@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird154",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "4653991d69f5ba836a8852d082d2b2c3298fff987c6cbd841eeb5064d6a1324a",
+  "events_sha256": "dee47ce0b3805a53c2f43fbd0a4699f2110f371dff8e9e1689fe76cf812cb007",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 128482,
+      "cached_input_tokens": 115712,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 612,
+      "reasoning_output_tokens": 45
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"N9FMozVyPkNriyMBd1Yyfign2VdBOwRd80Zhr1PyysQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "N9FMozVyPkNriyMBd1Yyfign2VdBOwRd80Zhr1PyysQ",
+        "sql": "SELECT MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS monthly_rows, COUNT(y.Consumption) AS recorded_amounts,\n       SUM(y.Consumption = 0) AS zero_amounts, SUM(y.Consumption < 0) AS negative_amounts\nFROM main.yearmonth AS y\nWHERE y.Date >= '201301' AND y.Date < '201401'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_month=str; last_month=str; monthly_rows=int; recorded_amounts=int; zero_amounts=int; negative_amounts=int\nfirst_month | last_month | monthly_rows | recorded_amounts | zero_amounts | negative_amounts\n--- | --- | --- | --- | --- | ---\n201301 | 201311 | 224466 | 224466 | 22 | 103\nSQL: SELECT MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS monthly_rows, COUNT(y.Consumption) AS recorded_amounts,\n       SUM(y.Consumption = 0) AS zero_amounts, SUM(y.Consumption < 0) AS negative_amounts\nFROM main.yearmonth AS y\nWHERE y.Date >= '201301' AND y.Date < '201401'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"TXUiY8_o12BjjiXAd-QMrbzPyxg4ve6hFB-FRylbBM4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "TXUiY8_o12BjjiXAd-QMrbzPyxg4ve6hFB-FRylbBM4",
+        "expected_columns": [
+          "Segment",
+          "customer_count"
+        ],
+        "sql": "WITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; customer_count=int\nSegment | customer_count\n--- | ---\nKAM | 1833\nLAM | 3539\nSME | 22246\nSQL: WITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "WITH active_customers AS (\n    SELECT DISTINCT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201301'\n      AND y.Date < '201401'\n      AND y.Consumption > 0\n)\nSELECT c.Segment, COUNT(a.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN active_customers AS a ON a.CustomerID = c.CustomerID\nGROUP BY c.Segment\nLIMIT 1000",
+  "seconds": 26.017450916930102
+}

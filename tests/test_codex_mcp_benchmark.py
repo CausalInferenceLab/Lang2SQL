@@ -15,7 +15,7 @@ def event(tool="run_sql", status="completed", server="lang2sql", sql="SELECT 1")
             "status": status,
             "error": None,
             "arguments": {"sql": sql},
-            "result": {"content": [{"type": "text", "text": "1 row(s):\n1"}]},
+            "result": {"content": [{"type": "text", "text": "1 row(s):\n1\nSQL: " + sql}]},
         },
     }
 
@@ -86,8 +86,8 @@ def test_server_rewritten_sql_is_execution_evidence(prefix):
     call = event(sql="SELECT 1")
     call["item"]["result"]["content"][0]["text"] = prefix + "\nSQL: SELECT 1 LIMIT 1000"
     assert executed_sql("```sql\nSELECT 1 LIMIT 1000\n```", [call]) == "SELECT 1 LIMIT 1000"
-    # Preserve the existing input-query contract, but reject invented limits.
-    assert executed_sql("```sql\nSELECT 1\n```", [call]) == "SELECT 1"
+    # A submitted alias binds to the actual rewrite, not an unexecuted unlimited query.
+    assert executed_sql("```sql\nSELECT 1\n```", [call]) == "SELECT 1 LIMIT 1000"
     for sql in ["SELECT 1 LIMIT 2000"]:
         with pytest.raises(ValueError):
             executed_sql("```sql\n" + sql + "\n```", [call])
@@ -294,3 +294,51 @@ def test_spawn_failure_has_explicit_absent_trace(tmp_path):
     assert record["cli_exit_code"] is None
     assert record["mcp_calls"] == []
     assert "events_sha256" not in record
+
+
+def test_export_binds_to_executed_rewrite_not_unbounded_request(tmp_path):
+    import sqlite3
+
+    from bench.accuracy.evaluate import query_rows
+
+    db = tmp_path / "data.sqlite"
+    with sqlite3.connect(db) as conn:
+        conn.execute("CREATE TABLE t(x)")
+        conn.executemany("INSERT INTO t VALUES (?)", [(1,), (2,)])
+    call = event(sql="SELECT x FROM t ORDER BY x")
+    call["item"]["result"]["content"][0]["text"] = "1 row(s):\nx\n1\nSQL: SELECT x FROM t ORDER BY x LIMIT 1"
+    sql = executed_sql("```sql\nSELECT x FROM t ORDER BY x\n```", [call], db=db)
+    assert query_rows(db, sql, 1, 100) == [(1,)]
+    assert sql.endswith("LIMIT 1")
+
+
+def test_missing_execution_footer_is_not_execution_proof():
+    call = event()
+    call["item"]["result"]["content"][0]["text"] = "1 row(s):\n1"
+    with pytest.raises(ValueError, match="not executed"):
+        executed_sql("```sql\nSELECT 1\n```", [call])
+
+
+def test_reformatted_request_binds_to_rewrite_without_accepting_other_literals(tmp_path):
+    import sqlite3
+
+    db = tmp_path / "data.sqlite"
+    with sqlite3.connect(db) as conn:
+        conn.execute("CREATE TABLE t(x)")
+    call = event(sql="SELECT x FROM t WHERE x > 1")
+    call["item"]["result"]["content"][0]["text"] = "(0 rows)\nSQL: SELECT x FROM t WHERE x > 1 LIMIT 2"
+    answer = "```sql\nselect x from t -- display formatting\nwhere x > 1;\n```"
+    assert executed_sql(answer, [call], db=db) == "SELECT x FROM t WHERE x > 1 LIMIT 2"
+    with pytest.raises(ValueError):
+        executed_sql(answer.replace("> 1", "> 2"), [call], db=db)
+
+
+def test_repeated_request_alias_binds_to_latest_successful_execution():
+    calls = []
+    for limit in [2, 5]:
+        call = event(sql="SELECT x FROM t")
+        call["item"]["result"]["content"][0]["text"] = f"{limit} row(s):\nSQL: SELECT x FROM t LIMIT {limit}"
+        calls.append(call)
+    assert executed_sql("```sql\nSELECT x FROM t\n```", calls) == "SELECT x FROM t LIMIT 5"
+    # An earlier executed SQL is still valid when the final answer names it explicitly.
+    assert executed_sql("```sql\nSELECT x FROM t LIMIT 2\n```", calls) == "SELECT x FROM t LIMIT 2"

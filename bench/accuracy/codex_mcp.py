@@ -56,26 +56,31 @@ def executed_sql(answer, events, *, db=None, sql_timeout=30, max_rows=100000):
             result = block.get("text", "")
             if not re.match(r"(?:\d+ row\(s\):|\(0 rows\))", result):
                 continue
-            # The server applies safety rewrites (e.g. LIMIT) before execution.
-            # Its result footer records that executed SQL, unlike input arguments.
-            if "\nSQL: " in result:
-                candidates.append(result.rsplit("\nSQL: ", 1)[1].strip())
-            candidates.append(call.get("arguments", {}).get("sql", ""))
-    if any(
-        candidate.strip().removesuffix(";").rstrip() == sql.removesuffix(";").rstrip()
-        for candidate in candidates
-    ):
-        return sql
+            # Bind exports to the SQL the server actually executed, not to
+            # the pre-safety request (which may lack a rewritten row limit).
+            if "\nSQL: " not in result:
+                logger.warning("Missing executed SQL footer call_id=%s", call.get("id"))
+                continue
+            actual = result.rsplit("\nSQL: ", 1)[1].strip()
+            if actual:
+                candidates.append((call.get("arguments", {}).get("sql", ""), actual, call.get("id")))
+    sql_key = sql.removesuffix(";").rstrip()
+    for submitted, actual, call_id in reversed(candidates):
+        if actual.removesuffix(";").rstrip() == sql_key:
+            return sql
+        if submitted.strip().removesuffix(";").rstrip() == sql_key:
+            logger.info("Final SQL bound to server rewrite call_id=%s", call_id)
+            return actual
     if db is not None and candidates:
-        # Compare SQLite bytecode, preserving literals. No result/gold-based selection.
+        # Formatting equivalence preserves literals. Neither result nor gold
+        # equivalence is used, and an input alias still binds to executed SQL.
         plan = query_rows(db, "EXPLAIN " + sql, sql_timeout, max_rows)
-        for candidate in candidates:
-            if (
-                candidate
-                and query_rows(db, "EXPLAIN " + candidate, sql_timeout, max_rows)
-                == plan
-            ):
+        for submitted, actual, call_id in reversed(candidates):
+            if query_rows(db, "EXPLAIN " + actual, sql_timeout, max_rows) == plan:
                 return sql
+            if submitted and query_rows(db, "EXPLAIN " + submitted, sql_timeout, max_rows) == plan:
+                logger.info("Final SQL alias bound to server rewrite call_id=%s", call_id)
+                return actual
     raise ValueError("Final SQL was not executed through Lang2SQL MCP")
 
 

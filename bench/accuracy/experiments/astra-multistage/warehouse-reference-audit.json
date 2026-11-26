@@ -1,0 +1,92 @@
+{
+  "instance_id": "local272",
+  "question": "For order 423, identify the product IDs, aisles, and positions from which to pick the exact quantities needed for each order line, ensuring that the total picked quantity for each product matches the cumulative quantities ordered without exceeding the available inventory in warehouse 1. Calculate the quantities to be picked from each location by prioritizing inventory with earlier purchased dates and smaller quantities, and ensure that picking respects the sequence and cumulative quantities of the order lines for products with multiple entries.",
+  "db_sha256": "ace68ede8f7fddc523d522e938ccfeee1f54c11888fd2c956ebc27892fc595fe",
+  "archive_member": "spider2-localdb.zip:oracle_sql.sqlite",
+  "reference_sha256": {
+    "local272_a.csv": "674a1e63a234810e0cedd5cb866b94177232be38c05e636bb08ef0a4756c8f01"
+  },
+  "official_contract": {
+    "instance_id": "local272",
+    "condition_cols": [
+      0,
+      1,
+      2,
+      3
+    ],
+    "ignore_order": true,
+    "toks": "190"
+  },
+  "stock_lookup_sql": "SELECT l.warehouse,i.qty,p.purchased FROM inventory i JOIN locations l ON l.id=i.location_id JOIN purchases p ON p.id=i.purchase_id WHERE i.product_id=? AND l.aisle=? AND l.position=?",
+  "reference_stock_checks": [
+    {
+      "reference": "local272_a.csv",
+      "reference_row": {
+        "product_id": "6520",
+        "aisle": "A",
+        "position": "16",
+        "QUANTITY_TO_PICK": "22.0"
+      },
+      "matching_actual_stock": [
+        {
+          "warehouse": 1,
+          "qty": 48.0,
+          "purchased": "2018-04-26"
+        }
+      ],
+      "has_warehouse_1_stock": true
+    },
+    {
+      "reference": "local272_a.csv",
+      "reference_row": {
+        "product_id": "4280",
+        "aisle": "B",
+        "position": "3",
+        "QUANTITY_TO_PICK": "30.0"
+      },
+      "matching_actual_stock": [
+        {
+          "warehouse": 2,
+          "qty": 35.0,
+          "purchased": "2018-06-23"
+        }
+      ],
+      "has_warehouse_1_stock": false
+    },
+    {
+      "reference": "local272_a.csv",
+      "reference_row": {
+        "product_id": "4280",
+        "aisle": "C",
+        "position": "20",
+        "QUANTITY_TO_PICK": "30.0"
+      },
+      "matching_actual_stock": [
+        {
+          "warehouse": 2,
+          "qty": 34.0,
+          "purchased": "2018-08-23"
+        }
+      ],
+      "has_warehouse_1_stock": false
+    },
+    {
+      "reference": "local272_a.csv",
+      "reference_row": {
+        "product_id": "6520",
+        "aisle": "D",
+        "position": "9",
+        "QUANTITY_TO_PICK": "18.0"
+      },
+      "matching_actual_stock": [
+        {
+          "warehouse": 2,
+          "qty": 26.0,
+          "purchased": "2018-04-26"
+        }
+      ],
+      "has_warehouse_1_stock": false
+    }
+  ],
+  "conclusion": "Three reference product/location tuples have inventory only in warehouse 2, while the question explicitly restricts picking to warehouse 1. This is a verified input/reference inconsistency for the pinned local artifacts, not evidence of local DB mutation. No reference or grade changed; no finding supplied to running inference."
+}

@@ -404,7 +404,7 @@ async def test_output_columns_contract_stdio(tmp_path, sql, expected, error, fra
                 'status': 'completed', 'arguments': {'sql': sql},
                 'result': {'content': [{'text': result.content[0].text}]},
             }}]
-            assert executed_sql('```sql\n' + sql + '\n```', events) == sql
+            assert executed_sql('```sql\n' + sql + '\n```', events) == sql + '\nLIMIT 1000'
 
 @pytest.mark.asyncio
 async def test_output_contract_legacy_empty_result_is_not_verified():
