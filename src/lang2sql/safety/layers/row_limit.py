@@ -10,7 +10,7 @@ import re
 
 from ...core.ports.safety import SafetyContext, SafetyDecision, Verdict
 
-_LIMIT_RE = re.compile(r"\bLIMIT\s+\d+", re.IGNORECASE)
+_LIMIT_RE = re.compile(r"\bLIMIT\s+[+-]?\s*\d+", re.IGNORECASE)
 _FETCH_RE = re.compile(
     r"\bFETCH\s+(?:FIRST|NEXT)\s+(?:\d+\s+)?ROWS?\s+(?:ONLY|WITH\s+TIES)", re.IGNORECASE
 )

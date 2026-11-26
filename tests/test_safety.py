@@ -178,3 +178,22 @@ def test_case_08_huge_table_gets_limit():
     decision = SafetyPipeline().evaluate("SELECT * FROM huge_table", ctx)
     assert decision.verdict is Verdict.PASS
     assert "LIMIT 1000" in decision.sql.upper()
+
+
+def test_sqlite_signed_limit_is_not_duplicated():
+    import sqlite3
+
+    for suffix in ("LIMIT -1", "LIMIT +1", "LIMIT - 1", "LIMIT -1 OFFSET 1"):
+        sql = "SELECT 1 UNION ALL SELECT 2 " + suffix
+        decision = SafetyPipeline().evaluate(sql, SafetyContext(row_limit=1))
+        assert decision.verdict is Verdict.PASS
+        assert decision.sql == sql
+        with sqlite3.connect(":memory:") as db:
+            assert db.execute(decision.sql).fetchall() == db.execute(sql).fetchall()
+
+
+def test_nested_negative_limit_does_not_disable_outer_limit():
+    decision = SafetyPipeline().evaluate(
+        "SELECT * FROM (SELECT 1 LIMIT -1)", SafetyContext(row_limit=5)
+    )
+    assert decision.sql.endswith("LIMIT 5")
