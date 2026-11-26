@@ -1,0 +1,13 @@
+SELECT
+    CAST(COUNT(CASE
+        WHEN schools.DOCType = 'Unified School District'
+         AND schools.County = 'Orange' THEN 1
+    END) AS REAL)
+    / NULLIF(COUNT(CASE
+        WHEN schools.DOCType = 'Elementary School District' THEN 1
+    END), 0) AS ratio
+FROM main.schools
+WHERE schools.StatusType = 'Merged'
+  AND schools.School IS NOT NULL
+  AND schools.DOCType IN ('Unified School District', 'Elementary School District')
+LIMIT 1
