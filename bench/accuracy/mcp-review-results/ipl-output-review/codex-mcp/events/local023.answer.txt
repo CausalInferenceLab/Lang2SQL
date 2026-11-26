@@ -1,0 +1,39 @@
+```sql
+WITH season_matches AS (
+    SELECT match_id
+    FROM main."match"
+    WHERE season_id = 5
+),
+runs_by_match AS (
+    SELECT b.match_id, b.striker AS player_id, SUM(s.runs_scored) AS runs
+    FROM season_matches AS m
+    JOIN main.ball_by_ball AS b ON b.match_id = m.match_id
+    JOIN main.batsman_scored AS s
+      ON s.match_id = b.match_id AND s.innings_no = b.innings_no
+     AND s.over_id = b.over_id AND s.ball_id = b.ball_id
+    GROUP BY b.match_id, b.striker
+),
+player_totals AS (
+    SELECT pm.player_id, COUNT(*) AS matches_played,
+           SUM(COALESCE(r.runs, 0)) AS total_runs
+    FROM season_matches AS m
+    JOIN main.player_match AS pm ON pm.match_id = m.match_id
+    LEFT JOIN runs_by_match AS r
+      ON r.match_id = pm.match_id AND r.player_id = pm.player_id
+    GROUP BY pm.player_id
+),
+dismissals AS (
+    SELECT w.player_out AS player_id, COUNT(*) AS times_out
+    FROM season_matches AS m
+    JOIN main.wicket_taken AS w ON w.match_id = m.match_id
+    WHERE w.kind_out <> 'retired hurt'
+    GROUP BY w.player_out
+)
+SELECT p.player_name,
+       1.0 * t.total_runs / NULLIF(d.times_out, 0) AS batting_average
+FROM player_totals AS t
+JOIN main.player AS p ON p.player_id = t.player_id
+LEFT JOIN dismissals AS d ON d.player_id = t.player_id
+ORDER BY 1.0 * t.total_runs / t.matches_played DESC
+LIMIT 5
+```
