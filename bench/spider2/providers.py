@@ -14,6 +14,8 @@ from lang2sql.adapters.llm.openai_ import (
 )
 from lang2sql.core.types import Message, ToolSpec
 
+from .responses import ResponsesCodec
+
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +25,7 @@ class MeasuredLLM:
         self.timeout, self.max_calls = timeout, max_calls
         self.calls: list[dict] = []
         self.provider_messages: dict[str, dict] = {}
+        self.responses = ResponsesCodec(max_calls)
 
     async def complete(
         self, messages: Sequence[Message], tools: Sequence[ToolSpec] = ()
@@ -55,6 +58,24 @@ class MeasuredLLM:
             kwargs["api_base"] = self.profile["api_base"]
         if tools:
             kwargs["tools"] = [_encode_tool(t) for t in tools]
+        api = acompletion
+        if self.profile.get("api") == "responses":
+            from litellm import aresponses
+
+            items, response_tools = self.responses.encode(messages, tools)
+            kwargs.pop("messages")
+            kwargs.pop("reasoning_effort", None)
+            kwargs.pop("tools", None)
+            kwargs["input"] = items
+            kwargs["max_output_tokens"] = kwargs.pop("max_completion_tokens")
+            kwargs["store"] = False
+            kwargs["include"] = ["reasoning.encrypted_content"]
+            kwargs["reasoning"] = {
+                "effort": self.profile.get("reasoning_effort", "high")
+            }
+            if response_tools:
+                kwargs["tools"] = response_tools
+            api = aresponses
         retries = self.profile.get("transport_retries", 0)
         for attempt in range(retries + 1):
             if len(self.calls) >= self.max_calls:
@@ -70,11 +91,16 @@ class MeasuredLLM:
             self.calls.append(entry)
             start = time.monotonic()
             try:
-                response = await acompletion(**kwargs)
+                response = await api(**kwargs)
                 raw = response.model_dump()
                 entry.update(
                     status="ok", usage=raw.get("usage"), response_model=raw.get("model")
                 )
+                if self.profile.get("api") == "responses":
+                    entry["response_status"] = raw.get("status")
+                    entry["incomplete_details"] = raw.get("incomplete_details")
+                    return self.responses.decode(raw, messages, tools)
+                entry["finish_reason"] = raw["choices"][0].get("finish_reason")
                 msg = raw["choices"][0]["message"]
                 for call in msg.get("tool_calls") or []:
                     self.provider_messages[call["id"]] = {
