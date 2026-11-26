@@ -95,6 +95,67 @@ def test_sqlalchemy_explorer_introspect_and_execute(tmp_path):
     assert len(sample) == 1
 
 
+def test_run_sql_enforces_safety_deadline_and_reuses_connection(tmp_path):
+    from lang2sql.core.identity import Identity
+    from lang2sql.safety.pipeline import SafetyPipeline
+    from lang2sql.tenancy.tool_runtime import build_tool_context
+    from lang2sql.tools.run_sql import RunSQL
+
+    class ShortDeadline:
+        def evaluate(self, sql, context):
+            context.timeout_seconds = 0.01
+            return SafetyPipeline().evaluate(sql, context)
+
+    explorer = SqlAlchemyExplorer(f"sqlite:///{tmp_path / 'timeout.db'}")
+    ctx = build_tool_context(Identity(user_id="test"), store_path=":memory:", explorer=explorer)
+    ctx.safety = ShortDeadline()
+    query = "WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<2000000) SELECT SUM(x) AS total FROM n"
+    try:
+        with pytest.raises(TimeoutError, match="deadline"):
+            asyncio.run(RunSQL().run({"sql": query}, ctx))
+        # The timed-out progress handler must not leak into the pooled connection.
+        assert asyncio.run(explorer.execute(query.replace("2000000", "20000"))) == [{"total": 200010000}]
+        result = asyncio.run(RunSQL().run({"sql": "SELECT 42 AS value"}, ctx))
+        assert not result.is_error and "42" in result.content
+        assert "query_timeout_enforced=true" in result.content
+        assert "query_timeout_scope=sqlite_vm" in result.content
+    finally:
+        ctx.store.close()
+        explorer._get_engine().dispose()
+
+
+def test_sqlite_deadline_covers_fetch_and_preserves_other_errors(tmp_path):
+    from sqlalchemy.exc import OperationalError
+
+    explorer = SqlAlchemyExplorer(f"sqlite:///{tmp_path / 'fetch.db'}")
+    query = "WITH RECURSIVE n(x) AS (VALUES(1) UNION ALL SELECT x+1 FROM n WHERE x<2000000) SELECT x FROM n"
+    try:
+        assert asyncio.run(explorer.execute_with_timeout(query, 1, 0.01)) == [{"x": 1}]
+        with pytest.raises(TimeoutError, match="deadline"):
+            asyncio.run(explorer.execute_with_timeout(query, 2000000, 0.01))
+        with pytest.raises(OperationalError, match="syntax"):
+            asyncio.run(explorer.execute_with_timeout("SELECT FROM", 1, 1))
+        assert asyncio.run(explorer.execute(query.replace("2000000", "20000"), 20000))[-1] == {"x": 20000}
+    finally:
+        explorer._get_engine().dispose()
+
+
+def test_legacy_explorer_reports_timeout_not_enforced():
+    from lang2sql.adapters.db.postgres_explorer import PostgresExplorer
+    from lang2sql.core.identity import Identity
+    from lang2sql.tenancy.tool_runtime import build_tool_context
+    from lang2sql.tools.run_sql import RunSQL
+
+    ctx = build_tool_context(Identity(user_id="test"), store_path=":memory:", explorer=PostgresExplorer("stub"))
+    try:
+        result = asyncio.run(RunSQL().run({"sql": "SELECT 1"}, ctx))
+        assert not result.is_error
+        assert "query_timeout_enforced=false" in result.content
+        assert "query_timeout_scope=unsupported" in result.content
+    finally:
+        ctx.store.close()
+
+
 # --- D1 explorer with mocked HTTP transport --------------------------------
 
 

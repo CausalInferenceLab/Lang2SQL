@@ -13,7 +13,7 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from ..core.ports.audit import AuditEvent
-from ..core.ports.explorer import DataAccessError
+from ..core.ports.explorer import DataAccessError, QueryTimeoutExplorerPort
 from ..core.ports.safety import SafetyContext, Verdict
 from ..core.types import Role, ToolResult, ToolSpec
 from .bound_metric import query_metric
@@ -143,13 +143,11 @@ class RunSQL:
                 is_error=True,
             )
 
-        decision = ctx.safety.evaluate(
-            sql,
-            SafetyContext(
-                row_limit=limit,
-                extras={"dialect": getattr(ctx.explorer, "dialect", "")},
-            ),
+        safety_context = SafetyContext(
+            row_limit=limit,
+            extras={"dialect": getattr(ctx.explorer, "dialect", "")},
         )
+        decision = ctx.safety.evaluate(sql, safety_context)
         if decision.verdict == Verdict.BLOCK:
             return ToolResult(
                 call_id="",
@@ -162,11 +160,21 @@ class RunSQL:
             )
 
         scope = ctx.identity.session_key()
+        timeout_enforced = (
+            isinstance(ctx.explorer, QueryTimeoutExplorerPort)
+            and ctx.explorer.supports_query_timeout
+        )
         logger.info("run_sql started scope=%s actor=%s", scope, ctx.identity.user_id)
         try:
             # One lookahead row distinguishes an exact-size result from a
             # result truncated by the adapter fetch budget. SQL safety is unchanged.
-            rows = await ctx.explorer.execute(decision.sql, limit + 1)
+            if timeout_enforced:
+                rows = await ctx.explorer.execute_with_timeout(
+                    decision.sql, limit + 1, safety_context.timeout_seconds
+                )
+            else:
+                logger.warning("native query timeout unsupported scope=%s", scope)
+                rows = await ctx.explorer.execute(decision.sql, limit + 1)
         except Exception as exc:
             logger.warning(
                 "run_sql failed scope=%s error=%s: %s", scope, type(exc).__name__, exc
@@ -205,16 +213,20 @@ class RunSQL:
         return ToolResult(call_id="", content=_render_rows(
             decision.sql, rows, fetch_truncated=fetch_truncated,
             sql_rewritten=decision.sql != sql,
+            query_timeout_enforced=timeout_enforced,
+            query_timeout_scope=ctx.explorer.query_timeout_scope if timeout_enforced else "unsupported",
         ))
 
 
-def _render_rows(sql: str, rows: list[dict], *, fetch_truncated=False, sql_rewritten=False) -> str:
+def _render_rows(sql: str, rows: list[dict], *, fetch_truncated=False, sql_rewritten=False, query_timeout_enforced=False, query_timeout_scope="unsupported") -> str:
     coverage = (
         f"Result coverage: fetched_rows={len(rows)}; "
         f"displayed_rows={min(len(rows), _DISPLAY_ROW_LIMIT)}; "
         f"fetch_truncated={str(fetch_truncated).lower()}; "
         f"display_truncated={str(len(rows) > _DISPLAY_ROW_LIMIT).lower()}; "
-        f"sql_rewritten={str(sql_rewritten).lower()}. "
+        f"sql_rewritten={str(sql_rewritten).lower()}; "
+        f"query_timeout_enforced={str(query_timeout_enforced).lower()}; "
+        f"query_timeout_scope={query_timeout_scope}. "
         "Counts refer to the executed SQL, not the source table size."
     )
     if not rows:

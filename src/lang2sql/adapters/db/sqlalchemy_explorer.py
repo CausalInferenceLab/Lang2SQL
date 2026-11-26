@@ -14,7 +14,10 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
+import time
 from collections import Counter
+from contextlib import contextmanager
 from typing import Any
 
 from ...core.ports.explorer import Column, DataAccessError, ForeignKey, Table
@@ -22,6 +25,41 @@ from ...core.ports.explorer import Column, DataAccessError, ForeignKey, Table
 logger = logging.getLogger(__name__)
 
 _ORACLE_ACCESS_ERRORS = frozenset({942, 1031})
+_SQLITE_PROGRESS_OPCODES = 1000
+
+
+@contextmanager
+def _sqlite_deadline(conn, timeout_seconds):
+    """Bound SQLite VM execution and remove the handler before returning to the pool.
+
+    This does not bound connection acquisition, lock waits, or blocking user
+    functions that do not yield to the SQLite VM.
+    """
+    if timeout_seconds is None:
+        yield
+        return
+    if not math.isfinite(timeout_seconds) or timeout_seconds <= 0:
+        raise ValueError("SQL deadline must be a finite positive number")
+    from sqlalchemy.exc import DBAPIError
+
+    raw = conn.connection.driver_connection
+    deadline = time.monotonic() + timeout_seconds
+    expired = False
+
+    def check_deadline():
+        nonlocal expired
+        expired = time.monotonic() >= deadline
+        return int(expired)
+
+    raw.set_progress_handler(check_deadline, _SQLITE_PROGRESS_OPCODES)
+    try:
+        yield
+    except DBAPIError as exc:
+        if expired:
+            raise TimeoutError(f"SQLite query exceeded execution deadline ({timeout_seconds}s)") from exc
+        raise
+    finally:
+        raw.set_progress_handler(None, 0)
 
 
 class SqlAlchemyExplorer:
@@ -75,6 +113,19 @@ class SqlAlchemyExplorer:
 
     async def execute(self, sql: str, limit: int = 1000) -> list[dict]:
         return await asyncio.to_thread(self._execute_sync, sql, int(limit))
+
+    @property
+    def supports_query_timeout(self) -> bool:
+        return self.dialect == "sqlite"
+
+    @property
+    def query_timeout_scope(self) -> str:
+        return "sqlite_vm" if self.supports_query_timeout else "unsupported"
+
+    async def execute_with_timeout(self, sql: str, limit: int, timeout_seconds: float) -> list[dict]:
+        if not self.supports_query_timeout:
+            raise NotImplementedError("Native query deadlines are currently supported for SQLite only")
+        return await asyncio.to_thread(self._execute_sync, sql, int(limit), timeout_seconds)
 
     # --- sync workers ----------------------------------------------------
 
@@ -152,11 +203,11 @@ class SqlAlchemyExplorer:
             foreign_keys=foreign_keys,
         )
 
-    def _execute_sync(self, sql: str, limit: int) -> list[dict]:
+    def _execute_sync(self, sql: str, limit: int, timeout_seconds=None) -> list[dict]:
         from sqlalchemy import text
         from sqlalchemy.exc import DBAPIError
 
-        with self._get_engine().connect() as conn:
+        with self._get_engine().connect() as conn, _sqlite_deadline(conn, timeout_seconds):
             try:
                 result = conn.execute(text(sql))
             except DBAPIError as exc:
