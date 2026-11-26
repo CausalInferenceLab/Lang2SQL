@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird330",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "b7fc9f2843003bc2fd3547eb1321c36c07c4bd4b37cf6d9db69d1763639a7961",
+  "events_sha256": "7bc8bb33b19c156053b4fd52416f563f1cd3a2446b900c5ec98ef5628e013d41",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 191471,
+      "cached_input_tokens": 175360,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1229,
+      "reasoning_output_tokens": 102
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "expense"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "expense (table)\n- expense_id: TEXT\n- expense_description: TEXT\n- expense_date: TEXT\n- cost: REAL\n- approved: TEXT\n- link_to_member: TEXT\n- link_to_budget: TEXT\nPRIMARY KEY (expense_id)\nFOREIGN KEY (link_to_budget) REFERENCES budget (budget_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"BO6sruLl7O5cVLshsA9pDLNfGodWzggnOtVO1C24-wM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "member"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "member (table)\n- member_id: TEXT\n- first_name: TEXT\n- last_name: TEXT\n- email: TEXT\n- position: TEXT\n- t_shirt_size: TEXT\n- phone: TEXT\n- zip: INTEGER\n- link_to_major: TEXT\nPRIMARY KEY (member_id)\nFOREIGN KEY (link_to_major) REFERENCES major (major_id)\nFOREIGN KEY (zip) REFERENCES zip_code (zip_code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "BO6sruLl7O5cVLshsA9pDLNfGodWzggnOtVO1C24-wM",
+        "sql": "SELECT e.expense_description, e.expense_date, e.cost, e.link_to_member\nFROM main.expense AS e\nWHERE e.expense_date >= '2019-10-01' AND e.expense_date < '2019-12-01'\nORDER BY e.expense_description"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "18 row(s):\nResult coverage: fetched_rows=18; displayed_rows=18; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): expense_description=str; expense_date=str; cost=float; link_to_member=str\nexpense_description | expense_date | cost | link_to_member\n--- | --- | --- | ---\nAlumni Glass | 2019-11-14 | 16.28 | rec4BLdZHS2Blfp4v\nParking | 2019-11-19 | 6.0 | recro8T1MPMwRadVH\nParking | 2019-10-22 | 6.0 | recro8T1MPMwRadVH\nPizza | 2019-10-22 | 92.82 | recD078PnS3x2doBe\nPizza | 2019-11-19 | 62.6 | recD078PnS3x2doBe\nPizza | 2019-11-05 | 124.12 | rec4BLdZHS2Blfp4v\nPizza | 2019-10-08 | 51.81 | recD078PnS3x2doBe\nPosters | 2019-10-10 | 67.81 | rec4BLdZHS2Blfp4v\nPosters | 2019-10-01 | 54.25 | recD078PnS3x2doBe\nPosters | 2019-11-04 | 74.59 | rec4BLdZHS2Blfp4v\nPosters | 2019-11-04 | 54.25 | recD078PnS3x2doBe\nTravel Mug | 2019-10-15 | 13.45 | rec4BLdZHS2Blfp4v\nWater, Cookies | 2019-10-08 | 20.2 | recro8T1MPMwRadVH\nWater, Cookies | 2019-11-05 | 20.2 | recD078PnS3x2doBe\nWater, chips, cookies | 2019-11-05 | 50.13 | rec4BLdZHS2Blfp4v\nWater, chips, cookies | 2019-10-08 | 69.33 | recD078PnS3x2doBe\nWater, chips, cookies | 2019-10-22 | 61.52 | rec4BLdZHS2Blfp4v\nWater, cookies, chips | 2019-11-19 | 59.73 | recD078PnS3x2doBe\nSQL: SELECT e.expense_description, e.expense_date, e.cost, e.link_to_member\nFROM main.expense AS e\nWHERE e.expense_date >= '2019-10-01' AND e.expense_date < '2019-12-01'\nORDER BY e.expense_description\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"B4YR5UEEWsKqx8mXkK96tfmqS6Jx_BqKSDxR-BRkBDE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "B4YR5UEEWsKqx8mXkK96tfmqS6Jx_BqKSDxR-BRkBDE",
+        "expected_columns": [
+          "full_name",
+          "kind_count",
+          "total_spending_dollars"
+        ],
+        "sql": "WITH RECURSIVE period_expenses AS (\n    SELECT e.link_to_member AS member_id, e.expense_description, e.cost\n    FROM main.expense AS e\n    WHERE e.expense_date >= '2019-10-01'\n      AND e.expense_date < '2019-12-01'\n),\nitems(member_id, item, remaining) AS (\n    SELECT member_id, NULL, expense_description || ','\n    FROM period_expenses\n    UNION ALL\n    SELECT member_id,\n           lower(trim(substr(remaining, 1, instr(remaining, ',') - 1))),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n),\nkind_counts AS (\n    SELECT member_id, COUNT(DISTINCT NULLIF(item, '')) AS kind_count\n    FROM items\n    GROUP BY member_id\n),\nspending AS (\n    SELECT member_id,\n           SUM(CAST(ROUND(cost * 100) AS INTEGER)) / 100.0 AS total_spending_dollars\n    FROM period_expenses\n    GROUP BY member_id\n),\nranked AS (\n    SELECT m.first_name || ' ' || m.last_name AS full_name,\n           k.kind_count,\n           s.total_spending_dollars,\n           RANK() OVER (ORDER BY k.kind_count DESC) AS kind_rank\n    FROM main.member AS m\n    JOIN kind_counts AS k ON k.member_id = m.member_id\n    JOIN spending AS s ON s.member_id = m.member_id\n)\nSELECT full_name, kind_count, total_spending_dollars\nFROM ranked\nWHERE kind_rank = 1\nORDER BY full_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): full_name=str; kind_count=int; total_spending_dollars=float\nfull_name | kind_count | total_spending_dollars\n--- | --- | ---\nSacha Harrison | 7 | 407.9\nSQL: WITH RECURSIVE period_expenses AS (\n    SELECT e.link_to_member AS member_id, e.expense_description, e.cost\n    FROM main.expense AS e\n    WHERE e.expense_date >= '2019-10-01'\n      AND e.expense_date < '2019-12-01'\n),\nitems(member_id, item, remaining) AS (\n    SELECT member_id, NULL, expense_description || ','\n    FROM period_expenses\n    UNION ALL\n    SELECT member_id,\n           lower(trim(substr(remaining, 1, instr(remaining, ',') - 1))),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n),\nkind_counts AS (\n    SELECT member_id, COUNT(DISTINCT NULLIF(item, '')) AS kind_count\n    FROM items\n    GROUP BY member_id\n),\nspending AS (\n    SELECT member_id,\n           SUM(CAST(ROUND(cost * 100) AS INTEGER)) / 100.0 AS total_spending_dollars\n    FROM period_expenses\n    GROUP BY member_id\n),\nranked AS (\n    SELECT m.first_name || ' ' || m.last_name AS full_name,\n           k.kind_count,\n           s.total_spending_dollars,\n           RANK() OVER (ORDER BY k.kind_count DESC) AS kind_rank\n    FROM main.member AS m\n    JOIN kind_counts AS k ON k.member_id = m.member_id\n    JOIN spending AS s ON s.member_id = m.member_id\n)\nSELECT full_name, kind_count, total_spending_dollars\nFROM ranked\nWHERE kind_rank = 1\nORDER BY full_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH RECURSIVE period_expenses AS (\n    SELECT e.link_to_member AS member_id, e.expense_description, e.cost\n    FROM main.expense AS e\n    WHERE e.expense_date >= '2019-10-01'\n      AND e.expense_date < '2019-12-01'\n),\nitems(member_id, item, remaining) AS (\n    SELECT member_id, NULL, expense_description || ','\n    FROM period_expenses\n    UNION ALL\n    SELECT member_id,\n           lower(trim(substr(remaining, 1, instr(remaining, ',') - 1))),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n),\nkind_counts AS (\n    SELECT member_id, COUNT(DISTINCT NULLIF(item, '')) AS kind_count\n    FROM items\n    GROUP BY member_id\n),\nspending AS (\n    SELECT member_id,\n           SUM(CAST(ROUND(cost * 100) AS INTEGER)) / 100.0 AS total_spending_dollars\n    FROM period_expenses\n    GROUP BY member_id\n),\nranked AS (\n    SELECT m.first_name || ' ' || m.last_name AS full_name,\n           k.kind_count,\n           s.total_spending_dollars,\n           RANK() OVER (ORDER BY k.kind_count DESC) AS kind_rank\n    FROM main.member AS m\n    JOIN kind_counts AS k ON k.member_id = m.member_id\n    JOIN spending AS s ON s.member_id = m.member_id\n)\nSELECT full_name, kind_count, total_spending_dollars\nFROM ranked\nWHERE kind_rank = 1\nORDER BY full_name\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH RECURSIVE period_expenses AS (\n    SELECT e.link_to_member AS member_id, e.expense_description, e.cost\n    FROM main.expense AS e\n    WHERE e.expense_date >= '2019-10-01'\n      AND e.expense_date < '2019-12-01'\n),\nitems(member_id, item, remaining) AS (\n    SELECT member_id, NULL, expense_description || ','\n    FROM period_expenses\n    UNION ALL\n    SELECT member_id,\n           lower(trim(substr(remaining, 1, instr(remaining, ',') - 1))),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n),\nkind_counts AS (\n    SELECT member_id, COUNT(DISTINCT NULLIF(item, '')) AS kind_count\n    FROM items\n    GROUP BY member_id\n),\nspending AS (\n    SELECT member_id,\n           SUM(CAST(ROUND(cost * 100) AS INTEGER)) / 100.0 AS total_spending_dollars\n    FROM period_expenses\n    GROUP BY member_id\n),\nranked AS (\n    SELECT m.first_name || ' ' || m.last_name AS full_name,\n           k.kind_count,\n           s.total_spending_dollars,\n           RANK() OVER (ORDER BY k.kind_count DESC) AS kind_rank\n    FROM main.member AS m\n    JOIN kind_counts AS k ON k.member_id = m.member_id\n    JOIN spending AS s ON s.member_id = m.member_id\n)\nSELECT full_name, kind_count, total_spending_dollars\nFROM ranked\nWHERE kind_rank = 1\nORDER BY full_name\nLIMIT 1000",
+  "seconds": 42.22596375003923
+}

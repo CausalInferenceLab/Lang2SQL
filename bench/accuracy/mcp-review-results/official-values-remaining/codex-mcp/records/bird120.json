@@ -1,0 +1,132 @@
+{
+  "instance_id": "bird120",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "3eac807cee3be25549744ef09937ebc66e994a5174998558002935c9c08fcc9e",
+  "events_sha256": "b09dc4c132e555d4b8fd66ad956dcc71e05d2338e3381852c44c7222a642d1f7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 197440,
+      "cached_input_tokens": 181632,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 552,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"bJlCH71ya06dNwXryge9oN9QAF6YrtU5o7FOi5yNdUE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "badges"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "badges (table)\n- Id: INTEGER NOT NULL\n- UserId: INTEGER\n- Name: TEXT\n- Date: DATETIME\nPRIMARY KEY (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "bJlCH71ya06dNwXryge9oN9QAF6YrtU5o7FOi5yNdUE",
+        "sql": "SELECT COUNT(*) AS awards, MIN(Date) AS first_award, MAX(Date) AS last_award FROM main.badges WHERE Name = 'Student'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): awards=int; first_award=str; last_award=str\nawards | first_award | last_award\n--- | --- | ---\n14847 | 2010-07-19 19:39:07.0 | 2014-09-14 01:41:18.0\nSQL: SELECT COUNT(*) AS awards, MIN(Date) AS first_award, MAX(Date) AS last_award FROM main.badges WHERE Name = 'Student'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"EJ5kqpHumxbdkzNGU_6mSLqDIBEU1nTXMJiPeJcZ2Dg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "EJ5kqpHumxbdkzNGU_6mSLqDIBEU1nTXMJiPeJcZ2Dg",
+        "expected_rows": 1,
+        "expected_columns": [
+          "percentage_point_difference"
+        ],
+        "sql": "SELECT\n    100.0 * (\n        COUNT(*) FILTER (WHERE Date >= '2010-01-01' AND Date < '2011-01-01')\n        - COUNT(*) FILTER (WHERE Date >= '2011-01-01' AND Date < '2012-01-01')\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges\nWHERE Name = 'Student'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage_point_difference=float\npercentage_point_difference\n---\n-9.544015626052401\nSQL: SELECT\n    100.0 * (\n        COUNT(*) FILTER (WHERE Date >= '2010-01-01' AND Date < '2011-01-01')\n        - COUNT(*) FILTER (WHERE Date >= '2011-01-01' AND Date < '2012-01-01')\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges\nWHERE Name = 'Student'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    100.0 * (\n        COUNT(*) FILTER (WHERE Date >= '2010-01-01' AND Date < '2011-01-01')\n        - COUNT(*) FILTER (WHERE Date >= '2011-01-01' AND Date < '2012-01-01')\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges\nWHERE Name = 'Student'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    100.0 * (\n        COUNT(*) FILTER (WHERE Date >= '2010-01-01' AND Date < '2011-01-01')\n        - COUNT(*) FILTER (WHERE Date >= '2011-01-01' AND Date < '2012-01-01')\n    ) / NULLIF(COUNT(*), 0) AS percentage_point_difference\nFROM main.badges\nWHERE Name = 'Student'\nLIMIT 1",
+  "seconds": 25.761872791917995
+}

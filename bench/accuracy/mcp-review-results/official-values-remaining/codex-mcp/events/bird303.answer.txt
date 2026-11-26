@@ -1,0 +1,22 @@
+```sql
+WITH members_per_major AS (
+    SELECT m.department, m.major_name, COUNT(r.member_id) AS member_count
+    FROM main.major AS m
+    LEFT JOIN main.member AS r ON r.link_to_major = m.major_id
+    WHERE m.department IN (
+        SELECT department
+        FROM main.major
+        WHERE college = 'College of Humanities and Social Sciences'
+    )
+    GROUP BY m.department, m.major_name, m.major_id
+    ORDER BY m.department, m.major_name, m.major_id
+)
+SELECT department,
+       JSON_GROUP_ARRAY(major_name) AS majors_offered,
+       JSON_GROUP_ARRAY(major_name) FILTER (WHERE member_count > 0) AS majors_held,
+       ROUND(AVG(member_count), 2) AS average_members_per_major
+FROM members_per_major
+GROUP BY department
+ORDER BY department
+LIMIT 1000
+```

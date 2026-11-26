@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird400",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "f461f00a5acc05e02a6794d900b2b2c63d99675e3fda5c1b3eab89fcf011debb",
+  "events_sha256": "6431d912c7a50b926fa8ba72f1fc10fc9b7ae5edda8ed2d7fee897d1ba574106",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 195076,
+      "cached_input_tokens": 179456,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 869,
+      "reasoning_output_tokens": 199
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Laboratory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Laboratory (table)\n- ID: INTEGER NOT NULL\n- Date: DATE NOT NULL\n- GOT: INTEGER\n- GPT: INTEGER\n- LDH: INTEGER\n- ALP: INTEGER\n- TP: REAL\n- ALB: REAL\n- UA: REAL\n- UN: INTEGER\n- CRE: REAL\n- T-BIL: REAL\n- T-CHO: INTEGER\n- TG: INTEGER\n- CPK: INTEGER\n- GLU: INTEGER\n- WBC: REAL\n- RBC: REAL\n- HGB: REAL\n- HCT: REAL\n- PLT: INTEGER\n- PT: REAL\n- APTT: INTEGER\n- FG: REAL\n- PIC: INTEGER\n- TAT: INTEGER\n- TAT2: INTEGER\n- U-PRO: TEXT\n- IGG: INTEGER\n- IGA: INTEGER\n- IGM: INTEGER\n- CRP: TEXT\n- RA: TEXT\n- RF: TEXT\n- C3: INTEGER\n- C4: INTEGER\n- RNP: TEXT\n- SM: TEXT\n- SC170: TEXT\n- SSA: TEXT\n- SSB: TEXT\n- CENTROMEA: TEXT\n- DNA: TEXT\n- DNA-II: INTEGER\nPRIMARY KEY (ID, Date)\nFOREIGN KEY (ID) REFERENCES Patient (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"nBDcKASyfk6kr7DSK8y49_t-0JBCDz5-BKKQ3WdXs_k\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "nBDcKASyfk6kr7DSK8y49_t-0JBCDz5-BKKQ3WdXs_k",
+        "sql": "SELECT p.Diagnosis, COUNT(*) AS patients\nFROM main.Patient AS p\nWHERE p.Diagnosis LIKE '%RA%' AND p.Diagnosis LIKE '%SJS%'\nGROUP BY p.Diagnosis"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "18 row(s):\nResult coverage: fetched_rows=18; displayed_rows=18; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Diagnosis=str; patients=int\nDiagnosis | patients\n--- | ---\nDM, SJS, RA | 1\nMRA, SJS | 1\nPM, PSS, RA, SJS | 1\nPM, RA, SJS | 1\nPM, SJS, RA | 1\nPSS, PM, SJS, RA\u001dSJS\u001dPM | 1\nRA susp, SJS susp | 1\nRA, SJS | 25\nRA, SJS susp | 3\nRA, SJS susp\u000b\u001dSJS | 1\nRA, SJS, PM | 1\nRA, SJS, SLE susp | 1\nRA,SJS | 2\nSJS  RA | 1\nSJS susp, RA susp | 1\nSJS, RA | 8\nSJS, RA susp | 2\nSLE, SJS, APS, RA susp | 1\nSQL: SELECT p.Diagnosis, COUNT(*) AS patients\nFROM main.Patient AS p\nWHERE p.Diagnosis LIKE '%RA%' AND p.Diagnosis LIKE '%SJS%'\nGROUP BY p.Diagnosis\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"z74I-mNpxKrMFZmhPiLAG3JU02Dye69guLfRWAThZ7E\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "z74I-mNpxKrMFZmhPiLAG3JU02Dye69guLfRWAThZ7E",
+        "expected_rows": 1,
+        "expected_columns": [
+          "ever_normal",
+          "never_normal"
+        ],
+        "sql": "WITH patient_history AS (\n    SELECT EXISTS (\n        SELECT 1\n        FROM main.Laboratory AS l\n        WHERE l.ID = p.ID\n          AND l.PLT > 100\n          AND l.PLT < 400\n    ) AS had_normal\n    FROM main.Patient AS p\n    WHERE p.Diagnosis IN ('RA, SJS', 'RA,SJS', 'SJS, RA', 'SJS  RA')\n)\nSELECT\n    COUNT(*) FILTER (WHERE had_normal = 1) AS ever_normal,\n    COUNT(*) FILTER (WHERE had_normal = 0) AS never_normal\nFROM patient_history;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): ever_normal=int; never_normal=int\never_normal | never_normal\n--- | ---\n5 | 31\nSQL: WITH patient_history AS (\n    SELECT EXISTS (\n        SELECT 1\n        FROM main.Laboratory AS l\n        WHERE l.ID = p.ID\n          AND l.PLT > 100\n          AND l.PLT < 400\n    ) AS had_normal\n    FROM main.Patient AS p\n    WHERE p.Diagnosis IN ('RA, SJS', 'RA,SJS', 'SJS, RA', 'SJS  RA')\n)\nSELECT\n    COUNT(*) FILTER (WHERE had_normal = 1) AS ever_normal,\n    COUNT(*) FILTER (WHERE had_normal = 0) AS never_normal\nFROM patient_history\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH patient_history AS (\n    SELECT EXISTS (\n        SELECT 1\n        FROM main.Laboratory AS l\n        WHERE l.ID = p.ID\n          AND l.PLT > 100\n          AND l.PLT < 400\n    ) AS had_normal\n    FROM main.Patient AS p\n    WHERE p.Diagnosis IN ('RA, SJS', 'RA,SJS', 'SJS, RA', 'SJS  RA')\n)\nSELECT\n    COUNT(*) FILTER (WHERE had_normal = 1) AS ever_normal,\n    COUNT(*) FILTER (WHERE had_normal = 0) AS never_normal\nFROM patient_history\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH patient_history AS (\n    SELECT EXISTS (\n        SELECT 1\n        FROM main.Laboratory AS l\n        WHERE l.ID = p.ID\n          AND l.PLT > 100\n          AND l.PLT < 400\n    ) AS had_normal\n    FROM main.Patient AS p\n    WHERE p.Diagnosis IN ('RA, SJS', 'RA,SJS', 'SJS, RA', 'SJS  RA')\n)\nSELECT\n    COUNT(*) FILTER (WHERE had_normal = 1) AS ever_normal,\n    COUNT(*) FILTER (WHERE had_normal = 0) AS never_normal\nFROM patient_history\nLIMIT 1000",
+  "seconds": 33.402468124986626
+}

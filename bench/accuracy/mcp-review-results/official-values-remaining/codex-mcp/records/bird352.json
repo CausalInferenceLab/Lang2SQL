@@ -1,0 +1,213 @@
+{
+  "instance_id": "bird352",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "89c46657deaa3f03a4f82836f5cb0bd275a42563eed61ee2b16bb220324e0055",
+  "events_sha256": "dde4af9638252711974015b7c94e36c81433572c553e4977ff4ef7ab6eb602ce",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 234734,
+      "cached_input_tokens": 220928,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 767,
+      "reasoning_output_tokens": 44
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"-6DsBO0tChCGdAN-_b2n2-qLHfF2QTs_7RCvLylhQZM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "race"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "race (table)\n- id: INTEGER NOT NULL\n- race: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "-6DsBO0tChCGdAN-_b2n2-qLHfF2QTs_7RCvLylhQZM",
+        "sql": "SELECT s.publisher_id, r.race, COUNT(*) AS characters\nFROM superhero AS s\nLEFT JOIN race AS r ON r.id = s.race_id\nWHERE s.publisher_id IN (\n    SELECT a.publisher_id FROM superhero AS a WHERE a.superhero_name = 'A-Bomb'\n)\nGROUP BY s.publisher_id, r.race\nORDER BY r.race"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "32 row(s):\nResult coverage: fetched_rows=32; displayed_rows=32; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): publisher_id=int; race=NoneType,str; characters=int\npublisher_id | race | characters\n--- | --- | ---\n13 | None | 1\n13 | - | 170\n13 | Alien | 5\n13 | Android | 3\n13 | Animal | 2\n13 | Asgardian | 5\n13 | Atlantean | 1\n13 | Clone | 1\n13 | Cosmic Entity | 4\n13 | Cyborg | 4\n13 | Demi-God | 1\n13 | Demon | 3\n13 | Eternal | 3\n13 | Flora Colossus | 1\n13 | Frost Giant | 2\n13 | God / Eternal | 5\n13 | Human | 84\n13 | Human / Altered | 2\n13 | Human / Radiation | 11\n13 | Human-Kree | 2\n13 | Human-Spartoi | 1\n13 | Inhuman | 4\n13 | Kakarantharaian | 1\n13 | Luphomoid | 1\n13 | Mutant | 56\n13 | Mutant / Clone | 1\n13 | Neyaphem | 1\n13 | Spartoi | 1\n13 | Strontian | 1\n13 | Symbiote | 8\n13 | Vampire | 1\n13 | Zen-Whoberian | 1\nSQL: SELECT s.publisher_id, r.race, COUNT(*) AS characters\nFROM superhero AS s\nLEFT JOIN race AS r ON r.id = s.race_id\nWHERE s.publisher_id IN (\n    SELECT a.publisher_id FROM superhero AS a WHERE a.superhero_name = 'A-Bomb'\n)\nGROUP BY s.publisher_id, r.race\nORDER BY r.race\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wP3FHA4Iuzh9cGG85PrGmrPrTumUR73oWPsTM3mJ_NY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wP3FHA4Iuzh9cGG85PrGmrPrTumUR73oWPsTM3mJ_NY",
+        "sql": "SELECT s.superhero_name, s.race_id, r.id, r.race FROM superhero AS s LEFT JOIN race AS r ON r.id = s.race_id WHERE s.publisher_id = 13 AND r.race IS NULL"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): superhero_name=str; race_id=NoneType; id=NoneType; race=NoneType\nsuperhero_name | race_id | id | race\n--- | --- | --- | ---\nQuake | None | None | None\nSQL: SELECT s.superhero_name, s.race_id, r.id, r.race FROM superhero AS s LEFT JOIN race AS r ON r.id = s.race_id WHERE s.publisher_id = 13 AND r.race IS NULL\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"L31rFc70hCFoMSjUnRqDu3Dsba8ydvQ-tks25utU7zk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "L31rFc70hCFoMSjUnRqDu3Dsba8ydvQ-tks25utU7zk",
+        "expected_rows": 1,
+        "expected_columns": [
+          "character_count"
+        ],
+        "sql": "SELECT COUNT(*) AS character_count\nFROM superhero AS s\nLEFT JOIN race AS r ON r.id = s.race_id\nWHERE s.publisher_id IN (\n    SELECT a.publisher_id\n    FROM superhero AS a\n    WHERE a.superhero_name = 'A-Bomb'\n)\nAND (r.race IS NULL OR r.race = '-')\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): character_count=int\ncharacter_count\n---\n171\nSQL: SELECT COUNT(*) AS character_count\nFROM superhero AS s\nLEFT JOIN race AS r ON r.id = s.race_id\nWHERE s.publisher_id IN (\n    SELECT a.publisher_id\n    FROM superhero AS a\n    WHERE a.superhero_name = 'A-Bomb'\n)\nAND (r.race IS NULL OR r.race = '-')\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS character_count\nFROM superhero AS s\nLEFT JOIN race AS r ON r.id = s.race_id\nWHERE s.publisher_id IN (\n    SELECT a.publisher_id\n    FROM superhero AS a\n    WHERE a.superhero_name = 'A-Bomb'\n)\nAND (r.race IS NULL OR r.race = '-')\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS character_count\nFROM superhero AS s\nLEFT JOIN race AS r ON r.id = s.race_id\nWHERE s.publisher_id IN (\n    SELECT a.publisher_id\n    FROM superhero AS a\n    WHERE a.superhero_name = 'A-Bomb'\n)\nAND (r.race IS NULL OR r.race = '-')\nLIMIT 1",
+  "seconds": 41.28510737500619
+}

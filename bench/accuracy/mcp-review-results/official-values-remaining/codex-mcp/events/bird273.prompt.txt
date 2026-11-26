@@ -1,0 +1,859 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'm writing a piece about how the same common forenames recur across Formula 1 history. Could you tell me how many different drivers named Peter have ever won a Formula 1 race, and the same for drivers named John? Please give me one count per forename, so I can compare the two — if they turn out to be equal, just report both counts side by side. Nothing else needed.
+Provided evidence:
+A race win means the driver finished first in that race.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `circuits` (
+    `circuitId` INTEGER, -- unique identification number of the circuit; example: [2, 3]
+    `circuitRef` TEXT, -- circuit reference name; example: ['sepang', 'bahrain']
+    `name` TEXT, -- full name of circuit; example: ['Sepang International Circuit', 'Bahrain International Circuit']
+    `location` TEXT, -- location of circuit; example: ['Kuala Lumpur', 'Sakhir']
+    `country` TEXT, -- country of circuit; example: ['Malaysia', 'Bahrain']
+    `lat` REAL, -- latitude of location of circuit; example: [2.76083, 26.0325]
+    `lng` REAL, -- longitude of location of circuit; example: [101.738, 50.5106]
+    `alt` INTEGER, -- example: []
+    `url` TEXT, -- url; example: ['http://en.wikipedia.org/wiki/Sepang_International_Circuit', 'http://en.wikipedia.org/wiki/Bahrain_International_Circuit']
+    PRIMARY KEY (`circuitId`)
+);
+
+CREATE TABLE `constructors` (
+    `constructorId` INTEGER, -- the unique identification number identifying constructors; example: [1, 2]
+    `constructorRef` TEXT, -- Constructor Reference name; example: ['mclaren', 'bmw_sauber']
+    `name` TEXT, -- full name of the constructor; example: ['McLaren', 'BMW Sauber']
+    `nationality` TEXT, -- nationality of the constructor; example: ['British', 'German']
+    `url` TEXT, -- the introduction website of the constructor; example: ['http://en.wikipedia.org/wiki/McLaren', 'http://en.wikipedia.org/wiki/BMW_Sauber']
+    PRIMARY KEY (`constructorId`)
+);
+
+CREATE TABLE `drivers` (
+    `driverId` INTEGER, -- the unique identification number identifying each driver; example: [1, 2]
+    `driverRef` TEXT, -- driver reference name; example: ['hamilton', 'heidfeld']
+    `number` INTEGER, -- number; example: [44, 6]
+    `code` TEXT, -- abbreviated code for drivers; example: ['HAM', 'HEI']
+    `forename` TEXT, -- forename; example: ['Lewis', 'Nick']
+    `surname` TEXT, -- surname; example: ['Hamilton', 'Heidfeld']
+    `dob` DATE, -- date of birth; example: ['1985-01-07', '1977-05-10']
+    `nationality` TEXT, -- nationality of drivers; example: ['British', 'German']
+    `url` TEXT, -- the introduction website of the drivers; example: ['http://en.wikipedia.org/wiki/Lewis_Hamilton', 'http://en.wikipedia.org/wiki/Nick_Heidfeld']
+    PRIMARY KEY (`driverId`)
+);
+
+CREATE TABLE `seasons` (
+    `year` INTEGER, -- the unique identification number identifying the race; example: [1950, 1951]
+    `url` TEXT, -- website link of season race introduction; example: ['http://en.wikipedia.org/wiki/1950_Formula_One_season', 'http://en.wikipedia.org/wiki/1951_Formula_One_season']
+    PRIMARY KEY (`year`)
+);
+
+CREATE TABLE `races` (
+    `raceId` INTEGER, -- the unique identification number identifying the race; example: [2, 3]
+    `year` INTEGER, -- year; example: [2009]
+    `round` INTEGER, -- round; example: [2, 3]
+    `circuitId` INTEGER, -- circuit Id; example: [2, 17]
+    `name` TEXT, -- name of the race; example: ['Malaysian Grand Prix', 'Chinese Grand Prix']
+    `date` DATE, -- duration time; example: ['2009-04-05', '2009-04-19']
+    `time` TEXT, -- time of the location; example: ['09:00:00', '07:00:00']
+    `url` TEXT, -- introduction of races; example: ['http://en.wikipedia.org/wiki/2009_Malaysian_Grand_Prix', 'http://en.wikipedia.org/wiki/2009_Chinese_Grand_Prix']
+    PRIMARY KEY (`raceId`),
+    FOREIGN KEY (`circuitId`) REFERENCES `circuits` (`circuitId`),
+    FOREIGN KEY (`year`) REFERENCES `seasons` (`year`)
+);
+
+CREATE TABLE `constructorResults` (
+    `constructorResultsId` INTEGER, -- constructor Results Id; example: [1, 2]
+    `raceId` INTEGER, -- race id; example: [18]
+    `constructorId` INTEGER, -- constructor id; example: [1, 2]
+    `points` REAL, -- points; example: [14.0, 8.0]
+    `status` TEXT, -- status; example: []
+    PRIMARY KEY (`constructorResultsId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `constructorStandings` (
+    `constructorStandingsId` INTEGER, -- unique identification of the constructor standing records; example: [1, 2]
+    `raceId` INTEGER, -- id number identifying which races; example: [18]
+    `constructorId` INTEGER, -- id number identifying which id; example: [1, 2]
+    `points` REAL, -- how many points acquired in each race; example: [14.0, 8.0]
+    `position` INTEGER, -- position or track of circuits; example: [1, 3]
+    `positionText` TEXT, -- position text; example: ['1', '3']
+    `wins` INTEGER, -- wins; example: [1, 0]
+    PRIMARY KEY (`constructorStandingsId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `driverStandings` (
+    `driverStandingsId` INTEGER, -- the unique identification number identifying driver standing records; example: [1, 2]
+    `raceId` INTEGER, -- id number identifying which races; example: [18]
+    `driverId` INTEGER, -- id number identifying which drivers; example: [1, 2]
+    `points` REAL, -- how many points acquired in each race; example: [10.0, 8.0]
+    `position` INTEGER, -- position or track of circuits; example: [1, 2]
+    `positionText` TEXT, -- position text; example: ['1', '2']
+    `wins` INTEGER, -- wins; example: [1, 0]
+    PRIMARY KEY (`driverStandingsId`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `lapTimes` (
+    `raceId` INTEGER, -- the identification number identifying race; example: [2]
+    `driverId` INTEGER, -- the identification number identifying each driver; example: [1]
+    `lap` INTEGER, -- lap number; example: [1, 2]
+    `position` INTEGER, -- position or track of circuits; example: [10, 11]
+    `time` TEXT, -- lap time; example: ['1:52.965', '1:41.865']
+    `milliseconds` INTEGER, -- milliseconds; example: [112965, 101865]
+    PRIMARY KEY (`raceId`, `driverId`, `lap`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `pitStops` (
+    `raceId` INTEGER, -- the identification number identifying race; example: [842]
+    `driverId` INTEGER, -- the identification number identifying each driver; example: [1, 2]
+    `stop` INTEGER, -- stop number; example: [1, 2]
+    `lap` INTEGER, -- lap number; example: [12, 24]
+    `time` TEXT, -- time; example: ['16:24:40', '16:45:48']
+    `duration` TEXT, -- duration time; example: ['22.552', '22.611']
+    `milliseconds` INTEGER, -- milliseconds; example: [22552, 22611]
+    PRIMARY KEY (`raceId`, `driverId`, `stop`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `qualifying` (
+    `qualifyId` INTEGER, -- the unique identification number identifying qualifying; example: [23, 24]
+    `raceId` INTEGER, -- the identification number identifying each race; example: [19]
+    `driverId` INTEGER, -- the identification number identifying each driver; example: [13, 8]
+    `constructorId` INTEGER, -- constructor Id; example: [6, 1]
+    `number` INTEGER, -- number; example: [2, 1]
+    `position` INTEGER, -- position or track of circuit; example: [1, 2]
+    `q1` TEXT, -- time in qualifying 1; example: ['1:35.347', '1:35.645']
+    `q2` TEXT, -- time in qualifying 2; example: ['1:34.412', '1:34.188']
+    `q3` TEXT, -- time in qualifying 3; example: ['1:35.748', '1:36.230']
+    PRIMARY KEY (`qualifyId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `status` (
+    `statusId` INTEGER, -- the unique identification number identifying status; example: [1, 2]
+    `status` TEXT, -- full name of status; example: ['Finished', 'Disqualified']
+    PRIMARY KEY (`statusId`)
+);
+
+CREATE TABLE `results` (
+    `resultId` INTEGER, -- the unique identification number identifying race result; example: [23, 24]
+    `raceId` INTEGER, -- the identification number identifying the race; example: [19]
+    `driverId` INTEGER, -- the identification number identifying the driver; example: [8, 9]
+    `constructorId` INTEGER, -- the identification number identifying which constructors; example: [6, 2]
+    `number` INTEGER, -- number; example: [1, 4]
+    `grid` INTEGER, -- the number identifying the area where cars are set into a grid formation in order to start the race.; example: [2, 4]
+    `position` INTEGER, -- The finishing position or track of circuits; example: [1, 2]
+    `positionText` TEXT, -- position text; example: ['1', '2']
+    `positionOrder` INTEGER, -- the finishing order of positions; example: [1, 2]
+    `points` REAL, -- points; example: [10.0, 8.0]
+    `laps` INTEGER, -- lap number; example: [56]
+    `time` TEXT, -- finish time; example: ['1:31:18.555', '+19.570']
+    `milliseconds` INTEGER, -- the actual finishing time of drivers in milliseconds; example: [5478555, 5498125]
+    `fastestLap` INTEGER, -- fastest lap number; example: [37, 39]
+    `rank` INTEGER, -- starting rank positioned by fastest lap speed; example: [2, 6]
+    `fastestLapTime` TEXT, -- fastest Lap Time; example: ['1:35.405', '1:35.921']
+    `fastestLapSpeed` TEXT, -- fastest Lap Speed; example: ['209.158', '208.033']
+    `statusId` INTEGER, -- status ID; example: [1]
+    PRIMARY KEY (`resultId`),
+    FOREIGN KEY (`statusId`) REFERENCES `status` (`statusId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+
+Official column/value descriptions (2024 Dev release):
+{
+  "circuits": [
+    {
+      "original_column_name": "circuitId",
+      "column_name": "circuit Id ",
+      "column_description": "unique identification number of the circuit ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "circuitRef",
+      "column_name": "circuit reference name ",
+      "column_description": "circuit reference name ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "name ",
+      "column_name": "",
+      "column_description": "full name of circuit ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "location  ",
+      "column_name": "",
+      "column_description": "location of circuit ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "country ",
+      "column_name": "",
+      "column_description": "country of circuit ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "lat ",
+      "column_name": "latitude  ",
+      "column_description": "latitude of location of circuit ",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "lng ",
+      "column_name": "longitude  ",
+      "column_description": "longitude of location of circuit ",
+      "data_format": "real",
+      "value_description": "commonsense evidence: \nLocation coordinates: (lat, lng)"
+    },
+    {
+      "original_column_name": "alt ",
+      "column_name": "",
+      "column_description": "",
+      "data_format": "integer ",
+      "value_description": "not useful "
+    },
+    {
+      "original_column_name": "url ",
+      "column_name": "",
+      "column_description": "url ",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "constructorResults": [
+    {
+      "original_column_name": "constructorResultsId",
+      "column_name": "constructor Results Id",
+      "column_description": "constructor Results Id",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "raceId",
+      "column_name": "race Id",
+      "column_description": "race id",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "constructorId",
+      "column_name": "constructor Id",
+      "column_description": "constructor id",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "points",
+      "column_name": "",
+      "column_description": "points",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "status",
+      "column_name": "",
+      "column_description": "status",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "constructorStandings": [
+    {
+      "original_column_name": "constructorStandingsId ",
+      "column_name": "constructor Standings Id ",
+      "column_description": "unique identification of the constructor standing records ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "raceId ",
+      "column_name": "race id ",
+      "column_description": "id number identifying which races ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "constructorId ",
+      "column_name": "constructor id ",
+      "column_description": "id number identifying which id ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "points",
+      "column_name": "",
+      "column_description": "how many points acquired in each race ",
+      "data_format": "",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "position ",
+      "column_name": "",
+      "column_description": "position or track of circuits ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "positionText ",
+      "column_name": "position text ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "same with position, not quite useful "
+    },
+    {
+      "original_column_name": "wins ",
+      "column_name": "",
+      "column_description": "wins ",
+      "data_format": "integer ",
+      "value_description": ""
+    }
+  ],
+  "constructors": [
+    {
+      "original_column_name": "constructorId ",
+      "column_name": "constructor Id ",
+      "column_description": "the unique identification number identifying constructors ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "constructorRef ",
+      "column_name": "Constructor Reference name ",
+      "column_description": "Constructor Reference name ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "name ",
+      "column_name": "",
+      "column_description": "full name of the constructor ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "nationality ",
+      "column_name": "",
+      "column_description": "nationality of the constructor ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "url ",
+      "column_name": "",
+      "column_description": "the introduction website of the constructor ",
+      "data_format": "text",
+      "value_description": "commonsense evidence: How to find out the detailed introduction of the constructor: through its url"
+    }
+  ],
+  "driverStandings": [
+    {
+      "original_column_name": "driverStandingsId ",
+      "column_name": "driver Standings Id ",
+      "column_description": "the unique identification number identifying driver standing records ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "raceId ",
+      "column_name": "constructor Reference name ",
+      "column_description": "id number identifying which races ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "driverId ",
+      "column_name": "",
+      "column_description": "id number identifying which drivers ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "points ",
+      "column_name": "",
+      "column_description": "how many points acquired in each race ",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "position ",
+      "column_name": "",
+      "column_description": "position or track of circuits ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "wins",
+      "column_name": "",
+      "column_description": "wins ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "positionText ",
+      "column_name": "position text ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "same with position, not quite useful "
+    }
+  ],
+  "drivers": [
+    {
+      "original_column_name": "driverId ",
+      "column_name": "driver ID ",
+      "column_description": "the unique identification number identifying each driver",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "driverRef ",
+      "column_name": "driver reference name ",
+      "column_description": "driver reference name ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "number ",
+      "column_name": "",
+      "column_description": "number ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "code ",
+      "column_name": "",
+      "column_description": "abbreviated code for drivers ",
+      "data_format": "text",
+      "value_description": "if \"null\" or empty, it means it doesn't have code "
+    },
+    {
+      "original_column_name": "forename ",
+      "column_name": "",
+      "column_description": "forename ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "surname ",
+      "column_name": "",
+      "column_description": "surname ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "dob ",
+      "column_name": "date of birth ",
+      "column_description": "date of birth ",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "nationality ",
+      "column_name": "",
+      "column_description": "nationality of drivers ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "url ",
+      "column_name": "",
+      "column_description": "the introduction website of the drivers ",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "lapTimes": [
+    {
+      "original_column_name": "raceId ",
+      "column_name": "race ID ",
+      "column_description": "the identification number identifying race",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "driverId ",
+      "column_name": "driver ID ",
+      "column_description": "the identification number identifying each driver ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "lap ",
+      "column_name": "",
+      "column_description": "lap number ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "position ",
+      "column_name": "",
+      "column_description": "position or track of circuits  ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "time ",
+      "column_name": "",
+      "column_description": "lap time  ",
+      "data_format": "text",
+      "value_description": "in minutes / seconds / ... "
+    },
+    {
+      "original_column_name": "milliseconds ",
+      "column_name": "",
+      "column_description": "milliseconds ",
+      "data_format": "integer ",
+      "value_description": ""
+    }
+  ],
+  "pitStops": [
+    {
+      "original_column_name": "raceId ",
+      "column_name": "race ID ",
+      "column_description": "the identification number identifying race ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "driverId ",
+      "column_name": "driver ID ",
+      "column_description": "the identification number identifying each driver ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "stop ",
+      "column_name": "",
+      "column_description": "stop number ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "lap ",
+      "column_name": "",
+      "column_description": "lap number ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "time ",
+      "column_name": "",
+      "column_description": "time ",
+      "data_format": "text",
+      "value_description": "exact time  "
+    },
+    {
+      "original_column_name": "duration ",
+      "column_name": "",
+      "column_description": "duration time ",
+      "data_format": "text",
+      "value_description": "seconds/ "
+    },
+    {
+      "original_column_name": "milliseconds ",
+      "column_name": "",
+      "column_description": "milliseconds ",
+      "data_format": "integer ",
+      "value_description": ""
+    }
+  ],
+  "qualifying": [
+    {
+      "original_column_name": "qualifyId ",
+      "column_name": "qualify Id ",
+      "column_description": "the unique identification number identifying qualifying ",
+      "data_format": "integer ",
+      "value_description": "How does F1 Sprint qualifying work? Sprint qualifying is essentially a short-form Grand Prix – a race that is one-third the number of laps of the main event on Sunday. However, the drivers are battling for positions on the grid for the start of Sunday's race. "
+    },
+    {
+      "original_column_name": "raceId ",
+      "column_name": "race Id ",
+      "column_description": "the identification number identifying each race ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "driverId ",
+      "column_name": "driver Id",
+      "column_description": "the identification number identifying each driver ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "constructorId ",
+      "column_name": "constructor id ",
+      "column_description": "constructor Id ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "number ",
+      "column_name": "",
+      "column_description": "number ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "position ",
+      "column_name": "",
+      "column_description": "position or track of circuit ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "q1 ",
+      "column_name": "qualifying 1 ",
+      "column_description": "time in qualifying 1 ",
+      "data_format": "text",
+      "value_description": "in minutes / seconds / ... \ncommonsense evidence: \nQ1 lap times determine pole position and the order of the front 10 positions on the grid. The slowest driver in Q1 starts 10th, the next starts ninth and so on. \nAll 20 F1 drivers participate in the first period, called Q1, with each trying to set the fastest time possible. Those in the top 15 move on to the next period of qualifying, called Q2. The five slowest drivers are eliminated and will start the race in the last five positions on the grid. "
+    },
+    {
+      "original_column_name": "q2 ",
+      "column_name": "qualifying 2 ",
+      "column_description": "time in qualifying 2 ",
+      "data_format": "text",
+      "value_description": "in minutes / seconds / ... \ncommonsense evidence: \nonly top 15 in the q1 has the record of q2 \nQ2 is slightly shorter but follows the same format. Drivers try to put down their best times to move on to Q1 as one of the 10 fastest cars. The five outside of the top 10 are eliminated and start the race from 11th to 15th based on their best lap time. "
+    },
+    {
+      "original_column_name": "q3 ",
+      "column_name": "qualifying 3 ",
+      "column_description": "time in qualifying 3 ",
+      "data_format": "text",
+      "value_description": "in minutes / seconds / ... \ncommonsense evidence: \nonly top 10 in the q2 has the record of q3 "
+    }
+  ],
+  "races": [
+    {
+      "original_column_name": "raceId ",
+      "column_name": "race ID ",
+      "column_description": "the unique identification number identifying the race ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "year ",
+      "column_name": "",
+      "column_description": "year ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "round ",
+      "column_name": "",
+      "column_description": "round ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "circuitId ",
+      "column_name": "Circuit Id ",
+      "column_description": "circuit Id ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "name ",
+      "column_name": "",
+      "column_description": "name of the race ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "date ",
+      "column_name": "",
+      "column_description": "duration time ",
+      "data_format": "date",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "time ",
+      "column_name": "",
+      "column_description": "time of the location ",
+      "data_format": "text",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "url ",
+      "column_name": "",
+      "column_description": "introduction of races ",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "results": [
+    {
+      "original_column_name": "resultId",
+      "column_name": "Result ID ",
+      "column_description": "the unique identification number identifying race result ",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "raceId",
+      "column_name": "race ID ",
+      "column_description": "the identification number identifying the race ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "driverId ",
+      "column_name": "driver ID",
+      "column_description": "the identification number identifying the driver ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "constructorId ",
+      "column_name": "constructor Id ",
+      "column_description": "the identification number identifying which constructors ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "number ",
+      "column_name": "",
+      "column_description": "number  ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "grid ",
+      "column_name": "",
+      "column_description": "the number identifying the area where cars are set into a grid formation in order to start the race. ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "position ",
+      "column_name": "",
+      "column_description": "The finishing position or track of circuits ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "positionText ",
+      "column_name": "position text ",
+      "column_description": "",
+      "data_format": "text",
+      "value_description": "not quite useful "
+    },
+    {
+      "original_column_name": "positionOrder ",
+      "column_name": "position order ",
+      "column_description": "the finishing order of positions ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "points ",
+      "column_name": "",
+      "column_description": "points ",
+      "data_format": "real",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "laps ",
+      "column_name": "",
+      "column_description": "lap number ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "time  ",
+      "column_name": "",
+      "column_description": "finish time ",
+      "data_format": "text",
+      "value_description": "commonsense evidence: \n1. if the value exists, it means the driver finished the race. \n2. Only the time of the champion shows in the format of \"minutes: seconds.millionsecond\", the time of the other drivers shows as \"seconds.millionsecond\" , which means their actual time is the time of the champion adding the value in this cell."
+    },
+    {
+      "original_column_name": "milliseconds ",
+      "column_name": "",
+      "column_description": "the actual finishing time of drivers in milliseconds  ",
+      "data_format": "integer ",
+      "value_description": "the actual finishing time of drivers  "
+    },
+    {
+      "original_column_name": "fastestLap ",
+      "column_name": "fastest lap ",
+      "column_description": "fastest lap number ",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "rank ",
+      "column_name": "",
+      "column_description": "starting rank positioned by fastest lap speed",
+      "data_format": "integer ",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "fastestLapTime ",
+      "column_name": "fastest Lap Time",
+      "column_description": "fastest Lap Time",
+      "data_format": "text",
+      "value_description": "faster (smaller in the value) \"fastestLapTime\" leads to higher rank (smaller is higher rank) "
+    },
+    {
+      "original_column_name": "fastestLapSpeed ",
+      "column_name": "fastest Lap Speed ",
+      "column_description": "fastest Lap Speed ",
+      "data_format": "text",
+      "value_description": " (km / h) "
+    },
+    {
+      "original_column_name": "statusId ",
+      "column_name": "status Id ",
+      "column_description": "status ID ",
+      "data_format": "integer",
+      "value_description": "its category description appear in the table status "
+    }
+  ],
+  "seasons": [
+    {
+      "original_column_name": "year ",
+      "column_name": "race ID ",
+      "column_description": "the unique identification number identifying the race",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "url ",
+      "column_name": "",
+      "column_description": "website link of season race introduction ",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ],
+  "status": [
+    {
+      "original_column_name": "statusId ",
+      "column_name": "status ID",
+      "column_description": "the unique identification number identifying status",
+      "data_format": "integer",
+      "value_description": ""
+    },
+    {
+      "original_column_name": "status ",
+      "column_name": "",
+      "column_description": "full name of status ",
+      "data_format": "text",
+      "value_description": ""
+    }
+  ]
+}
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

@@ -1,0 +1,236 @@
+{
+  "instance_id": "bird149",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "91706d129e83ec752592c212619f9a2080e2315c3391d6b6a84b5f9f2782829e",
+  "events_sha256": "32e7b9878c4bcfcb6e393923ccc086bd3c4073feb0a0a9abef84be55b857629d",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 223872,
+      "cached_input_tokens": 209920,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1605,
+      "reasoning_output_tokens": 13
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"b143BpZHYIgE-0fPKlqEoJf6iiABFBau4ilLC5LnQFU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "b143BpZHYIgE-0fPKlqEoJf6iiABFBau4ilLC5LnQFU",
+        "sql": "SELECT c.Segment, MIN(y.Date), MAX(y.Date), COUNT(*), COUNT(y.Consumption),\n       MIN(y.Consumption), MAX(y.Consumption),\n       SUM(y.Consumption <> ROUND(y.Consumption, 2)) AS beyond_two_decimals\nFROM main.yearmonth AS y\nJOIN main.customers AS c ON c.CustomerID = y.CustomerID\nWHERE c.Currency = 'CZK' AND c.Segment IN ('SME', 'LAM', 'KAM')\n  AND y.Date BETWEEN '201301' AND '201312'\nGROUP BY c.Segment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; MIN(y.Date)=str; MAX(y.Date)=str; COUNT(*)=int; COUNT(y.Consumption)=int; MIN(y.Consumption)=float; MAX(y.Consumption)=float; beyond_two_decimals=int\nSegment | MIN(y.Date) | MAX(y.Date) | COUNT(*) | COUNT(y.Consumption) | MIN(y.Consumption) | MAX(y.Consumption) | beyond_two_decimals\n--- | --- | --- | --- | --- | --- | --- | ---\nKAM | 201301 | 201311 | 14298 | 14298 | -582092.86 | 2052187.11 | 0\nLAM | 201301 | 201311 | 28994 | 28994 | -2458.05 | 712501.76 | 0\nSME | 201301 | 201311 | 167502 | 167502 | -14896.12 | 786530.79 | 0\nSQL: SELECT c.Segment, MIN(y.Date), MAX(y.Date), COUNT(*), COUNT(y.Consumption),\n       MIN(y.Consumption), MAX(y.Consumption),\n       SUM(y.Consumption <> ROUND(y.Consumption, 2)) AS beyond_two_decimals\nFROM main.yearmonth AS y\nJOIN main.customers AS c ON c.CustomerID = y.CustomerID\nWHERE c.Currency = 'CZK' AND c.Segment IN ('SME', 'LAM', 'KAM')\n  AND y.Date BETWEEN '201301' AND '201312'\nGROUP BY c.Segment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"XzgpZycllwuFft0aBD83K8ZEx4N8DnqwyswpkWTzfOs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "aggregate": "sum",
+        "dialect": "sqlite",
+        "input_scale": 2,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "aggregate": "sum",
+        "dialect": "sqlite",
+        "input_scale": 2,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "XzgpZycllwuFft0aBD83K8ZEx4N8DnqwyswpkWTzfOs",
+        "sql": "WITH decimal_input AS (\n  SELECT c.CustomerID AS group_id, CAST(ROUND(y.Consumption * 100) AS INTEGER) AS scaled_value\n  FROM main.yearmonth AS y\n  JOIN main.customers AS c ON c.CustomerID = y.CustomerID\n  WHERE c.Currency = 'CZK' AND c.Segment IN ('SME', 'LAM', 'KAM')\n    AND y.Date BETWEEN '201301' AND '201312'\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n),\nranked AS (\n  SELECT c.Segment, c.CustomerID, d.rounded_value,\n         ROW_NUMBER() OVER (PARTITION BY c.Segment ORDER BY d.rounded_units, c.CustomerID) AS rn,\n         SUM(d.invalid_count) OVER () AS invalid_count,\n         SUM(d.status <> 'ok') OVER () AS status_errors\n  FROM decimal_result AS d\n  JOIN main.customers AS c ON c.CustomerID = d.group_id\n)\nSELECT * FROM ranked WHERE rn = 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; CustomerID=int; rounded_value=float; rn=int; invalid_count=int; status_errors=int\nSegment | CustomerID | rounded_value | rn | invalid_count | status_errors\n--- | --- | --- | --- | --- | ---\nKAM | 45195 | -6044.38 | 1 | 0 | 0\nLAM | 50066 | 2.24 | 1 | 0 | 0\nSME | 12685 | -14007.1 | 1 | 0 | 0\nSQL: WITH decimal_input AS (\n  SELECT c.CustomerID AS group_id, CAST(ROUND(y.Consumption * 100) AS INTEGER) AS scaled_value\n  FROM main.yearmonth AS y\n  JOIN main.customers AS c ON c.CustomerID = y.CustomerID\n  WHERE c.Currency = 'CZK' AND c.Segment IN ('SME', 'LAM', 'KAM')\n    AND y.Date BETWEEN '201301' AND '201312'\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n),\nranked AS (\n  SELECT c.Segment, c.CustomerID, d.rounded_value,\n         ROW_NUMBER() OVER (PARTITION BY c.Segment ORDER BY d.rounded_units, c.CustomerID) AS rn,\n         SUM(d.invalid_count) OVER () AS invalid_count,\n         SUM(d.status <> 'ok') OVER () AS status_errors\n  FROM decimal_result AS d\n  JOIN main.customers AS c ON c.CustomerID = d.group_id\n)\nSELECT * FROM ranked WHERE rn = 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"KUfW4MtpMxs-eDyadnpM4yt7d3C9yfUROjAAsYwPKF4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "KUfW4MtpMxs-eDyadnpM4yt7d3C9yfUROjAAsYwPKF4",
+        "expected_rows": 1,
+        "sql": "WITH customer_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'CZK'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date BETWEEN '201301' AND '201312'\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT customer_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment\n               ORDER BY total_hundredths, CustomerID\n           ) AS position\n    FROM customer_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE position = 1\n)\nSELECT sme.CustomerID AS sme_customer_id,\n       lam.CustomerID AS lam_customer_id,\n       kam.CustomerID AS kam_customer_id,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = 'SME' AND lam.Segment = 'LAM' AND kam.Segment = 'KAM'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): sme_customer_id=int; lam_customer_id=int; kam_customer_id=int; sme_minus_lam=float; lam_minus_kam=float; kam_minus_sme=float\nsme_customer_id | lam_customer_id | kam_customer_id | sme_minus_lam | lam_minus_kam | kam_minus_sme\n--- | --- | --- | --- | --- | ---\n12685 | 50066 | 45195 | -14009.34 | 6046.62 | 7962.72\nSQL: WITH customer_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'CZK'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date BETWEEN '201301' AND '201312'\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT customer_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment\n               ORDER BY total_hundredths, CustomerID\n           ) AS position\n    FROM customer_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE position = 1\n)\nSELECT sme.CustomerID AS sme_customer_id,\n       lam.CustomerID AS lam_customer_id,\n       kam.CustomerID AS kam_customer_id,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = 'SME' AND lam.Segment = 'LAM' AND kam.Segment = 'KAM'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH customer_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'CZK'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date BETWEEN '201301' AND '201312'\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT customer_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment\n               ORDER BY total_hundredths, CustomerID\n           ) AS position\n    FROM customer_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE position = 1\n)\nSELECT sme.CustomerID AS sme_customer_id,\n       lam.CustomerID AS lam_customer_id,\n       kam.CustomerID AS kam_customer_id,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = 'SME' AND lam.Segment = 'LAM' AND kam.Segment = 'KAM'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH customer_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'CZK'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date BETWEEN '201301' AND '201312'\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT customer_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment\n               ORDER BY total_hundredths, CustomerID\n           ) AS position\n    FROM customer_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE position = 1\n)\nSELECT sme.CustomerID AS sme_customer_id,\n       lam.CustomerID AS lam_customer_id,\n       kam.CustomerID AS kam_customer_id,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = 'SME' AND lam.Segment = 'LAM' AND kam.Segment = 'KAM'\nLIMIT 1",
+  "seconds": 54.85646095802076
+}

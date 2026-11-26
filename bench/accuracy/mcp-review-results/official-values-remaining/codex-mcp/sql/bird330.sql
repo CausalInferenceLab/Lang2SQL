@@ -1,0 +1,41 @@
+WITH RECURSIVE period_expenses AS (
+    SELECT e.link_to_member AS member_id, e.expense_description, e.cost
+    FROM main.expense AS e
+    WHERE e.expense_date >= '2019-10-01'
+      AND e.expense_date < '2019-12-01'
+),
+items(member_id, item, remaining) AS (
+    SELECT member_id, NULL, expense_description || ','
+    FROM period_expenses
+    UNION ALL
+    SELECT member_id,
+           lower(trim(substr(remaining, 1, instr(remaining, ',') - 1))),
+           substr(remaining, instr(remaining, ',') + 1)
+    FROM items
+    WHERE remaining <> ''
+),
+kind_counts AS (
+    SELECT member_id, COUNT(DISTINCT NULLIF(item, '')) AS kind_count
+    FROM items
+    GROUP BY member_id
+),
+spending AS (
+    SELECT member_id,
+           SUM(CAST(ROUND(cost * 100) AS INTEGER)) / 100.0 AS total_spending_dollars
+    FROM period_expenses
+    GROUP BY member_id
+),
+ranked AS (
+    SELECT m.first_name || ' ' || m.last_name AS full_name,
+           k.kind_count,
+           s.total_spending_dollars,
+           RANK() OVER (ORDER BY k.kind_count DESC) AS kind_rank
+    FROM main.member AS m
+    JOIN kind_counts AS k ON k.member_id = m.member_id
+    JOIN spending AS s ON s.member_id = m.member_id
+)
+SELECT full_name, kind_count, total_spending_dollars
+FROM ranked
+WHERE kind_rank = 1
+ORDER BY full_name
+LIMIT 1000
