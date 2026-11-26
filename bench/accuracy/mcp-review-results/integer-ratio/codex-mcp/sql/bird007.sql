@@ -1,0 +1,7 @@
+SELECT
+    100.0 * f."Free Meal Count (K-12)" / NULLIF(f."Enrollment (K-12)", 0) AS "Percent (%) Eligible Free (K-12)",
+    f."District Code"
+FROM main.schools AS s
+JOIN main.frpm AS f ON f.CDSCode = s.CDSCode
+WHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)
+LIMIT 1000

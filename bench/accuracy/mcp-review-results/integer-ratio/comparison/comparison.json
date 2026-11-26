@@ -1,0 +1,350 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-bird-full-context-validation-20261127/checkpoints/001/bird",
+      "manifest_sha256": "38183dca92fc36dd6b2ce180292bf2639e874b9a1f6ea059ee1fd04b2ef0d00e",
+      "scores_sha256": "f911002a97ae59d92643d3e5c8ef8dfa7fd952c1053c2fc28b6ae3361f0093eb",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "0b6250ff917b23a2659dc96d722094ba7840778b",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "4812960452c27952ee3873575d97fb2dceaccafbdc57cca94afa3770f50297fc",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
+        "case_selection": {
+          "split": "all",
+          "input_cases": 500,
+          "selected_cases": 500,
+          "expected_cases": 500
+        },
+        "review_source": null,
+        "failure_selection": null,
+        "split": "all",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-integer-ratio-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "b63538f0ce2389d31b3a2f2b9a29db410cda268f069fa421441ac8133f6ec4d5",
+      "scores_sha256": "8cff960ea66b42bb4a9fbc18bac737a546799a067e25c1e368528c70dd758f57",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "3bbfe6d0aae835b9caa01d9011a363764ec67c52",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "4812960452c27952ee3873575d97fb2dceaccafbdc57cca94afa3770f50297fc",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
+        "case_selection": {
+          "split": "all",
+          "input_cases": 1,
+          "selected_cases": 1,
+          "expected_cases": 1
+        },
+        "review_source": null,
+        "failure_selection": null,
+        "split": "all",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 1": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird007",
+        "db": "california_schools",
+        "question": "What is the Percent (%) Eligible Free (K-12) in the school administered by an administrator whose first name is Alusine. List the district code of the school.",
+        "evidence": "K-12 free-meal eligibility percentage is K-12 free-meal recipients divided by K-12 enrollment, times 100."
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,8 +1,7 @@\n SELECT\n-    f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) * 100.0\n-        AS \"Percent (%) Eligible Free (K-12)\",\n+    100.0 * f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) AS \"Percent (%) Eligible Free (K-12)\",\n     f.\"District Code\"\n-FROM schools AS s\n-JOIN frpm AS f ON f.CDSCode = s.CDSCode\n+FROM main.schools AS s\n+JOIN main.frpm AS f ON f.CDSCode = s.CDSCode\n WHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\n LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "e163238dcab117dbcfb55b0cc1cb0224ca15a26ffcf8cb693b6234bad19f1a05",
+        "record": {
+          "instance_id": "bird007",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "86fe6f1a9afcd6ba71b23966bcdc0db57dc0561037611d7762ff40173e3974b0",
+          "events_sha256": "4f2ee6ed3ebf71e05a7a35621988ca1cccceba573de7cde90a9308480ba6d3cc",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 152863,
+              "cached_input_tokens": 134144,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 460,
+              "reasoning_output_tokens": 0
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"cSCTkmogjDUUqmAxVMXHmV4hwqknv48CFq11CGqnrYA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "schools"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "frpm"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "cSCTkmogjDUUqmAxVMXHmV4hwqknv48CFq11CGqnrYA",
+                "sql": "SELECT\n    f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) * 100.0\n        AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM schools AS s\nJOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3);"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Percent (%) Eligible Free (K-12)=float; District Code=int\nPercent (%) Eligible Free (K-12) | District Code\n--- | ---\n70.15113350125944 | 64857\nSQL: SELECT\n    f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) * 100.0\n        AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM schools AS s\nJOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT\n    f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) * 100.0\n        AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM schools AS s\nJOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT\n    f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) * 100.0\n        AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM schools AS s\nJOIN frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000",
+          "seconds": 23.31159220810514
+        },
+        "result": {
+          "columns": [
+            "Percent (%) Eligible Free (K-12)",
+            "District Code"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "70.15113350125944",
+              "64857"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "8ab61c01e5f85fd720dc38101ffe75ef60096be52e9850619380293ef9bfb189"
+        }
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "51e635d1bebe84b0517acb3478bcf37516b73615dc5eced897e100ad7edfeaa2",
+        "record": {
+          "instance_id": "bird007",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "86fe6f1a9afcd6ba71b23966bcdc0db57dc0561037611d7762ff40173e3974b0",
+          "events_sha256": "6e56b0a973413e766a06e80384ad709fc8cff0abcac9cc68229b3de70d3b2543",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 152892,
+              "cached_input_tokens": 134144,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 481,
+              "reasoning_output_tokens": 0
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "frpm"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"_bBi-K8y6zSvMpU4yaPrzwkVjNWY82LW_lFiexU8jfM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "schools"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "_bBi-K8y6zSvMpU4yaPrzwkVjNWY82LW_lFiexU8jfM",
+                "sql": "SELECT\n    100.0 * f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3);",
+                "expected_columns": [
+                  "Percent (%) Eligible Free (K-12)",
+                  "District Code"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Percent (%) Eligible Free (K-12)=float; District Code=int\nPercent (%) Eligible Free (K-12) | District Code\n--- | ---\n70.15113350125945 | 64857\nSQL: SELECT\n    100.0 * f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT\n    100.0 * f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT\n    100.0 * f.\"Free Meal Count (K-12)\" / NULLIF(f.\"Enrollment (K-12)\", 0) AS \"Percent (%) Eligible Free (K-12)\",\n    f.\"District Code\"\nFROM main.schools AS s\nJOIN main.frpm AS f ON f.CDSCode = s.CDSCode\nWHERE 'Alusine' IN (s.AdmFName1, s.AdmFName2, s.AdmFName3)\nLIMIT 1000",
+          "seconds": 24.72279074997641
+        },
+        "result": {
+          "columns": [
+            "Percent (%) Eligible Free (K-12)",
+            "District Code"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "70.15113350125945",
+              "64857"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "806f1760dd4ff2d5ef69449716826d1e85454095565b7af5c5b45155e09c5c6f"
+        }
+      }
+    }
+  ]
+}
