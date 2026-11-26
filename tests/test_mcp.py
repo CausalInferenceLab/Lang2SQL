@@ -17,7 +17,7 @@ from lang2sql.tenancy.tool_runtime import ExternalAgentLLM, build_tool_context
 
 
 @asynccontextmanager
-async def connected(db, store, *, team="finance"):
+async def connected(db, store, *, team="finance", org="demo"):
     env = dict(os.environ)
     env["LANG2SQL_DB_URL"] = f"sqlite:///{db}"
     env.pop("LANG2SQL_DB_SCHEMA", None)
@@ -29,7 +29,7 @@ async def connected(db, store, *, team="finance"):
             "--user-id",
             "analyst",
             "--org-id",
-            "demo",
+            org,
             "--team-id",
             team,
             "--store",
@@ -54,6 +54,34 @@ async def checked_sql(client, sql):
     check = await client.call_tool("resolve_business_terms", {"terms": ["order_total"]})
     token = json.loads(check.content[0].text)["definition_check_id"]
     return await client.call_tool("run_sql", {"sql": sql, "definition_check_id": token})
+
+
+@pytest.mark.asyncio
+async def test_pinned_column_cache_reaches_stdio_without_approving_terms(tmp_path):
+    from pathlib import Path
+
+    from bench.accuracy.codex_mcp import seed_column_cache
+    from bench.accuracy.evaluate import load_schema_documents
+
+    db = tmp_path / "cards.sqlite"
+    with sqlite3.connect(db) as conn:
+        conn.execute('CREATE TABLE cards (type TEXT, types TEXT)')
+    docs = load_schema_documents(Path("bench/accuracy/bird-schema-with-values.json"), "bird")
+    store = tmp_path / "metadata.sqlite"
+    seed_column_cache(store, docs["card_games"])
+    async with connected(db, store, org="benchmark") as client:
+        result = await client.call_tool("explore_schema", {"table": "cards"})
+        assert not result.isError
+        text = result.content[0].text
+        assert "column_description" in text and "value_description" in text
+        assert '"original_column_name": "type"' in text
+        assert '"original_column_name": "types"' in text
+        unresolved = await client.call_tool("resolve_business_terms", {"terms": ["card type"]})
+        assert "DEFINITION_REQUIRED" in unresolved.content[0].text
+    # A separate case's unseeded store cannot inherit another case's metadata.
+    async with connected(db, tmp_path / "other.sqlite", org="benchmark") as client:
+        result = await client.call_tool("explore_schema", {"table": "cards"})
+        assert "column_description" not in result.content[0].text
 
 
 def fixture_db(tmp_path):

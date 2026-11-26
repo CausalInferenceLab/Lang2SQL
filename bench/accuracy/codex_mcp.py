@@ -16,6 +16,7 @@ import subprocess
 import time
 from pathlib import Path
 
+from bench.accuracy.build_bird_descriptions import DESCRIPTION_MARKER
 from bench.accuracy.evaluate import load_schema_documents, query_rows, validate_inputs
 from bench.oracle_view.codex_demo import READ_TOOLS, mcp_settings
 from bench.spider2.evaluate import (
@@ -28,6 +29,25 @@ from bench.spider2.evaluate import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def seed_column_cache(path, document):
+    """Expose already-pinned input metadata through the existing schema cache."""
+    from lang2sql.adapters.storage.sqlite_store import SqliteStore
+    from lang2sql.tools.enrich_schema import _kv_key
+
+    columns = json.loads(document.split(DESCRIPTION_MARKER, 1)[1])
+    store = SqliteStore(str(path))
+    count = 0
+    try:
+        for table, rows in columns.items():
+            for row in rows:
+                store.kv_set("benchmark", _kv_key(table, row["original_column_name"]),
+                             json.dumps(row, ensure_ascii=False))
+                count += 1
+    finally:
+        store.close()
+    logger.info("Seeded official column cache path=%s columns=%d", path, count)
 
 
 def executed_sql(answer, events, *, db=None, sql_timeout=30, max_rows=100000):
@@ -171,6 +191,12 @@ async def run(args):
     if manifest["suite"] == "spider2":
         validate_manifest(manifest, args.root, args.db_dir)
     docs = load_schema_documents(args.schema_docs, manifest["suite"])
+    cache_columns = getattr(args, "cache_official_columns", False)
+    if cache_columns and (
+        manifest["suite"] != "bird"
+        or docs != load_schema_documents(repo / "bench/accuracy/bird-schema-with-values.json", "bird")
+    ):
+        raise ValueError("Official column caching requires the pinned BIRD schema-with-values input")
     selected = set(manifest["development_ids"]) if args.split == "development" else None
     manifest["cases"] = [
         c for c in manifest["cases"] if selected is None or c["instance_id"] in selected
@@ -234,6 +260,7 @@ async def run(args):
                 ]
             },
             "schema_document_sha256": digest(args.schema_docs),
+            "cache_official_columns": cache_columns,
             "case_selection": {
                 "split": args.split,
                 "input_cases": input_case_count,
@@ -287,9 +314,13 @@ async def run(args):
             work.mkdir()
             answer_path = directory / "events" / (ident + ".answer.txt")
             events_path = directory / "events" / (ident + ".jsonl")
-            settings = mcp_settings(
-                ["--org-id", "benchmark", "--user-id", ident], extra_env=("PYTHONPATH",)
-            )
+            server_args = ["--org-id", "benchmark", "--user-id", ident]
+            if cache_columns:
+                cache_path = (work / "metadata.sqlite").resolve()
+                await asyncio.to_thread(seed_column_cache, cache_path, docs[case["db"]])
+                record["initial_metadata_store_sha256"] = digest(cache_path)
+                server_args += ["--store", str(cache_path)]
+            settings = mcp_settings(server_args, extra_env=("PYTHONPATH",))
             settings.update(
                 {
                     "model_reasoning_effort": args.reasoning_effort,
@@ -445,6 +476,7 @@ def main():
     parser.add_argument("--expected-cases", type=int,
                         help="Require this final selected count before any model call; includes split and failure/pass filtering")
     parser.add_argument("--review-source", type=Path, help="Prior run directory; pass only prior model answer/tool observations, never scores")
+    parser.add_argument("--cache-official-columns", action="store_true", help="Expose the pinned BIRD schema-with-values descriptions through each case's isolated MCP schema cache; prompt remains unchanged")
     parser.add_argument("--failures-from", type=Path, help="Run only score=0 cases from this completed run; grades select cases but never enter model prompts")
     parser.add_argument("--exclude-passed-from", type=Path, action="append", default=[],
                         help="With --failures-from only: skip previously passed cases from each validated completed run; repeatable, never a full-accuracy selection")

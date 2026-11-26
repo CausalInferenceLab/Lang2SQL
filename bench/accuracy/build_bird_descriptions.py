@@ -8,6 +8,7 @@ import logging
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+DESCRIPTION_MARKER = "\n\nOfficial column/value descriptions (2024 Dev release):\n"
 
 
 def build_documents(directory, baseline):
@@ -35,7 +36,7 @@ def build_documents(directory, baseline):
             for row in rows if row["original_column_name"]
         ]
     return {
-        db: schema + "\n\nOfficial column/value descriptions (2024 Dev release):\n"
+        db: schema + DESCRIPTION_MARKER
         + json.dumps(tables[db], ensure_ascii=False, indent=2)
         for db, schema in baseline.items()
     }
