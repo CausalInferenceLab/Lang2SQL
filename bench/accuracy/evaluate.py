@@ -37,7 +37,10 @@ SCHEMA_SHA = {
         "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
         "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
     ),
-    "spider2": ("195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",),
+    "spider2": (
+        "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "c34d916119614b2c29dcff525952d3aa4d61cdd04987f30084180e0a5f819453",
+    ),
 }
 SEED = 20261126
 INPUT_KEYS = {

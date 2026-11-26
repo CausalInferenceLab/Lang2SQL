@@ -293,6 +293,34 @@ def test_description_builder_rejects_changed_source(tmp_path):
         build_documents(tmp_path, {})
 
 
+def test_shared_spider_glossary_preserves_other_databases_and_official_bytes():
+    import hashlib
+    import json
+    from pathlib import Path
+
+    from bench.accuracy.evaluate import load_schema_documents
+
+    root = Path("bench/accuracy")
+    baseline = load_schema_documents(root / "spider2-schema.json", "spider2")
+    variant = load_schema_documents(root / "spider2-schema-with-ipl-glossary.json", "spider2")
+    source = root / "spider-shared-domain"
+    provenance = json.loads((source / "provenance.json").read_text())
+    raw = (source / "baseball_game_special_words_definition.md").read_bytes()
+    assert hashlib.sha256(raw).hexdigest() == provenance["source_sha256"]
+    cases = json.loads((root / "spider2-manifest.json").read_text())["cases"]
+    references = [c for c in cases if c["external_knowledge"] ==
+                  "baseball_game_special_words_definition.md"]
+    assert references and all(c["db"] == "IPL" and
+                             c["document_sha256"] == provenance["source_sha256"]
+                             for c in references)
+    assert variant.keys() == baseline.keys()
+    assert all(variant[db] == text for db, text in baseline.items() if db != "IPL")
+    assert variant["IPL"] == baseline["IPL"] + (
+        "\n\nOfficial Spider 2.0 domain glossary (shared IPL reference; original filename "
+        "baseball_game_special_words_definition.md):\n" + raw.decode()
+    )
+
+
 @pytest.mark.asyncio
 @pytest.mark.parametrize("quota", [True, False])
 async def test_account_quota_stops_without_retry_but_rate_limit_can_retry(
