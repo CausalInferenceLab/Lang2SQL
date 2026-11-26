@@ -1,0 +1,11 @@
+```sql
+SELECT COUNT(DISTINCT l.ID) AS patient_count
+FROM main.Laboratory AS l
+JOIN main.Patient AS p ON p.ID = l.ID
+WHERE l."Date" BETWEEN '1981-01-01' AND '1986-12-31'
+  AND l."Date" >= p.Birthday
+  AND l."Date" < date(p.Birthday, '+50 years')
+  AND l.PLT BETWEEN 100 AND 400
+  AND (CAST(l."U-PRO" AS REAL) > 0 OR l."U-PRO" IN ('TR', '%%'))
+LIMIT 1
+```
