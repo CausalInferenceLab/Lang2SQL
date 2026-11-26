@@ -1,0 +1,14 @@
+```sql
+WITH eligible_schools AS (
+    SELECT s.School, s.AdmEmail1, t.NumGE1500
+    FROM main.schools AS s
+    JOIN main.satscores AS t ON t.cds = s.CDSCode
+    WHERE s.DOCType = 'State Board of Education'
+      AND t.rtype = 'S'
+)
+SELECT School, AdmEmail1
+FROM eligible_schools
+WHERE NumGE1500 = (SELECT MAX(NumGE1500) FROM eligible_schools)
+ORDER BY School
+LIMIT -1
+```

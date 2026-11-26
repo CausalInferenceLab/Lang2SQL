@@ -1,0 +1,100 @@
+{
+  "scope": "Offline analyst counterfactuals only, no model calls, not a repair score. Reference results were inspected during diagnosis; these edits must never become inference input or case-specific product logic.",
+  "record_sha256": "50e78a20ff56e0b5ad8835f5449f52cd53bb443183a9893552328f956a103c5a",
+  "db_sha256": "800191cd5ba91dcaebb427bb9313dc5bef1571b848b597508f15372e77c2dbd8",
+  "evaluator_sha256": "e93624e4ffa00e51c67bdee1d9e42b534630087cb453270c0dedc0c73e618480",
+  "variants": [
+    {
+      "variant": "original",
+      "rows": 10,
+      "matches": [
+        {
+          "reference": "local360_a.csv",
+          "sha256": "de935d70c61b69e9bb632db32d60e07543447126a30f738eb52b4433dbbeff8d",
+          "match": false
+        },
+        {
+          "reference": "local360_b.csv",
+          "sha256": "e2764c72c8aabc4430bb46ffc6c873f09408a758dbc757d87c6a1aea2d26a371",
+          "match": false
+        },
+        {
+          "reference": "local360_c.csv",
+          "sha256": "1b8a564021b0ccd7f0aba665f54bea7f01c17aa48a8d4a2cd920ac12e0e8bf8f",
+          "match": false
+        }
+      ]
+    },
+    {
+      "variant": "exclude_no_target",
+      "rows": 9,
+      "matches": [
+        {
+          "reference": "local360_a.csv",
+          "sha256": "de935d70c61b69e9bb632db32d60e07543447126a30f738eb52b4433dbbeff8d",
+          "match": false
+        },
+        {
+          "reference": "local360_b.csv",
+          "sha256": "e2764c72c8aabc4430bb46ffc6c873f09408a758dbc757d87c6a1aea2d26a371",
+          "match": false
+        },
+        {
+          "reference": "local360_c.csv",
+          "sha256": "1b8a564021b0ccd7f0aba665f54bea7f01c17aa48a8d4a2cd920ac12e0e8bf8f",
+          "match": false
+        }
+      ]
+    },
+    {
+      "variant": "return_target_event",
+      "rows": 9,
+      "matches": [
+        {
+          "reference": "local360_a.csv",
+          "sha256": "de935d70c61b69e9bb632db32d60e07543447126a30f738eb52b4433dbbeff8d",
+          "match": false
+        },
+        {
+          "reference": "local360_b.csv",
+          "sha256": "e2764c72c8aabc4430bb46ffc6c873f09408a758dbc757d87c6a1aea2d26a371",
+          "match": true
+        },
+        {
+          "reference": "local360_c.csv",
+          "sha256": "1b8a564021b0ccd7f0aba665f54bea7f01c17aa48a8d4a2cd920ac12e0e8bf8f",
+          "match": false
+        }
+      ]
+    },
+    {
+      "variant": "normalized_target_paths",
+      "rows": 9,
+      "matches": [
+        {
+          "reference": "local360_a.csv",
+          "sha256": "de935d70c61b69e9bb632db32d60e07543447126a30f738eb52b4433dbbeff8d",
+          "match": false
+        },
+        {
+          "reference": "local360_b.csv",
+          "sha256": "e2764c72c8aabc4430bb46ffc6c873f09408a758dbc757d87c6a1aea2d26a371",
+          "match": true
+        },
+        {
+          "reference": "local360_c.csv",
+          "sha256": "1b8a564021b0ccd7f0aba665f54bea7f01c17aa48a8d4a2cd920ac12e0e8bf8f",
+          "match": false
+        }
+      ]
+    }
+  ],
+  "findings": [
+    "Original SQL includes sessions with no target click/conversion, including cabf98e8.",
+    "Original final projection joins pre-target events, so zero-count sessions have NULL path/search_type.",
+    "Returning the target event instead of pre-target events resolves the projection issue in this data.",
+    "Trailing-slash normalization is an explicit diagnostic assumption, not a universally valid URL policy.",
+    "Returning the target event after excluding no-target sessions already matches reference_b without trailing-slash normalization; normalization is not required for this repair."
+  ],
+  "product_change": null
+}

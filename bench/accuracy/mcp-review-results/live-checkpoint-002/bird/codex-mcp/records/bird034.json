@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird034",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "6fd1312b678d7c05f712640015fb65aed8c7639fac90e3279f9a482e9d074e8d",
+  "events_sha256": "20aa47c54b04081247b66e4a4c5870479c29a7936f4d62c549192e62aa93c811",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 174569,
+      "cached_input_tokens": 161792,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 648,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Aw9z8XnuQWTJOyOmBf8kGbhZSxTr73WRbcQXwOuecP8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Aw9z8XnuQWTJOyOmBf8kGbhZSxTr73WRbcQXwOuecP8",
+        "sql": "SELECT sat.rtype, s.State, typeof(sat.AvgScrMath) AS score_type, COUNT(*) AS records, COUNT(s.School) AS named_schools, COUNT(s.CDSCode) AS matched\nFROM satscores AS sat\nLEFT JOIN schools AS s ON s.CDSCode = sat.cds\nWHERE sat.AvgScrMath > 400\nGROUP BY sat.rtype, s.State, typeof(sat.AvgScrMath)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): rtype=str; State=str; score_type=str; records=int; named_schools=int; matched=int\nrtype | State | score_type | records | named_schools | matched\n--- | --- | --- | --- | --- | ---\nD | CA | integer | 411 | 0 | 411\nS | CA | integer | 1126 | 1126 | 1126\nSQL: SELECT sat.rtype, s.State, typeof(sat.AvgScrMath) AS score_type, COUNT(*) AS records, COUNT(s.School) AS named_schools, COUNT(s.CDSCode) AS matched\nFROM satscores AS sat\nLEFT JOIN schools AS s ON s.CDSCode = sat.cds\nWHERE sat.AvgScrMath > 400\nGROUP BY sat.rtype, s.State, typeof(sat.AvgScrMath)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"o04ESYLHnbm16MNY6zr6NBZtUBCqRnjPPqHzJ-J6Ndw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "o04ESYLHnbm16MNY6zr6NBZtUBCqRnjPPqHzJ-J6Ndw",
+        "expected_columns": [
+          "virtual_instruction_pct"
+        ],
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(CASE WHEN s.Virtual IN ('F', 'P') THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    1\n) AS virtual_instruction_pct\nFROM schools AS s\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE s.State = 'CA'\n  AND sat.rtype = 'S'\n  AND sat.AvgScrMath > 400\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): virtual_instruction_pct=float\nvirtual_instruction_pct\n---\n30.4\nSQL: SELECT ROUND(\n    100.0 * COUNT(CASE WHEN s.Virtual IN ('F', 'P') THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    1\n) AS virtual_instruction_pct\nFROM schools AS s\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE s.State = 'CA'\n  AND sat.rtype = 'S'\n  AND sat.AvgScrMath > 400\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(CASE WHEN s.Virtual IN ('F', 'P') THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    1\n) AS virtual_instruction_pct\nFROM schools AS s\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE s.State = 'CA'\n  AND sat.rtype = 'S'\n  AND sat.AvgScrMath > 400\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(CASE WHEN s.Virtual IN ('F', 'P') THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    1\n) AS virtual_instruction_pct\nFROM schools AS s\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE s.State = 'CA'\n  AND sat.rtype = 'S'\n  AND sat.AvgScrMath > 400\nLIMIT 1",
+  "seconds": 28.15536999993492
+}

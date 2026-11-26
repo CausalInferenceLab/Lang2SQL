@@ -1,0 +1,20 @@
+```sql
+WITH lowest_five_cities AS (
+    SELECT
+        c.customer_city,
+        SUM(p.payment_value) AS total_payments,
+        COUNT(DISTINCT o.order_id) AS delivered_order_count
+    FROM main.olist_orders AS o
+    JOIN main.olist_customers AS c ON c.customer_id = o.customer_id
+    LEFT JOIN main.olist_order_payments AS p ON p.order_id = o.order_id
+    WHERE o.order_status = 'delivered'
+    GROUP BY c.customer_city
+    ORDER BY total_payments ASC, c.customer_city ASC
+    LIMIT 5
+)
+SELECT
+    AVG(total_payments) AS average_total_payments,
+    AVG(delivered_order_count) AS average_delivered_order_count
+FROM lowest_five_cities
+LIMIT 1
+```

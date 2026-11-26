@@ -1,0 +1,193 @@
+{
+  "instance_id": "bird011",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1c440ecc10f5fe402907d2740e909cc979796e8c58d570de93d98ab867caf7a5",
+  "events_sha256": "7f08125c1c6731662e37eb37c020e93ad87e2fefa67f7584d36829b0213c46f4",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 231932,
+      "cached_input_tokens": 218240,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1138,
+      "reasoning_output_tokens": 83
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rBkcJxZ7BF2fVBIRCrc8v6zADr5u7GWCT5Np02Sb-dY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rBkcJxZ7BF2fVBIRCrc8v6zADr5u7GWCT5Np02Sb-dY",
+        "sql": "SELECT s.School, s.StatusType, s.EILName, s.GSoffered, s.GSserved, t.NumTstTakr\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t ON t.cds = s.CDSCode\nWHERE s.NCESDist = '0613360'\n  AND (s.GSserved LIKE '%12%' OR s.GSoffered LIKE '%12%' OR s.School IS NULL)\nORDER BY s.School"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=NoneType,str; StatusType=str; EILName=NoneType,str; GSoffered=NoneType,str; GSserved=NoneType,str; NumTstTakr=NoneType,int\nSchool | StatusType | EILName | GSoffered | GSserved | NumTstTakr\n--- | --- | --- | --- | --- | ---\nNone | Active | None | None | None | 521\nAngelo Rodriguez High | Active | High School | 9-12 | 9-12 | 251\nArmijo High | Active | High School | 9-12 | 9-12 | 181\nFairfield High | Active | High School | 9-12 | 9-12 | 89\nH. Glenn Richardson | Active | Elementary-High Combination | K-12 | 2-12 | None\nMary Bird | Closed | Elementary-High Combination | 6-12 | 6-12 | None\nMary Bird Secondary Community Day | Closed | High School | 7-12 | 9-12 | None\nMatt Garcia Career and College Academy | Active | Elementary-High Combination | 6-12 | 6-12 | 0\nPublic Safety Academy | Active | Elementary-High Combination | 5-12 | 5-11 | None\nSem Yeto Continuation High | Active | High School | 9-12 | 10-12 | None\nSQL: SELECT s.School, s.StatusType, s.EILName, s.GSoffered, s.GSserved, t.NumTstTakr\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t ON t.cds = s.CDSCode\nWHERE s.NCESDist = '0613360'\n  AND (s.GSserved LIKE '%12%' OR s.GSoffered LIKE '%12%' OR s.School IS NULL)\nORDER BY s.School\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rHt-fWtZty3fJtfB8uu4WLArKjZMM0LwBi2IWXzbVmE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rHt-fWtZty3fJtfB8uu4WLArKjZMM0LwBi2IWXzbVmE",
+        "sql": "SELECT DISTINCT GSserved\nFROM main.schools\nWHERE GSserved LIKE '%12%'\nORDER BY GSserved"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nResult coverage: fetched_rows=13; displayed_rows=13; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): GSserved=str\nGSserved\n---\n1-12\n10-12\n11-12\n12\n2-12\n3-12\n4-12\n5-12\n6-12\n7-12\n8-12\n9-12\nK-12\nSQL: SELECT DISTINCT GSserved\nFROM main.schools\nWHERE GSserved LIKE '%12%'\nORDER BY GSserved\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"l-H7100WD3F3gHZipP8Tr6hSXg-xwioMZJ2KQS9LzJg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "l-H7100WD3F3gHZipP8Tr6hSXg-xwioMZJ2KQS9LzJg",
+        "expected_columns": [
+          "School",
+          "GSserved"
+        ],
+        "sql": "WITH eligible AS (\n    SELECT s.School, s.GSserved,\n           substr(s.GSserved, 1, instr(s.GSserved || '-', '-') - 1) AS low_grade\n    FROM main.schools AS s\n    WHERE s.NCESDist = '0613360'\n      AND s.StatusType = 'Active'\n      AND s.School IS NOT NULL\n      AND (s.GSserved LIKE '%-12' OR s.GSserved = '12')\n      AND NOT EXISTS (\n          SELECT 1\n          FROM main.satscores AS t\n          WHERE t.cds = s.CDSCode\n            AND t.NumTstTakr > 0\n      )\n),\ngraded AS (\n    SELECT School, GSserved,\n           CASE\n               WHEN low_grade IN ('P', 'PS', 'PK') THEN -1\n               WHEN low_grade = 'K' THEN 0\n               ELSE CAST(low_grade AS INTEGER)\n           END AS grade_order\n    FROM eligible\n)\nSELECT School, GSserved\nFROM graded\nWHERE grade_order = (SELECT MIN(grade_order) FROM graded)\nORDER BY School\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=str; GSserved=str\nSchool | GSserved\n--- | ---\nH. Glenn Richardson | 2-12\nSQL: WITH eligible AS (\n    SELECT s.School, s.GSserved,\n           substr(s.GSserved, 1, instr(s.GSserved || '-', '-') - 1) AS low_grade\n    FROM main.schools AS s\n    WHERE s.NCESDist = '0613360'\n      AND s.StatusType = 'Active'\n      AND s.School IS NOT NULL\n      AND (s.GSserved LIKE '%-12' OR s.GSserved = '12')\n      AND NOT EXISTS (\n          SELECT 1\n          FROM main.satscores AS t\n          WHERE t.cds = s.CDSCode\n            AND t.NumTstTakr > 0\n      )\n),\ngraded AS (\n    SELECT School, GSserved,\n           CASE\n               WHEN low_grade IN ('P', 'PS', 'PK') THEN -1\n               WHEN low_grade = 'K' THEN 0\n               ELSE CAST(low_grade AS INTEGER)\n           END AS grade_order\n    FROM eligible\n)\nSELECT School, GSserved\nFROM graded\nWHERE grade_order = (SELECT MIN(grade_order) FROM graded)\nORDER BY School\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH eligible AS (\n    SELECT s.School, s.GSserved,\n           substr(s.GSserved, 1, instr(s.GSserved || '-', '-') - 1) AS low_grade\n    FROM main.schools AS s\n    WHERE s.NCESDist = '0613360'\n      AND s.StatusType = 'Active'\n      AND s.School IS NOT NULL\n      AND (s.GSserved LIKE '%-12' OR s.GSserved = '12')\n      AND NOT EXISTS (\n          SELECT 1\n          FROM main.satscores AS t\n          WHERE t.cds = s.CDSCode\n            AND t.NumTstTakr > 0\n      )\n),\ngraded AS (\n    SELECT School, GSserved,\n           CASE\n               WHEN low_grade IN ('P', 'PS', 'PK') THEN -1\n               WHEN low_grade = 'K' THEN 0\n               ELSE CAST(low_grade AS INTEGER)\n           END AS grade_order\n    FROM eligible\n)\nSELECT School, GSserved\nFROM graded\nWHERE grade_order = (SELECT MIN(grade_order) FROM graded)\nORDER BY School\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH eligible AS (\n    SELECT s.School, s.GSserved,\n           substr(s.GSserved, 1, instr(s.GSserved || '-', '-') - 1) AS low_grade\n    FROM main.schools AS s\n    WHERE s.NCESDist = '0613360'\n      AND s.StatusType = 'Active'\n      AND s.School IS NOT NULL\n      AND (s.GSserved LIKE '%-12' OR s.GSserved = '12')\n      AND NOT EXISTS (\n          SELECT 1\n          FROM main.satscores AS t\n          WHERE t.cds = s.CDSCode\n            AND t.NumTstTakr > 0\n      )\n),\ngraded AS (\n    SELECT School, GSserved,\n           CASE\n               WHEN low_grade IN ('P', 'PS', 'PK') THEN -1\n               WHEN low_grade = 'K' THEN 0\n               ELSE CAST(low_grade AS INTEGER)\n           END AS grade_order\n    FROM eligible\n)\nSELECT School, GSserved\nFROM graded\nWHERE grade_order = (SELECT MIN(grade_order) FROM graded)\nORDER BY School\nLIMIT -1",
+  "seconds": 46.77384599996731
+}

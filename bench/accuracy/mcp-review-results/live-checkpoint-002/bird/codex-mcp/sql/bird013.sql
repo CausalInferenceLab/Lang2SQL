@@ -1,0 +1,10 @@
+SELECT s.City
+FROM schools AS s
+JOIN frpm AS f ON f.CDSCode = s.CDSCode
+WHERE s.CDSCode = '01611920113902'
+  AND s.County = 'Alameda'
+  AND s.EILCode = 'HS'
+  AND f."Low Grade" = '9'
+  AND f."High Grade" = '12'
+  AND f."NSLP Provision Status" = 'Breakfast Provision 2'
+LIMIT 1000

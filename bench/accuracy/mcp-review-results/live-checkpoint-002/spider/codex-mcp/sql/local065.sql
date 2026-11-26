@@ -1,0 +1,19 @@
+WITH prices (pizza_name, base_price) AS (
+    VALUES ('Meatlovers', 12), ('Vegetarian', 10)
+)
+SELECT SUM(
+    p.base_price +
+    CASE
+        WHEN c.extras IS NULL THEN 0
+        ELSE 1 + LENGTH(c.extras) - LENGTH(REPLACE(c.extras, ',', ''))
+    END
+) AS total_income_usd
+FROM main.pizza_clean_customer_orders AS c
+JOIN main.pizza_names AS n ON n.pizza_id = c.pizza_id
+JOIN prices AS p ON p.pizza_name = n.pizza_name
+WHERE c.order_id IN (
+    SELECT r.order_id
+    FROM main.pizza_clean_runner_orders AS r
+    WHERE r.cancellation IS NULL
+)
+LIMIT 1

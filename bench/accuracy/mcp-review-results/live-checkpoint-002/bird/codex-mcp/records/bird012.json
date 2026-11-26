@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird012",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "86dec25f3cc73b2cbb80c9773f141c0a1b7c9171fc2b55fe4079db2e909bbdb9",
+  "events_sha256": "34afbcaec4b4783970d0df8bb3da1904cc8fa9d00610cd46bdbef85e3fb69b66",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 177121,
+      "cached_input_tokens": 163456,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 778,
+      "reasoning_output_tokens": 86
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"gK4zjVIINwkfINdA619013kZti71DnBN2HhZdmDJ1bM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "gK4zjVIINwkfINdA619013kZti71DnBN2HhZdmDJ1bM",
+        "sql": "SELECT s.DOC, s.DOCType, t.rtype, typeof(t.AvgScrRead) AS score_type,\n       COUNT(*) AS records, MIN(s.District) AS example_district\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t ON t.cds = s.CDSCode\nGROUP BY s.DOC, s.DOCType, t.rtype, typeof(t.AvgScrRead)\nORDER BY s.DOC, t.rtype"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "35 row(s):\nResult coverage: fetched_rows=35; displayed_rows=35; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DOC=str; DOCType=str; rtype=NoneType,str; score_type=str; records=int; example_district=str\nDOC | DOCType | rtype | score_type | records | example_district\n--- | --- | --- | --- | --- | ---\n00 | County Office of Education (COE) | None | null | 1585 | Alameda County Office of Education\n00 | County Office of Education (COE) | D | integer | 16 | Alameda County Office of Education\n00 | County Office of Education (COE) | D | null | 32 | Amador County Office of Education\n00 | County Office of Education (COE) | S | integer | 25 | Alameda County Office of Education\n00 | County Office of Education (COE) | S | null | 45 | Alameda County Office of Education\n02 | State Board of Education | None | null | 60 | SBE -  Animo Inglewood Charter\n02 | State Board of Education | D | integer | 4 | SBE - Lifeline Education Charter\n02 | State Board of Education | D | null | 1 | SBE - Anahuacalmecac International University Preparatory of North America\n02 | State Board of Education | S | integer | 3 | SBE - Lifeline Education Charter\n02 | State Board of Education | S | null | 1 | SBE - Anahuacalmecac International University Preparatory of North America\n03 | Statewide Benefit Charter | None | null | 8 | SBC - Aspire Public Schools\n03 | Statewide Benefit Charter | D | integer | 1 | SBC - High Tech High\n03 | Statewide Benefit Charter | S | integer | 2 | SBC - High Tech High\n31 | State Special Schools | None | null | 5 | California School for the Blind (State Special Schl)\n31 | State Special Schools | S | null | 1 | California School for the Deaf-Riverside (State Special Schl)\n34 | Non-School Locations | None | null | 49 | Calif Institution for Women\n42 | Joint Powers Authority (JPA) | None | null | 2 | College and Career Advantage\n52 | Elementary School District | None | null | 4245 | Ackerman Charter\n52 | Elementary School District | D | integer | 20 | Burton Elementary\n52 | Elementary School District | D | null | 34 | Adelanto Elementary\n52 | Elementary School District | S | integer | 21 | Dehesa Elementary\n52 | Elementary School District | S | null | 58 | Adelanto Elementary\n54 | Unified School District | None | null | 8617 | ABC Unified\n54 | Unified School District | D | integer | 306 | ABC Unified\n54 | Unified School District | D | null | 29 | Alpaugh Unified\n54 | Unified School District | S | integer | 916 | ABC Unified\n54 | Unified School District | S | null | 322 | ABC Unified\n56 | High School District | None | null | 647 | Acalanes Union High\n56 | High School District | D | integer | 75 | Acalanes Union High\n56 | High School District | D | null | 2 | Dunsmuir Joint Union High\n56 | High School District | S | integer | 284 | Acalanes Union High\n56 | High School District | S | null | 71 | Acalanes Union High\n58 | Community College District | None | null | 33 | City College of San Francisco\n98 | Regional Occupation Center/Program (ROC/P) | None | null | 156 | Amador County ROP\n99 | Administration Only | None | null | 10 | CEA Amador Co\nSQL: SELECT s.DOC, s.DOCType, t.rtype, typeof(t.AvgScrRead) AS score_type,\n       COUNT(*) AS records, MIN(s.District) AS example_district\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t ON t.cds = s.CDSCode\nGROUP BY s.DOC, s.DOCType, t.rtype, typeof(t.AvgScrRead)\nORDER BY s.DOC, t.rtype\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"km0hlZVzWUqSmdGIgKjAAeQWjYCg88a9bdLdfURIU1w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "km0hlZVzWUqSmdGIgKjAAeQWjYCg88a9bdLdfURIU1w",
+        "expected_columns": [
+          "School",
+          "MailStreet"
+        ],
+        "sql": "WITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOCType = 'State Board of Education'\n      AND t.rtype = 'S'\n      AND t.AvgScrRead IS NOT NULL\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=str; MailStreet=str\nSchool | MailStreet\n--- | ---\nSan Francisco Flex Academy | 1350 7th Avenue\nSQL: WITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOCType = 'State Board of Education'\n      AND t.rtype = 'S'\n      AND t.AvgScrRead IS NOT NULL\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOCType = 'State Board of Education'\n      AND t.rtype = 'S'\n      AND t.AvgScrRead IS NOT NULL\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOCType = 'State Board of Education'\n      AND t.rtype = 'S'\n      AND t.AvgScrRead IS NOT NULL\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1",
+  "seconds": 32.69205058296211
+}

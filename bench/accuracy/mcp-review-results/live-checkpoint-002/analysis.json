@@ -1,0 +1,96 @@
+{
+  "snapshot_tool_revision": "8fd25a1",
+  "inference_revision": "0c79539",
+  "model": "gpt-6.2-astra/high",
+  "scope": "Second overlapping, nonrandom completed-record checkpoint; not full accuracy. Never sum checkpoint denominators.",
+  "new_model_calls_for_snapshot_and_diagnosis": 0,
+  "product_or_prompt_changes": 0,
+  "parent_runs": "Both live at capture; not modified or marked complete.",
+  "bird": {
+    "correct": 32,
+    "total": 32,
+    "failures": []
+  },
+  "spider": {
+    "correct": 24,
+    "total": 33,
+    "failures": [
+      {
+        "id": "local168",
+        "question": "Among job postings that specifically have the Data Analyst, require a non-null annual average salary, and are remote, what is the overall average salary when considering only the top three most frequently demanded skills for these positions?",
+        "kind": "no_final_sql_clarification",
+        "answer": "Should each posting that lists at least one of the top three skills count once, or should I calculate the average salary for each skill and then average those three figures equally?",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local168.json"
+      },
+      {
+        "id": "local017",
+        "question": "In which year were the two most common causes of traffic accidents different from those in other years?",
+        "kind": "no_final_sql_clarification",
+        "answer": "Which field should define an accident cause for the yearly ranking: `primary_collision_factor` (for example, “vehicle code violation”) or `pcf_violation_category` (for example, “improper turning”)?",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local017.json"
+      },
+      {
+        "id": "local063",
+        "question": "Among all products sold in the United States with promo_id=999, considering only those cities whose sales increased by at least 20% from Q4 2019 (calendar_quarter_id=1772) to Q4 2020 (calendar_quarter_id=1776), which product that ranks in the top 20% of total sales has the smallest percentage-point change in its share of total sales between these two quarters?",
+        "kind": "no_final_sql_clarification",
+        "answer": "Should I rank products by `SUM(amount_sold)` across both quarters in the qualifying cities, then select the top-quintile product whose sales share changed **least in absolute terms** or the one with the **lowest signed change** (Q4 2020 share minus Q4 2019 share)?",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local063.json"
+      },
+      {
+        "id": "local269",
+        "question": "What is the average total quantity across all final packaging combinations, considering only the leaf-level items within each combination after fully expanding any nested packaging relationships?",
+        "kind": "no_final_sql_clarification",
+        "answer": "Should the average include only outermost packages that are never contained in another package, or should each nested package with contents also count as a separate combination?",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local269.json"
+      },
+      {
+        "id": "local360",
+        "question": "For each user session in the activity log table, identify the number of events that occurred before the first '/detail' click or '/complete' conversion, counting only events that have a non-empty search type. Find the sessions with the minimum count of such pre-click/pre-conversion events. If multiple sessions share this minimum count, include all of them in the results. Return each qualifying session along with the corresponding path and search type.",
+        "kind": "sql_result_mismatch",
+        "answer": "```sql\nWITH session_cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target\n    FROM main.activity_log\n    GROUP BY session\n),\npre_target_events AS (\n    SELECT c.session, e.path, e.search_type\n    FROM session_cutoffs AS c\n    LEFT JOIN main.activity_log AS e\n      ON e.session = c.session\n     AND e.search_type <> ''\n     AND (c.first_target IS NULL OR e.stamp < c.first_target)\n),\nsession_counts AS (\n    SELECT session, COUNT(search_type) AS event_count\n    FROM pre_target_events\n    GROUP BY session\n)\nSELECT DISTINCT c.session, c.event_count, e.path, e.search_type\nFROM session_counts AS c\nJOIN pre_target_events AS e ON e.session = c.session\nWHERE c.event_count = (SELECT MIN(event_count) FROM session_counts)\nORDER BY c.session, e.path, e.search_type\nLIMIT 1000\n```",
+        "error_message": null,
+        "record": "codex-mcp/records/local360.json"
+      },
+      {
+        "id": "local356",
+        "question": "Provide the full names of drivers who have been overtaken on track more times than they have overtaken others on track during race laps, excluding position changes due to pit stops (both at pit entry and exit), retirements, or position changes that occurred during the first lap of a race (considered as start movements).",
+        "kind": "sql_result_mismatch",
+        "answer": "```sql\nWITH excluded_laps AS (\n    SELECT race_id, driver_id, lap FROM main.pit_stops\n    UNION\n    SELECT race_id, driver_id, lap + 1 FROM main.pit_stops\n    UNION\n    SELECT race_id, driver_id, lap FROM main.retirements\n),\nrace_laps AS MATERIALIZED (\n    SELECT cur.race_id, cur.lap, cur.driver_id,\n           prev.position AS previous_position, cur.position\n    FROM main.lap_times AS cur\n    JOIN main.lap_times AS prev\n      ON prev.race_id = cur.race_id\n     AND prev.driver_id = cur.driver_id\n     AND prev.lap = cur.lap - 1\n    JOIN main.races_ext AS r ON r.race_id = cur.race_id\n    LEFT JOIN excluded_laps AS x\n      ON x.race_id = cur.race_id\n     AND x.driver_id = cur.driver_id\n     AND x.lap = cur.lap\n    WHERE cur.lap > 1\n      AND r.is_pit_data_available = 1\n      AND x.driver_id IS NULL\n),\npasses AS MATERIALIZED (\n    SELECT a.driver_id AS passer, b.driver_id AS passed\n    FROM race_laps AS a\n    JOIN race_laps AS b\n      ON b.race_id = a.race_id\n     AND b.lap = a.lap\n     AND a.previous_position > b.previous_position\n     AND a.position < b.position\n),\ndriver_events AS (\n    SELECT passed AS driver_id, 1 AS net_times_passed FROM passes\n    UNION ALL\n    SELECT passer AS driver_id, -1 AS net_times_passed FROM passes\n)\nSELECT d.full_name\nFROM main.drivers_ext AS d\nJOIN driver_events AS e ON e.driver_id = d.driver_id\nGROUP BY d.driver_id, d.full_name\nHAVING SUM(e.net_times_passed) > 0\nORDER BY d.full_name\nLIMIT -1\n```",
+        "error_message": null,
+        "record": "codex-mcp/records/local356.json"
+      },
+      {
+        "id": "local031",
+        "question": "What is the highest monthly delivered orders volume in the year with the lowest annual delivered orders volume among 2016, 2017, and 2018?",
+        "kind": "no_final_sql_clarification",
+        "answer": "For orders with `order_status = 'delivered'`, should each order count toward the month and year of purchase (`order_purchase_timestamp`) or of delivery to the customer (`order_delivered_customer_date`)?",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local031.json"
+      },
+      {
+        "id": "local054",
+        "question": "Could you tell me the first names of customers who spent less than $1 on albums by the best-selling artist, along with the amounts they spent?",
+        "kind": "no_final_sql_clarification",
+        "answer": "Should “best-selling artist” mean the artist with the highest total track revenue or the artist who sold the most track units? Lang2SQL has no confirmed definition for that ranking.",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local054.json"
+      },
+      {
+        "id": "local026",
+        "question": "Please help me identify the top 3 bowlers who, in the overs where the maximum runs were conceded in each match, gave up the highest number of runs in a single over across all matches. For each of these bowlers, provide the match in which they conceded these maximum runs. Only consider overs that had the most runs conceded within their respective matches, and among these, determine which bowlers conceded the most runs in a single over overall.",
+        "kind": "no_final_sql_clarification",
+        "answer": "Should I use standard bowling figures for both rankings, counting runs off the bat, wides, and no-balls while excluding byes, leg-byes, and penalty runs? The database has no confirmed definition of “runs conceded.”",
+        "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+        "record": "codex-mcp/records/local026.json"
+      }
+    ],
+    "diagnosis": {
+      "local360": "No-target population + final join to pre-target rows cause extra session and NULL path. Offline two-step SQL edit matches reference_b. Not an inference repair.",
+      "local356": "Initial query timed out; model materialized CTEs and successfully returned 44 rows, but result remained wrong. Timeout is not the final failure cause. Domain/event-count semantics require further diagnosis."
+    }
+  }
+}

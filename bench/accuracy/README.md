@@ -250,3 +250,23 @@ requires no UDF, and still executes through guarded `run_sql`.
 The `experiments/fixed-decimal` protocol freezes a fresh original-input retry of
 one prior Spider rounding failure. It is a selected repair experiment, not a full
 accuracy measurement. Existing calendar tooling is retained from the parent PR.
+
+### Score finalized records while inference continues
+
+`python -m bench.accuracy.snapshot --source RUN --output FRESH_SNAPSHOT`
+freezes the terminal records already present at invocation. It does not call a
+model, execute SQL, score predictions, or change the source run. Use the existing
+`bench.accuracy.evaluate score` command with the snapshot as `--output` afterward.
+
+Successes and failures both remain in the snapshot denominator. Unfinished cases
+are excluded from this diagnostic subset, not from the original benchmark. The
+snapshot records its source manifest/settings/artifact hashes and source case
+count in `snapshot.json`; its completed status applies only to that subset. Do
+not report a snapshot score as full500/135 accuracy or merge repeated snapshots
+into a larger denominator. The authoritative original run remains unchanged.
+
+The runner publishes terminal records atomically; the snapshot checks referenced
+prompt/event hashes where available, SQL consistency and CSV row counts. It stages
+all files before publishing the output directory, refuses overwrites and outputs
+inside the source, and aborts on evidence changes. Legacy missing prompt hashes
+are disclosed, not reconstructed. No scores or source work directories are copied.

@@ -1,0 +1,4 @@
+SELECT School, EILName
+FROM main.schools
+WHERE CDSCode = '01612590136051'
+LIMIT 1
