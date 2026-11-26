@@ -316,3 +316,59 @@ async def test_invalid_fetch_limit_rejected_before_database_access(tmp_path, lim
         assert RunSQL().spec.parameters["properties"]["limit"]["minimum"] == 1
     finally:
         ctx.store.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("count,limit,truncated", [(3, 2, True), (2, 2, False), (1, 2, False), (0, 2, False), (65, 100, False)])
+async def test_sql_result_reports_fetch_and_display_coverage(tmp_path, count, limit, truncated):
+    db = fixture_db(tmp_path)
+    with sqlite3.connect(db) as conn:
+        conn.execute("DELETE FROM orders")
+        conn.executemany("INSERT INTO orders VALUES (?)", [(n,) for n in range(count)])
+    async with connected(db, tmp_path / "metadata.db") as client:
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        result = await client.call_tool("run_sql", {
+            "sql": "SELECT amount FROM orders ORDER BY amount LIMIT -1",
+            "limit": limit,
+            "definition_check_id": json.loads(check.content[0].text)["definition_check_id"],
+        })
+        assert not result.isError
+        text = result.content[0].text
+        assert f"fetch_truncated={str(truncated).lower()}" in text
+        assert f"fetched_rows={min(count, limit)}" in text
+        assert f"displayed_rows={min(count, limit, 50)}" in text
+        assert f"display_truncated={str(min(count, limit) > 50).lower()}" in text
+        assert "rows total" not in text
+        assert "SQL: SELECT amount FROM orders ORDER BY amount LIMIT -1" in text
+        if truncated:
+            assert f"\n{limit}\n" not in text  # The lookahead row is not exposed.
+
+
+@pytest.mark.asyncio
+async def test_lookahead_does_not_increase_safety_sql_limit(tmp_path):
+    async with connected(fixture_db(tmp_path), tmp_path / "metadata.db") as client:
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        result = await client.call_tool("run_sql", {
+            "sql": "SELECT amount FROM orders ORDER BY amount",
+            "limit": 1,
+            "definition_check_id": json.loads(check.content[0].text)["definition_check_id"],
+        })
+        assert not result.isError
+        text = result.content[0].text
+        assert "fetched_rows=1" in text and "sql_rewritten=true" in text
+        assert "fetch_truncated=false" in text
+        assert text.endswith("SQL: SELECT amount FROM orders ORDER BY amount\nLIMIT 1")
+        assert "\n20\n" not in text
+
+
+@pytest.mark.asyncio
+async def test_duplicate_result_columns_are_not_silently_overwritten(tmp_path):
+    async with connected(fixture_db(tmp_path), tmp_path / "metadata.db") as client:
+        for suffix in ("", " WHERE 0"):
+            result = await checked_sql(client, "SELECT amount AS value, amount + 1 AS value FROM orders" + suffix)
+            assert result.isError
+            assert "unique column aliases" in result.content[0].text
+        result = await checked_sql(client, "SELECT amount AS original, amount + 1 AS incremented FROM orders")
+        assert not result.isError
+        assert "original | incremented" in result.content[0].text
+        assert "10 | 11" in result.content[0].text

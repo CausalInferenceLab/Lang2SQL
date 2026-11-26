@@ -23,6 +23,7 @@ if TYPE_CHECKING:
     from ..harness.context import HarnessContext
 
 logger = logging.getLogger(__name__)
+_DISPLAY_ROW_LIMIT = 50
 
 
 class RunSQL:
@@ -163,7 +164,9 @@ class RunSQL:
         scope = ctx.identity.session_key()
         logger.info("run_sql started scope=%s actor=%s", scope, ctx.identity.user_id)
         try:
-            rows = await ctx.explorer.execute(decision.sql, limit)
+            # One lookahead row distinguishes an exact-size result from a
+            # result truncated by the adapter fetch budget. SQL safety is unchanged.
+            rows = await ctx.explorer.execute(decision.sql, limit + 1)
         except Exception as exc:
             logger.warning(
                 "run_sql failed scope=%s error=%s: %s", scope, type(exc).__name__, exc
@@ -185,7 +188,9 @@ class RunSQL:
                     content="요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
                 )
             raise
-        logger.info("run_sql completed scope=%s rows=%d", scope, len(rows))
+        fetch_truncated = len(rows) > limit
+        rows = rows[:limit]
+        logger.info("run_sql completed scope=%s rows=%d fetch_truncated=%s", scope, len(rows), fetch_truncated)
 
         if ctx.audit is not None:
             await ctx.audit.record(
@@ -197,26 +202,35 @@ class RunSQL:
                 )
             )
 
-        return ToolResult(call_id="", content=_render_rows(decision.sql, rows))
+        return ToolResult(call_id="", content=_render_rows(
+            decision.sql, rows, fetch_truncated=fetch_truncated,
+            sql_rewritten=decision.sql != sql,
+        ))
 
 
-def _render_rows(sql: str, rows: list[dict]) -> str:
+def _render_rows(sql: str, rows: list[dict], *, fetch_truncated=False, sql_rewritten=False) -> str:
+    coverage = (
+        f"Result coverage: fetched_rows={len(rows)}; "
+        f"displayed_rows={min(len(rows), _DISPLAY_ROW_LIMIT)}; "
+        f"fetch_truncated={str(fetch_truncated).lower()}; "
+        f"display_truncated={str(len(rows) > _DISPLAY_ROW_LIMIT).lower()}; "
+        f"sql_rewritten={str(sql_rewritten).lower()}. "
+        "Counts refer to the executed SQL, not the source table size."
+    )
     if not rows:
-        return f"(0 rows)\nSQL: {sql}"
+        return f"(0 rows)\n{coverage}\nSQL: {sql}"
     headers = list(rows[0].keys())
     observed_types = {
-        h: sorted({type(r.get(h)).__name__ for r in rows[:50]}) for h in headers
+        h: sorted({type(r.get(h)).__name__ for r in rows[:_DISPLAY_ROW_LIMIT]}) for h in headers
     }
     type_note = "Observed value types (displayed rows): " + "; ".join(
         f"{h}={','.join(kinds)}" for h, kinds in observed_types.items()
     )
     lines = [" | ".join(headers), " | ".join("---" for _ in headers)]
-    for r in rows[:50]:
+    for r in rows[:_DISPLAY_ROW_LIMIT]:
         lines.append(" | ".join(str(r.get(h, "")) for h in headers))
-    suffix = f"\n… ({len(rows)} rows total)" if len(rows) > 50 else ""
     return (
-        f"{len(rows)} row(s):\n{type_note}\n"
+        f"{len(rows)} row(s):\n{coverage}\n{type_note}\n"
         + "\n".join(lines)
-        + suffix
         + f"\nSQL: {sql}"
     )
