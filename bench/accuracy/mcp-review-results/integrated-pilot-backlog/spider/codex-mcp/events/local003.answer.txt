@@ -1,0 +1,70 @@
+```sql
+WITH order_spend AS (
+    SELECT order_id, SUM(payment_value) AS amount_paid
+    FROM main.order_payments
+    GROUP BY order_id
+),
+customer_totals AS (
+    SELECT c.customer_unique_id,
+           MAX(o.order_purchase_timestamp) AS last_purchase,
+           COUNT(*) AS order_count,
+           CASE WHEN COUNT(p.amount_paid) = COUNT(*)
+                THEN SUM(p.amount_paid) END AS total_spend
+    FROM main.orders AS o
+    JOIN main.customers AS c ON c.customer_id = o.customer_id
+    LEFT JOIN order_spend AS p ON p.order_id = o.order_id
+    WHERE o.order_status = 'delivered'
+    GROUP BY c.customer_unique_id
+),
+customer_metrics AS (
+    -- Elapsed days from each customer's last purchase to the latest purchase among delivered orders.
+    SELECT customer_unique_id, order_count, total_spend,
+           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days
+    FROM customer_totals
+),
+scores AS (
+    -- Score the upper cumulative percentile in fifths. Equal values share a score.
+    SELECT customer_unique_id, order_count, total_spend,
+           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,
+           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,
+           CASE WHEN total_spend IS NOT NULL THEN
+               CAST(CEIL(5 * CUME_DIST() OVER (
+                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC
+               )) AS INTEGER)
+           END AS m
+    FROM customer_metrics
+),
+segmented AS (
+    SELECT customer_unique_id, order_count, total_spend,
+           CASE
+               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'
+               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'
+               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'
+               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'
+               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'
+               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'
+               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'
+               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)
+                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'
+               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'
+               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'
+               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'
+           END AS rfm_segment
+    FROM scores
+),
+comparison AS (
+    SELECT customer_unique_id, rfm_segment,
+           total_spend / order_count AS customer_avg_sales_per_order,
+           SUM(total_spend) OVER segment / SUM(order_count) OVER segment
+               AS segment_avg_sales_per_order
+    FROM segmented
+    WINDOW segment AS (PARTITION BY rfm_segment)
+)
+SELECT rfm_segment, customer_unique_id, customer_avg_sales_per_order,
+       segment_avg_sales_per_order,
+       segment_avg_sales_per_order - MIN(segment_avg_sales_per_order) OVER ()
+           AS difference_from_lowest_segment
+FROM comparison
+ORDER BY segment_avg_sales_per_order DESC, rfm_segment, customer_unique_id
+LIMIT -1
+```

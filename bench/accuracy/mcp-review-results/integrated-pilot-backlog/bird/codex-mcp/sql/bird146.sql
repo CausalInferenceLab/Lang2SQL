@@ -1,0 +1,24 @@
+WITH RECURSIVE months(month_start) AS (
+    SELECT '2010-01-01'
+    UNION ALL
+    SELECT date(month_start, '+1 month')
+    FROM months
+    WHERE month_start < '2010-12-01'
+),
+monthly_counts AS (
+    SELECT m.month_start, COUNT(DISTINCT p.Id) AS post_count
+    FROM months AS m
+    LEFT JOIN main.postLinks AS l
+        ON l.CreationDate >= m.month_start
+       AND l.CreationDate < date(m.month_start, '+1 month')
+    LEFT JOIN main.posts AS p
+        ON p.Id = l.RelatedPostId
+       AND p.AnswerCount <= 2
+    GROUP BY m.month_start
+)
+SELECT strftime('%Y-%m', month_start) AS month,
+       post_count,
+       ROUND(AVG(post_count) OVER (), 2) AS average_monthly_posts
+FROM monthly_counts
+ORDER BY month_start
+LIMIT 12

@@ -1,0 +1,230 @@
+{
+  "instance_id": "local003",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "5b9c950e9e878fc2a19ab2b6b3fa1984fa5b264f1895e90ae233b2e8016c99df",
+  "events_sha256": "9e0efead1597272029c86c69044d9aca964e042fd1db7b8ddff67b556dcad68b",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 274643,
+      "cached_input_tokens": 254976,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2920,
+      "reasoning_output_tokens": 454
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wG1NDW7InDcl6dY-Y_auVj_BGBLeNUk_UUENYwBwO8o\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "order_payments"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "order_payments (table)\n- order_id: TEXT\n- payment_sequential: INTEGER\n- payment_type: TEXT\n- payment_installments: INTEGER\n- payment_value: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "orders"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "orders (table)\n- order_id: TEXT\n- customer_id: TEXT\n- order_status: TEXT\n- order_purchase_timestamp: TEXT\n- order_approved_at: TEXT\n- order_delivered_carrier_date: TEXT\n- order_delivered_customer_date: TEXT\n- order_estimated_delivery_date: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- customer_id: TEXT\n- customer_unique_id: TEXT\n- customer_zip_code_prefix: INTEGER\n- customer_city: TEXT\n- customer_state: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "order_items"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "order_items (table)\n- order_id: TEXT\n- order_item_id: INTEGER\n- product_id: TEXT\n- seller_id: TEXT\n- shipping_limit_date: TEXT\n- price: REAL\n- freight_value: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wG1NDW7InDcl6dY-Y_auVj_BGBLeNUk_UUENYwBwO8o",
+        "sql": "WITH pay AS (\n  SELECT order_id, COUNT(*) AS payment_rows, COUNT(payment_value) AS amount_rows\n  FROM main.order_payments GROUP BY order_id\n), per_customer AS (\n  SELECT c.customer_unique_id, COUNT(*) AS n, COUNT(DISTINCT o.order_id) AS ids,\n         SUM(p.order_id IS NULL) AS missing_payments,\n         SUM(p.payment_rows > 1) AS split_payments,\n         SUM(p.amount_rows < p.payment_rows) AS incomplete_payments,\n         MAX(o.order_purchase_timestamp) AS last_purchase\n  FROM main.orders AS o\n  LEFT JOIN main.customers AS c ON c.customer_id = o.customer_id\n  LEFT JOIN pay AS p ON p.order_id = o.order_id\n  WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id\n)\nSELECT COUNT(*) AS customers, SUM(n) AS orders, SUM(n - ids) AS repeated_ids,\n       SUM(customer_unique_id IS NULL) AS missing_customers, SUM(n = 1) AS single_order_customers,\n       SUM(missing_payments) AS missing_payments, SUM(split_payments) AS split_payments,\n       SUM(incomplete_payments) AS incomplete_payments, MAX(last_purchase) AS latest_purchase\nFROM per_customer"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): customers=int; orders=int; repeated_ids=int; missing_customers=int; single_order_customers=int; missing_payments=int; split_payments=int; incomplete_payments=int; latest_purchase=str\ncustomers | orders | repeated_ids | missing_customers | single_order_customers | missing_payments | split_payments | incomplete_payments | latest_purchase\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n93358 | 96478 | 0 | 0 | 90557 | 1 | 2875 | 0 | 2018-08-29 15:00:37\nSQL: WITH pay AS (\n  SELECT order_id, COUNT(*) AS payment_rows, COUNT(payment_value) AS amount_rows\n  FROM main.order_payments GROUP BY order_id\n), per_customer AS (\n  SELECT c.customer_unique_id, COUNT(*) AS n, COUNT(DISTINCT o.order_id) AS ids,\n         SUM(p.order_id IS NULL) AS missing_payments,\n         SUM(p.payment_rows > 1) AS split_payments,\n         SUM(p.amount_rows < p.payment_rows) AS incomplete_payments,\n         MAX(o.order_purchase_timestamp) AS last_purchase\n  FROM main.orders AS o\n  LEFT JOIN main.customers AS c ON c.customer_id = o.customer_id\n  LEFT JOIN pay AS p ON p.order_id = o.order_id\n  WHERE o.order_status = 'delivered' GROUP BY c.customer_unique_id\n)\nSELECT COUNT(*) AS customers, SUM(n) AS orders, SUM(n - ids) AS repeated_ids,\n       SUM(customer_unique_id IS NULL) AS missing_customers, SUM(n = 1) AS single_order_customers,\n       SUM(missing_payments) AS missing_payments, SUM(split_payments) AS split_payments,\n       SUM(incomplete_payments) AS incomplete_payments, MAX(last_purchase) AS latest_purchase\nFROM per_customer\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"xtZ3bMwjxCvz7tHOCrfQSzkBB4kNZvz-OtUViReTX0w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH order_spend AS (\n    SELECT order_id, SUM(payment_value) AS amount_paid\n    FROM main.order_payments\n    GROUP BY order_id\n),\ncustomer_totals AS (\n    SELECT c.customer_unique_id,\n           MAX(o.order_purchase_timestamp) AS last_purchase,\n           COUNT(*) AS order_count,\n           CASE WHEN COUNT(p.amount_paid) = COUNT(*)\n                THEN SUM(p.amount_paid) END AS total_spend\n    FROM main.orders AS o\n    JOIN main.customers AS c ON c.customer_id = o.customer_id\n    LEFT JOIN order_spend AS p ON p.order_id = o.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY c.customer_unique_id\n),\ncustomer_metrics AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days\n    FROM customer_totals\n),\nscores AS (\n    -- Score the upper cumulative percentile in fifths. Equal values share a score.\n    SELECT customer_unique_id, order_count, total_spend,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,\n           CASE WHEN total_spend IS NOT NULL THEN\n               CAST(CEIL(5 * CUME_DIST() OVER (\n                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC\n               )) AS INTEGER)\n           END AS m\n    FROM customer_metrics\n),\nsegmented AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           CASE\n               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'\n               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'\n               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'\n               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'\n               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'\n               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'\n               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'\n               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)\n                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'\n               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'\n               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'\n               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'\n           END AS rfm_segment\n    FROM scores\n)\nSELECT rfm_segment, COUNT(*) AS customers, SUM(order_count) AS orders,\n       SUM(total_spend) / SUM(order_count) AS segment_avg\nFROM segmented\nGROUP BY rfm_segment\nORDER BY segment_avg DESC",
+        "definition_check_id": "xtZ3bMwjxCvz7tHOCrfQSzkBB4kNZvz-OtUViReTX0w"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): rfm_segment=NoneType,str; customers=int; orders=int; segment_avg=NoneType,float\nrfm_segment | customers | orders | segment_avg\n--- | --- | --- | ---\nNeeds Attention | 3243 | 3270 | 405.26746177370035\nHibernating | 7477 | 7995 | 399.07408380237644\nPotential Loyalists | 14483 | 14557 | 284.83226832451743\nCan't Lose Them | 506 | 1065 | 213.08749295774646\nChampions | 585 | 1271 | 156.40843430369787\nLoyal Customers | 1119 | 2375 | 154.0127452631579\nRecent Users | 7412 | 7412 | 136.90105234754452\nAbout to Sleep | 14853 | 14853 | 95.18462532821653\nLost | 29360 | 29360 | 93.93015190735694\nPromising | 7119 | 7119 | 54.78912909116449\nPrice Sensitive | 7200 | 7200 | 54.514175\nNone | 1 | 1 | None\nSQL: WITH order_spend AS (\n    SELECT order_id, SUM(payment_value) AS amount_paid\n    FROM main.order_payments\n    GROUP BY order_id\n),\ncustomer_totals AS (\n    SELECT c.customer_unique_id,\n           MAX(o.order_purchase_timestamp) AS last_purchase,\n           COUNT(*) AS order_count,\n           CASE WHEN COUNT(p.amount_paid) = COUNT(*)\n                THEN SUM(p.amount_paid) END AS total_spend\n    FROM main.orders AS o\n    JOIN main.customers AS c ON c.customer_id = o.customer_id\n    LEFT JOIN order_spend AS p ON p.order_id = o.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY c.customer_unique_id\n),\ncustomer_metrics AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days\n    FROM customer_totals\n),\nscores AS (\n    -- Score the upper cumulative percentile in fifths. Equal values share a score.\n    SELECT customer_unique_id, order_count, total_spend,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,\n           CASE WHEN total_spend IS NOT NULL THEN\n               CAST(CEIL(5 * CUME_DIST() OVER (\n                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC\n               )) AS INTEGER)\n           END AS m\n    FROM customer_metrics\n),\nsegmented AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           CASE\n               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'\n               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'\n               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'\n               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'\n               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'\n               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'\n               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'\n               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)\n                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'\n               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'\n               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'\n               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'\n           END AS rfm_segment\n    FROM scores\n)\nSELECT rfm_segment, COUNT(*) AS customers, SUM(order_count) AS orders,\n       SUM(total_spend) / SUM(order_count) AS segment_avg\nFROM segmented\nGROUP BY rfm_segment\nORDER BY segment_avg DESC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"LFeDOFBIrHom-wBdzKu2q7a4MnMsZo6rnDn7d2Hicps\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH order_spend AS (\n    SELECT order_id, SUM(payment_value) AS amount_paid\n    FROM main.order_payments\n    GROUP BY order_id\n),\ncustomer_totals AS (\n    SELECT c.customer_unique_id,\n           MAX(o.order_purchase_timestamp) AS last_purchase,\n           COUNT(*) AS order_count,\n           CASE WHEN COUNT(p.amount_paid) = COUNT(*)\n                THEN SUM(p.amount_paid) END AS total_spend\n    FROM main.orders AS o\n    JOIN main.customers AS c ON c.customer_id = o.customer_id\n    LEFT JOIN order_spend AS p ON p.order_id = o.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY c.customer_unique_id\n),\ncustomer_metrics AS (\n    -- Elapsed days from each customer's last purchase to the latest purchase among delivered orders.\n    SELECT customer_unique_id, order_count, total_spend,\n           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days\n    FROM customer_totals\n),\nscores AS (\n    -- Score the upper cumulative percentile in fifths. Equal values share a score.\n    SELECT customer_unique_id, order_count, total_spend,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,\n           CASE WHEN total_spend IS NOT NULL THEN\n               CAST(CEIL(5 * CUME_DIST() OVER (\n                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC\n               )) AS INTEGER)\n           END AS m\n    FROM customer_metrics\n),\nsegmented AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           CASE\n               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'\n               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'\n               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'\n               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'\n               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'\n               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'\n               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'\n               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)\n                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'\n               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'\n               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'\n               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'\n           END AS rfm_segment\n    FROM scores\n),\ncomparison AS (\n    SELECT customer_unique_id, rfm_segment,\n           total_spend / order_count AS customer_avg_sales_per_order,\n           SUM(total_spend) OVER segment / SUM(order_count) OVER segment\n               AS segment_avg_sales_per_order\n    FROM segmented\n    WINDOW segment AS (PARTITION BY rfm_segment)\n)\nSELECT rfm_segment, customer_unique_id, customer_avg_sales_per_order,\n       segment_avg_sales_per_order,\n       segment_avg_sales_per_order - MIN(segment_avg_sales_per_order) OVER ()\n           AS difference_from_lowest_segment\nFROM comparison\nORDER BY segment_avg_sales_per_order DESC, rfm_segment, customer_unique_id\nLIMIT -1",
+        "definition_check_id": "LFeDOFBIrHom-wBdzKu2q7a4MnMsZo6rnDn7d2Hicps",
+        "limit": 10
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=true; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): rfm_segment=str; customer_unique_id=str; customer_avg_sales_per_order=float; segment_avg_sales_per_order=float; difference_from_lowest_segment=float\nrfm_segment | customer_unique_id | customer_avg_sales_per_order | segment_avg_sales_per_order | difference_from_lowest_segment\n--- | --- | --- | --- | ---\nNeeds Attention | 00053a61a98854899e70ed204dd4bafe | 419.18 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 0028a7d8db7b0247652509358ad8d755 | 354.87 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 002aba8c1af80acacef6e011f9f23262 | 217.74 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 00370dfde3d012c420d29657afc2fc8b | 237.0 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 0037aa56b017c105c3a9d47af71fff98 | 443.73 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 0064a1b5f5cddd047c987b988a90c8c1 | 269.2 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 00728bae3dec9c16b2193ab7e3195eb7 | 211.01 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 00762eafc5dac5fc1574f91e9b7c9b67 | 233.93 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 0085139b503668b3addcfe826d91be8d | 504.47 | 405.26746177370035 | 350.7532867737003\nNeeds Attention | 00b0d21952ae29dfe79db614512a27c2 | 418.17 | 405.26746177370035 | 350.7532867737003\nSQL: WITH order_spend AS (\n    SELECT order_id, SUM(payment_value) AS amount_paid\n    FROM main.order_payments\n    GROUP BY order_id\n),\ncustomer_totals AS (\n    SELECT c.customer_unique_id,\n           MAX(o.order_purchase_timestamp) AS last_purchase,\n           COUNT(*) AS order_count,\n           CASE WHEN COUNT(p.amount_paid) = COUNT(*)\n                THEN SUM(p.amount_paid) END AS total_spend\n    FROM main.orders AS o\n    JOIN main.customers AS c ON c.customer_id = o.customer_id\n    LEFT JOIN order_spend AS p ON p.order_id = o.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY c.customer_unique_id\n),\ncustomer_metrics AS (\n    -- Elapsed days from each customer's last purchase to the latest purchase among delivered orders.\n    SELECT customer_unique_id, order_count, total_spend,\n           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days\n    FROM customer_totals\n),\nscores AS (\n    -- Score the upper cumulative percentile in fifths. Equal values share a score.\n    SELECT customer_unique_id, order_count, total_spend,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,\n           CASE WHEN total_spend IS NOT NULL THEN\n               CAST(CEIL(5 * CUME_DIST() OVER (\n                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC\n               )) AS INTEGER)\n           END AS m\n    FROM customer_metrics\n),\nsegmented AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           CASE\n               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'\n               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'\n               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'\n               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'\n               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'\n               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'\n               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'\n               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)\n                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'\n               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'\n               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'\n               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'\n           END AS rfm_segment\n    FROM scores\n),\ncomparison AS (\n    SELECT customer_unique_id, rfm_segment,\n           total_spend / order_count AS customer_avg_sales_per_order,\n           SUM(total_spend) OVER segment / SUM(order_count) OVER segment\n               AS segment_avg_sales_per_order\n    FROM segmented\n    WINDOW segment AS (PARTITION BY rfm_segment)\n)\nSELECT rfm_segment, customer_unique_id, customer_avg_sales_per_order,\n       segment_avg_sales_per_order,\n       segment_avg_sales_per_order - MIN(segment_avg_sales_per_order) OVER ()\n           AS difference_from_lowest_segment\nFROM comparison\nORDER BY segment_avg_sales_per_order DESC, rfm_segment, customer_unique_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH order_spend AS (\n    SELECT order_id, SUM(payment_value) AS amount_paid\n    FROM main.order_payments\n    GROUP BY order_id\n),\ncustomer_totals AS (\n    SELECT c.customer_unique_id,\n           MAX(o.order_purchase_timestamp) AS last_purchase,\n           COUNT(*) AS order_count,\n           CASE WHEN COUNT(p.amount_paid) = COUNT(*)\n                THEN SUM(p.amount_paid) END AS total_spend\n    FROM main.orders AS o\n    JOIN main.customers AS c ON c.customer_id = o.customer_id\n    LEFT JOIN order_spend AS p ON p.order_id = o.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY c.customer_unique_id\n),\ncustomer_metrics AS (\n    -- Elapsed days from each customer's last purchase to the latest purchase among delivered orders.\n    SELECT customer_unique_id, order_count, total_spend,\n           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days\n    FROM customer_totals\n),\nscores AS (\n    -- Score the upper cumulative percentile in fifths. Equal values share a score.\n    SELECT customer_unique_id, order_count, total_spend,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,\n           CASE WHEN total_spend IS NOT NULL THEN\n               CAST(CEIL(5 * CUME_DIST() OVER (\n                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC\n               )) AS INTEGER)\n           END AS m\n    FROM customer_metrics\n),\nsegmented AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           CASE\n               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'\n               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'\n               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'\n               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'\n               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'\n               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'\n               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'\n               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)\n                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'\n               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'\n               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'\n               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'\n           END AS rfm_segment\n    FROM scores\n),\ncomparison AS (\n    SELECT customer_unique_id, rfm_segment,\n           total_spend / order_count AS customer_avg_sales_per_order,\n           SUM(total_spend) OVER segment / SUM(order_count) OVER segment\n               AS segment_avg_sales_per_order\n    FROM segmented\n    WINDOW segment AS (PARTITION BY rfm_segment)\n)\nSELECT rfm_segment, customer_unique_id, customer_avg_sales_per_order,\n       segment_avg_sales_per_order,\n       segment_avg_sales_per_order - MIN(segment_avg_sales_per_order) OVER ()\n           AS difference_from_lowest_segment\nFROM comparison\nORDER BY segment_avg_sales_per_order DESC, rfm_segment, customer_unique_id\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 93358,
+  "sql": "WITH order_spend AS (\n    SELECT order_id, SUM(payment_value) AS amount_paid\n    FROM main.order_payments\n    GROUP BY order_id\n),\ncustomer_totals AS (\n    SELECT c.customer_unique_id,\n           MAX(o.order_purchase_timestamp) AS last_purchase,\n           COUNT(*) AS order_count,\n           CASE WHEN COUNT(p.amount_paid) = COUNT(*)\n                THEN SUM(p.amount_paid) END AS total_spend\n    FROM main.orders AS o\n    JOIN main.customers AS c ON c.customer_id = o.customer_id\n    LEFT JOIN order_spend AS p ON p.order_id = o.order_id\n    WHERE o.order_status = 'delivered'\n    GROUP BY c.customer_unique_id\n),\ncustomer_metrics AS (\n    -- Elapsed days from each customer's last purchase to the latest purchase among delivered orders.\n    SELECT customer_unique_id, order_count, total_spend,\n           JULIANDAY(MAX(last_purchase) OVER ()) - JULIANDAY(last_purchase) AS recency_days\n    FROM customer_totals\n),\nscores AS (\n    -- Score the upper cumulative percentile in fifths. Equal values share a score.\n    SELECT customer_unique_id, order_count, total_spend,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY recency_days)) AS INTEGER) AS r,\n           CAST(CEIL(5 * CUME_DIST() OVER (ORDER BY order_count DESC)) AS INTEGER) AS f,\n           CASE WHEN total_spend IS NOT NULL THEN\n               CAST(CEIL(5 * CUME_DIST() OVER (\n                   PARTITION BY (total_spend IS NULL) ORDER BY total_spend DESC\n               )) AS INTEGER)\n           END AS m\n    FROM customer_metrics\n),\nsegmented AS (\n    SELECT customer_unique_id, order_count, total_spend,\n           CASE\n               WHEN r = 1 AND f + m BETWEEN 1 AND 4 THEN 'Champions'\n               WHEN r IN (4, 5) AND f + m BETWEEN 1 AND 2 THEN 'Can''t Lose Them'\n               WHEN r IN (4, 5) AND f + m BETWEEN 3 AND 6 THEN 'Hibernating'\n               WHEN r IN (4, 5) AND f + m BETWEEN 7 AND 10 THEN 'Lost'\n               WHEN r IN (2, 3) AND f + m BETWEEN 1 AND 4 THEN 'Loyal Customers'\n               WHEN r = 3 AND f + m BETWEEN 5 AND 6 THEN 'Needs Attention'\n               WHEN r = 1 AND f + m BETWEEN 7 AND 8 THEN 'Recent Users'\n               WHEN (r = 1 AND f + m BETWEEN 5 AND 6)\n                 OR (r = 2 AND f + m BETWEEN 5 AND 8) THEN 'Potential Loyalists'\n               WHEN r = 1 AND f + m BETWEEN 9 AND 10 THEN 'Price Sensitive'\n               WHEN r = 2 AND f + m BETWEEN 9 AND 10 THEN 'Promising'\n               WHEN r = 3 AND f + m BETWEEN 7 AND 10 THEN 'About to Sleep'\n           END AS rfm_segment\n    FROM scores\n),\ncomparison AS (\n    SELECT customer_unique_id, rfm_segment,\n           total_spend / order_count AS customer_avg_sales_per_order,\n           SUM(total_spend) OVER segment / SUM(order_count) OVER segment\n               AS segment_avg_sales_per_order\n    FROM segmented\n    WINDOW segment AS (PARTITION BY rfm_segment)\n)\nSELECT rfm_segment, customer_unique_id, customer_avg_sales_per_order,\n       segment_avg_sales_per_order,\n       segment_avg_sales_per_order - MIN(segment_avg_sales_per_order) OVER ()\n           AS difference_from_lowest_segment\nFROM comparison\nORDER BY segment_avg_sales_per_order DESC, rfm_segment, customer_unique_id\nLIMIT -1",
+  "seconds": 81.7222006659722
+}
