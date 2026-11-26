@@ -1,0 +1,148 @@
+{
+  "instance_id": "bird231",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "adc094721ead60cfcdcb1b701cc51a733a73710087f9c8b46854ab6d2e94b3d2",
+  "events_sha256": "6d78a9497fb44b933e824fb4ac89ed88631d031b712eca74b9ec058d1a0f5284",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 63042,
+      "cached_input_tokens": 49920,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 234,
+      "reasoning_output_tokens": 30
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "mortgage"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"mortgage\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "trans"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "trans (table)\n- trans_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- type: TEXT NOT NULL\n- operation: TEXT\n- amount: INTEGER NOT NULL\n- balance: INTEGER NOT NULL\n- k_symbol: TEXT\n- bank: TEXT\n- account: INTEGER\nPRIMARY KEY (trans_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "account (table)\n- account_id: INTEGER NOT NULL\n- district_id: INTEGER NOT NULL\n- frequency: TEXT NOT NULL\n- date: DATE NOT NULL\nPRIMARY KEY (account_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "order"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "order (table)\n- order_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- bank_to: TEXT NOT NULL\n- account_to: INTEGER NOT NULL\n- amount: REAL NOT NULL\n- k_symbol: TEXT NOT NULL\nPRIMARY KEY (order_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "loan"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "loan (table)\n- loan_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- amount: INTEGER NOT NULL\n- duration: INTEGER NOT NULL\n- payments: REAL NOT NULL\n- status: TEXT NOT NULL\nPRIMARY KEY (loan_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "Which rule identifies a mortgage account for this analysis? Should every account with a qualifying loan count, or must it also have a specific payment-purpose code? If a code is required, please specify the table and code. The loan table has no mortgage-type field, and Lang2SQL has no confirmed mortgage definition.",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 15.10411600000225
+}

@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird318",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "c200c05ace5ee7d21fda035a7f6bf549a4685b6f3043c2061844bc5186130a8d",
+  "events_sha256": "c230f0ceeab8b5173f2b1f34936c7d7fc607315f9700681056bfdf5165e181b7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 154242,
+      "cached_input_tokens": 143872,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 592,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "member"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "member (table)\n- member_id: TEXT\n- first_name: TEXT\n- last_name: TEXT\n- email: TEXT\n- position: TEXT\n- t_shirt_size: TEXT\n- phone: TEXT\n- zip: INTEGER\n- link_to_major: TEXT\nPRIMARY KEY (member_id)\nFOREIGN KEY (link_to_major) REFERENCES major (major_id)\nFOREIGN KEY (zip) REFERENCES zip_code (zip_code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"5mEij8Twerxv9inir3Ci__6dhxVivSzlijItDaqyRfI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "expense"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "expense (table)\n- expense_id: TEXT\n- expense_description: TEXT\n- expense_date: TEXT\n- cost: REAL\n- approved: TEXT\n- link_to_member: TEXT\n- link_to_budget: TEXT\nPRIMARY KEY (expense_id)\nFOREIGN KEY (link_to_budget) REFERENCES budget (budget_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "5mEij8Twerxv9inir3Ci__6dhxVivSzlijItDaqyRfI",
+        "sql": "SELECT MIN(e.expense_date) AS first_date, MAX(e.expense_date) AS last_date,\n       COUNT(*) FILTER (WHERE e.expense_date IS NOT date(e.expense_date)) AS non_iso_dates,\n       COUNT(*) FILTER (WHERE typeof(e.cost) = 'real') AS real_costs,\n       COUNT(*) AS expense_count\nFROM main.expense AS e"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_date=str; last_date=str; non_iso_dates=int; real_costs=int; expense_count=int\nfirst_date | last_date | non_iso_dates | real_costs | expense_count\n--- | --- | --- | --- | ---\n2019-08-20 | 2019-11-19 | 0 | 32 | 32\nSQL: SELECT MIN(e.expense_date) AS first_date, MAX(e.expense_date) AS last_date,\n       COUNT(*) FILTER (WHERE e.expense_date IS NOT date(e.expense_date)) AS non_iso_dates,\n       COUNT(*) FILTER (WHERE typeof(e.cost) = 'real') AS real_costs,\n       COUNT(*) AS expense_count\nFROM main.expense AS e\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"MaIHCaPgAc4OLKp4Oe6VCM5zuk5xF7FegfLQZj7-UzY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "MaIHCaPgAc4OLKp4Oe6VCM5zuk5xF7FegfLQZj7-UzY",
+        "expected_columns": [
+          "expense_date",
+          "total_cost"
+        ],
+        "sql": "SELECT e.expense_date, SUM(e.cost) AS total_cost\nFROM main.expense AS e\nWHERE e.expense_date = (\n    SELECT MAX(vp.expense_date)\n    FROM main.expense AS vp\n    JOIN main.member AS m ON m.member_id = vp.link_to_member\n    WHERE m.position = 'Vice President'\n)\nGROUP BY e.expense_date\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): expense_date=str; total_cost=float\nexpense_date | total_cost\n--- | ---\n2019-11-19 | 128.32999999999998\nSQL: SELECT e.expense_date, SUM(e.cost) AS total_cost\nFROM main.expense AS e\nWHERE e.expense_date = (\n    SELECT MAX(vp.expense_date)\n    FROM main.expense AS vp\n    JOIN main.member AS m ON m.member_id = vp.link_to_member\n    WHERE m.position = 'Vice President'\n)\nGROUP BY e.expense_date\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT e.expense_date, SUM(e.cost) AS total_cost\nFROM main.expense AS e\nWHERE e.expense_date = (\n    SELECT MAX(vp.expense_date)\n    FROM main.expense AS vp\n    JOIN main.member AS m ON m.member_id = vp.link_to_member\n    WHERE m.position = 'Vice President'\n)\nGROUP BY e.expense_date\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT e.expense_date, SUM(e.cost) AS total_cost\nFROM main.expense AS e\nWHERE e.expense_date = (\n    SELECT MAX(vp.expense_date)\n    FROM main.expense AS vp\n    JOIN main.member AS m ON m.member_id = vp.link_to_member\n    WHERE m.position = 'Vice President'\n)\nGROUP BY e.expense_date\nLIMIT 1",
+  "seconds": 30.657403916935436
+}

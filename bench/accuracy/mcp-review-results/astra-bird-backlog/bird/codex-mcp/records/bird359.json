@@ -1,0 +1,130 @@
+{
+  "instance_id": "bird359",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "6ae7f9fabfa44660dd25ace4bfd9828c079e014b814e8d9f5a351f962c2a724c",
+  "events_sha256": "fc82caaab8d224b4bb4a442e8f8dee189881ac0ab0e5ec5e9cd4035ee0de5b7b",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 100956,
+      "cached_input_tokens": 88192,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 366,
+      "reasoning_output_tokens": 11
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "alignment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "alignment (table)\n- id: INTEGER NOT NULL\n- alignment: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"mvj_3XJGLsp7v8lQaMSHX6bs6gJolvdVxQRlWacboTY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "mvj_3XJGLsp7v8lQaMSHX6bs6gJolvdVxQRlWacboTY",
+        "sql": "SELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nJOIN publisher AS p ON p.id = s.publisher_id\nWHERE a.alignment = 'Good'\n  AND p.publisher_name <> 'DC Comics';",
+        "expected_columns": [
+          "superhero_count"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): superhero_count=int\nsuperhero_count\n---\n355\nSQL: SELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nJOIN publisher AS p ON p.id = s.publisher_id\nWHERE a.alignment = 'Good'\n  AND p.publisher_name <> 'DC Comics'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nJOIN publisher AS p ON p.id = s.publisher_id\nWHERE a.alignment = 'Good'\n  AND p.publisher_name <> 'DC Comics'\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS superhero_count\nFROM superhero AS s\nJOIN alignment AS a ON a.id = s.alignment_id\nJOIN publisher AS p ON p.id = s.publisher_id\nWHERE a.alignment = 'Good'\n  AND p.publisher_name <> 'DC Comics'\nLIMIT 1000",
+  "seconds": 21.352887624991126
+}

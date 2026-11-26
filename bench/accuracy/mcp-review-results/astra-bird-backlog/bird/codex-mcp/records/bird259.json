@@ -1,0 +1,174 @@
+{
+  "instance_id": "bird259",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "b1647c64d4d4aafe00b5e33926dde49d926986381539abb181a919d191578e10",
+  "events_sha256": "6c3c64b2227da7a81fe83bed86fca72221529ec484b6ef13996f407c917c6e60",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 142758,
+      "cached_input_tokens": 131456,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 748,
+      "reasoning_output_tokens": 93
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"uB9ImMm9UFOVNh3RhjmxJtQ-T74P5rnYkI95aKU8b9w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "uB9ImMm9UFOVNh3RhjmxJtQ-T74P5rnYkI95aKU8b9w",
+        "sql": "SELECT r.date, r.time, s.time AS elapsed, s.milliseconds, d.forename, d.surname\nFROM races AS r\nJOIN results AS s ON s.raceId = r.raceId\nJOIN drivers AS d ON d.driverId = s.driverId\nWHERE r.year = 2017 AND r.name = 'Azerbaijan Grand Prix' AND s.position = 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; time=str; elapsed=str; milliseconds=int; forename=str; surname=str\ndate | time | elapsed | milliseconds | forename | surname\n--- | --- | --- | --- | --- | ---\n2017-06-25 | 13:00:00 | 2:03:55.573 | 7435573 | Daniel | Ricciardo\nSQL: SELECT r.date, r.time, s.time AS elapsed, s.milliseconds, d.forename, d.surname\nFROM races AS r\nJOIN results AS s ON s.raceId = r.raceId\nJOIN drivers AS d ON d.driverId = s.driverId\nWHERE r.year = 2017 AND r.name = 'Azerbaijan Grand Prix' AND s.position = 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lzsDuIJ8OUUKnjCpT2ngQnTxJj2qop8xmS3gLRCkdUo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lzsDuIJ8OUUKnjCpT2ngQnTxJj2qop8xmS3gLRCkdUo",
+        "sql": "SELECT\n    d.forename,\n    d.surname,\n    strftime(\n        '%H:%M:%f',\n        r.time,\n        printf('+%.3f seconds', result.milliseconds / 1000.0)\n    ) AS local_finish_time,\n    d.url\nFROM races AS r\nJOIN results AS result ON result.raceId = r.raceId\nJOIN drivers AS d ON d.driverId = result.driverId\nWHERE r.year = 2017\n  AND r.name = 'Azerbaijan Grand Prix'\n  AND result.position = 1\nLIMIT 1000",
+        "expected_columns": [
+          "forename",
+          "surname",
+          "local_finish_time",
+          "url"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): forename=str; surname=str; local_finish_time=str; url=str\nforename | surname | local_finish_time | url\n--- | --- | --- | ---\nDaniel | Ricciardo | 15:03:55.573 | http://en.wikipedia.org/wiki/Daniel_Ricciardo\nSQL: SELECT\n    d.forename,\n    d.surname,\n    strftime(\n        '%H:%M:%f',\n        r.time,\n        printf('+%.3f seconds', result.milliseconds / 1000.0)\n    ) AS local_finish_time,\n    d.url\nFROM races AS r\nJOIN results AS result ON result.raceId = r.raceId\nJOIN drivers AS d ON d.driverId = result.driverId\nWHERE r.year = 2017\n  AND r.name = 'Azerbaijan Grand Prix'\n  AND result.position = 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    d.forename,\n    d.surname,\n    strftime(\n        '%H:%M:%f',\n        r.time,\n        printf('+%.3f seconds', result.milliseconds / 1000.0)\n    ) AS local_finish_time,\n    d.url\nFROM races AS r\nJOIN results AS result ON result.raceId = r.raceId\nJOIN drivers AS d ON d.driverId = result.driverId\nWHERE r.year = 2017\n  AND r.name = 'Azerbaijan Grand Prix'\n  AND result.position = 1\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    d.forename,\n    d.surname,\n    strftime(\n        '%H:%M:%f',\n        r.time,\n        printf('+%.3f seconds', result.milliseconds / 1000.0)\n    ) AS local_finish_time,\n    d.url\nFROM races AS r\nJOIN results AS result ON result.raceId = r.raceId\nJOIN drivers AS d ON d.driverId = result.driverId\nWHERE r.year = 2017\n  AND r.name = 'Azerbaijan Grand Prix'\n  AND result.position = 1\nLIMIT 1000",
+  "seconds": 30.61586554197129
+}

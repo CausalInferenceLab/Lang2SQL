@@ -1,0 +1,11 @@
+SELECT
+    r.year,
+    ((SUM(w.milliseconds) + 5 * COUNT(*)) / (10 * COUNT(*))) / 100.0 AS mean_winner_seconds
+FROM races AS r
+JOIN results AS w ON w.raceId = r.raceId
+WHERE r.year < 1975
+  AND w.position = 1
+  AND w.milliseconds IS NOT NULL
+GROUP BY r.year
+ORDER BY r.year
+LIMIT 1000

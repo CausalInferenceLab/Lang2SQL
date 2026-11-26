@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird378",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "ade9f0436e7c9e6911d0756f5e121cb038aa276ce2916a14e1465f945a2923c0",
+  "events_sha256": "a5f6ab65374eb6cb5f48a961f75ca45b2a5ed83c56e5cd66624189ad7854e300",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 152200,
+      "cached_input_tokens": 137472,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 601,
+      "reasoning_output_tokens": 21
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "alignment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "alignment (table)\n- id: INTEGER NOT NULL\n- alignment: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"HdKaiW6KTAM-TUOy9Kysf6PJrQj_1rjAyFmLZCPvgAI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "HdKaiW6KTAM-TUOy9Kysf6PJrQj_1rjAyFmLZCPvgAI",
+        "sql": "SELECT GROUP_CONCAT(DISTINCT s.full_name) AS name_values, COUNT(*) - COUNT(s.full_name) AS null_names\nFROM superhero AS s\nJOIN publisher AS p ON p.id = s.publisher_id\nWHERE p.publisher_name = 'Marvel Comics'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): name_values=str; null_names=int\nname_values | null_names\n--- | ---\nCharles Chandler,Richard Milhouse Jones,Emil Blonsky,Abraxas,Sharon Carter,Bob,Christoph Nord,Gabriel Lan,-,Liam,Christina,Angel Salvadore Bohusk,Annihilus,Henry Jonathan Pym,Scott Lang,Edward Charles Allan Brock,En Sabah Nur,Julia Carpenter,Warren Kenneth Worthington III,Philippa Sontag,Ariel,Hisako Ichiki,Erik Stephan Josten,Jeanne-Marie Beaubier,Sean Cassidy,Roberto Velasquez,Lemar Hoskins,Henry Philip McCoy,Beta Ray Bill (translation of his Korbinite name),Frederick Foswell,Carol Susan Jane Danvers,Lucas Bishop,Blackagar Boltagon,Felicia Hardy,Dane Whitman,Tanya Sealy,T'Challa,Yelena Belova,Joseph Manfredi,Lucian,Eric Brooks,Clarice Ferguson,Donald Gill,Frederick J. Dukes,Jackie Lukus,Lemuel Krug,Sean Dolan,Tabitha Smith,Madison Jeffries,Jericho Drumm,Lester,Nathan Christopher Charles Summers Dayspring,Callisto,Steven Grant Rogers,Brian Braddock,Mar-Vell,Shirlee Bryant,Shakti Haddad,Jonothon Evan Starsmore,Dmitri Anatoly Nikolayevich Smerdyakov,Kevin Sidney,Clea,Tyrone Johnson,Piotr Nikolaievitch Rasputin,Vanessa Carlysle,Christopher Summers,Burchell Clemens,Rory Destine,Anton Vanko,Crystallia Amaquelin Maximoff,Scott Summers,Douglas Aaron Ramsey,Tandy Bowen,Christopher Powell,Laynia Petrovna,Alison Blaire,Luther Manning,Willis Stryker,Leonard Samson,Victor von Doom,Kristoff Vernard,Otto Octavius,Stephen Vincent Strange,Neena Thurman,Dormammu,Arthur Sampson Douglas,Ego,Maxwell Dillon,Elektra Natchios,Emma Frost,Dargin Bokk,Bennet du Paris,Samuel Thomas Wilson,Maria Callasantos,Bonita Juarez,Pyreus Kril,Angelica Jones,Paul Norbert Ebersol,Franklin Benjamin Richards,Dr. Franklin Storm,Joanna Cargill,Frigga,Remy Etienne LeBeau,Gamora Zen Whoberi Ben Titan,Tyler Dayspring,Daniel Ketch,Kallark,Madelyne Jennifer Pryor,Greg Willis,Harold Osborn,Phillip Benjamin Urich,Groot,Dr. James McDonald Hudson,Clinton Francis Barton,Katherine Elizabeth Bishop,Daimon Hellstrom,Heracles,Roderick Kingsley,Monet St. Croix,Hope Summers,Howard (Last name unrevealed),Robert Bruce Banner,Jonathan Lowell Spencer Storm,Paige Elisabeth Guthrie,Morris Bench,Robert Louis Drake,Eric Gitter,Daniel Thomas Rand-K'ai,Anthony Edward Stark,Obadiah Stane,Jonathan Hart,Jean Grey-Summers,Jennifer Kale,Billy Russo,John Wraith,Helen Takahama,Jubilation Lee,Cain Marko,Vance Astrovik,Nathaniel Richards,Wilson Grant Fisk,Ulysses Klaw,Alyosha Kravinoff,Yuriko Oyama,Samuel Sterns,Curtis Connors,Loki Laufeyson,Luke Cage,Luna Maximoff,Lyja,Abner Jenkins,X-51, Aaron Stack,Erik Magnus Lensherr,Dr. Theodore Sallis,John Jameson,Khan,Rachel Anne Summers,Christopher Bradley,Medusalith Amaquelin Boltagon,Calvin Montgomery Rankin,Reed Richards,Dr. Nathaniel Essex,Barbara Morse,Mark Raxton,Marc Spector,Dr. Karla Sofen,Morlun,Kevin Sydney,Moses Magnum,Sharon Ventura,James Arthur,Quentin Beck,Raven Darkholme,Aquaria Nautica Neptunia,Namorita Prentiss,Nicholas Joseph Fury,Kurt Wagner,Jean-Paul Beaubier,Richard Rider,Arkady Gregorivich,Onslaught,Robert Baldwin,Lorna Sally Dane,Charles Francis Xavier,Nels Van Adder,Elizabeth Braddock,Francis Castiglione,Zebediah Killgrave,St. John Allerdyce,Daisy Louise Johnson,Pietro Django Maximoff,Maxwell Jordan,Douglas Scott,Thaddeus E. Ross,Johann Shmidt,Aleksei Mikhailovich Sytsevich,Rocket Raccoon,Anna Marie,Victor Creed,Tessa,Walter Langkowski,Benjamin Reilly,Kaine Parker,Wanda Maximoff,Elaine Coll,MacDonald Gargan,Sebastian Hiram Shaw,Robert Reynolds,Amahl Farouk,Katherine Pryde,Shang-Chi,Gaveedra Seven,Jennifer Walters,Herman Schultz,Frances Louise Barrison,Sif,Norrin Radd,Maria de Guadalupe Santiago,Theresa Rourke Cassidy,Narya,Melissa Joan Gold,May 'Mayday' Parker,Gwendolyne Stacy,Peter Benjamin Parker,Jessica Drew,Martha Franklin,Peter Jason Quill,Ororo Munroe,Roberto DaCosta,Fritz von Meyer,Everett Thomas,Thanos,Benjamin Jacob Grimm,Thor Odinson,Tarene,John Proudstar,Eric Kevin Masterson,Thundra,Todd Arliss,Greer Grant Nelson,Phineas Mason,Mortimer Toynbee,Tsu-Zana,Brunnhilde,Angelo Fortunato,Heather McNeil Hudson,Gabriel Summers,Adrian Toomes,Hubert Carpent,James Rupert Rhodes,Adam Warlock,James Proudstar,Janet Van Dyne,Uatu,Weapon XI,Emma Grace Frost,Rahne Sinclair,James Howlett,Simon Williams,Wyatt Wingfoot,Laura Kinney,Nate Grey,Rita DeMara,Ymir | 63\nSQL: SELECT GROUP_CONCAT(DISTINCT s.full_name) AS name_values, COUNT(*) - COUNT(s.full_name) AS null_names\nFROM superhero AS s\nJOIN publisher AS p ON p.id = s.publisher_id\nWHERE p.publisher_name = 'Marvel Comics'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"3Odwo2u7aA8nb_ST0ozx-mV0D2n7gMQkHJIQC-FT2Hc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "3Odwo2u7aA8nb_ST0ozx-mV0D2n7gMQkHJIQC-FT2Hc",
+        "expected_columns": [
+          "good_percentage"
+        ],
+        "sql": "SELECT ROUND(100.0 * AVG(CASE WHEN a.alignment = 'Good' THEN 1 ELSE 0 END), 2) AS good_percentage\nFROM superhero AS s\nJOIN publisher AS p ON p.id = s.publisher_id\nLEFT JOIN alignment AS a ON a.id = s.alignment_id\nWHERE p.publisher_name = 'Marvel Comics'\n  AND TRIM(s.full_name) NOT IN ('', '-')\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): good_percentage=float\ngood_percentage\n---\n68.27\nSQL: SELECT ROUND(100.0 * AVG(CASE WHEN a.alignment = 'Good' THEN 1 ELSE 0 END), 2) AS good_percentage\nFROM superhero AS s\nJOIN publisher AS p ON p.id = s.publisher_id\nLEFT JOIN alignment AS a ON a.id = s.alignment_id\nWHERE p.publisher_name = 'Marvel Comics'\n  AND TRIM(s.full_name) NOT IN ('', '-')\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(100.0 * AVG(CASE WHEN a.alignment = 'Good' THEN 1 ELSE 0 END), 2) AS good_percentage\nFROM superhero AS s\nJOIN publisher AS p ON p.id = s.publisher_id\nLEFT JOIN alignment AS a ON a.id = s.alignment_id\nWHERE p.publisher_name = 'Marvel Comics'\n  AND TRIM(s.full_name) NOT IN ('', '-')\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(100.0 * AVG(CASE WHEN a.alignment = 'Good' THEN 1 ELSE 0 END), 2) AS good_percentage\nFROM superhero AS s\nJOIN publisher AS p ON p.id = s.publisher_id\nLEFT JOIN alignment AS a ON a.id = s.alignment_id\nWHERE p.publisher_name = 'Marvel Comics'\n  AND TRIM(s.full_name) NOT IN ('', '-')\nLIMIT 1",
+  "seconds": 27.820404625032097
+}

@@ -1,0 +1,18 @@
+```sql
+SELECT
+    d.forename,
+    d.surname,
+    strftime(
+        '%H:%M:%f',
+        r.time,
+        printf('+%.3f seconds', result.milliseconds / 1000.0)
+    ) AS local_finish_time,
+    d.url
+FROM races AS r
+JOIN results AS result ON result.raceId = r.raceId
+JOIN drivers AS d ON d.driverId = result.driverId
+WHERE r.year = 2017
+  AND r.name = 'Azerbaijan Grand Prix'
+  AND result.position = 1
+LIMIT 1000
+```
