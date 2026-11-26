@@ -1,0 +1,110 @@
+{
+  "purpose": "Offline root-cause isolation, never supplied to inference; original official score remains zero.",
+  "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-spider-max-calculations-20261127/spider-gpt-6.2-astra",
+  "hashes": {
+    "/Users/seyoung/workspace/benchmarks/codex-mcp-spider-max-calculations-20261127/spider-gpt-6.2-astra/codex-mcp/records/local259.json": "8bf0dd9e3baaad1f14a1a6576872b8fea1942c68c6233b70091c43caca19be5f",
+    "/Users/seyoung/workspace/benchmarks/codex-mcp-spider-max-calculations-20261127/spider-gpt-6.2-astra/codex-mcp/sql/local259.sql": "d294cb1cb5cbdbae56697f80e98580b244d44dc3da88b1968e9e08ffbe0d2b84",
+    "/Users/seyoung/workspace/benchmarks/spider2-databases/IPL.sqlite": "bf5ddbf887bbf992a091ef31ee681b9339ba716c327263fce0f3b4da924f22c1",
+    "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/evaluate.py": "e93624e4ffa00e51c67bdee1d9e42b534630087cb453270c0dedc0c73e618480",
+    "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local259_a.csv": "2c2419415a341c10edec2e05be6aebbba30f7428456455edf0f46de2ec5b3f2e",
+    "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local259_b.csv": "f2d95d3a692176ef5a7a08318c2257af1e1971db71bff98e7fae55343253e842",
+    "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local259_c.csv": "df6c3de0deee12fbddc77b2b5a0de57c80b0826fa3fa182b4d9615d69c4f2a70"
+  },
+  "config": {
+    "instance_id": "local259",
+    "condition_cols": [
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      13,
+      14,
+      15,
+      16,
+      17
+    ],
+    "ignore_order": true,
+    "toks": "1066"
+  },
+  "retired_hurt_counts": [
+    [
+      45,
+      1
+    ],
+    [
+      50,
+      2
+    ],
+    [
+      55,
+      1
+    ],
+    [
+      133,
+      2
+    ],
+    [
+      158,
+      1
+    ],
+    [
+      254,
+      1
+    ]
+  ],
+  "variants": {
+    "original": {
+      "rows": 468,
+      "sql": "WITH role_stats AS (\n    SELECT pm.player_id, pm.role,\n           SUM(COUNT(*)) OVER (PARTITION BY pm.player_id) AS matches_played,\n           ROW_NUMBER() OVER (\n               PARTITION BY pm.player_id\n               -- Choose the alphabetically first role when match counts tie.\n               ORDER BY COUNT(*) DESC, pm.role ASC\n           ) AS role_rank\n    FROM main.player_match AS pm\n    GROUP BY pm.player_id, pm.role\n),\ndeliveries AS (\n    -- Count every recorded delivery and take runs from the batting score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs,\n           CASE WHEN w.kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           ) THEN 1 ELSE 0 END AS bowler_wicket\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_by_match AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls_faced) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, runs, 1 AS balls_faced\n        FROM deliveries\n        UNION ALL\n        -- Include batters who appeared only at the non-striker's end.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS total_runs, MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus,\n           SUM(balls_faced) AS total_balls_faced\n    FROM batting_by_match\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS total_dismissals\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_by_match AS (\n    SELECT bowler AS player_id, match_id, SUM(bowler_wicket) AS wickets,\n           SUM(runs) AS runs_given, COUNT(*) AS balls_bowled\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career\n               / NULLIF(SUM(balls_bowled) OVER career, 0) AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id ASC\n           ) AS performance_rank\n    FROM bowling_by_match\n    WINDOW career AS (PARTITION BY player_id)\n)\nSELECT p.player_id, p.player_name, r.role AS most_frequent_role,\n       p.batting_hand, p.bowling_skill,\n       COALESCE(bt.total_runs, 0) AS total_runs_scored,\n       COALESCE(r.matches_played, 0) AS total_matches_played,\n       COALESCE(d.total_dismissals, 0) AS total_dismissals,\n       1.0 * COALESCE(bt.total_runs, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,\n       bt.highest_match_score,\n       COALESCE(bt.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(bt.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(bt.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,\n       100.0 * bt.total_runs / NULLIF(bt.total_balls_faced, 0) AS strike_rate,\n       COALESCE(bw.total_wickets, 0) AS total_wickets_taken,\n       bw.economy_rate,\n       bw.wickets || '-' || bw.runs_given AS best_bowling_performance\n-- Match records for ID 35 lack a corresponding player profile.\nFROM main.player AS p\nLEFT JOIN role_stats AS r ON r.player_id = p.player_id AND r.role_rank = 1\nLEFT JOIN batting AS bt ON bt.player_id = p.player_id\nLEFT JOIN dismissals AS d ON d.player_id = p.player_id\nLEFT JOIN bowling AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1\nORDER BY p.player_id\nLIMIT -1\n",
+      "reference_matches": {
+        "local259_a.csv": 0,
+        "local259_b.csv": 0,
+        "local259_c.csv": 0
+      }
+    },
+    "include_retired_hurt": {
+      "rows": 468,
+      "sql": "WITH role_stats AS (\n    SELECT pm.player_id, pm.role,\n           SUM(COUNT(*)) OVER (PARTITION BY pm.player_id) AS matches_played,\n           ROW_NUMBER() OVER (\n               PARTITION BY pm.player_id\n               -- Choose the alphabetically first role when match counts tie.\n               ORDER BY COUNT(*) DESC, pm.role ASC\n           ) AS role_rank\n    FROM main.player_match AS pm\n    GROUP BY pm.player_id, pm.role\n),\ndeliveries AS (\n    -- Count every recorded delivery and take runs from the batting score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs,\n           CASE WHEN w.kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           ) THEN 1 ELSE 0 END AS bowler_wicket\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_by_match AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls_faced) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, runs, 1 AS balls_faced\n        FROM deliveries\n        UNION ALL\n        -- Include batters who appeared only at the non-striker's end.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS total_runs, MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus,\n           SUM(balls_faced) AS total_balls_faced\n    FROM batting_by_match\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS total_dismissals\n    FROM main.wicket_taken\n    GROUP BY player_out\n),\nbowling_by_match AS (\n    SELECT bowler AS player_id, match_id, SUM(bowler_wicket) AS wickets,\n           SUM(runs) AS runs_given, COUNT(*) AS balls_bowled\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career\n               / NULLIF(SUM(balls_bowled) OVER career, 0) AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id ASC\n           ) AS performance_rank\n    FROM bowling_by_match\n    WINDOW career AS (PARTITION BY player_id)\n)\nSELECT p.player_id, p.player_name, r.role AS most_frequent_role,\n       p.batting_hand, p.bowling_skill,\n       COALESCE(bt.total_runs, 0) AS total_runs_scored,\n       COALESCE(r.matches_played, 0) AS total_matches_played,\n       COALESCE(d.total_dismissals, 0) AS total_dismissals,\n       1.0 * COALESCE(bt.total_runs, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,\n       bt.highest_match_score,\n       COALESCE(bt.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(bt.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(bt.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,\n       100.0 * bt.total_runs / NULLIF(bt.total_balls_faced, 0) AS strike_rate,\n       COALESCE(bw.total_wickets, 0) AS total_wickets_taken,\n       bw.economy_rate,\n       bw.wickets || '-' || bw.runs_given AS best_bowling_performance\n-- Match records for ID 35 lack a corresponding player profile.\nFROM main.player AS p\nLEFT JOIN role_stats AS r ON r.player_id = p.player_id AND r.role_rank = 1\nLEFT JOIN batting AS bt ON bt.player_id = p.player_id\nLEFT JOIN dismissals AS d ON d.player_id = p.player_id\nLEFT JOIN bowling AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1\nORDER BY p.player_id\nLIMIT -1\n",
+      "reference_matches": {
+        "local259_a.csv": 0,
+        "local259_b.csv": 0,
+        "local259_c.csv": 0
+      }
+    },
+    "null_for_zero_career_wickets": {
+      "rows": 468,
+      "sql": "WITH role_stats AS (\n    SELECT pm.player_id, pm.role,\n           SUM(COUNT(*)) OVER (PARTITION BY pm.player_id) AS matches_played,\n           ROW_NUMBER() OVER (\n               PARTITION BY pm.player_id\n               -- Choose the alphabetically first role when match counts tie.\n               ORDER BY COUNT(*) DESC, pm.role ASC\n           ) AS role_rank\n    FROM main.player_match AS pm\n    GROUP BY pm.player_id, pm.role\n),\ndeliveries AS (\n    -- Count every recorded delivery and take runs from the batting score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs,\n           CASE WHEN w.kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           ) THEN 1 ELSE 0 END AS bowler_wicket\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_by_match AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls_faced) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, runs, 1 AS balls_faced\n        FROM deliveries\n        UNION ALL\n        -- Include batters who appeared only at the non-striker's end.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS total_runs, MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus,\n           SUM(balls_faced) AS total_balls_faced\n    FROM batting_by_match\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS total_dismissals\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_by_match AS (\n    SELECT bowler AS player_id, match_id, SUM(bowler_wicket) AS wickets,\n           SUM(runs) AS runs_given, COUNT(*) AS balls_bowled\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career\n               / NULLIF(SUM(balls_bowled) OVER career, 0) AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id ASC\n           ) AS performance_rank\n    FROM bowling_by_match\n    WINDOW career AS (PARTITION BY player_id)\n)\nSELECT p.player_id, p.player_name, r.role AS most_frequent_role,\n       p.batting_hand, p.bowling_skill,\n       COALESCE(bt.total_runs, 0) AS total_runs_scored,\n       COALESCE(r.matches_played, 0) AS total_matches_played,\n       COALESCE(d.total_dismissals, 0) AS total_dismissals,\n       1.0 * COALESCE(bt.total_runs, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,\n       bt.highest_match_score,\n       COALESCE(bt.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(bt.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(bt.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,\n       100.0 * bt.total_runs / NULLIF(bt.total_balls_faced, 0) AS strike_rate,\n       COALESCE(bw.total_wickets, 0) AS total_wickets_taken,\n       bw.economy_rate,\n       CASE WHEN bw.total_wickets > 0 THEN bw.wickets || '-' || bw.runs_given END AS best_bowling_performance\n-- Match records for ID 35 lack a corresponding player profile.\nFROM main.player AS p\nLEFT JOIN role_stats AS r ON r.player_id = p.player_id AND r.role_rank = 1\nLEFT JOIN batting AS bt ON bt.player_id = p.player_id\nLEFT JOIN dismissals AS d ON d.player_id = p.player_id\nLEFT JOIN bowling AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1\nORDER BY p.player_id\nLIMIT -1\n",
+      "reference_matches": {
+        "local259_a.csv": 0,
+        "local259_b.csv": 0,
+        "local259_c.csv": 0
+      }
+    },
+    "both_reference_conventions": {
+      "rows": 468,
+      "sql": "WITH role_stats AS (\n    SELECT pm.player_id, pm.role,\n           SUM(COUNT(*)) OVER (PARTITION BY pm.player_id) AS matches_played,\n           ROW_NUMBER() OVER (\n               PARTITION BY pm.player_id\n               -- Choose the alphabetically first role when match counts tie.\n               ORDER BY COUNT(*) DESC, pm.role ASC\n           ) AS role_rank\n    FROM main.player_match AS pm\n    GROUP BY pm.player_id, pm.role\n),\ndeliveries AS (\n    -- Count every recorded delivery and take runs from the batting score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs,\n           CASE WHEN w.kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           ) THEN 1 ELSE 0 END AS bowler_wicket\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_by_match AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls_faced) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, runs, 1 AS balls_faced\n        FROM deliveries\n        UNION ALL\n        -- Include batters who appeared only at the non-striker's end.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS total_runs, MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus,\n           SUM(balls_faced) AS total_balls_faced\n    FROM batting_by_match\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS total_dismissals\n    FROM main.wicket_taken\n    GROUP BY player_out\n),\nbowling_by_match AS (\n    SELECT bowler AS player_id, match_id, SUM(bowler_wicket) AS wickets,\n           SUM(runs) AS runs_given, COUNT(*) AS balls_bowled\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career\n               / NULLIF(SUM(balls_bowled) OVER career, 0) AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id ASC\n           ) AS performance_rank\n    FROM bowling_by_match\n    WINDOW career AS (PARTITION BY player_id)\n)\nSELECT p.player_id, p.player_name, r.role AS most_frequent_role,\n       p.batting_hand, p.bowling_skill,\n       COALESCE(bt.total_runs, 0) AS total_runs_scored,\n       COALESCE(r.matches_played, 0) AS total_matches_played,\n       COALESCE(d.total_dismissals, 0) AS total_dismissals,\n       1.0 * COALESCE(bt.total_runs, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,\n       bt.highest_match_score,\n       COALESCE(bt.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(bt.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(bt.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(bt.total_balls_faced, 0) AS total_balls_faced,\n       100.0 * bt.total_runs / NULLIF(bt.total_balls_faced, 0) AS strike_rate,\n       COALESCE(bw.total_wickets, 0) AS total_wickets_taken,\n       bw.economy_rate,\n       CASE WHEN bw.total_wickets > 0 THEN bw.wickets || '-' || bw.runs_given END AS best_bowling_performance\n-- Match records for ID 35 lack a corresponding player profile.\nFROM main.player AS p\nLEFT JOIN role_stats AS r ON r.player_id = p.player_id AND r.role_rank = 1\nLEFT JOIN batting AS bt ON bt.player_id = p.player_id\nLEFT JOIN dismissals AS d ON d.player_id = p.player_id\nLEFT JOIN bowling AS bw ON bw.player_id = p.player_id AND bw.performance_rank = 1\nORDER BY p.player_id\nLIMIT -1\n",
+      "reference_matches": {
+        "local259_a.csv": 0,
+        "local259_b.csv": 1,
+        "local259_c.csv": 0
+      }
+    }
+  },
+  "findings": [
+    "Original and reference_b both contain 468 players and 18 columns.",
+    "Reference_b mismatches are confined to dismissals/batting average for six retired-hurt players and best-bowling text for 47 zero-career-wicket players.",
+    "All other columns match reference_b by player ID within the official numeric tolerance."
+  ],
+  "limits": [
+    "Question and provided glossary do not explicitly define retirement treatment or null best-performance output for a bowler with zero wickets.",
+    "Counterfactual reference compatibility is not model accuracy or evidence of an execution-tool bug.",
+    "Do not inject reference-derived conventions into product policy."
+  ]
+}
