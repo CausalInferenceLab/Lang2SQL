@@ -1,0 +1,3 @@
+SELECT School, EILName
+FROM schools
+WHERE CDSCode = '01612590136051';

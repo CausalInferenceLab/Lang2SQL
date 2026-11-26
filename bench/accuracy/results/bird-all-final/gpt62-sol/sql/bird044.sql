@@ -1,0 +1,9 @@
+SELECT s.AdmFName1, s.AdmLName1
+FROM schools AS ref
+JOIN schools AS s ON s.County = ref.County
+JOIN satscores AS sat ON sat.cds = s.CDSCode
+WHERE ref.CDSCode = '01611430131177'
+  AND sat.rtype = 'S'
+  AND sat.NumGE1500 IS NOT NULL
+ORDER BY sat.NumGE1500 DESC, s.CDSCode ASC
+LIMIT 1;

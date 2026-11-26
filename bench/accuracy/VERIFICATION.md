@@ -3,7 +3,7 @@
 Reused `bench.spider2.evaluate` (read-only connections, final SQL extraction,
 CSV export, atomic records and official Spider grader), `MeasuredLLM` (existing
 Lang2SQL message/tool codecs), and the real `ContextConcierge` / `agent_loop`.
-Python source delta before evidence snapshots: +1,075 lines, of which 611 are
+Python source delta before evidence snapshots: +882 lines, of which 418 are
 adapted existing runner/provider code, 307 are runner integration/product prompt,
 and 157 are integrity tests. JSON manifests and archived source snapshots are
 provenance artifacts, not new product logic.
@@ -27,3 +27,5 @@ read-only SQL, row budgets, official comparator hash/semantics, failed cases in
 the denominator, missing-record failure, and logged/bounded transport retries.
 The skipped test requires an optional external integration; no fake model output
 is included in benchmark accuracy.
+
+After measurement, unused copied legacy CLI entrypoints were removed. All eight retained execution/grading function ASTs and the final SQL instruction are unchanged; see `results/primitives-equivalence.json`. As-executed source bytes are archived under `results/source-final/`.

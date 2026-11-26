@@ -1,8 +1,7 @@
-"""Pin, run and officially score Spider 2.0-Lite SQLite with unchanged Lang2SQL."""
+"""Read-only case execution and official Spider scoring reused by accuracy CLI."""
 
 from __future__ import annotations
 
-import argparse
 import asyncio
 import csv
 import hashlib
@@ -10,10 +9,8 @@ import importlib.util
 import json
 import logging
 import os
-import random
 import re
 import sqlite3
-import subprocess
 import sys
 import time
 from collections import Counter
@@ -28,8 +25,6 @@ from lang2sql.tenancy.concierge import ContextConcierge
 from .providers import MeasuredLLM
 
 logger = logging.getLogger(__name__)
-UPSTREAM_COMMIT = "cafb867313aab4e674652054198f383cf4018943"
-BASELINE_COMMIT = "e0a7fb1"
 INSTRUCTION = "\nReturn your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available."
 
 
@@ -46,64 +41,6 @@ def write_json(path: Path, value):
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(value, ensure_ascii=False, indent=2) + "\n")
     tmp.replace(path)
-
-
-def prepare(root: Path, db_dir: Path, output: Path, limit: int, seed: int):
-    commit = subprocess.check_output(
-        ["git", "-C", str(root), "rev-parse", "HEAD"], text=True
-    ).strip()
-    if commit != UPSTREAM_COMMIT:
-        raise ValueError("Spider2 checkout does not match pinned commit")
-    lite = root / "spider2-lite"
-    cases = [
-        json.loads(s) for s in (lite / "spider2-lite.jsonl").read_text().splitlines()
-    ]
-    cases = sorted(
-        [c for c in cases if c["instance_id"].startswith("local")],
-        key=lambda c: c["instance_id"],
-    )
-    random.Random(seed).shuffle(cases)
-    if limit:
-        cases = cases[:limit]
-    hashes = {}
-    gold_hashes = {}
-    for case in cases:
-        db = db_dir / (case["db"] + ".sqlite")
-        if not db.is_file():
-            raise FileNotFoundError(db)
-        if case["db"] not in hashes:
-            hashes[case["db"]] = digest(db)
-        ident = case["instance_id"]
-        gold_files = [
-            f
-            for f in (lite / "evaluation_suite/gold/exec_result").glob(ident + "*.csv")
-            if f.stem == ident or re.fullmatch(re.escape(ident) + "_[a-z]", f.stem)
-        ]
-        if not gold_files:
-            raise ValueError("Missing official gold: " + ident)
-        gold_hashes.update({f.name: digest(f) for f in gold_files})
-        doc = case.get("external_knowledge")
-        case["document_sha256"] = (
-            digest(lite / "resource/documents" / doc) if doc else None
-        )
-    write_json(
-        output,
-        {
-            "benchmark": "Spider 2.0-Lite SQLite subset",
-            "upstream_commit": commit,
-            "baseline_commit": BASELINE_COMMIT,
-            "seed": seed,
-            "selection": "seeded shuffle of local IDs before inference",
-            "question_file_sha256": digest(lite / "spider2-lite.jsonl"),
-            "evaluator_sha256": digest(lite / "evaluation_suite/evaluate.py"),
-            "db_sha256": hashes,
-            "gold_sha256": gold_hashes,
-            "gold_config_sha256": digest(
-                lite / "evaluation_suite/gold/spider2lite_eval.jsonl"
-            ),
-            "cases": cases,
-        },
-    )
 
 
 def final_sql(answer: str) -> str:
@@ -277,80 +214,6 @@ def validate_manifest(manifest, root, db_dir):
             raise ValueError("Document hash changed")
 
 
-async def run(args, env: dict[str, str]):
-    manifest = json.loads(args.manifest.read_text())
-    profiles = json.loads(args.profiles.read_text())
-    names = [p["name"] for p in profiles]
-    if len(set(names)) != len(names):
-        raise ValueError("Duplicate model profile names")
-    if await asyncio.to_thread(
-        subprocess.check_output, ["git", "diff", BASELINE_COMMIT, "--", "src"]
-    ):
-        raise ValueError("Product source differs from the pinned baseline")
-    validate_manifest(manifest, args.root, args.db_dir)
-    if args.output.exists():
-        raise ValueError(
-            "Output directory already exists; use a new run ID to prevent mixed results"
-        )
-    args.output.mkdir(parents=True)
-    write_json(args.output / "manifest.json", manifest)
-    write_json(
-        args.output / "settings.json",
-        {
-            "profiles": profiles,
-            "max_calls": args.max_calls,
-            "call_timeout": args.call_timeout,
-            "case_timeout": args.case_timeout,
-            "sql_timeout": args.sql_timeout,
-            "max_rows": args.max_rows,
-            "concurrency": args.concurrency,
-            "instruction": INSTRUCTION,
-            "max_output_tokens": 4096,
-            "runner_sha256": digest(Path(__file__)),
-            "provider_sha256": digest(Path(__file__).with_name("providers.py")),
-            "git_commit": (
-                await asyncio.to_thread(
-                    subprocess.check_output, ["git", "rev-parse", "HEAD"], text=True
-                )
-            ).strip(),
-        },
-    )
-    for profile in profiles:
-        if not re.fullmatch(r"[A-Za-z0-9_-]+", profile["name"]):
-            raise ValueError("Unsafe profile name")
-        directory = args.output / profile["name"]
-        for sub in ("sql", "csv", "records"):
-            (directory / sub).mkdir(parents=True)
-        key = env.get(profile["api_key_env"])
-        if not key:
-            write_json(
-                directory / "status.json",
-                {"status": "blocked_missing_key", "env": profile["api_key_env"]},
-            )
-            logger.error(
-                "profile blocked missing key name=%s env=%s",
-                profile["name"],
-                profile["api_key_env"],
-            )
-            continue
-        semaphore = asyncio.Semaphore(args.concurrency)
-
-        async def bounded(
-            case, semaphore=semaphore, directory=directory, profile=profile, key=key
-        ):
-            async with semaphore:
-                await run_case(
-                    case, args.root, args.db_dir, directory, profile, key, args
-                )
-
-        model_started = time.monotonic()
-        await asyncio.gather(*(bounded(case) for case in manifest["cases"]))
-        write_json(
-            directory / "status.json",
-            {"status": "completed", "wall_seconds": time.monotonic() - model_started},
-        )
-
-
 def score(root: Path, output: Path):
     manifest = json.loads((output / "manifest.json").read_text())
     settings = json.loads((output / "settings.json").read_text())
@@ -444,59 +307,3 @@ def score(root: Path, output: Path):
         summaries.append(summary)
     write_json(output / "summary.json", summaries)
     print(json.dumps(summaries, ensure_ascii=False, indent=2))
-
-
-def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    sub = parser.add_subparsers(dest="command", required=True)
-    for name in ("prepare", "run", "score"):
-        p = sub.add_parser(name)
-        p.add_argument("--root", type=Path, required=True)
-        p.add_argument("--output", type=Path, required=True)
-        if name != "score":
-            p.add_argument("--db-dir", type=Path, required=True)
-        if name == "prepare":
-            p.add_argument("--limit", type=int, default=0)
-            p.add_argument("--seed", type=int, default=20261114)
-        if name == "run":
-            p.add_argument("--manifest", type=Path, required=True)
-            p.add_argument("--profiles", type=Path, required=True)
-            p.add_argument("--max-calls", type=int, default=8)
-            p.add_argument("--concurrency", type=int, default=2)
-            p.add_argument("--call-timeout", type=float, default=120)
-            p.add_argument("--case-timeout", type=float, default=480)
-            p.add_argument("--sql-timeout", type=float, default=30)
-            p.add_argument("--max-rows", type=int, default=100000)
-            p.add_argument("--env-file", type=Path)
-    args = parser.parse_args()
-    logging.basicConfig(level=logging.INFO)
-    args.root = args.root.resolve()
-    args.output = args.output.resolve()
-    if args.command == "prepare":
-        if args.limit < 0:
-            parser.error("limit must be nonnegative")
-        prepare(args.root, args.db_dir, args.output, args.limit, args.seed)
-    elif args.command == "run":
-        if (
-            min(
-                args.concurrency,
-                args.max_calls,
-                args.call_timeout,
-                args.case_timeout,
-                args.sql_timeout,
-                args.max_rows,
-            )
-            <= 0
-        ):
-            parser.error("budgets must be positive")
-        if args.env_file:
-            from dotenv import load_dotenv
-
-            load_dotenv(args.env_file, override=False)
-        asyncio.run(run(args, dict(os.environ)))
-    else:
-        score(args.root, args.output)
-
-
-if __name__ == "__main__":
-    main()

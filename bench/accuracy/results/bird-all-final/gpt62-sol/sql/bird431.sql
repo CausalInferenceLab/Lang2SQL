@@ -1,0 +1,6 @@
+SELECT
+    COUNT(DISTINCT p.ID) AS patients_with_lab_results,
+    COUNT(DISTINCT CASE WHEN l."T-BIL" >= 2.0 THEN p.ID END) AS patients_with_elevated_total_bilirubin
+FROM Patient AS p
+JOIN Laboratory AS l ON l.ID = p.ID
+WHERE p.SEX IS NULL OR p.SEX = '';

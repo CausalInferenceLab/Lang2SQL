@@ -23,7 +23,7 @@ model fallback, multi-sample oracle selection, or user simulator.
   input. Report development and evaluation separately, including every attempt.
 - Pass@1: one agent trajectory per question, up to 16 model calls including
   auxiliary tools, 8192 output tokens/call, high reasoning effort, 180 seconds
-  per API call, 900 seconds/case, 30 seconds/SQL, 100,000 result rows. Final runs allow one logged retry for timeout/connection/rate-limit failures
+  per API call, 900 seconds/agent loop, 30 seconds/SQL, 100,000 result rows. Final runs allow one logged retry for timeout/connection/rate-limit failures
   using identical input; retries count toward the 16-call budget. Successful
   responses and SQL mistakes are never retried for answer selection. No excluded failed predictions or last-tool fallback.
 - SQL queries execute in read-only SQLite connections with a query deadline.
@@ -54,12 +54,21 @@ and returned nonempty results; this is a dataset health check, not model accurac
 - [BIRD official EX comparator](https://github.com/bird-bench/mini_dev/blob/1c49a375e76c471e218564da3f4617513d33e371/evaluation/evaluation_ex.py)
 
 BIRD annotations and the derived `bird-manifest.json` retain the source dataset's
-CC BY-SA 4.0 license and attribution to the BIRD authors (Li et al., NeurIPS 2024,
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/) license and attribution to the BIRD authors (Li et al., NeurIPS 2024,
 *Can LLM Already Serve as A Database Interface? A BIG Bench for Large-Scale
 Database Grounded Text-to-SQLs*). The manifest removes gold SQL, renames fields,
 and adds fixed development/evaluation IDs. The official comparator source stays
 external and is verified by hash. The Spider runner/provider were reused from
 Lang2SQL's existing benchmark commit `24cff8cb1126fc017d1c68389b76213858e3a2e6`.
+
+The Spider2 upstream MIT notice is retained in `SPIDER2-LICENSE.txt`.
+
+The reused Spider manifest retains a historical `baseline_commit` field. Current
+product identity is `settings.json.product_commit` / `frozen-final.json`, not that
+legacy data-manifest annotation. The executed runner revision is `0260422`.
+After measurement, unused legacy CLI entrypoints were removed; retained primitive
+ASTs and the SQL instruction are identical (see `results/primitives-equivalence.json`).
+As-executed bytes are retained in `results/source-final/`.
 
 ## Reproduce
 

@@ -1,0 +1,9 @@
+SELECT ROUND(
+    100.0 * COUNT(DISTINCT CASE WHEN CAST(TRIM(l.RNP) AS INTEGER) > 64 THEN p.ID END)
+    / NULLIF(COUNT(DISTINCT p.ID), 0),
+    2
+) AS elevated_rnp_percentage
+FROM Patient AS p
+JOIN Laboratory AS l ON l.ID = p.ID
+WHERE p.SEX = 'F'
+  AND NULLIF(TRIM(l.RNP), '') IS NOT NULL;

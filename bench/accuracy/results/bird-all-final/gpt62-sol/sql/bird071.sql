@@ -1,0 +1,6 @@
+SELECT COUNT(DISTINCT c.name) AS card_count
+FROM cards AS c
+JOIN legalities AS l ON l.uuid = c.uuid
+WHERE c.manaCost = '{0}'
+  AND l.format = 'commander'
+  AND l.status = 'Legal';

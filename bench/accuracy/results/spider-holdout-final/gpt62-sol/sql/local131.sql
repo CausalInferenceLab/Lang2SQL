@@ -1,0 +1,9 @@
+SELECT
+    s.StyleName,
+    COUNT(CASE WHEN p.PreferenceSeq = 1 THEN 1 END) AS FirstPreferenceCount,
+    COUNT(CASE WHEN p.PreferenceSeq = 2 THEN 1 END) AS SecondPreferenceCount,
+    COUNT(CASE WHEN p.PreferenceSeq = 3 THEN 1 END) AS ThirdPreferenceCount
+FROM Musical_Styles AS s
+LEFT JOIN Musical_Preferences AS p ON p.StyleID = s.StyleID
+GROUP BY s.StyleID, s.StyleName
+ORDER BY s.StyleName, s.StyleID;
