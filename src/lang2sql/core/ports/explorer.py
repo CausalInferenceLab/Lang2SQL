@@ -71,3 +71,18 @@ class ExplorerPort(Protocol):
         return up to ``limit`` rows. The ``run_sql`` tool calls this only after
         a PASS verdict; the adapter must never see un-gated SQL."""
         ...
+
+
+@runtime_checkable
+class QueryTimeoutExplorerPort(Protocol):
+    """Optional native execution-timeout capability; legacy explorers remain valid."""
+
+    @property
+    def supports_query_timeout(self) -> bool: ...
+
+    @property
+    def query_timeout_scope(self) -> str: ...
+
+    async def execute_with_timeout(
+        self, sql: str, limit: int, timeout_seconds: float
+    ) -> list[dict]: ...
