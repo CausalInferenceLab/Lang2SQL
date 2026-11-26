@@ -1,0 +1,229 @@
+{
+  "instance_id": "local010",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "363646e60ea7e74bf38b1bdbdc35de4bc721543e6551897977d369a4e228285f",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 275061,
+      "cached_input_tokens": 260224,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2035,
+      "reasoning_output_tokens": 454
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "airports_data"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "airports_data (table)\n- airport_code: TEXT(3) NOT NULL\n- airport_name: NUMERIC NOT NULL\n- city: NUMERIC NOT NULL\n- coordinates: INTEGER NOT NULL\n- timezone: TEXT NOT NULL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "flights"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "flights (table)\n- flight_id: INTEGER NOT NULL\n- flight_no: TEXT(6) NOT NULL\n- scheduled_departure: NUMERIC NOT NULL\n- scheduled_arrival: NUMERIC NOT NULL\n- departure_airport: TEXT(3) NOT NULL\n- arrival_airport: TEXT(3) NOT NULL\n- status: TEXT(20) NOT NULL\n- aircraft_code: TEXT(3) NOT NULL\n- actual_departure: NUMERIC\n- actual_arrival: NUMERIC"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"0PHAzCWuoTNEUtmJ6h_seMO0G1K0MqPlgbwJ-HglthE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "0PHAzCWuoTNEUtmJ6h_seMO0G1K0MqPlgbwJ-HglthE",
+        "sql": "SELECT airport_code, city, coordinates, typeof(coordinates) AS coordinate_type,\n       json_extract(city, '$.en') AS city_en, sin(radians(30)) AS sin_test\nFROM main.airports_data\nLIMIT 5"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nObserved value types (displayed rows): airport_code=str; city=str; coordinates=str; coordinate_type=str; city_en=str; sin_test=float\nairport_code | city | coordinates | coordinate_type | city_en | sin_test\n--- | --- | --- | --- | --- | ---\nYKS | {\"en\": \"Yakutsk\", \"ru\": \"Якутск\"} | (129.77099609375,62.0932998657226562) | text | Yakutsk | 0.49999999999999994\nMJZ | {\"en\": \"Mirnyj\", \"ru\": \"Мирный\"} | (114.03900146484375,62.534698486328125) | text | Mirnyj | 0.49999999999999994\nKHV | {\"en\": \"Khabarovsk\", \"ru\": \"Хабаровск\"} | (135.18800354004,48.5279998779300001) | text | Khabarovsk | 0.49999999999999994\nPKC | {\"en\": \"Petropavlovsk\", \"ru\": \"Петропавловск-Камчатский\"} | (158.453994750976562,53.1679000854492188) | text | Petropavlovsk | 0.49999999999999994\nUUS | {\"en\": \"Yuzhno-Sakhalinsk\", \"ru\": \"Южно-Сахалинск\"} | (142.718002319335938,46.8886985778808594) | text | Yuzhno-Sakhalinsk | 0.49999999999999994\nSQL: SELECT airport_code, city, coordinates, typeof(coordinates) AS coordinate_type,\n       json_extract(city, '$.en') AS city_en, sin(radians(30)) AS sin_test\nFROM main.airports_data\nLIMIT 5"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"OvQxRTjb-4Jztx-Uc76EVrpsRWM8FTGfmWphTPR2GGA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "OvQxRTjb-4Jztx-Uc76EVrpsRWM8FTGfmWphTPR2GGA",
+        "sql": "WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT lower_km, pair_count,\n       (SELECT count(*) FROM main.flights) AS total_flights,\n       (SELECT count(*) FROM flight_haversines) AS joined_flights,\n       (SELECT count(*) FROM pair_distances) AS distinct_pairs,\n       (SELECT count(*) FROM pair_distances WHERE city1 = city2) AS same_city_pairs\nFROM range_counts\nORDER BY lower_km"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "7 row(s):\nObserved value types (displayed rows): lower_km=int; pair_count=int; total_flights=int; joined_flights=int; distinct_pairs=int; same_city_pairs=int\nlower_km | pair_count | total_flights | joined_flights | distinct_pairs | same_city_pairs\n--- | --- | --- | --- | --- | ---\n0 | 92 | 33121 | 33121 | 258 | 0\n1000 | 93 | 33121 | 33121 | 258 | 0\n2000 | 37 | 33121 | 33121 | 258 | 0\n3000 | 20 | 33121 | 33121 | 258 | 0\n4000 | 6 | 33121 | 33121 | 258 | 0\n5000 | 3 | 33121 | 33121 | 258 | 0\n6000 | 7 | 33121 | 33121 | 258 | 0\nSQL: WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT lower_km, pair_count,\n       (SELECT count(*) FROM main.flights) AS total_flights,\n       (SELECT count(*) FROM flight_haversines) AS joined_flights,\n       (SELECT count(*) FROM pair_distances) AS distinct_pairs,\n       (SELECT count(*) FROM pair_distances WHERE city1 = city2) AS same_city_pairs\nFROM range_counts\nORDER BY lower_km\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"BNXFygG2P_gcUtNCoVOjnc3dbtWiDF24RQx7-kuY6KU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "BNXFygG2P_gcUtNCoVOjnc3dbtWiDF24RQx7-kuY6KU",
+        "sql": "WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT min(pair_count) AS pair_count\nFROM range_counts;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): pair_count=int\npair_count\n---\n3\nSQL: WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT min(pair_count) AS pair_count\nFROM range_counts\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"oXNFbtCHrzEuLkKdqrHkjirVNxYgpYhNERZx-cpHB5k\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "oXNFbtCHrzEuLkKdqrHkjirVNxYgpYhNERZx-cpHB5k",
+        "sql": "WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT min(pair_count) AS pair_count\nFROM range_counts\nLIMIT 1",
+        "limit": 1
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): pair_count=int\npair_count\n---\n3\nSQL: WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT min(pair_count) AS pair_count\nFROM range_counts\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT min(pair_count) AS pair_count\nFROM range_counts\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "WITH airports AS (\n    SELECT airport_code,\n           json_extract(city, '$.en') AS city_name,\n           radians(CAST(substr(coordinates, 2, instr(coordinates, ',') - 2) AS REAL)) AS longitude,\n           radians(CAST(rtrim(substr(coordinates, instr(coordinates, ',') + 1), ')') AS REAL)) AS latitude\n    FROM main.airports_data\n),\nflight_haversines AS (\n    SELECT min(departure.city_name, arrival.city_name) AS city1,\n           max(departure.city_name, arrival.city_name) AS city2,\n           power(sin((arrival.latitude - departure.latitude) / 2.0), 2)\n           + cos(departure.latitude) * cos(arrival.latitude)\n             * power(sin((arrival.longitude - departure.longitude) / 2.0), 2) AS haversine\n    FROM main.flights AS f\n    JOIN airports AS departure ON departure.airport_code = f.departure_airport\n    JOIN airports AS arrival ON arrival.airport_code = f.arrival_airport\n),\npair_distances AS (\n    SELECT city1, city2,\n           avg(2.0 * 6371.0 * asin(sqrt(min(1.0, haversine)))) AS average_km\n    FROM flight_haversines\n    GROUP BY city1, city2\n),\ndistance_ranges(lower_km) AS (\n    VALUES (0), (1000), (2000), (3000), (4000), (5000), (6000)\n),\nrange_counts AS (\n    SELECT r.lower_km, count(p.average_km) AS pair_count\n    FROM distance_ranges AS r\n    LEFT JOIN pair_distances AS p\n      ON p.average_km >= r.lower_km\n     AND (r.lower_km = 6000 OR p.average_km < r.lower_km + 1000)\n    GROUP BY r.lower_km\n)\nSELECT min(pair_count) AS pair_count\nFROM range_counts\nLIMIT 1",
+  "seconds": 58.31154337490443
+}

@@ -1,0 +1,186 @@
+{
+  "instance_id": "local263",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "46e8081bc6fb5b7a564c2dea1dc59367a8bc7439fe93f0ba63abfa0c3dc56103",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165056,
+      "cached_input_tokens": 137472,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1844,
+      "reasoning_output_tokens": 332
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "solution_ext"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "solution_ext (view)\n- name: TEXT\n- version: INTEGER\n- L1_model: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "model"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "model (table)\n- name: TEXT\n- version: INTEGER\n- step: INTEGER\n- L1_model: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "model_score"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "model_score (table)\n- name: TEXT\n- version: INTEGER\n- step: INTEGER\n- model: TEXT\n- train_score: NUMERIC\n- test_score: NUMERIC"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "stack_ok"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "stack_ok (view)\n- name: TEXT\n- version: INTEGER\n- step: INTEGER\n- L1_model: TEXT\n- status: NULL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"aedKPicwPE4cRxkhtKUAUj_ih4MxoJVe1jifWeHXNWA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "aedKPicwPE4cRxkhtKUAUj_ih4MxoJVe1jifWeHXNWA",
+        "sql": "WITH scores AS (\n    SELECT name, version, step,\n           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score,\n           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS other_score,\n           SUM(CASE WHEN model = 'Stack' THEN 1 ELSE 0 END) AS stack_rows\n    FROM main.model_score\n    GROUP BY name, version, step\n),\nstep_results AS (\n    SELECT m.name, m.version, m.step, m.L1_model,\n           CASE WHEN s.stack_score > s.other_score THEN 'strong'\n                WHEN s.stack_score = s.other_score THEN 'soft' END AS status\n    FROM scores AS s\n    JOIN main.model AS m USING (name, version, step)\n    WHERE s.stack_score >= s.other_score\n),\nstored_only AS (\n    SELECT name, version, step, L1_model, status FROM main.stack_ok\n    EXCEPT SELECT name, version, step, L1_model, status FROM step_results\n),\ncomputed_only AS (\n    SELECT name, version, step, L1_model, status FROM step_results\n    EXCEPT SELECT name, version, step, L1_model, status FROM main.stack_ok\n)\nSELECT 'step results' AS check_name, L1_model, status, COUNT(*) AS n\nFROM step_results GROUP BY L1_model, status\nUNION ALL\nSELECT 'model-status associations', L1_model, status, COUNT(*)\nFROM (SELECT DISTINCT name, version, L1_model, status FROM step_results)\nGROUP BY L1_model, status\nUNION ALL\nSELECT 'stored only', NULL, NULL, COUNT(*) FROM stored_only\nUNION ALL\nSELECT 'computed only', NULL, NULL, COUNT(*) FROM computed_only\nUNION ALL\nSELECT 'multiple Stack rows per step', NULL, NULL, COUNT(*) FROM scores WHERE stack_rows > 1\nUNION ALL\nSELECT 'multiple L1 values per model', NULL, NULL, COUNT(*)\nFROM (SELECT name, version FROM main.model GROUP BY name, version HAVING COUNT(DISTINCT L1_model) > 1)\nUNION ALL\nSELECT 'duplicate model step keys', NULL, NULL, COUNT(*)\nFROM (SELECT name, version, step FROM main.model GROUP BY name, version, step HAVING COUNT(*) > 1)\nUNION ALL\nSELECT 'model with both statuses', NULL, NULL, COUNT(*)\nFROM (SELECT name, version FROM step_results GROUP BY name, version HAVING COUNT(DISTINCT status) > 1)\nUNION ALL\nSELECT 'L1 mismatch against solution_ext', NULL, NULL, COUNT(*)\nFROM step_results AS r\nWHERE NOT EXISTS (\n    SELECT 1 FROM main.solution_ext AS e\n    WHERE e.name = r.name AND e.version = r.version AND e.L1_model = r.L1_model\n)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "15 row(s):\nObserved value types (displayed rows): check_name=str; L1_model=NoneType,str; status=NoneType,str; n=int\ncheck_name | L1_model | status | n\n--- | --- | --- | ---\nstep results | regression | soft | 36\nstep results | regression | strong | 78\nstep results | tree | soft | 11\nstep results | tree | strong | 14\nmodel-status associations | regression | soft | 21\nmodel-status associations | regression | strong | 37\nmodel-status associations | tree | soft | 5\nmodel-status associations | tree | strong | 6\nstored only | None | None | 0\ncomputed only | None | None | 0\nmultiple Stack rows per step | None | None | 0\nmultiple L1 values per model | None | None | 0\nduplicate model step keys | None | None | 0\nmodel with both statuses | None | None | 5\nL1 mismatch against solution_ext | None | None | 0\nSQL: WITH scores AS (\n    SELECT name, version, step,\n           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score,\n           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS other_score,\n           SUM(CASE WHEN model = 'Stack' THEN 1 ELSE 0 END) AS stack_rows\n    FROM main.model_score\n    GROUP BY name, version, step\n),\nstep_results AS (\n    SELECT m.name, m.version, m.step, m.L1_model,\n           CASE WHEN s.stack_score > s.other_score THEN 'strong'\n                WHEN s.stack_score = s.other_score THEN 'soft' END AS status\n    FROM scores AS s\n    JOIN main.model AS m USING (name, version, step)\n    WHERE s.stack_score >= s.other_score\n),\nstored_only AS (\n    SELECT name, version, step, L1_model, status FROM main.stack_ok\n    EXCEPT SELECT name, version, step, L1_model, status FROM step_results\n),\ncomputed_only AS (\n    SELECT name, version, step, L1_model, status FROM step_results\n    EXCEPT SELECT name, version, step, L1_model, status FROM main.stack_ok\n)\nSELECT 'step results' AS check_name, L1_model, status, COUNT(*) AS n\nFROM step_results GROUP BY L1_model, status\nUNION ALL\nSELECT 'model-status associations', L1_model, status, COUNT(*)\nFROM (SELECT DISTINCT name, version, L1_model, status FROM step_results)\nGROUP BY L1_model, status\nUNION ALL\nSELECT 'stored only', NULL, NULL, COUNT(*) FROM stored_only\nUNION ALL\nSELECT 'computed only', NULL, NULL, COUNT(*) FROM computed_only\nUNION ALL\nSELECT 'multiple Stack rows per step', NULL, NULL, COUNT(*) FROM scores WHERE stack_rows > 1\nUNION ALL\nSELECT 'multiple L1 values per model', NULL, NULL, COUNT(*)\nFROM (SELECT name, version FROM main.model GROUP BY name, version HAVING COUNT(DISTINCT L1_model) > 1)\nUNION ALL\nSELECT 'duplicate model step keys', NULL, NULL, COUNT(*)\nFROM (SELECT name, version, step FROM main.model GROUP BY name, version, step HAVING COUNT(*) > 1)\nUNION ALL\nSELECT 'model with both statuses', NULL, NULL, COUNT(*)\nFROM (SELECT name, version FROM step_results GROUP BY name, version HAVING COUNT(DISTINCT status) > 1)\nUNION ALL\nSELECT 'L1 mismatch against solution_ext', NULL, NULL, COUNT(*)\nFROM step_results AS r\nWHERE NOT EXISTS (\n    SELECT 1 FROM main.solution_ext AS e\n    WHERE e.name = r.name AND e.version = r.version AND e.L1_model = r.L1_model\n)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lt_bR7doJ8wbi2vb9icZ5Nuwhrlof-AgH6mPwXBynzg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lt_bR7doJ8wbi2vb9icZ5Nuwhrlof-AgH6mPwXBynzg",
+        "sql": "WITH step_scores AS (\n    SELECT name,\n           version,\n           step,\n           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score,\n           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS best_non_stack_score\n    FROM main.model_score\n    GROUP BY name, version, step\n),\nmodel_statuses AS (\n    SELECT DISTINCT m.name,\n           m.version,\n           m.L1_model,\n           CASE\n               WHEN s.stack_score > s.best_non_stack_score THEN 'strong'\n               WHEN s.stack_score = s.best_non_stack_score THEN 'soft'\n           END AS status\n    FROM step_scores AS s\n    JOIN main.model AS m\n      ON m.name = s.name AND m.version = s.version AND m.step = s.step\n    WHERE s.stack_score >= s.best_non_stack_score\n),\nstatus_counts AS (\n    SELECT status, L1_model, COUNT(*) AS occurrence_count\n    FROM model_statuses\n    GROUP BY status, L1_model\n),\nranked AS (\n    SELECT status,\n           L1_model,\n           occurrence_count,\n           RANK() OVER (PARTITION BY status ORDER BY occurrence_count DESC) AS status_rank\n    FROM status_counts\n)\nSELECT status, L1_model, occurrence_count\nFROM ranked\nWHERE status_rank = 1\nORDER BY status, L1_model"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nObserved value types (displayed rows): status=str; L1_model=str; occurrence_count=int\nstatus | L1_model | occurrence_count\n--- | --- | ---\nsoft | regression | 21\nstrong | regression | 37\nSQL: WITH step_scores AS (\n    SELECT name,\n           version,\n           step,\n           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score,\n           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS best_non_stack_score\n    FROM main.model_score\n    GROUP BY name, version, step\n),\nmodel_statuses AS (\n    SELECT DISTINCT m.name,\n           m.version,\n           m.L1_model,\n           CASE\n               WHEN s.stack_score > s.best_non_stack_score THEN 'strong'\n               WHEN s.stack_score = s.best_non_stack_score THEN 'soft'\n           END AS status\n    FROM step_scores AS s\n    JOIN main.model AS m\n      ON m.name = s.name AND m.version = s.version AND m.step = s.step\n    WHERE s.stack_score >= s.best_non_stack_score\n),\nstatus_counts AS (\n    SELECT status, L1_model, COUNT(*) AS occurrence_count\n    FROM model_statuses\n    GROUP BY status, L1_model\n),\nranked AS (\n    SELECT status,\n           L1_model,\n           occurrence_count,\n           RANK() OVER (PARTITION BY status ORDER BY occurrence_count DESC) AS status_rank\n    FROM status_counts\n)\nSELECT status, L1_model, occurrence_count\nFROM ranked\nWHERE status_rank = 1\nORDER BY status, L1_model\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH step_scores AS (\n    SELECT name,\n           version,\n           step,\n           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score,\n           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS best_non_stack_score\n    FROM main.model_score\n    GROUP BY name, version, step\n),\nmodel_statuses AS (\n    SELECT DISTINCT m.name,\n           m.version,\n           m.L1_model,\n           CASE\n               WHEN s.stack_score > s.best_non_stack_score THEN 'strong'\n               WHEN s.stack_score = s.best_non_stack_score THEN 'soft'\n           END AS status\n    FROM step_scores AS s\n    JOIN main.model AS m\n      ON m.name = s.name AND m.version = s.version AND m.step = s.step\n    WHERE s.stack_score >= s.best_non_stack_score\n),\nstatus_counts AS (\n    SELECT status, L1_model, COUNT(*) AS occurrence_count\n    FROM model_statuses\n    GROUP BY status, L1_model\n),\nranked AS (\n    SELECT status,\n           L1_model,\n           occurrence_count,\n           RANK() OVER (PARTITION BY status ORDER BY occurrence_count DESC) AS status_rank\n    FROM status_counts\n)\nSELECT status, L1_model, occurrence_count\nFROM ranked\nWHERE status_rank = 1\nORDER BY status, L1_model\nLIMIT 1000\n```",
+  "rows": 2,
+  "sql": "WITH step_scores AS (\n    SELECT name,\n           version,\n           step,\n           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score,\n           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS best_non_stack_score\n    FROM main.model_score\n    GROUP BY name, version, step\n),\nmodel_statuses AS (\n    SELECT DISTINCT m.name,\n           m.version,\n           m.L1_model,\n           CASE\n               WHEN s.stack_score > s.best_non_stack_score THEN 'strong'\n               WHEN s.stack_score = s.best_non_stack_score THEN 'soft'\n           END AS status\n    FROM step_scores AS s\n    JOIN main.model AS m\n      ON m.name = s.name AND m.version = s.version AND m.step = s.step\n    WHERE s.stack_score >= s.best_non_stack_score\n),\nstatus_counts AS (\n    SELECT status, L1_model, COUNT(*) AS occurrence_count\n    FROM model_statuses\n    GROUP BY status, L1_model\n),\nranked AS (\n    SELECT status,\n           L1_model,\n           occurrence_count,\n           RANK() OVER (PARTITION BY status ORDER BY occurrence_count DESC) AS status_rank\n    FROM status_counts\n)\nSELECT status, L1_model, occurrence_count\nFROM ranked\nWHERE status_rank = 1\nORDER BY status, L1_model\nLIMIT 1000",
+  "seconds": 50.94460670906119
+}

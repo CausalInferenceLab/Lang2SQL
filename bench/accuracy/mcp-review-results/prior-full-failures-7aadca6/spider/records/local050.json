@@ -1,0 +1,325 @@
+{
+  "instance_id": "local050",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "predicted",
+  "calls": [],
+  "events_sha256": "15832d87bbfeb2cae864f1886c2267a10b6af09494d9ead28c042b3f2e11ab1c",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 233464,
+      "cached_input_tokens": 196352,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 3239,
+      "reasoning_output_tokens": 932
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {},
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Tables:\n- channels\n- costs\n- countries\n- currency\n- customers\n- products\n- promotions\n- sales\n- supplementary_demographics\n- times\n- cal_month_sales_mv [view]\n- fweek_pscat_sales_mv [view]\n- profits [view]"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- cust_id: INTEGER NOT NULL\n- cust_first_name: TEXT NOT NULL\n- cust_last_name: TEXT NOT NULL\n- cust_gender: CHAR(1) NOT NULL\n- cust_year_of_birth: INTEGER NOT NULL\n- cust_marital_status: TEXT\n- cust_street_address: TEXT NOT NULL\n- cust_postal_code: TEXT NOT NULL\n- cust_city: TEXT NOT NULL\n- cust_city_id: INTEGER NOT NULL\n- cust_state_province: TEXT NOT NULL\n- cust_state_province_id: INTEGER NOT NULL\n- country_id: INTEGER NOT NULL\n- cust_main_phone_number: TEXT NOT NULL\n- cust_income_level: TEXT\n- cust_credit_limit: REAL\n- cust_email: TEXT\n- cust_total: TEXT NOT NULL\n- cust_total_id: INTEGER NOT NULL\n- cust_src_id: INTEGER\n- cust_eff_from: DATE\n- cust_eff_to: DATE\n- cust_valid: CHAR(1)\nPRIMARY KEY (cust_id)\nFOREIGN KEY (country_id) REFERENCES countries (country_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "currency"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "currency (table)\n- country: TEXT\n- year: INTEGER\n- month: INTEGER\n- to_us: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sales"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sales (table)\n- prod_id: INTEGER NOT NULL\n- cust_id: INTEGER NOT NULL\n- time_id: DATE NOT NULL\n- channel_id: INTEGER NOT NULL\n- promo_id: INTEGER NOT NULL\n- quantity_sold: INTEGER NOT NULL\n- amount_sold: REAL NOT NULL\nFOREIGN KEY (promo_id) REFERENCES promotions (promo_id)\nFOREIGN KEY (cust_id) REFERENCES customers (cust_id)\nFOREIGN KEY (prod_id) REFERENCES products (prod_id)\nFOREIGN KEY (channel_id) REFERENCES channels (channel_id)\nFOREIGN KEY (time_id) REFERENCES times (time_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "times"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "times (table)\n- time_id: DATE NOT NULL\n- day_name: TEXT NOT NULL\n- day_number_in_week: INTEGER NOT NULL\n- day_number_in_month: INTEGER NOT NULL\n- calendar_week_number: INTEGER NOT NULL\n- fiscal_week_number: INTEGER NOT NULL\n- week_ending_day: DATE NOT NULL\n- week_ending_day_id: INTEGER NOT NULL\n- calendar_month_number: INTEGER NOT NULL\n- fiscal_month_number: INTEGER NOT NULL\n- calendar_month_desc: TEXT NOT NULL\n- calendar_month_id: INTEGER NOT NULL\n- fiscal_month_desc: TEXT NOT NULL\n- fiscal_month_id: INTEGER NOT NULL\n- days_in_cal_month: INTEGER NOT NULL\n- days_in_fis_month: INTEGER NOT NULL\n- end_of_cal_month: DATE NOT NULL\n- end_of_fis_month: DATE NOT NULL\n- calendar_month_name: TEXT NOT NULL\n- fiscal_month_name: TEXT NOT NULL\n- calendar_quarter_desc: CHAR(7) NOT NULL\n- calendar_quarter_id: INTEGER NOT NULL\n- fiscal_quarter_desc: CHAR(7) NOT NULL\n- fiscal_quarter_id: INTEGER NOT NULL\n- days_in_cal_quarter: INTEGER NOT NULL\n- days_in_fis_quarter: INTEGER NOT NULL\n- end_of_cal_quarter: DATE NOT NULL\n- end_of_fis_quarter: DATE NOT NULL\n- calendar_quarter_number: INTEGER NOT NULL\n- fiscal_quarter_number: INTEGER NOT NULL\n- calendar_year: INTEGER NOT NULL\n- calendar_year_id: INTEGER NOT NULL\n- fiscal_year: INTEGER NOT NULL\n- fiscal_year_id: INTEGER NOT NULL\n- days_in_cal_year: INTEGER NOT NULL\n- days_in_fis_year: INTEGER NOT NULL\n- end_of_cal_year: DATE NOT NULL\n- end_of_fis_year: DATE NOT NULL\nPRIMARY KEY (time_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "channels"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "channels (table)\n- channel_id: INTEGER NOT NULL\n- channel_desc: TEXT NOT NULL\n- channel_class: TEXT NOT NULL\n- channel_class_id: INTEGER NOT NULL\n- channel_total: TEXT NOT NULL\n- channel_total_id: INTEGER NOT NULL\nPRIMARY KEY (channel_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "promotions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "promotions (table)\n- promo_id: INTEGER NOT NULL\n- promo_name: TEXT NOT NULL\n- promo_subcategory: TEXT NOT NULL\n- promo_subcategory_id: INTEGER NOT NULL\n- promo_category: TEXT NOT NULL\n- promo_category_id: INTEGER NOT NULL\n- promo_cost: REAL NOT NULL\n- promo_begin_date: DATE NOT NULL\n- promo_end_date: DATE NOT NULL\n- promo_total: TEXT NOT NULL\n- promo_total_id: INTEGER NOT NULL\nPRIMARY KEY (promo_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "countries"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "countries (table)\n- country_id: INTEGER NOT NULL\n- country_iso_code: CHAR(2) NOT NULL\n- country_name: TEXT NOT NULL\n- country_subregion: TEXT NOT NULL\n- country_subregion_id: INTEGER NOT NULL\n- country_region: TEXT NOT NULL\n- country_region_id: INTEGER NOT NULL\n- country_total: TEXT NOT NULL\n- country_total_id: INTEGER NOT NULL\nPRIMARY KEY (country_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "cal_month_sales_mv"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cal_month_sales_mv (view)\n- calendar_month_desc: TEXT\n- dollars: NULL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"d5XEav0soyQLn3VlvRQWoqlcLawAFxH_J4H5-aTpMrc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "d5XEav0soyQLn3VlvRQWoqlcLawAFxH_J4H5-aTpMrc",
+        "sql": "WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nyearly_sales AS (\n    SELECT prod_id, country, month,\n           MAX(CASE WHEN year = 2019 THEN sales_amount END) AS sales_2019,\n           MAX(CASE WHEN year = 2020 THEN sales_amount END) AS sales_2020,\n           MAX(CASE WHEN year = 2021 THEN sales_amount END) AS sales_2021\n    FROM monthly_sales\n    GROUP BY prod_id, country, month\n)\nSELECT month,\n       COUNT(sales_2019) AS groups_2019,\n       COUNT(sales_2020) AS groups_2020,\n       COUNT(sales_2021) AS groups_2021,\n       SUM(sales_2019 IS NULL AND sales_2020 IS NOT NULL) AS no_2019_from_2020,\n       SUM(sales_2019 = 0) AS zero_2019,\n       SUM(sales_2019 IS NOT NULL AND sales_2020 IS NOT NULL AND sales_2021 IS NULL) AS paired_without_2021,\n       (SELECT COUNT(*) FROM main.currency AS fx\n        WHERE fx.country = y.country AND fx.year = 2021 AND fx.month = y.month) AS fx_rows,\n       (SELECT MIN(fx.to_us) FROM main.currency AS fx\n        WHERE fx.country = y.country AND fx.year = 2021 AND fx.month = y.month) AS fx_rate\nFROM yearly_sales AS y\nGROUP BY country, month\nORDER BY month"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nObserved value types (displayed rows): month=int; groups_2019=int; groups_2020=int; groups_2021=int; no_2019_from_2020=int; zero_2019=int; paired_without_2021=int; fx_rows=int; fx_rate=float\nmonth | groups_2019 | groups_2020 | groups_2021 | no_2019_from_2020 | zero_2019 | paired_without_2021 | fx_rows | fx_rate\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n1 | 51 | 66 | 67 | 19 | 0 | 1 | 1 | 1.0\n2 | 53 | 65 | 66 | 13 | 0 | 3 | 1 | 1.0\n3 | 51 | 63 | 67 | 17 | 0 | 2 | 1 | 1.0\n4 | 46 | 62 | 65 | 19 | 0 | 2 | 1 | 1.0\n5 | 49 | 65 | 69 | 19 | 0 | 2 | 1 | 1.0\n6 | 48 | 66 | 68 | 20 | 0 | 2 | 1 | 1.0\n7 | 50 | 68 | 65 | 19 | 0 | 2 | 1 | 1.0\n8 | 51 | 71 | 67 | 20 | 0 | 1 | 1 | 1.0\n9 | 53 | 69 | 67 | 16 | 0 | 1 | 1 | 1.0\n10 | 56 | 66 | 70 | 14 | 0 | 0 | 1 | 1.0\n11 | 53 | 64 | 66 | 15 | 0 | 0 | 1 | 1.0\n12 | 57 | 68 | 66 | 12 | 0 | 3 | 1 | 1.0\nSQL: WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nyearly_sales AS (\n    SELECT prod_id, country, month,\n           MAX(CASE WHEN year = 2019 THEN sales_amount END) AS sales_2019,\n           MAX(CASE WHEN year = 2020 THEN sales_amount END) AS sales_2020,\n           MAX(CASE WHEN year = 2021 THEN sales_amount END) AS sales_2021\n    FROM monthly_sales\n    GROUP BY prod_id, country, month\n)\nSELECT month,\n       COUNT(sales_2019) AS groups_2019,\n       COUNT(sales_2020) AS groups_2020,\n       COUNT(sales_2021) AS groups_2021,\n       SUM(sales_2019 IS NULL AND sales_2020 IS NOT NULL) AS no_2019_from_2020,\n       SUM(sales_2019 = 0) AS zero_2019,\n       SUM(sales_2019 IS NOT NULL AND sales_2020 IS NOT NULL AND sales_2021 IS NULL) AS paired_without_2021,\n       (SELECT COUNT(*) FROM main.currency AS fx\n        WHERE fx.country = y.country AND fx.year = 2021 AND fx.month = y.month) AS fx_rows,\n       (SELECT MIN(fx.to_us) FROM main.currency AS fx\n        WHERE fx.country = y.country AND fx.year = 2021 AND fx.month = y.month) AS fx_rate\nFROM yearly_sales AS y\nGROUP BY country, month\nORDER BY month\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"hxgaH6qawh-zt5Di-w-Eztt20OvPkrtdiLtETcBGXcY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_13",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "hxgaH6qawh-zt5Di-w-Eztt20OvPkrtdiLtETcBGXcY",
+        "sql": "WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nyearly_sales AS (\n    SELECT prod_id, country, month,\n           MAX(CASE WHEN year = 2019 THEN sales_amount END) AS sales_2019,\n           MAX(CASE WHEN year = 2020 THEN sales_amount END) AS sales_2020,\n           MAX(CASE WHEN year = 2021 THEN sales_amount END) AS sales_2021\n    FROM monthly_sales\n    GROUP BY prod_id, country, month\n),\nprojections AS (\n    SELECT y.month, y.sales_2021,\n           (((y.sales_2020 - y.sales_2019) / NULLIF(y.sales_2019, 0))\n             * y.sales_2020 + y.sales_2020) * COALESCE(fx.to_us, 1) AS projected_usd\n    FROM yearly_sales AS y\n    LEFT JOIN main.currency AS fx\n      ON fx.country = y.country AND fx.year = 2021 AND fx.month = y.month\n)\nSELECT month,\n       ROUND(AVG(projected_usd), 2) AS all_pairs_usd,\n       ROUND(AVG(CASE WHEN sales_2021 IS NOT NULL THEN projected_usd END), 2) AS observed_2021_usd,\n       COUNT(projected_usd) AS paired_products,\n       COUNT(CASE WHEN sales_2021 IS NOT NULL THEN projected_usd END) AS paired_2021_products\nFROM projections\nGROUP BY month\nORDER BY month"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nObserved value types (displayed rows): month=int; all_pairs_usd=float; observed_2021_usd=float; paired_products=int; paired_2021_products=int\nmonth | all_pairs_usd | observed_2021_usd | paired_products | paired_2021_products\n--- | --- | --- | --- | ---\n1 | 4054.99 | 4120.33 | 47 | 46\n2 | 2402.89 | 2454.4 | 52 | 49\n3 | 2888.48 | 2980.58 | 46 | 44\n4 | 1474.1 | 1517.54 | 43 | 41\n5 | 2904.71 | 3025.06 | 46 | 44\n6 | 1440.35 | 1482.95 | 46 | 44\n7 | 1600.13 | 1658.6 | 49 | 47\n8 | 1392.6 | 1419.89 | 51 | 50\n9 | 2702.5 | 2754.07 | 53 | 52\n10 | 2218.77 | 2218.77 | 52 | 52\n11 | 3208.94 | 3208.94 | 49 | 49\n12 | 3062.66 | 3131.66 | 56 | 53\nSQL: WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nyearly_sales AS (\n    SELECT prod_id, country, month,\n           MAX(CASE WHEN year = 2019 THEN sales_amount END) AS sales_2019,\n           MAX(CASE WHEN year = 2020 THEN sales_amount END) AS sales_2020,\n           MAX(CASE WHEN year = 2021 THEN sales_amount END) AS sales_2021\n    FROM monthly_sales\n    GROUP BY prod_id, country, month\n),\nprojections AS (\n    SELECT y.month, y.sales_2021,\n           (((y.sales_2020 - y.sales_2019) / NULLIF(y.sales_2019, 0))\n             * y.sales_2020 + y.sales_2020) * COALESCE(fx.to_us, 1) AS projected_usd\n    FROM yearly_sales AS y\n    LEFT JOIN main.currency AS fx\n      ON fx.country = y.country AND fx.year = 2021 AND fx.month = y.month\n)\nSELECT month,\n       ROUND(AVG(projected_usd), 2) AS all_pairs_usd,\n       ROUND(AVG(CASE WHEN sales_2021 IS NOT NULL THEN projected_usd END), 2) AS observed_2021_usd,\n       COUNT(projected_usd) AS paired_products,\n       COUNT(CASE WHEN sales_2021 IS NOT NULL THEN projected_usd END) AS paired_2021_products\nFROM projections\nGROUP BY month\nORDER BY month\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_14",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"q8tOfpWTGLUP45dlIjOZI2WKSNhf_Bhsut6bNXK46dQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_15",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "q8tOfpWTGLUP45dlIjOZI2WKSNhf_Bhsut6bNXK46dQ",
+        "sql": "WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nmonthly_averages AS (\n    SELECT target.month,\n           ROUND(AVG(\n               ((y2020.sales_amount - y2019.sales_amount) / NULLIF(y2019.sales_amount, 0)\n                * y2020.sales_amount + y2020.sales_amount) * COALESCE(fx.to_us, 1)\n           ), 2) AS average_projected_sales_usd\n    FROM monthly_sales AS target\n    JOIN monthly_sales AS y2019\n      ON y2019.prod_id = target.prod_id\n     AND y2019.country = target.country\n     AND y2019.month = target.month\n     AND y2019.year = 2019\n    JOIN monthly_sales AS y2020\n      ON y2020.prod_id = target.prod_id\n     AND y2020.country = target.country\n     AND y2020.month = target.month\n     AND y2020.year = 2020\n    LEFT JOIN main.currency AS fx\n      ON fx.country = target.country\n     AND fx.year = target.year\n     AND fx.month = target.month\n    WHERE target.year = 2021\n    GROUP BY target.month\n),\nranked_months AS (\n    SELECT average_projected_sales_usd,\n           ROW_NUMBER() OVER (ORDER BY average_projected_sales_usd) AS position,\n           COUNT(*) OVER () AS month_count\n    FROM monthly_averages\n    WHERE average_projected_sales_usd IS NOT NULL\n)\nSELECT AVG(average_projected_sales_usd) AS median_monthly_average_projected_sales_usd\nFROM ranked_months\nWHERE position IN ((month_count + 1) / 2, (month_count + 2) / 2)\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nObserved value types (displayed rows): median_monthly_average_projected_sales_usd=float\nmedian_monthly_average_projected_sales_usd\n---\n2604.235\nSQL: WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nmonthly_averages AS (\n    SELECT target.month,\n           ROUND(AVG(\n               ((y2020.sales_amount - y2019.sales_amount) / NULLIF(y2019.sales_amount, 0)\n                * y2020.sales_amount + y2020.sales_amount) * COALESCE(fx.to_us, 1)\n           ), 2) AS average_projected_sales_usd\n    FROM monthly_sales AS target\n    JOIN monthly_sales AS y2019\n      ON y2019.prod_id = target.prod_id\n     AND y2019.country = target.country\n     AND y2019.month = target.month\n     AND y2019.year = 2019\n    JOIN monthly_sales AS y2020\n      ON y2020.prod_id = target.prod_id\n     AND y2020.country = target.country\n     AND y2020.month = target.month\n     AND y2020.year = 2020\n    LEFT JOIN main.currency AS fx\n      ON fx.country = target.country\n     AND fx.year = target.year\n     AND fx.month = target.month\n    WHERE target.year = 2021\n    GROUP BY target.month\n),\nranked_months AS (\n    SELECT average_projected_sales_usd,\n           ROW_NUMBER() OVER (ORDER BY average_projected_sales_usd) AS position,\n           COUNT(*) OVER () AS month_count\n    FROM monthly_averages\n    WHERE average_projected_sales_usd IS NOT NULL\n)\nSELECT AVG(average_projected_sales_usd) AS median_monthly_average_projected_sales_usd\nFROM ranked_months\nWHERE position IN ((month_count + 1) / 2, (month_count + 2) / 2)\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nmonthly_averages AS (\n    SELECT target.month,\n           ROUND(AVG(\n               ((y2020.sales_amount - y2019.sales_amount) / NULLIF(y2019.sales_amount, 0)\n                * y2020.sales_amount + y2020.sales_amount) * COALESCE(fx.to_us, 1)\n           ), 2) AS average_projected_sales_usd\n    FROM monthly_sales AS target\n    JOIN monthly_sales AS y2019\n      ON y2019.prod_id = target.prod_id\n     AND y2019.country = target.country\n     AND y2019.month = target.month\n     AND y2019.year = 2019\n    JOIN monthly_sales AS y2020\n      ON y2020.prod_id = target.prod_id\n     AND y2020.country = target.country\n     AND y2020.month = target.month\n     AND y2020.year = 2020\n    LEFT JOIN main.currency AS fx\n      ON fx.country = target.country\n     AND fx.year = target.year\n     AND fx.month = target.month\n    WHERE target.year = 2021\n    GROUP BY target.month\n),\nranked_months AS (\n    SELECT average_projected_sales_usd,\n           ROW_NUMBER() OVER (ORDER BY average_projected_sales_usd) AS position,\n           COUNT(*) OVER () AS month_count\n    FROM monthly_averages\n    WHERE average_projected_sales_usd IS NOT NULL\n)\nSELECT AVG(average_projected_sales_usd) AS median_monthly_average_projected_sales_usd\nFROM ranked_months\nWHERE position IN ((month_count + 1) / 2, (month_count + 2) / 2)\nLIMIT 1\n```",
+  "rows": 1,
+  "sql": "WITH monthly_sales AS (\n    SELECT s.prod_id,\n           co.country_name AS country,\n           t.calendar_month_number AS month,\n           t.calendar_year AS year,\n           SUM(s.amount_sold) AS sales_amount\n    FROM main.sales AS s\n    JOIN main.customers AS cu ON cu.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = cu.country_id\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.promotions AS p ON p.promo_id = s.promo_id\n    JOIN main.channels AS ch ON ch.channel_id = s.channel_id\n    WHERE co.country_name = 'France'\n      AND p.promo_total_id = 1\n      AND ch.channel_total_id = 1\n      AND t.calendar_year BETWEEN 2019 AND 2021\n    GROUP BY s.prod_id, co.country_name, t.calendar_month_number, t.calendar_year\n),\nmonthly_averages AS (\n    SELECT target.month,\n           ROUND(AVG(\n               ((y2020.sales_amount - y2019.sales_amount) / NULLIF(y2019.sales_amount, 0)\n                * y2020.sales_amount + y2020.sales_amount) * COALESCE(fx.to_us, 1)\n           ), 2) AS average_projected_sales_usd\n    FROM monthly_sales AS target\n    JOIN monthly_sales AS y2019\n      ON y2019.prod_id = target.prod_id\n     AND y2019.country = target.country\n     AND y2019.month = target.month\n     AND y2019.year = 2019\n    JOIN monthly_sales AS y2020\n      ON y2020.prod_id = target.prod_id\n     AND y2020.country = target.country\n     AND y2020.month = target.month\n     AND y2020.year = 2020\n    LEFT JOIN main.currency AS fx\n      ON fx.country = target.country\n     AND fx.year = target.year\n     AND fx.month = target.month\n    WHERE target.year = 2021\n    GROUP BY target.month\n),\nranked_months AS (\n    SELECT average_projected_sales_usd,\n           ROW_NUMBER() OVER (ORDER BY average_projected_sales_usd) AS position,\n           COUNT(*) OVER () AS month_count\n    FROM monthly_averages\n    WHERE average_projected_sales_usd IS NOT NULL\n)\nSELECT AVG(average_projected_sales_usd) AS median_monthly_average_projected_sales_usd\nFROM ranked_months\nWHERE position IN ((month_count + 1) / 2, (month_count + 2) / 2)\nLIMIT 1",
+  "seconds": 80.53565879096277
+}
