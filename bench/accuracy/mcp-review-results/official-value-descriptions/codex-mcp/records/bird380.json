@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird380",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "2c2e8941985f5b6fe54500b7c3d6afba4d3e4addb68ca27ce83652917c7c6af4",
+  "events_sha256": "777b04e0d0aedb3bd0678cda742ad05d655de019292e477e64dc3a62fa651910",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 164764,
+      "cached_input_tokens": 152704,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 713,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wnMTYeP8kdIi560np2L7a2XWxKznMpX2iitfJLOf9n4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hero_power"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hero_power (table)\n- hero_id: INTEGER\n- power_id: INTEGER\nFOREIGN KEY (hero_id) REFERENCES superhero (id)\nFOREIGN KEY (power_id) REFERENCES superpower (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wnMTYeP8kdIi560np2L7a2XWxKznMpX2iitfJLOf9n4",
+        "sql": "SELECT typeof(h.weight_kg) AS storage_type, COUNT(*) AS heroes, MIN(h.weight_kg) AS minimum_kg, SUM(h.weight_kg = 0) AS zero_weights, SUM(h.superhero_name = '3-D Man') AS reference_heroes FROM main.superhero AS h GROUP BY typeof(h.weight_kg)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): storage_type=str; heroes=int; minimum_kg=NoneType,int; zero_weights=NoneType,int; reference_heroes=int\nstorage_type | heroes | minimum_kg | zero_weights | reference_heroes\n--- | --- | --- | --- | ---\ninteger | 686 | 0 | 172 | 1\nnull | 64 | None | None | 0\nSQL: SELECT typeof(h.weight_kg) AS storage_type, COUNT(*) AS heroes, MIN(h.weight_kg) AS minimum_kg, SUM(h.weight_kg = 0) AS zero_weights, SUM(h.superhero_name = '3-D Man') AS reference_heroes FROM main.superhero AS h GROUP BY typeof(h.weight_kg)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rEvACl46ItfgwvrUIBp2mF4gwEbYR4OaQJ3fLiuP6pc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rEvACl46ItfgwvrUIBp2mF4gwEbYR4OaQJ3fLiuP6pc",
+        "expected_columns": [
+          "average_weight_kg"
+        ],
+        "expected_rows": 1,
+        "sql": "WITH reference_hero AS (\n    SELECT id\n    FROM main.superhero\n    WHERE superhero_name = '3-D Man'\n),\nreference_powers AS (\n    SELECT power_id\n    FROM main.hero_power\n    WHERE hero_id IN (SELECT id FROM reference_hero)\n)\nSELECT ROUND(AVG(h.weight_kg), 2) AS average_weight_kg\nFROM main.superhero AS h\nWHERE h.id NOT IN (SELECT id FROM reference_hero)\n  AND h.weight_kg <> 0\n  AND h.id IN (\n      SELECT hero_id\n      FROM main.hero_power\n      WHERE power_id IN (SELECT power_id FROM reference_powers)\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_weight_kg=float\naverage_weight_kg\n---\n282411.79\nSQL: WITH reference_hero AS (\n    SELECT id\n    FROM main.superhero\n    WHERE superhero_name = '3-D Man'\n),\nreference_powers AS (\n    SELECT power_id\n    FROM main.hero_power\n    WHERE hero_id IN (SELECT id FROM reference_hero)\n)\nSELECT ROUND(AVG(h.weight_kg), 2) AS average_weight_kg\nFROM main.superhero AS h\nWHERE h.id NOT IN (SELECT id FROM reference_hero)\n  AND h.weight_kg <> 0\n  AND h.id IN (\n      SELECT hero_id\n      FROM main.hero_power\n      WHERE power_id IN (SELECT power_id FROM reference_powers)\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH reference_hero AS (\n    SELECT id\n    FROM main.superhero\n    WHERE superhero_name = '3-D Man'\n),\nreference_powers AS (\n    SELECT power_id\n    FROM main.hero_power\n    WHERE hero_id IN (SELECT id FROM reference_hero)\n)\nSELECT ROUND(AVG(h.weight_kg), 2) AS average_weight_kg\nFROM main.superhero AS h\nWHERE h.id NOT IN (SELECT id FROM reference_hero)\n  AND h.weight_kg <> 0\n  AND h.id IN (\n      SELECT hero_id\n      FROM main.hero_power\n      WHERE power_id IN (SELECT power_id FROM reference_powers)\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH reference_hero AS (\n    SELECT id\n    FROM main.superhero\n    WHERE superhero_name = '3-D Man'\n),\nreference_powers AS (\n    SELECT power_id\n    FROM main.hero_power\n    WHERE hero_id IN (SELECT id FROM reference_hero)\n)\nSELECT ROUND(AVG(h.weight_kg), 2) AS average_weight_kg\nFROM main.superhero AS h\nWHERE h.id NOT IN (SELECT id FROM reference_hero)\n  AND h.weight_kg <> 0\n  AND h.id IN (\n      SELECT hero_id\n      FROM main.hero_power\n      WHERE power_id IN (SELECT power_id FROM reference_powers)\n  )\nLIMIT 1",
+  "seconds": 34.03608954208903
+}

@@ -1,0 +1,7 @@
+SELECT ROUND(AVG(h.weight_kg), 1) AS average_weight_kg
+FROM superhero AS h
+JOIN colour AS c ON c.id = h.skin_colour_id
+WHERE c.colour = 'Green'
+  AND h.weight_kg IS NOT NULL
+  AND h.weight_kg <> 0
+LIMIT 1

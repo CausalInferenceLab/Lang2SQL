@@ -1,0 +1,129 @@
+{
+  "instance_id": "bird345",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "f93b0a038cbc8ca0a0959c373e0ec06e8798dec68d396f7c6cf14507c35f67ab",
+  "events_sha256": "877517c749c8d70d06508b0926ff6e9a36f8ec5dfae3bb63e0f55f22fe0859f5",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 138028,
+      "cached_input_tokens": 127360,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 500,
+      "reasoning_output_tokens": 110
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"0AGi7oU2bFeTSDxMY1cTkKivErSAgkqOqVqKxAG0onY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "colour (table)\n- id: INTEGER NOT NULL\n- colour: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "0AGi7oU2bFeTSDxMY1cTkKivErSAgkqOqVqKxAG0onY",
+        "sql": "SELECT c.colour, s.weight_kg, typeof(s.weight_kg) AS storage_type, COUNT(*) AS heroes FROM main.superhero AS s JOIN main.colour AS c ON c.id = s.skin_colour_id WHERE c.colour LIKE 'green' GROUP BY c.colour, s.weight_kg, typeof(s.weight_kg) ORDER BY s.weight_kg"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "15 row(s):\nResult coverage: fetched_rows=15; displayed_rows=15; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): colour=str; weight_kg=int; storage_type=str; heroes=int\ncolour | weight_kg | storage_type | heroes\n--- | --- | --- | ---\nGreen | 0 | integer | 6\nGreen | 17 | integer | 1\nGreen | 50 | integer | 1\nGreen | 52 | integer | 1\nGreen | 68 | integer | 1\nGreen | 76 | integer | 1\nGreen | 77 | integer | 1\nGreen | 86 | integer | 1\nGreen | 106 | integer | 1\nGreen | 135 | integer | 2\nGreen | 225 | integer | 1\nGreen | 306 | integer | 1\nGreen | 356 | integer | 1\nGreen | 630 | integer | 1\nGreen | 18000 | integer | 1\nSQL: SELECT c.colour, s.weight_kg, typeof(s.weight_kg) AS storage_type, COUNT(*) AS heroes FROM main.superhero AS s JOIN main.colour AS c ON c.id = s.skin_colour_id WHERE c.colour LIKE 'green' GROUP BY c.colour, s.weight_kg, typeof(s.weight_kg) ORDER BY s.weight_kg\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "known weight"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"known weight\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    }
+  ],
+  "answer": "Six heroes with green skin have a recorded weight of 0 kg. Should I exclude those entries as unknown or include them as zero when calculating the average?",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 26.07368483406026
+}

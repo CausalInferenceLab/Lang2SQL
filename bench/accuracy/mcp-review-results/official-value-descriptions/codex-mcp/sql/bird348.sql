@@ -1,0 +1,15 @@
+WITH intelligence AS (
+    SELECT h.superhero_name, h.weight_kg, ha.attribute_value AS score
+    FROM main.superhero AS h
+    JOIN main.hero_attribute AS ha ON ha.hero_id = h.id
+    JOIN main.attribute AS a ON a.id = ha.attribute_id
+    WHERE a.attribute_name = 'Intelligence'
+)
+SELECT ROUND(AVG(NULLIF(weight_kg, 0)), 2) AS average_weight_kg
+FROM intelligence
+WHERE score = (
+    SELECT score
+    FROM intelligence
+    WHERE superhero_name = 'Abomination'
+)
+LIMIT 1
