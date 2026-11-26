@@ -1,0 +1,46 @@
+"""Offline diagnosis only. Never supplied to inference or counted as a repair."""
+import ast
+import hashlib
+import json
+import math
+import sqlite3
+from pathlib import Path
+import pandas as pd
+
+root = Path('/Users/seyoung/workspace/benchmarks')
+checkpoint = root / 'codex-mcp-unobserved-20261127/checkpoints/002'
+out = checkpoint / 'diagnosis'
+out.mkdir(exist_ok=True)
+run = checkpoint / 'spider'
+manifest = json.loads((run / 'manifest.json').read_text())
+record_path = run / 'codex-mcp/records/local360.json'
+record = json.loads(record_path.read_text())
+evaluator = root / 'Spider2/spider2-lite/evaluation_suite/evaluate.py'
+assert hashlib.sha256(evaluator.read_bytes()).hexdigest() == manifest['evaluator_sha256']
+node = next(n for n in ast.parse(evaluator.read_text()).body if isinstance(n, ast.FunctionDef) and n.name == 'compare_pandas_table')
+namespace = {'pd': pd, 'math': math}
+exec(compile(ast.Module(body=[node], type_ignores=[]), str(evaluator), 'exec'), namespace)
+gold = evaluator.parent / 'gold'
+standard = next(json.loads(line) for line in (gold / 'spider2lite_eval.jsonl').read_text().splitlines() if json.loads(line)['instance_id'] == 'local360')
+refs = sorted((gold / 'exec_result').glob('local360*.csv'))
+print(standard)
+original = record['sql']
+variants = {'original': original}
+variants['exclude_no_target'] = original.replace('FROM session_cutoffs AS c\n', 'FROM session_cutoffs AS c\n').replace('),\nsession_counts AS', '    WHERE c.first_target IS NOT NULL\n),\nsession_counts AS')
+variants['return_target_event'] = variants['exclude_no_target'].replace('JOIN pre_target_events AS e ON e.session = c.session', "JOIN session_cutoffs AS cutoff ON cutoff.session = c.session\nJOIN main.activity_log AS e ON e.session = c.session AND e.stamp = cutoff.first_target AND e.path IN ('/detail', '/complete')")
+variants['normalized_target_paths'] = variants['return_target_event'].replace("path IN ('/detail', '/complete')", "RTRIM(path, '/') IN ('/detail', '/complete')").replace("e.RTRIM(path, '/')", "RTRIM(e.path, '/')").replace('c.event_count, e.path, e.search_type', "c.event_count, RTRIM(e.path, '/') AS path, e.search_type")
+db = root / 'spider2-databases/log.sqlite'
+assert hashlib.sha256(db.read_bytes()).hexdigest() == manifest['db_sha256']['log']
+results = []
+with sqlite3.connect('file:' + str(db) + '?mode=ro', uri=True) as connection:
+    for name, sql in variants.items():
+        frame = pd.read_sql_query(sql, connection)
+        (out / (name + '.sql')).write_text(sql + '\n')
+        frame.to_csv(out / (name + '.csv'), index=False)
+        conditions = standard['condition_cols'] or [[] for _ in refs]
+        results.append({'variant': name, 'rows': len(frame), 'matches': [{'reference': p.name, 'sha256': hashlib.sha256(p.read_bytes()).hexdigest(), 'match': bool(namespace['compare_pandas_table'](frame, pd.read_csv(p), conditions[i], standard.get('ignore_order', False)))} for i, p in enumerate(refs)]})
+    observed = pd.read_sql_query("SELECT session,stamp,path,search_type FROM activity_log WHERE session IN ('cabf98e8','1cf7678e','3efe001c') ORDER BY session,stamp,path", connection)
+    observed.to_csv(out / 'source-session-observations.csv', index=False)
+report = {'scope': 'Offline analyst counterfactuals only, no model calls, not a repair score. Reference results were inspected during diagnosis; these edits must never become inference input or case-specific product logic.', 'record_sha256': hashlib.sha256(record_path.read_bytes()).hexdigest(), 'db_sha256': manifest['db_sha256']['log'], 'evaluator_sha256': manifest['evaluator_sha256'], 'variants': results, 'findings': ['Original SQL includes sessions with no target click/conversion, including cabf98e8.', 'Original final projection joins pre-target events, so zero-count sessions have NULL path/search_type.', 'Returning the target event instead of pre-target events resolves the projection issue in this data.', 'Trailing-slash normalization is an explicit diagnostic assumption, not a universally valid URL policy.'], 'product_change': None}
+(out / 'local360-audit.json').write_text(json.dumps(report, indent=2) + '\n')
+print(json.dumps(results, indent=2))

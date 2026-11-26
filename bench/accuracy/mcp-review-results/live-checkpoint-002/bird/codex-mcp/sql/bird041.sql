@@ -1,0 +1,7 @@
+SELECT s.School, s.Street
+FROM main.frpm AS f
+JOIN main.schools AS s ON s.CDSCode = f.CDSCode
+WHERE TRIM(s.School) <> ''
+  AND f."Enrollment (K-12)" - f."Enrollment (Ages 5-17)" > 30
+  AND f."High Grade" IN ('K', '1', '2', '3', '4', '5', '6', '7', '8')
+LIMIT 1000

@@ -1,0 +1,132 @@
+{
+  "instance_id": "local097",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "9d9b297c3093a34beaa64167813d182f445fae47e841cf5370089a27f40d2a11",
+  "events_sha256": "0ccecb6bbcae106a51a085f6501f14cd9e738839fa6dff8eeea4121d73bf4386",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169664,
+      "cached_input_tokens": 153984,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 612,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Movie"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Movie (table)\n- index: INTEGER\n- MID: TEXT\n- title: TEXT\n- year: TEXT\n- rating: REAL\n- num_votes: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"AMD-2C08GVbzIjdC39uZl-OOT_OWY3_4xSlkIBFXW4Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "AMD-2C08GVbzIjdC39uZl-OOT_OWY3_4xSlkIBFXW4Y",
+        "sql": "SELECT COUNT(*) AS rows_total, COUNT(DISTINCT MID) AS movies,\n       COUNT(year) AS years_present,\n       SUM(year GLOB '[0-9][0-9][0-9][0-9]') AS plain_years,\n       GROUP_CONCAT(DISTINCT CASE WHEN year NOT GLOB '[0-9][0-9][0-9][0-9]' THEN year END) AS other_year_values\nFROM main.Movie;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): rows_total=int; movies=int; years_present=int; plain_years=int; other_year_values=str\nrows_total | movies | years_present | plain_years | other_year_values\n--- | --- | --- | --- | ---\n3475 | 3475 | 3475 | 3358 | I 2009,I 2018,XVII 2016,I 2017,II 2018,I 2002,III 2016,I 2015,I 2016,I 2006,I 2010,I 2013,I 2014,II 2017,VI 2015,I 1964,I 2003,III 2017,I 2005,I 2008,I 2007,I 2011,I 1997,III 2015,II 2012,III 2007,II 2010,II 2013,I 1986,I 1968,I 1980,II 2008,I 1983,V 2015,I 2001,I 1989,II 1998,I 1992,I 2012,I 1996,IV 2011,II 1983,IV 2010,II 2011,IV 2017,I 1969,II 2009\nSQL: SELECT COUNT(*) AS rows_total, COUNT(DISTINCT MID) AS movies,\n       COUNT(year) AS years_present,\n       SUM(year GLOB '[0-9][0-9][0-9][0-9]') AS plain_years,\n       GROUP_CONCAT(DISTINCT CASE WHEN year NOT GLOB '[0-9][0-9][0-9][0-9]' THEN year END) AS other_year_values\nFROM main.Movie\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"C_uL-M52eo6cH135gG-B_UgB8_UIwkKD9u2i5VpjTc4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "C_uL-M52eo6cH135gG-B_UgB8_UIwkKD9u2i5VpjTc4",
+        "expected_columns": [
+          "start_year",
+          "total_count"
+        ],
+        "sql": "WITH annual_counts AS (\n    SELECT CAST(SUBSTR(year, -4) AS INTEGER) AS release_year,\n           COUNT(*) AS film_count\n    FROM main.Movie\n    GROUP BY release_year\n)\nSELECT release_year AS start_year,\n       SUM(film_count) OVER (\n           ORDER BY release_year\n           RANGE BETWEEN CURRENT ROW AND 9 FOLLOWING\n       ) AS total_count\nFROM annual_counts\nORDER BY total_count DESC, start_year ASC\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): start_year=int; total_count=int\nstart_year | total_count\n--- | ---\n2008 | 1205\nSQL: WITH annual_counts AS (\n    SELECT CAST(SUBSTR(year, -4) AS INTEGER) AS release_year,\n           COUNT(*) AS film_count\n    FROM main.Movie\n    GROUP BY release_year\n)\nSELECT release_year AS start_year,\n       SUM(film_count) OVER (\n           ORDER BY release_year\n           RANGE BETWEEN CURRENT ROW AND 9 FOLLOWING\n       ) AS total_count\nFROM annual_counts\nORDER BY total_count DESC, start_year ASC\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH annual_counts AS (\n    SELECT CAST(SUBSTR(year, -4) AS INTEGER) AS release_year,\n           COUNT(*) AS film_count\n    FROM main.Movie\n    GROUP BY release_year\n)\nSELECT release_year AS start_year,\n       SUM(film_count) OVER (\n           ORDER BY release_year\n           RANGE BETWEEN CURRENT ROW AND 9 FOLLOWING\n       ) AS total_count\nFROM annual_counts\nORDER BY total_count DESC, start_year ASC\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH annual_counts AS (\n    SELECT CAST(SUBSTR(year, -4) AS INTEGER) AS release_year,\n           COUNT(*) AS film_count\n    FROM main.Movie\n    GROUP BY release_year\n)\nSELECT release_year AS start_year,\n       SUM(film_count) OVER (\n           ORDER BY release_year\n           RANGE BETWEEN CURRENT ROW AND 9 FOLLOWING\n       ) AS total_count\nFROM annual_counts\nORDER BY total_count DESC, start_year ASC\nLIMIT 1",
+  "seconds": 29.747028000070713
+}

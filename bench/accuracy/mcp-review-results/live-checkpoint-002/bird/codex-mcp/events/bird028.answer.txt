@@ -1,0 +1,12 @@
+```sql
+SELECT COUNT(*) AS school_count
+FROM frpm AS f
+JOIN schools AS s ON s.CDSCode = f.CDSCode
+LEFT JOIN satscores AS sat ON sat.cds = s.CDSCode AND sat.rtype = 'S'
+WHERE s.State = 'CA'
+  AND TRIM(s.School) <> ''
+  AND f."Enrollment (K-12)" > 500
+  AND f."High Grade" IN ('1', '2', '3', '4', '5', '6', '7', '8')
+  AND COALESCE(sat.NumTstTakr, 0) = 0
+LIMIT 1
+```

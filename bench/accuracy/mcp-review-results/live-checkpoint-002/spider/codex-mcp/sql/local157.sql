@@ -1,0 +1,36 @@
+WITH daily AS (
+    SELECT
+        ticker,
+        substr(market_date, 7, 4) || '-' || substr(market_date, 4, 2)
+            || '-' || substr(market_date, 1, 2) AS market_date,
+        CASE
+            WHEN volume = '-' THEN 0.0
+            WHEN substr(volume, -1) = 'K'
+                THEN CAST(substr(volume, 1, length(volume) - 1) AS REAL) * 1000
+            WHEN substr(volume, -1) = 'M'
+                THEN CAST(substr(volume, 1, length(volume) - 1) AS REAL) * 1000000
+            ELSE CAST(volume AS REAL)
+        END AS volume
+    FROM main.bitcoin_prices
+),
+with_previous_date AS (
+    SELECT
+        daily.*,
+        MAX(CASE WHEN volume <> 0 THEN market_date END) OVER (
+            PARTITION BY ticker
+            ORDER BY market_date
+            ROWS BETWEEN UNBOUNDED PRECEDING AND 1 PRECEDING
+        ) AS previous_date
+    FROM daily
+    WHERE market_date <= '2021-08-10'
+)
+SELECT
+    d.ticker,
+    d.market_date,
+    100.0 * (d.volume - p.volume) / p.volume AS volume_change_pct
+FROM with_previous_date AS d
+LEFT JOIN daily AS p
+    ON p.ticker = d.ticker AND p.market_date = d.previous_date
+WHERE d.market_date BETWEEN '2021-08-01' AND '2021-08-10'
+ORDER BY d.ticker, d.market_date
+LIMIT 1000

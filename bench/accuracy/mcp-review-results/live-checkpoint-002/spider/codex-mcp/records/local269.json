@@ -1,0 +1,88 @@
+{
+  "instance_id": "local269",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "238d7ab5efa581b1247aa8b99c94b3bdb844f55098d803e7023377fffef8c491",
+  "events_sha256": "9b42cb333f4a1588860895a8942153766ee320eb7796ad0ce97a4e90c24c27a9",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 101770,
+      "cached_input_tokens": 88320,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 338,
+      "reasoning_output_tokens": 114
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "packaging_relations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "packaging_relations (table)\n- packaging_id: INTEGER NOT NULL\n- contains_id: INTEGER NOT NULL\n- qty: INTEGER NOT NULL\nPRIMARY KEY (packaging_id, contains_id)\nFOREIGN KEY (packaging_id) REFERENCES packaging (id)\nFOREIGN KEY (contains_id) REFERENCES packaging (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "packaging"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "packaging (table)\n- id: INTEGER\n- name: TEXT NOT NULL\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "final packaging combinations"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"final packaging combinations\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    }
+  ],
+  "answer": "Should the average include only outermost packages that are never contained in another package, or should each nested package with contents also count as a separate combination?",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 17.136023667058907
+}

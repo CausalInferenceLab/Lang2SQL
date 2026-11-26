@@ -1,0 +1,48 @@
+WITH county_records AS (
+    SELECT County, District, DOCType, CDSCode, School,
+           AdmFName1, AdmFName2, AdmFName3
+    FROM main.schools
+    WHERE County IN ('Amador', 'Madera')
+),
+districts AS (
+    SELECT DISTINCT County, District
+    FROM county_records
+    WHERE DOCType IN (
+        'Unified School District',
+        'Elementary School District',
+        'High School District',
+        'County Office of Education (COE)'
+    )
+),
+school_records AS (
+    SELECT *
+    FROM county_records
+    WHERE School IS NOT NULL AND School <> ''
+),
+school_names AS (
+    SELECT County, District, CDSCode, AdmFName1 AS first_name FROM school_records
+    UNION
+    SELECT County, District, CDSCode, AdmFName2 FROM school_records
+    UNION
+    SELECT County, District, CDSCode, AdmFName3 FROM school_records
+),
+top_names AS (
+    SELECT first_name, COUNT(*) AS total_schools
+    FROM school_names
+    WHERE first_name IS NOT NULL AND TRIM(first_name) <> ''
+    GROUP BY first_name
+    ORDER BY total_schools DESC, first_name
+    LIMIT 2
+)
+SELECT d.District AS district_name,
+       t.first_name,
+       COUNT(s.CDSCode) AS school_count
+FROM districts AS d
+CROSS JOIN top_names AS t
+LEFT JOIN school_names AS s
+    ON s.County = d.County
+   AND s.District = d.District
+   AND s.first_name = t.first_name
+GROUP BY d.County, d.District, t.first_name, t.total_schools
+ORDER BY d.District, t.total_schools DESC, t.first_name
+LIMIT 1000

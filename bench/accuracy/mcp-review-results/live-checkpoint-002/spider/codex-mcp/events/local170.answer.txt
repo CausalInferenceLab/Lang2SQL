@@ -1,0 +1,37 @@
+```sql
+WITH offsets(years_elapsed) AS (
+    VALUES (0), (2), (4), (6), (8), (10)
+),
+ranked_terms AS (
+    SELECT id_bioguide, state, term_start,
+           ROW_NUMBER() OVER (
+               PARTITION BY id_bioguide
+               ORDER BY term_start, term_number, term_id
+           ) AS term_rank
+    FROM main.legislators_terms
+),
+checkpoints AS (
+    SELECT f.id_bioguide, f.state, l.gender, o.years_elapsed,
+           printf('%04d-12-31', CAST(strftime('%Y', f.term_start) AS INTEGER)
+                               + o.years_elapsed) AS check_date
+    FROM ranked_terms AS f
+    JOIN main.legislators AS l ON l.id_bioguide = f.id_bioguide
+    CROSS JOIN offsets AS o
+    WHERE f.term_rank = 1
+      AND l.gender IN ('M', 'F')
+),
+positive_cohorts AS (
+    SELECT c.state, c.gender, c.years_elapsed
+    FROM checkpoints AS c
+    JOIN main.legislators_terms AS t
+      ON t.id_bioguide = c.id_bioguide
+     AND c.check_date BETWEEN t.term_start AND t.term_end
+    GROUP BY c.state, c.gender, c.years_elapsed
+)
+SELECT state
+FROM positive_cohorts
+GROUP BY state
+HAVING COUNT(*) = 2 * (SELECT COUNT(*) FROM offsets)
+ORDER BY state
+LIMIT 1000
+```
