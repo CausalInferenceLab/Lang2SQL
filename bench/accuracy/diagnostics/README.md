@@ -94,3 +94,16 @@ answer is read. Examples are explicitly marked non-exhaustive. Database folder
 matching only normalizes case and hyphens to underscores. Spider's upstream MIT
 notice is retained in the parent directory. Both schema maps are optional and
 hash-validated, and both will be tested under the same pilot protocol.
+
+
+## Follow-up: unnecessary clarification
+
+The frozen full-v2 run exposed a false clarification in BIRD bird140: the
+introduction mentioned active badge-holders, but the actual query explicitly
+specified adults aged 19–65 with the Supporter badge, over all time. The agent
+invented an additional activity filter and asked for its definition. A follow-up
+prompt change distinguishes background motivation from actual query constraints,
+and treats explicit user/document definitions as valid even without a semantic
+layer entry. Genuine missing business definitions still require clarification.
+This follow-up is a **new product revision**, not part of the frozen full-v2
+predictions. Targeted checks and any subsequent full replay must identify it.
