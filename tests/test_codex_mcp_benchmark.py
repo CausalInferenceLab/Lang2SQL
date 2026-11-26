@@ -190,3 +190,107 @@ async def test_pass_exclusion_cannot_filter_full_accuracy():
 
     with pytest.raises(ValueError, match='requires --failures-from'):
         await run(SimpleNamespace(exclude_passed_from=['completed'], failures_from=None))
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("timeout", [False, True])
+async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monkeypatch, timeout):
+    import asyncio
+    import hashlib
+    import json
+    from types import SimpleNamespace
+
+    from bench.accuracy import codex_mcp as runner
+
+    case = {"instance_id": "case1", "db": "fixture", "question": "Return one"}
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({"suite": "bird", "cases": [case], "db_sha256": {}}))
+    schema = tmp_path / "schema.json"
+    schema.write_text("{}")
+    monkeypatch.setattr(runner, "validate_inputs", lambda *a: None)
+    monkeypatch.setattr(runner, "load_schema_documents", lambda *a: {"fixture": "fixture schema"})
+    monkeypatch.setattr(runner.subprocess, "check_output", lambda *a, **k: "test-version")
+    monkeypatch.setattr(runner, "export_result", lambda *a: 1)
+    raw_event = json.dumps({"type": "item.completed", "item": event()["item"]}) + "\n"
+    submitted = []
+
+    class Process:
+        returncode = None
+        killed = False
+
+        async def communicate(self, data):
+            submitted.append(data)
+            if timeout:
+                await asyncio.sleep(60)
+            self.returncode = 0
+
+        def kill(self):
+            self.killed = True
+            self.returncode = -9
+
+        async def wait(self):
+            return self.returncode
+
+    process = Process()
+
+    async def spawn(*command, **kwargs):
+        kwargs["stdout"].write(raw_event.encode())
+        kwargs["stdout"].flush()
+        Path(command[command.index("--output-last-message") + 1]).write_text("```sql\nSELECT 1\n```")
+        return process
+
+    from pathlib import Path
+    monkeypatch.setattr(runner.asyncio, "create_subprocess_exec", spawn)
+    args = SimpleNamespace(
+        exclude_passed_from=[], failures_from=None, manifest=manifest, db_dir=tmp_path,
+        root=tmp_path, schema_docs=schema, split="all", output=tmp_path / "run",
+        model="test-model", reasoning_effort="high", concurrency=1,
+        case_timeout=0.01 if timeout else 1, sql_timeout=1, max_rows=100,
+        review_source=None,
+    )
+    await runner.run(args)
+    root = args.output / "codex-mcp"
+    record = json.loads((root / "records/case1.json").read_text())
+    assert record["status"] == ("failed" if timeout else "predicted")
+    assert len(record["mcp_calls"]) == 1
+    assert record["events_sha256"] == hashlib.sha256(raw_event.encode()).hexdigest()
+    assert record["answer"] == "```sql\nSELECT 1\n```"
+    assert record["cli_exit_code"] == (-9 if timeout else 0)
+    assert process.killed == timeout
+    assert (root / "events/case1.prompt.txt").read_bytes() == submitted[0]
+    assert record["prompt_sha256"] == hashlib.sha256(submitted[0]).hexdigest()
+    if timeout:
+        assert record["error_type"] == "TimeoutError"
+        assert "sql" not in record
+
+
+def test_interrupted_event_tail_preserves_complete_calls(tmp_path, caplog):
+    import hashlib
+    import json
+    from types import SimpleNamespace
+
+    from bench.accuracy.codex_mcp import capture_trace
+
+    events = tmp_path / "events.jsonl"
+    payload = json.dumps({"type": "item.completed", "item": event()["item"]}) + '\n{"type":'
+    events.write_text(payload)
+    record = {"instance_id": "interrupted"}
+    complete = capture_trace(record, events, tmp_path / "missing-answer", SimpleNamespace(returncode=-9))
+    assert len(complete) == 1
+    assert len(record["mcp_calls"]) == 1
+    assert record["event_parse_errors"][0]["line"] == 2
+    assert record["events_sha256"] == hashlib.sha256(payload.encode()).hexdigest()
+    assert record["answer"] == ""
+    assert "interrupted" in caplog.text
+    assert "JSONDecodeError" in caplog.text
+    assert events.read_text() == payload
+
+
+def test_spawn_failure_has_explicit_absent_trace(tmp_path):
+    from bench.accuracy.codex_mcp import capture_trace
+
+    record = {"instance_id": "not-started"}
+    assert capture_trace(record, tmp_path / "missing-events", tmp_path / "missing-answer", None) == []
+    assert record["cli_exit_code"] is None
+    assert record["mcp_calls"] == []
+    assert "events_sha256" not in record
