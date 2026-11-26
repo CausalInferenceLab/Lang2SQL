@@ -73,6 +73,7 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
             "context_candidates",
             "calendar_interval_sql",
             "fixed_decimal_sql",
+            "integer_ratio_sql",
             "run_sql",
             "explore_schema",
             "term_custom",
@@ -566,3 +567,22 @@ async def test_cardinality_failure_is_audited_without_changing_sql():
         assert any(e.action == 'run_sql_contract_failed' and 'expected=1' in e.detail['contract_error'] for e in events)
     finally:
         ctx.store.close()
+
+
+@pytest.mark.asyncio
+async def test_integer_ratio_compiler_executes_via_stdio(tmp_path):
+    from lang2sql.tools.integer_ratio_sql import integer_ratio_ctes
+
+    async with connected(fixture_db(tmp_path), tmp_path / "metadata.db") as client:
+        compiled = await client.call_tool("integer_ratio_sql", {"dialect": "sqlite", "multiplier": 100})
+        assert not compiled.isError
+        ctes = integer_ratio_ctes(100)
+        assert ctes in compiled.content[0].text
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        result = await client.call_tool("run_sql", {
+            "definition_check_id": json.loads(check.content[0].text)["definition_check_id"],
+            "sql": "WITH ratio_input AS (SELECT 1 AS group_id, 1.0 AS numerator, 3.0 AS denominator), "
+                   + ctes + " SELECT status, ratio_value FROM ratio_result",
+        })
+        assert not result.isError
+        assert "ok | 33.333333333333336" in result.content[0].text

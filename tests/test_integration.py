@@ -29,6 +29,7 @@ def test_v1_tools_registered():
     assert names == {
         "calendar_interval_sql",
         "fixed_decimal_sql",
+        "integer_ratio_sql",
         "run_sql",
         "explore_schema",
         "enrich_schema",
