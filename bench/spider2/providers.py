@@ -92,12 +92,23 @@ class MeasuredLLM:
             start = time.monotonic()
             try:
                 response = await api(**kwargs)
-                raw = response.model_dump()
+                raw = (
+                    response.model_dump(by_alias=True, exclude_none=True)
+                    if self.profile.get("api") == "responses"
+                    else response.model_dump()
+                )
                 entry.update(
                     status="ok", usage=raw.get("usage"), response_model=raw.get("model")
                 )
                 if self.profile.get("api") == "responses":
                     entry["response_status"] = raw.get("status")
+                    entry["reasoning_items_returned"] = sum(
+                        item.get("type") == "reasoning"
+                        for item in raw.get("output", [])
+                    )
+                    entry["reasoning_items_replayed"] = sum(
+                        item.get("type") == "reasoning" for item in kwargs["input"]
+                    )
                     entry["incomplete_details"] = raw.get("incomplete_details")
                     return self.responses.decode(raw, messages, tools)
                 entry["finish_reason"] = raw["choices"][0].get("finish_reason")
