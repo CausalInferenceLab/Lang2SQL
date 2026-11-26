@@ -1,0 +1,7 @@
+SELECT COUNT(School) / 12.0 AS average_monthly_openings
+FROM main.schools
+WHERE County = 'San Diego'
+  AND OpenDate >= '1980-01-01'
+  AND OpenDate < '1981-01-01'
+  AND DOC IN ('52', '54', '56')
+LIMIT 1

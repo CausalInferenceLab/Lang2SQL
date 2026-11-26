@@ -1,0 +1,13 @@
+```sql
+SELECT COUNT(*) AS printing_count
+FROM main.cards AS c
+WHERE c.artist = 'Erica Yang'
+  AND instr(',' || c.availability || ',', ',paper,') > 0
+  AND c.uuid IN (
+      SELECT l.uuid
+      FROM main.legalities AS l
+      WHERE l.format = 'pauper'
+        AND l.status = 'Legal'
+  )
+LIMIT 1
+```

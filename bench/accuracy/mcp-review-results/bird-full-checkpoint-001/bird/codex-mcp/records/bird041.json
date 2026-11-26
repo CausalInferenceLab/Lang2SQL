@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird041",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "849bbf1ca3f535a85d5024d2853fc48d2b5183ac01fd55d2d98ca7e2c915825c",
+  "events_sha256": "1f23545fd5637947d523b59216d99ca1d46f33ad6440f6266f2d7d36a82a7398",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 207970,
+      "cached_input_tokens": 188288,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 736,
+      "reasoning_output_tokens": 68
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"m9gHInsIiwv4by8uG6z0K7tgFPhCoaeDGOJxhBWiBUI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "m9gHInsIiwv4by8uG6z0K7tgFPhCoaeDGOJxhBWiBUI",
+        "sql": "SELECT f.\"High Grade\", COUNT(*) AS frpm_rows, COUNT(s.CDSCode) AS directory_matches, COUNT(NULLIF(TRIM(s.School), '')) AS named_matches\nFROM frpm AS f\nLEFT JOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\" > 30\nGROUP BY f.\"High Grade\""
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nResult coverage: fetched_rows=13; displayed_rows=13; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): High Grade=str; frpm_rows=int; directory_matches=int; named_matches=int\nHigh Grade | frpm_rows | directory_matches | named_matches\n--- | --- | --- | ---\n1 | 2 | 2 | 2\n11 | 1 | 1 | 1\n12 | 1106 | 1106 | 1105\n13 | 1 | 1 | 1\n2 | 1 | 1 | 1\n3 | 5 | 5 | 5\n5 | 64 | 64 | 64\n6 | 36 | 36 | 36\n7 | 1 | 1 | 1\n8 | 4 | 4 | 4\nAdult | 9 | 9 | 7\nK | 8 | 8 | 8\nPost Secondary | 1 | 1 | 1\nSQL: SELECT f.\"High Grade\", COUNT(*) AS frpm_rows, COUNT(s.CDSCode) AS directory_matches, COUNT(NULLIF(TRIM(s.School), '')) AS named_matches\nFROM frpm AS f\nLEFT JOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\" > 30\nGROUP BY f.\"High Grade\"\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"FUe9h41kwOwlLNeYvsELrl6BnwDHsqnL9qmqdg_yxNs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "FUe9h41kwOwlLNeYvsELrl6BnwDHsqnL9qmqdg_yxNs",
+        "sql": "SELECT s.School, s.Street\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE TRIM(s.School) <> ''\n  AND f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\" > 30\n  AND f.\"High Grade\" IN ('K', '1', '2', '3', '4', '5', '6', '7', '8')\nLIMIT -1",
+        "expected_columns": [
+          "School",
+          "Street"
+        ],
+        "expected_rows": 121
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "121 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=121; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=str; Street=str\nSchool | Street\n--- | ---\nOcean View Elementary | 1000 Jackson Street\nIndependent Elementary | 21201 Independent School Road\nBrier Elementary | 39201 Sundale Drive\nJ. Haley Durham Elementary | 40292 Leslie Street\nParkmont Elementary | 2601 Parkside Drive\nBrookvale Elementary | 3400 Nicolet Avenue\nFred E. Weibel Elementary | 45135 South Grimmer Boulevard\nJames Dougherty Elementary | 5301 Hibernia Drive\nCarmen Dragon Elementary | 4721 Vista Grande Drive\nSutter Elementary | 3410 Longview Road\nTurner Elementary | 4207 Delta Fair Boulevard\nWalt Disney Elementary | 3250 Pine Valley Road\nGolden View Elementary | 5025 Canyon Crest Drive\nCoyote Creek Elementary | 8700 North Gale Ridge Road\nTahoe Valley Elementary | 943 Tahoe Island Drive\nWashington Elementary | 1501 Ellis Street\nEric White Elementary | 2001 Mitchell\nRoy W. Loudon Elementary | 4000 Loudon Street\nRaffaello Palla Elementary | 800 Fairview Road\nDel Rio Elementary | 600 Hidalgo Drive\nParkview Elementary | 520 A Street\nPalm Avenue Elementary | 1017 Palm Avenue\nR. J. Neutra | Community Center Drive\nAlameda Elementary | 8613 East Alameda Street\nOrchard Dale Elementary | 10625 South Cole Road\nColumbus Elementary | 425 West Milford Street\nMoffett Elementary | 11050 Larch Avenue\nBobbie Smith Elementary | 565 East Hill Street\nOlympic Primary Center | 950 South Albany Street\nMartha Escutia Primary Center | 6401 Bear Avenue\nDanny J. Bakewell, Sr., Primary Center | 8621 South Baring Cross Street\nHooper Avenue Primary Center | 1280 East 52nd Street\nPacific Boulevard | 2660 East 57th Street\nFrank del Olmo Elementary | 100 North New Hampshire Avenue\nMontague Charter Academy | 13000 Montague Street\nValerio Street Elementary | 15035 Valerio Street\nWest Athens Elementary | 1110 West 119th Street\nMcKinley Elementary | 2401 Santa Monica Boulevard\nWill Rogers Elementary | 2401 14th Street\nCharles Helmers Elementary | 27300 North Grandview Drive\nMonterey Hills Elementary | 1624 Via del Rey\nRoosevelt Elementary | 401 South Walnut Grove Avenue\nWashington Elementary | 1100 Lilienthal Lane\nStephens Elementary | 355 North 5th Street\nElim Elementary | 7677 North Lander Avenue\nPioneer Elementary | 2950 Gerard Avenue\nMary Chapa Academy | 490 El Camino Real\nDel Rey Elementary | 502 King Street\nRose Ferrero Elementary | 400 Entrada Drive\nSalvador Elementary | 1850 Salvador Avenue\nSQL: SELECT s.School, s.Street\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE TRIM(s.School) <> ''\n  AND f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\" > 30\n  AND f.\"High Grade\" IN ('K', '1', '2', '3', '4', '5', '6', '7', '8')\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT s.School, s.Street\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE TRIM(s.School) <> ''\n  AND f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\" > 30\n  AND f.\"High Grade\" IN ('K', '1', '2', '3', '4', '5', '6', '7', '8')\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 121,
+  "sql": "SELECT s.School, s.Street\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE TRIM(s.School) <> ''\n  AND f.\"Enrollment (K-12)\" - f.\"Enrollment (Ages 5-17)\" > 30\n  AND f.\"High Grade\" IN ('K', '1', '2', '3', '4', '5', '6', '7', '8')\nLIMIT -1",
+  "seconds": 30.062945291982032
+}

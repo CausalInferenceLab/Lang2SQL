@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird105",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "04945a26c42124026076ee891e4b35e8222b96392a8df072945fabf5ae661d44",
+  "events_sha256": "1441b6565231efc523550bca22f16f625b2c76ed2a8ef807fa71873b10b98989",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 233462,
+      "cached_input_tokens": 212352,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 751,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sets"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sets (table)\n- id: INTEGER NOT NULL\n- baseSetSize: INTEGER\n- block: TEXT\n- booster: TEXT\n- code: TEXT NOT NULL\n- isFoilOnly: INTEGER NOT NULL\n- isForeignOnly: INTEGER NOT NULL\n- isNonFoilOnly: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isPartialPreview: INTEGER NOT NULL\n- keyruneCode: TEXT\n- mcmId: INTEGER\n- mcmIdExtras: INTEGER\n- mcmName: TEXT\n- mtgoCode: TEXT\n- name: TEXT\n- parentCode: TEXT\n- releaseDate: DATE\n- tcgplayerGroupId: INTEGER\n- totalSetSize: INTEGER\n- type: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"68ECFHACRUUipPP16L4nIXeAa9qZHCW37V-5AHpr0WE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "set_translations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "set_translations (table)\n- id: INTEGER NOT NULL\n- language: TEXT\n- setCode: TEXT\n- translation: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (setCode) REFERENCES sets (code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "68ECFHACRUUipPP16L4nIXeAa9qZHCW37V-5AHpr0WE",
+        "sql": "SELECT COUNT(DISTINCT s.id) AS releases,\n       COUNT(DISTINCT CASE WHEN TRIM(t.translation) <> '' AND TRIM(t.language) <> '' THEN s.id END) AS translated_sets,\n       COUNT(t.id) AS translation_rows,\n       COUNT(t.translation) AS populated_names,\n       COUNT(CASE WHEN TRIM(t.translation) = '' THEN 1 END) AS blank_names,\n       GROUP_CONCAT(DISTINCT t.language) AS languages\nFROM main.sets AS s\nLEFT JOIN main.set_translations AS t ON t.setCode = s.code\nWHERE s.releaseDate >= '2016-01-01' AND s.releaseDate < '2017-01-01'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): releases=int; translated_sets=int; translation_rows=int; populated_names=int; blank_names=int; languages=str\nreleases | translated_sets | translation_rows | populated_names | blank_names | languages\n--- | --- | --- | --- | --- | ---\n23 | 11 | 110 | 109 | 0 | Chinese Simplified,Chinese Traditional,French,German,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Spanish\nSQL: SELECT COUNT(DISTINCT s.id) AS releases,\n       COUNT(DISTINCT CASE WHEN TRIM(t.translation) <> '' AND TRIM(t.language) <> '' THEN s.id END) AS translated_sets,\n       COUNT(t.id) AS translation_rows,\n       COUNT(t.translation) AS populated_names,\n       COUNT(CASE WHEN TRIM(t.translation) = '' THEN 1 END) AS blank_names,\n       GROUP_CONCAT(DISTINCT t.language) AS languages\nFROM main.sets AS s\nLEFT JOIN main.set_translations AS t ON t.setCode = s.code\nWHERE s.releaseDate >= '2016-01-01' AND s.releaseDate < '2017-01-01'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Lugx__Q6nhSHiALCK75OBSl7NwvBvfFSacdqPk58l-8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Lugx__Q6nhSHiALCK75OBSl7NwvBvfFSacdqPk58l-8",
+        "expected_columns": [
+          "average_languages"
+        ],
+        "expected_rows": 1,
+        "sql": "WITH per_set AS (\n    SELECT s.id, COUNT(DISTINCT t.language) AS language_count\n    FROM main.sets AS s\n    LEFT JOIN main.set_translations AS t\n        ON t.setCode = s.code\n       AND TRIM(t.translation) <> ''\n       AND TRIM(t.language) <> ''\n    WHERE s.releaseDate >= '2016-01-01'\n      AND s.releaseDate < '2017-01-01'\n    GROUP BY s.id\n)\nSELECT ROUND(AVG(language_count), 2) AS average_languages\nFROM per_set\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_languages=float\naverage_languages\n---\n4.74\nSQL: WITH per_set AS (\n    SELECT s.id, COUNT(DISTINCT t.language) AS language_count\n    FROM main.sets AS s\n    LEFT JOIN main.set_translations AS t\n        ON t.setCode = s.code\n       AND TRIM(t.translation) <> ''\n       AND TRIM(t.language) <> ''\n    WHERE s.releaseDate >= '2016-01-01'\n      AND s.releaseDate < '2017-01-01'\n    GROUP BY s.id\n)\nSELECT ROUND(AVG(language_count), 2) AS average_languages\nFROM per_set\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH per_set AS (\n    SELECT s.id, COUNT(DISTINCT t.language) AS language_count\n    FROM main.sets AS s\n    LEFT JOIN main.set_translations AS t\n        ON t.setCode = s.code\n       AND TRIM(t.translation) <> ''\n       AND TRIM(t.language) <> ''\n    WHERE s.releaseDate >= '2016-01-01'\n      AND s.releaseDate < '2017-01-01'\n    GROUP BY s.id\n)\nSELECT ROUND(AVG(language_count), 2) AS average_languages\nFROM per_set\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH per_set AS (\n    SELECT s.id, COUNT(DISTINCT t.language) AS language_count\n    FROM main.sets AS s\n    LEFT JOIN main.set_translations AS t\n        ON t.setCode = s.code\n       AND TRIM(t.translation) <> ''\n       AND TRIM(t.language) <> ''\n    WHERE s.releaseDate >= '2016-01-01'\n      AND s.releaseDate < '2017-01-01'\n    GROUP BY s.id\n)\nSELECT ROUND(AVG(language_count), 2) AS average_languages\nFROM per_set\nLIMIT 1",
+  "seconds": 31.526524291955866
+}

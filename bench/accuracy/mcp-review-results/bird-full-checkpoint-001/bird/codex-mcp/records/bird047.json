@@ -1,0 +1,156 @@
+{
+  "instance_id": "bird047",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "bc6dcc2bbc10f949d8ae7381b17d6fa339298609701a60ecd79803791256bffd",
+  "events_sha256": "d5c0f2cb20440a53dbc304a1efd019e360781d762e6413d95523c40b59db26c7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 221707,
+      "cached_input_tokens": 201600,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 861,
+      "reasoning_output_tokens": 135
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Ze9jpo56HE0BD9P0vRoRnVhQZK8TUR2Sylu7iZVYuyk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Ze9jpo56HE0BD9P0vRoRnVhQZK8TUR2Sylu7iZVYuyk",
+        "sql": "SELECT f.\"School Type\", COUNT(*) AS reported, COUNT(s.CDSCode) AS matched, SUM(f.\"FRPM Count (Ages 5-17)\" > 500) AS over_threshold\nFROM frpm AS f\nLEFT JOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"County Name\" = 'Los Angeles'\nGROUP BY f.\"School Type\""
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "16 row(s):\nResult coverage: fetched_rows=16; displayed_rows=16; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School Type=NoneType,str; reported=int; matched=int; over_threshold=NoneType,int\nSchool Type | reported | matched | over_threshold\n--- | --- | --- | ---\nNone | 6 | 6 | 0\nAlternative Schools of Choice | 52 | 52 | 11\nContinuation High Schools | 85 | 85 | 0\nCounty Community | 3 | 3 | 1\nDistrict Community Day Schools | 33 | 33 | 0\nElemen Schools In 1 School Dist. (Public) | 3 | 3 | 1\nElementary Schools (Public) | 1289 | 1289 | 383\nHigh Schools (Public) | 330 | 330 | 181\nHigh Schools In 1 School Dist. (Public) | 1 | 1 | 1\nIntermediate/Middle Schools (Public) | 328 | 328 | 155\nJunior High Schools (Public) | 2 | 2 | 0\nJuvenile Court Schools | 18 | 18 | 0\nK-12 Schools (Public) | 35 | 35 | 15\nOpportunity Schools | 6 | 6 | 0\nPreschool | 1 | 1 | None\nSpecial Education Schools (Public) | 26 | 26 | 0\nSQL: SELECT f.\"School Type\", COUNT(*) AS reported, COUNT(s.CDSCode) AS matched, SUM(f.\"FRPM Count (Ages 5-17)\" > 500) AS over_threshold\nFROM frpm AS f\nLEFT JOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"County Name\" = 'Los Angeles'\nGROUP BY f.\"School Type\"\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"vmCNjF5cd2x00kgOJKEBHOrd8vKo_QuCN4_QZGHAOfg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "SELECT\n    s.School,\n    s.Street,\n    s.City,\n    s.State,\n    s.Zip\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"County Name\" = 'Los Angeles'\n  AND f.\"School Type\" IN (\n      'High Schools (Public)',\n      'Continuation High Schools',\n      'High Schools In 1 School Dist. (Public)'\n  )\n  AND f.\"FRPM Count (Ages 5-17)\" > 500\nORDER BY s.School, s.CDSCode",
+        "definition_check_id": "vmCNjF5cd2x00kgOJKEBHOrd8vKo_QuCN4_QZGHAOfg",
+        "expected_columns": [
+          "School",
+          "Street",
+          "City",
+          "State",
+          "Zip"
+        ],
+        "expected_rows": 182
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "182 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=182; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=str; Street=str; City=str; State=str; Zip=str\nSchool | Street | City | State | Zip\n--- | --- | --- | --- | ---\nAbraham Lincoln Senior High | 3501 North Broadway | Los Angeles | CA | 90031-2856\nAlain Leroy Locke College Preparatory Academy | 325 East 111th Street | Los Angeles | CA | 90061-3003\nAlexander Hamilton Senior High | 2955 Robertson Boulevard | Los Angeles | CA | 90034-3116\nAlhambra High | 101 South Second Street | Alhambra | CA | 91801-3716\nAlliance Collins Family College-Ready High | 2071 Saturn Avenue | Huntington Park | CA | 90255-3635\nAlliance Gertz-Ressler Richard Merkin 6-12 Complex | 2023 South Union Avenue | Los Angeles | CA | 90007-1326\nAlliance Judy Ivie Burton Technology Academy High | 10101 South Broadway | Los Angeles | CA | 90003-4534\nAlliance Marc & Eva Stern Math and Science | 5151 State University Drive, Lot 2 | Los Angeles | CA | 90032-4226\nAlliance Ouchi-O'Donovan 6-12 Complex | 5356 South Fifth Avenue | Los Angeles | CA | 90043-2622\nAlliance Patti And Peter Neuwirth Leadership Academy | 4610 South Main Street | Los Angeles | CA | 90037-2736\nAlliance Renee and Meyer Luskin Academy High | 2941 West 70th Street | Los Angeles | CA | 90043-4420\nAnderson W. Clark Magnet High | 4747 New York Avenue | La Crescenta | CA | 91214-1841\nAnimo Inglewood Charter High | 3425 West Manchester Boulevard | Inglewood | CA | 90305-2101\nAnimo Jackie Robinson High | 3500 South Hill Street | Los Angeles | CA | 90007-4333\nAnimo Leadership High | 11044 South Freeman Avenue | Inglewood | CA | 90301-2902\nAnimo Pat Brown | 8255 Beach Street | Los Angeles | CA | 90001-4014\nAnimo Ralph Bunche Charter High | 1655 East 27th Street, Suite B | Los Angeles | CA | 90011-2202\nAnimo South Los Angeles Charter | 12226 South Western Avenue | Los Angeles | CA | 90047-5240\nAntelope Valley High | 44900 North Division Street | Lancaster | CA | 93535-2538\nArcadia High | 180 Campus Drive | Arcadia | CA | 91007-6958\nArleta High | 14200 Van Nuys Boulevard | Arleta | CA | 91331-5103\nArroyo High | 4921 North Cedar Avenue | El Monte | CA | 91732-1099\nArtesia High | 12108 East Del Amo Boulevard | Lakewood | CA | 90715-1516\nAzusa High | 240 North Cerritos Avenue | Azusa | CA | 91702-3733\nBaldwin Park High | 3900 North Puente Avenue | Baldwin Park | CA | 91706-4428\nBassett Senior High | 755 Ardilla Avenue | La Puente | CA | 91746-2163\nBell Gardens High | 6119 Agra Street | Bell Gardens | CA | 90201-1705\nBell Senior High | 4328 Bell Avenue | Bell | CA | 90201-2528\nBellflower High | 15301 South McNab Avenue | Bellflower | CA | 90706-4101\nBelmont Senior High | 1575 West 2nd Street | Los Angeles | CA | 90026-5701\nBenjamin Franklin Senior High | 820 North Avenue 54 | Los Angeles | CA | 90042-2428\nBirmingham Community Charter High | 17000 Haynes Street | Van Nuys | CA | 91406-5420\nBlair High | 1201 South Marengo Avenue | Pasadena | CA | 91106-4265\nBonita High | 3102 D Street | La Verne | CA | 91750-4023\nBurbank High | 902 North Third Street | Burbank | CA | 91502-1018\nBurroughs High | 1920 Clark Avenue | Burbank | CA | 91506-1918\nCabrillo High | 2001 Santa Fe Avenue | Long Beach | CA | 90810-4068\nCalifornia High | 9800 South Mills Avenue | Whittier | CA | 90604-1030\nCanoga Park Senior High | 6850 Topanga Canyon Boulevard | Canoga Park | CA | 91303-2354\nCanyon High | 19300 West Nadal Street | Canyon Country | CA | 91351-1253\nCarson Senior High | 22328 South Main Street | Carson | CA | 90745-4525\nCentennial High | 2606 North Central Avenue | Compton | CA | 90222-1640\nCerritos High | 12500 East 183rd Street | Cerritos | CA | 90703-8450\nCharter Oak High | 1430 East Covina Boulevard | Covina | CA | 91724-1651\nChatsworth Charter High | 10027 Lurline Avenue | Chatsworth | CA | 91311-3153\nClaremont High | 1601 North Indian Hill Boulevard | Claremont | CA | 91711-2643\nCompton High | 601 South Acacia Street | Compton | CA | 90220-3702\nCovina High | 463 South Hollenbeck Avenue | Covina | CA | 91723-2955\nCrenshaw Science, Technology, Engineering, Math and Medicine Magnet | 5010 11th Avenue | Los Angeles | CA | 90043-4816\nCulver City High | 4401 Elenda Street | Culver City | CA | 90230-4101\nSQL: SELECT\n    s.School,\n    s.Street,\n    s.City,\n    s.State,\n    s.Zip\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"County Name\" = 'Los Angeles'\n  AND f.\"School Type\" IN (\n      'High Schools (Public)',\n      'Continuation High Schools',\n      'High Schools In 1 School Dist. (Public)'\n  )\n  AND f.\"FRPM Count (Ages 5-17)\" > 500\nORDER BY s.School, s.CDSCode\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    s.School,\n    s.Street,\n    s.City,\n    s.State,\n    s.Zip\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"County Name\" = 'Los Angeles'\n  AND f.\"School Type\" IN (\n      'High Schools (Public)',\n      'Continuation High Schools',\n      'High Schools In 1 School Dist. (Public)'\n  )\n  AND f.\"FRPM Count (Ages 5-17)\" > 500\nORDER BY s.School, s.CDSCode\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 182,
+  "sql": "SELECT\n    s.School,\n    s.Street,\n    s.City,\n    s.State,\n    s.Zip\nFROM frpm AS f\nJOIN schools AS s ON s.CDSCode = f.CDSCode\nWHERE f.\"County Name\" = 'Los Angeles'\n  AND f.\"School Type\" IN (\n      'High Schools (Public)',\n      'Continuation High Schools',\n      'High Schools In 1 School Dist. (Public)'\n  )\n  AND f.\"FRPM Count (Ages 5-17)\" > 500\nORDER BY s.School, s.CDSCode\nLIMIT 1000",
+  "seconds": 33.347058332990855
+}

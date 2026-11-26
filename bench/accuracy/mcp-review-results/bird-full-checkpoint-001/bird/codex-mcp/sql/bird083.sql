@@ -1,0 +1,13 @@
+WITH japanese_names AS (
+    SELECT DISTINCT setCode
+    FROM main.set_translations
+    WHERE language = 'Japanese'
+      AND TRIM(translation) <> ''
+)
+SELECT s.type AS expansion_type,
+       COUNT(j.setCode) AS sets_with_japanese_name
+FROM main.sets AS s
+LEFT JOIN japanese_names AS j ON j.setCode = s.code
+GROUP BY s.type
+ORDER BY s.type ASC
+LIMIT 1000

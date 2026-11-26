@@ -1,0 +1,19 @@
+```sql
+WITH banned AS (
+    SELECT format, uuid
+    FROM main.legalities
+    WHERE status = 'Banned'
+),
+format_counts AS (
+    SELECT format, COUNT(*) AS printing_count
+    FROM banned
+    GROUP BY format
+)
+SELECT DISTINCT b.format, c.name
+FROM banned AS b
+JOIN main.cards AS c ON c.uuid = b.uuid
+JOIN format_counts AS f ON f.format = b.format
+WHERE f.printing_count = (SELECT MAX(printing_count) FROM format_counts)
+ORDER BY b.format, c.name
+LIMIT 1000
+```

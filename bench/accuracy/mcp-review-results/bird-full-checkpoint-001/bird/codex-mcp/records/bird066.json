@@ -1,0 +1,154 @@
+{
+  "instance_id": "bird066",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "8ed2572265ae8793b338e991ec11e391446e6d75b35464b5fce0b0017cf38a76",
+  "events_sha256": "f5ec7d621ceb25e206a41ddd19864c0c100946d709f0fc1b296d16ae1572fa12",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 233749,
+      "cached_input_tokens": 212480,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 845,
+      "reasoning_output_tokens": 144
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sets"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sets (table)\n- id: INTEGER NOT NULL\n- baseSetSize: INTEGER\n- block: TEXT\n- booster: TEXT\n- code: TEXT NOT NULL\n- isFoilOnly: INTEGER NOT NULL\n- isForeignOnly: INTEGER NOT NULL\n- isNonFoilOnly: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isPartialPreview: INTEGER NOT NULL\n- keyruneCode: TEXT\n- mcmId: INTEGER\n- mcmIdExtras: INTEGER\n- mcmName: TEXT\n- mtgoCode: TEXT\n- name: TEXT\n- parentCode: TEXT\n- releaseDate: DATE\n- tcgplayerGroupId: INTEGER\n- totalSetSize: INTEGER\n- type: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"pVssYJN_Ca8T7SAV68CAzvqMhN-JF_sgL-nHqmYnspg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "set_translations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "set_translations (table)\n- id: INTEGER NOT NULL\n- language: TEXT\n- setCode: TEXT\n- translation: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (setCode) REFERENCES sets (code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "pVssYJN_Ca8T7SAV68CAzvqMhN-JF_sgL-nHqmYnspg",
+        "sql": "SELECT\n    (SELECT COUNT(DISTINCT type) FROM main.sets) AS set_types,\n    (SELECT COUNT(*) FROM main.sets WHERE type IS NULL) AS missing_types,\n    (SELECT COUNT(*) FROM main.sets WHERE totalSetSize IS NULL) AS missing_sizes,\n    COUNT(DISTINCT setCode) AS codes_with_rows,\n    COUNT(DISTINCT CASE WHEN TRIM(translation) <> '' THEN setCode END) AS codes_with_names,\n    GROUP_CONCAT(DISTINCT language) AS languages\nFROM main.set_translations;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): set_types=int; missing_types=int; missing_sizes=int; codes_with_rows=int; codes_with_names=int; languages=str\nset_types | missing_types | missing_sizes | codes_with_rows | codes_with_names | languages\n--- | --- | --- | --- | --- | ---\n20 | 0 | 0 | 121 | 121 | Chinese Simplified,Chinese Traditional,French,German,Italian,Japanese,Korean,Portuguese (Brazil),Russian,Spanish\nSQL: SELECT\n    (SELECT COUNT(DISTINCT type) FROM main.sets) AS set_types,\n    (SELECT COUNT(*) FROM main.sets WHERE type IS NULL) AS missing_types,\n    (SELECT COUNT(*) FROM main.sets WHERE totalSetSize IS NULL) AS missing_sizes,\n    COUNT(DISTINCT setCode) AS codes_with_rows,\n    COUNT(DISTINCT CASE WHEN TRIM(translation) <> '' THEN setCode END) AS codes_with_names,\n    GROUP_CONCAT(DISTINCT language) AS languages\nFROM main.set_translations\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"kjO0id3i5oKR_1Zx1OcSUs_00cNUDATpiEWUMnZE9fA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "kjO0id3i5oKR_1Zx1OcSUs_00cNUDATpiEWUMnZE9fA",
+        "expected_rows": 20,
+        "expected_columns": [
+          "set_type",
+          "translated_sets",
+          "total_cards"
+        ],
+        "sql": "WITH translated_sets AS (\n    SELECT DISTINCT setCode\n    FROM main.set_translations\n    WHERE TRIM(translation) <> ''\n)\nSELECT\n    s.type AS set_type,\n    COUNT(t.setCode) AS translated_sets,\n    SUM(CASE WHEN t.setCode IS NOT NULL THEN s.totalSetSize ELSE 0 END) AS total_cards\nFROM main.sets AS s\nLEFT JOIN translated_sets AS t ON t.setCode = s.code\nGROUP BY s.type\nORDER BY s.type ASC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "20 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=20; displayed_rows=20; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): set_type=str; translated_sets=int; total_cards=int\nset_type | translated_sets | total_cards\n--- | --- | ---\narchenemy | 1 | 150\nbox | 3 | 284\ncommander | 7 | 2031\ncore | 13 | 4584\ndraft_innovation | 2 | 432\nduel_deck | 18 | 1363\nexpansion | 61 | 14023\nfrom_the_vault | 8 | 126\nfunny | 0 | 0\nmasterpiece | 0 | 0\nmasters | 5 | 1121\nmemorabilia | 0 | 0\nplanechase | 2 | 312\npremium_deck | 1 | 34\npromo | 0 | 0\nspellbook | 0 | 0\nstarter | 0 | 0\ntoken | 0 | 0\ntreasure_chest | 0 | 0\nvanguard | 0 | 0\nSQL: WITH translated_sets AS (\n    SELECT DISTINCT setCode\n    FROM main.set_translations\n    WHERE TRIM(translation) <> ''\n)\nSELECT\n    s.type AS set_type,\n    COUNT(t.setCode) AS translated_sets,\n    SUM(CASE WHEN t.setCode IS NOT NULL THEN s.totalSetSize ELSE 0 END) AS total_cards\nFROM main.sets AS s\nLEFT JOIN translated_sets AS t ON t.setCode = s.code\nGROUP BY s.type\nORDER BY s.type ASC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH translated_sets AS (\n    SELECT DISTINCT setCode\n    FROM main.set_translations\n    WHERE TRIM(translation) <> ''\n)\nSELECT\n    s.type AS set_type,\n    COUNT(t.setCode) AS translated_sets,\n    SUM(CASE WHEN t.setCode IS NOT NULL THEN s.totalSetSize ELSE 0 END) AS total_cards\nFROM main.sets AS s\nLEFT JOIN translated_sets AS t ON t.setCode = s.code\nGROUP BY s.type\nORDER BY s.type ASC\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 20,
+  "sql": "WITH translated_sets AS (\n    SELECT DISTINCT setCode\n    FROM main.set_translations\n    WHERE TRIM(translation) <> ''\n)\nSELECT\n    s.type AS set_type,\n    COUNT(t.setCode) AS translated_sets,\n    SUM(CASE WHEN t.setCode IS NOT NULL THEN s.totalSetSize ELSE 0 END) AS total_cards\nFROM main.sets AS s\nLEFT JOIN translated_sets AS t ON t.setCode = s.code\nGROUP BY s.type\nORDER BY s.type ASC\nLIMIT 1000",
+  "seconds": 35.67412533296738
+}

@@ -1,0 +1,38 @@
+WITH eligible AS (
+    SELECT s.CDSCode, s.School, s.County, s.City,
+           s.MailStreet, s.MailCity, s.MailState, s.MailZip,
+           s.Website, s.OpenDate, s.ClosedDate,
+           f."Enrollment (K-12)" AS enrollment_k12,
+           f."FRPM Count (K-12)" AS frpm_eligible_count,
+           1.0 * f."FRPM Count (K-12)" / f."Enrollment (K-12)" AS frpm_share
+    FROM main.schools AS s
+    JOIN main.frpm AS f ON f.CDSCode = s.CDSCode
+    WHERE s.EdOpsCode = 'TRAD'
+      AND s.Charter = 0
+      AND f."Enrollment (K-12)" > 100
+),
+selected AS (
+    SELECT 1 AS part_order, 'largest FRPM-eligible count' AS part, e.*
+    FROM eligible AS e
+    WHERE e.frpm_eligible_count = (SELECT MAX(frpm_eligible_count) FROM eligible)
+    UNION ALL
+    SELECT 2, 'smallest FRPM share', e.*
+    FROM eligible AS e
+    WHERE e.frpm_share = (SELECT MIN(frpm_share) FROM eligible)
+    UNION ALL
+    SELECT 3, 'the CDS code from my notes', e.*
+    FROM eligible AS e
+    WHERE e.CDSCode = '04615150435602'
+)
+SELECT e.part, e.School AS school_name, e.County AS county, e.City AS city,
+       e.MailStreet AS mailing_street, e.MailCity AS mailing_city,
+       e.MailState AS mailing_state, e.MailZip AS mailing_zip, e.Website AS website,
+       e.enrollment_k12, e.frpm_eligible_count, e.frpm_share,
+       sat.AvgScrRead + sat.AvgScrMath + sat.AvgScrWrite AS average_total_sat_score,
+       100.0 * sat.NumGE1500 / NULLIF(sat.NumTstTakr, 0) AS percent_scoring_1500_or_more,
+       e.OpenDate AS opening_date,
+       CASE WHEN e.ClosedDate IS NOT NULL THEN 'closed' ELSE 'open' END AS status
+FROM selected AS e
+LEFT JOIN main.satscores AS sat ON sat.cds = e.CDSCode
+ORDER BY e.part_order, e.CDSCode
+LIMIT 1000

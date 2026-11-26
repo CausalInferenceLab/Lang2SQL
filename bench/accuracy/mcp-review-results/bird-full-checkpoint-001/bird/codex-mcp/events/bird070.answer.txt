@@ -1,0 +1,15 @@
+```sql
+WITH printings AS (
+    SELECT frameVersion
+    FROM main.cards
+    WHERE name = 'Tarmogoyf'
+)
+SELECT
+    frameVersion AS frame_year,
+    ROUND(100.0 * COUNT(*) / (SELECT COUNT(*) FROM printings), 2) AS printing_percentage
+FROM printings
+WHERE frameVersion GLOB '[0-9][0-9][0-9][0-9]'
+GROUP BY frameVersion
+ORDER BY frameVersion DESC
+LIMIT 1
+```

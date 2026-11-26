@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird012",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "e9e157073e481c4ebcdf28f55071145d344ebcc3ae3a23089750dc5071642296",
+  "events_sha256": "7d0afc9ed3de45f0f5771cc551d38a77451cf76040724b2cae20edb8262ce69f",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 219586,
+      "cached_input_tokens": 200320,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 725,
+      "reasoning_output_tokens": 49
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"C2WCY1HRaQWXxa_X3W_ys0U8g_5QyPp4iUvvCVjvWuo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "C2WCY1HRaQWXxa_X3W_ys0U8g_5QyPp4iUvvCVjvWuo",
+        "sql": "SELECT s.DOCType, t.rtype, typeof(t.AvgScrRead) AS score_type,\n       COUNT(*) AS records, COUNT(s.School) AS school_names,\n       MAX(t.AvgScrRead) AS highest_score\nFROM main.schools AS s\nJOIN main.satscores AS t ON t.cds = s.CDSCode\nWHERE s.DOC = '02'\nGROUP BY s.DOCType, t.rtype, typeof(t.AvgScrRead);"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DOCType=str; rtype=str; score_type=str; records=int; school_names=int; highest_score=NoneType,int\nDOCType | rtype | score_type | records | school_names | highest_score\n--- | --- | --- | --- | --- | ---\nState Board of Education | D | integer | 4 | 0 | 516\nState Board of Education | D | null | 1 | 0 | None\nState Board of Education | S | integer | 3 | 3 | 501\nState Board of Education | S | null | 1 | 1 | None\nSQL: SELECT s.DOCType, t.rtype, typeof(t.AvgScrRead) AS score_type,\n       COUNT(*) AS records, COUNT(s.School) AS school_names,\n       MAX(t.AvgScrRead) AS highest_score\nFROM main.schools AS s\nJOIN main.satscores AS t ON t.cds = s.CDSCode\nWHERE s.DOC = '02'\nGROUP BY s.DOCType, t.rtype, typeof(t.AvgScrRead)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"pTMODCdaVbORK79nnGT9HFUrVMMPv0VxyOQQYQuvT9E\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "pTMODCdaVbORK79nnGT9HFUrVMMPv0VxyOQQYQuvT9E",
+        "expected_columns": [
+          "School",
+          "MailStreet"
+        ],
+        "sql": "WITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOC = '02'\n      AND t.rtype = 'S'\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School=str; MailStreet=str\nSchool | MailStreet\n--- | ---\nSan Francisco Flex Academy | 1350 7th Avenue\nSQL: WITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOC = '02'\n      AND t.rtype = 'S'\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOC = '02'\n      AND t.rtype = 'S'\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH eligible AS (\n    SELECT s.School, s.MailStreet, t.AvgScrRead\n    FROM main.schools AS s\n    JOIN main.satscores AS t ON t.cds = s.CDSCode\n    WHERE s.DOC = '02'\n      AND t.rtype = 'S'\n)\nSELECT School, MailStreet\nFROM eligible\nWHERE AvgScrRead = (SELECT MAX(AvgScrRead) FROM eligible)\nORDER BY School, MailStreet\nLIMIT -1",
+  "seconds": 32.115566374966875
+}

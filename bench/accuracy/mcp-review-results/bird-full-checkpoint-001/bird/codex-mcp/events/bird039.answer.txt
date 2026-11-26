@@ -1,0 +1,15 @@
+```sql
+SELECT
+    s.County,
+    COUNT(*) FILTER (WHERE s.Virtual = 'F') AS exclusive_virtual_schools
+FROM main.schools AS s
+WHERE s.County = 'Santa Barbara'
+   OR s.County = (
+       SELECT County
+       FROM main.schools
+       WHERE CDSCode = '01100170109835'
+   )
+GROUP BY s.County
+ORDER BY exclusive_virtual_schools DESC, s.County ASC
+LIMIT 2
+```

@@ -1,0 +1,28 @@
+WITH qualifying_schools AS (
+    SELECT
+        f."County Name" AS county_name,
+        f."Charter School (Y/N)" AS charter_indicator,
+        ROUND(100.0 * f."Free Meal Count (K-12)" / NULLIF(f."Enrollment (K-12)", 0), 2) AS free_meal_pct,
+        ROUND(100.0 * f."FRPM Count (K-12)" / NULLIF(f."Enrollment (K-12)", 0), 2) AS frpm_pct,
+        s.AvgScrRead + s.AvgScrMath + s.AvgScrWrite AS sat_score
+    FROM main.frpm AS f
+    LEFT JOIN main.satscores AS s ON s.cds = f.CDSCode
+    WHERE f."County Code" = (
+        SELECT anchor."County Code"
+        FROM main.frpm AS anchor
+        WHERE anchor.CDSCode = '01612590125716'
+    )
+      AND f."Free Meal Count (K-12)" > 500
+      AND f."FRPM Count (K-12)" < 700
+)
+SELECT
+    county_name,
+    COUNT(*) AS school_count,
+    ROUND(AVG(free_meal_pct), 2) AS avg_free_meal_pct,
+    ROUND(AVG(frpm_pct), 2) AS avg_frpm_pct,
+    COUNT(CASE WHEN charter_indicator = 1 THEN 1 END) AS charter_school_count,
+    COUNT(CASE WHEN charter_indicator = 0 THEN 1 END) AS non_charter_school_count,
+    ROUND(AVG(sat_score), 2) AS avg_sat_score
+FROM qualifying_schools
+GROUP BY county_name
+LIMIT 1

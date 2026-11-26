@@ -1,0 +1,22 @@
+WITH matching_schools AS (
+    SELECT AdmEmail1, AdmEmail2, AdmEmail3
+    FROM main.schools
+    WHERE City = 'San Bernardino'
+      AND County = 'San Bernardino'
+      AND SOCType = 'Intermediate/Middle Schools (Public)'
+      AND DOCType = 'Unified School District'
+      AND OpenDate >= '2009-01-01'
+      AND OpenDate < '2011-01-01'
+),
+administrator_emails(email) AS (
+    SELECT AdmEmail1 FROM matching_schools
+    UNION
+    SELECT AdmEmail2 FROM matching_schools
+    UNION
+    SELECT AdmEmail3 FROM matching_schools
+)
+SELECT email
+FROM administrator_emails
+WHERE TRIM(email) <> ''
+ORDER BY email
+LIMIT 1000
