@@ -1,0 +1,894 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lang2SQL trace comparison</title><style>body{font:16px system-ui;margin:24px;color:#172033;background:#f5f7fb}.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}section,details{padding:12px;background:white;border:1px solid #ccd4df;border-radius:6px;margin:8px 0}summary{cursor:pointer;font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}</style><body><h1>Lang2SQL trace comparison</h1><pre>Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.</pre><pre>{
+  &quot;0 -&gt; 1&quot;: 1
+}</pre><details><summary>Provenance and settings</summary><pre>[
+  {
+    &quot;path&quot;: &quot;/Users/seyoung/workspace/benchmarks/codex-mcp-unobserved-20261127/checkpoints/003/spider&quot;,
+    &quot;manifest_sha256&quot;: &quot;04ad71a8a266c82727bf5177ff9758ba233ef7244a98d766c52c765c63a98f30&quot;,
+    &quot;scores_sha256&quot;: &quot;e1af7059492e9e78451ea8024f9c1366a96ea4eec192cd6afd891bf4cd0747de&quot;,
+    &quot;settings&quot;: {
+      &quot;profiles&quot;: [
+        {
+          &quot;name&quot;: &quot;codex-mcp&quot;,
+          &quot;model&quot;: &quot;gpt-6.2-astra&quot;,
+          &quot;reasoning_effort&quot;: &quot;high&quot;
+        }
+      ],
+      &quot;backend&quot;: &quot;ChatGPT login -&gt; Codex CLI -&gt; production Lang2SQL MCP&quot;,
+      &quot;revision&quot;: &quot;0c7953905ee455c7611652924cb341e596d7937a&quot;,
+      &quot;codex_version&quot;: &quot;codex-cli 0.170.0&quot;,
+      &quot;sources&quot;: {
+        &quot;bench/accuracy/codex_mcp.py&quot;: &quot;561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0&quot;,
+        &quot;src/lang2sql/frontends/mcp/server.py&quot;: &quot;0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb&quot;
+      },
+      &quot;schema_document_sha256&quot;: &quot;195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf&quot;,
+      &quot;review_source&quot;: null,
+      &quot;failure_selection&quot;: null,
+      &quot;split&quot;: &quot;development&quot;,
+      &quot;concurrency&quot;: 2,
+      &quot;case_timeout&quot;: 600.0,
+      &quot;sql_timeout&quot;: 30,
+      &quot;max_rows&quot;: 100000,
+      &quot;api_calls&quot;: null,
+      &quot;usage_unit&quot;: &quot;one Codex CLI invocation per question; internal model-call count unavailable&quot;
+    }
+  },
+  {
+    &quot;path&quot;: &quot;/Users/seyoung/workspace/benchmarks/codex-mcp-share-units-20261127/spider-gpt-6.2-astra&quot;,
+    &quot;manifest_sha256&quot;: &quot;29e962978814e69f8e33f99b231f1a0c137b1608825087acc05a4455bdd16b33&quot;,
+    &quot;scores_sha256&quot;: &quot;48f8928d3753a472c271ea39fc412552ac3f3131fee172bb065036d1002d7830&quot;,
+    &quot;settings&quot;: {
+      &quot;profiles&quot;: [
+        {
+          &quot;name&quot;: &quot;codex-mcp&quot;,
+          &quot;model&quot;: &quot;gpt-6.2-astra&quot;,
+          &quot;reasoning_effort&quot;: &quot;high&quot;
+        }
+      ],
+      &quot;backend&quot;: &quot;ChatGPT login -&gt; Codex CLI -&gt; production Lang2SQL MCP&quot;,
+      &quot;revision&quot;: &quot;e10a2b8dfeda6132cb859ac629f7f7686b0f68ee&quot;,
+      &quot;codex_version&quot;: &quot;codex-cli 0.170.0&quot;,
+      &quot;sources&quot;: {
+        &quot;bench/accuracy/codex_mcp.py&quot;: &quot;561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0&quot;,
+        &quot;src/lang2sql/frontends/mcp/server.py&quot;: &quot;0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb&quot;
+      },
+      &quot;schema_document_sha256&quot;: &quot;195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf&quot;,
+      &quot;review_source&quot;: null,
+      &quot;failure_selection&quot;: null,
+      &quot;split&quot;: &quot;development&quot;,
+      &quot;concurrency&quot;: 1,
+      &quot;case_timeout&quot;: 600.0,
+      &quot;sql_timeout&quot;: 30,
+      &quot;max_rows&quot;: 100000,
+      &quot;api_calls&quot;: null,
+      &quot;usage_unit&quot;: &quot;one Codex CLI invocation per question; internal model-call count unavailable&quot;
+    }
+  }
+]</pre></details><details id="local060"><summary>local060: 0 -&gt; 1</summary><pre>{
+  &quot;instance_id&quot;: &quot;local060&quot;,
+  &quot;db&quot;: &quot;complex_oracle&quot;,
+  &quot;question&quot;: &quot;In the United States, for Q4 2019 and Q4 2020, first select only those cities where total sales (with no promotions) rose by at least 20% from Q4 2019 to Q4 2020. Among these cities, rank products by their overall sales (still excluding promotions) in those quarters and take the top 20%. Then compute each top product’s share of total sales in Q4 2019 and Q4 2020 and calculate the difference in share from Q4 2019 to Q4 2020, returning the results in descending order of that share change.&quot;,
+  &quot;external_knowledge&quot;: null,
+  &quot;document_sha256&quot;: null
+}</pre><h3>SQL diff</h3><pre>--- before.sql
++++ after.sql
+@@ -18,33 +18,30 @@
+     FROM city_product_sales
+     GROUP BY cust_city_id
+     HAVING SUM(sales_2019) &gt; 0
+-       AND SUM(sales_2020) &gt;= 1.2 * SUM(sales_2019)
++       AND SUM(sales_2020) &gt;= 1.20 * SUM(sales_2019)
+ ),
+ product_sales AS (
+-    SELECT
+-        s.prod_id,
+-        SUM(s.sales_2019) AS sales_2019,
+-        SUM(s.sales_2020) AS sales_2020
+-    FROM city_product_sales AS s
+-    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id
+-    GROUP BY s.prod_id
++    SELECT prod_id, SUM(sales_2019) AS sales_2019, SUM(sales_2020) AS sales_2020
++    FROM city_product_sales
++    JOIN qualifying_cities USING (cust_city_id)
++    GROUP BY prod_id
+ ),
+ ranked_products AS (
+     SELECT
+         prod_id,
+         NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,
+-        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,
+-        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct
++        1.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS share_q4_2019,
++        1.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS share_q4_2020
+     FROM product_sales
+ )
+ SELECT
+-    r.prod_id,
++    p.prod_id,
+     p.prod_name,
+-    r.q4_2019_share_pct,
+-    r.q4_2020_share_pct,
+-    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp
++    r.share_q4_2019,
++    r.share_q4_2020,
++    r.share_q4_2020 - r.share_q4_2019 AS share_change
+ FROM ranked_products AS r
+-LEFT JOIN main.products AS p ON p.prod_id = r.prod_id
++JOIN main.products AS p ON p.prod_id = r.prod_id
+ WHERE r.sales_quintile = 1
+-ORDER BY share_change_pp DESC, r.prod_id
+-LIMIT 1000
++ORDER BY share_change DESC, p.prod_id
++LIMIT -1</pre><div class="pair"><section><h3>before: score 0</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 80.0095489580417
+}</pre><h4>Final SQL / answer</h4><pre>WITH city_product_sales AS (
+    SELECT
+        c.cust_city_id,
+        s.prod_id,
+        SUM(CASE WHEN s.time_id &lt; &#x27;2020-01-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2019,
+        SUM(CASE WHEN s.time_id &gt;= &#x27;2020-10-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2020
+    FROM main.sales AS s
+    JOIN main.customers AS c ON c.cust_id = s.cust_id
+    JOIN main.countries AS co ON co.country_id = c.country_id
+    WHERE co.country_iso_code = &#x27;US&#x27;
+      AND s.promo_id = 999
+      AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)
+        OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))
+    GROUP BY c.cust_city_id, s.prod_id
+),
+qualifying_cities AS (
+    SELECT cust_city_id
+    FROM city_product_sales
+    GROUP BY cust_city_id
+    HAVING SUM(sales_2019) &gt; 0
+       AND SUM(sales_2020) &gt;= 1.2 * SUM(sales_2019)
+),
+product_sales AS (
+    SELECT
+        s.prod_id,
+        SUM(s.sales_2019) AS sales_2019,
+        SUM(s.sales_2020) AS sales_2020
+    FROM city_product_sales AS s
+    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id
+    GROUP BY s.prod_id
+),
+ranked_products AS (
+    SELECT
+        prod_id,
+        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,
+        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,
+        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct
+    FROM product_sales
+)
+SELECT
+    r.prod_id,
+    p.prod_name,
+    r.q4_2019_share_pct,
+    r.q4_2020_share_pct,
+    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp
+FROM ranked_products AS r
+LEFT JOIN main.products AS p ON p.prod_id = r.prod_id
+WHERE r.sales_quintile = 1
+ORDER BY share_change_pp DESC, r.prod_id
+LIMIT 1000</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;prod_id&quot;,
+    &quot;prod_name&quot;,
+    &quot;q4_2019_share_pct&quot;,
+    &quot;q4_2020_share_pct&quot;,
+    &quot;share_change_pp&quot;
+  ],
+  &quot;row_count&quot;: 15,
+  &quot;preview&quot;: [
+    [
+      &quot;20&quot;,
+      &quot;&quot;,
+      &quot;0.6154870224388869&quot;,
+      &quot;12.643571578588729&quot;,
+      &quot;12.028084556149842&quot;
+    ],
+    [
+      &quot;17&quot;,
+      &quot;&quot;,
+      &quot;0.25874799186003&quot;,
+      &quot;7.073075886094672&quot;,
+      &quot;6.8143278942346415&quot;
+    ],
+    [
+      &quot;13&quot;,
+      &quot;&quot;,
+      &quot;0.2057098816051351&quot;,
+      &quot;3.7648493739705367&quot;,
+      &quot;3.5591394923654014&quot;
+    ],
+    [
+      &quot;28&quot;,
+      &quot;English Willow Cricket Bat&quot;,
+      &quot;0.9944944176339929&quot;,
+      &quot;3.5448214617450002&quot;,
+      &quot;2.5503270441110075&quot;
+    ],
+    [
+      &quot;25&quot;,
+      &quot;&quot;,
+      &quot;0.7405275997317833&quot;,
+      &quot;2.720951402086619&quot;,
+      &quot;1.9804238023548357&quot;
+    ],
+    [
+      &quot;26&quot;,
+      &quot;&quot;,
+      &quot;0.8959029603517865&quot;,
+      &quot;2.506522287893383&quot;,
+      &quot;1.6106193275415963&quot;
+    ],
+    [
+      &quot;37&quot;,
+      &quot;&quot;,
+      &quot;3.1083072019063827&quot;,
+      &quot;2.506468933011144&quot;,
+      &quot;-0.6018382688952388&quot;
+    ],
+    [
+      &quot;35&quot;,
+      &quot;&quot;,
+      &quot;2.6589314333770186&quot;,
+      &quot;2.049204426736783&quot;,
+      &quot;-0.6097270066402358&quot;
+    ],
+    [
+      &quot;130&quot;,
+      &quot;Pro Maple Youth Bat&quot;,
+      &quot;3.5097654753151293&quot;,
+      &quot;2.5552768706100455&quot;,
+      &quot;-0.9544886047050838&quot;
+    ],
+    [
+      &quot;29&quot;,
+      &quot;&quot;,
+      &quot;3.385809745199248&quot;,
+      &quot;2.000982007001408&quot;,
+      &quot;-1.3848277381978402&quot;
+    ],
+    [
+      &quot;14&quot;,
+      &quot;Pitching Machine and Batting Cage Combo&quot;,
+      &quot;9.5218981264024&quot;,
+      &quot;7.79688475393941&quot;,
+      &quot;-1.72501337246299&quot;
+    ],
+    [
+      &quot;118&quot;,
+      &quot;&quot;,
+      &quot;4.454899346394927&quot;,
+      &quot;0.8683451650671866&quot;,
+      &quot;-3.5865541813277404&quot;
+    ],
+    [
+      &quot;21&quot;,
+      &quot;Speed Trainer Bats and Training Program&quot;,
+      &quot;9.026325948918469&quot;,
+      &quot;5.1552034626071315&quot;,
+      &quot;-3.8711224863113376&quot;
+    ],
+    [
+      &quot;18&quot;,
+      &quot;&quot;,
+      &quot;16.941234493657557&quot;,
+      &quot;9.774438424273727&quot;,
+      &quot;-7.16679606938383&quot;
+    ],
+    [
+      &quot;15&quot;,
+      &quot;&quot;,
+      &quot;13.031255931158874&quot;,
+      &quot;4.031686148012404&quot;,
+      &quot;-8.99956978314647&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;c05148dd88850776a7171c2a2ed21e920b2214e3f63e68b209ebb7589fc43f4b&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;2Cp2CLg8tnAPh2D6s7FpzBpM0NTG8tcgBrofbQMmqe0\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;customers&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;customers (table)\n- cust_id: INTEGER NOT NULL\n- cust_first_name: TEXT NOT NULL\n- cust_last_name: TEXT NOT NULL\n- cust_gender: CHAR(1) NOT NULL\n- cust_year_of_birth: INTEGER NOT NULL\n- cust_marital_status: TEXT\n- cust_street_address: TEXT NOT NULL\n- cust_postal_code: TEXT NOT NULL\n- cust_city: TEXT NOT NULL\n- cust_city_id: INTEGER NOT NULL\n- cust_state_province: TEXT NOT NULL\n- cust_state_province_id: INTEGER NOT NULL\n- country_id: INTEGER NOT NULL\n- cust_main_phone_number: TEXT NOT NULL\n- cust_income_level: TEXT\n- cust_credit_limit: REAL\n- cust_email: TEXT\n- cust_total: TEXT NOT NULL\n- cust_total_id: INTEGER NOT NULL\n- cust_src_id: INTEGER\n- cust_eff_from: DATE\n- cust_eff_to: DATE\n- cust_valid: CHAR(1)\nPRIMARY KEY (cust_id)\nFOREIGN KEY (country_id) REFERENCES countries (country_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;products&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;products (table)\n- prod_id: INTEGER NOT NULL\n- prod_name: TEXT NOT NULL\n- prod_desc: TEXT NOT NULL\n- prod_subcategory: TEXT NOT NULL\n- prod_subcategory_id: INTEGER NOT NULL\n- prod_subcategory_desc: TEXT NOT NULL\n- prod_category: TEXT NOT NULL\n- prod_category_id: INTEGER NOT NULL\n- prod_category_desc: TEXT NOT NULL\n- prod_weight_class: INTEGER NOT NULL\n- prod_unit_of_measure: TEXT\n- prod_pack_size: TEXT NOT NULL\n- supplier_id: INTEGER NOT NULL\n- prod_status: TEXT NOT NULL\n- prod_list_price: REAL NOT NULL\n- prod_min_price: REAL NOT NULL\n- prod_total: TEXT NOT NULL\n- prod_total_id: INTEGER NOT NULL\n- prod_src_id: INTEGER\n- prod_eff_from: DATE\n- prod_eff_to: DATE\n- prod_valid: CHAR(1)\nPRIMARY KEY (prod_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;sales&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;sales (table)\n- prod_id: INTEGER NOT NULL\n- cust_id: INTEGER NOT NULL\n- time_id: DATE NOT NULL\n- channel_id: INTEGER NOT NULL\n- promo_id: INTEGER NOT NULL\n- quantity_sold: INTEGER NOT NULL\n- amount_sold: REAL NOT NULL\nFOREIGN KEY (promo_id) REFERENCES promotions (promo_id)\nFOREIGN KEY (cust_id) REFERENCES customers (cust_id)\nFOREIGN KEY (prod_id) REFERENCES products (prod_id)\nFOREIGN KEY (channel_id) REFERENCES channels (channel_id)\nFOREIGN KEY (time_id) REFERENCES times (time_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;times&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;times (table)\n- time_id: DATE NOT NULL\n- day_name: TEXT NOT NULL\n- day_number_in_week: INTEGER NOT NULL\n- day_number_in_month: INTEGER NOT NULL\n- calendar_week_number: INTEGER NOT NULL\n- fiscal_week_number: INTEGER NOT NULL\n- week_ending_day: DATE NOT NULL\n- week_ending_day_id: INTEGER NOT NULL\n- calendar_month_number: INTEGER NOT NULL\n- fiscal_month_number: INTEGER NOT NULL\n- calendar_month_desc: TEXT NOT NULL\n- calendar_month_id: INTEGER NOT NULL\n- fiscal_month_desc: TEXT NOT NULL\n- fiscal_month_id: INTEGER NOT NULL\n- days_in_cal_month: INTEGER NOT NULL\n- days_in_fis_month: INTEGER NOT NULL\n- end_of_cal_month: DATE NOT NULL\n- end_of_fis_month: DATE NOT NULL\n- calendar_month_name: TEXT NOT NULL\n- fiscal_month_name: TEXT NOT NULL\n- calendar_quarter_desc: CHAR(7) NOT NULL\n- calendar_quarter_id: INTEGER NOT NULL\n- fiscal_quarter_desc: CHAR(7) NOT NULL\n- fiscal_quarter_id: INTEGER NOT NULL\n- days_in_cal_quarter: INTEGER NOT NULL\n- days_in_fis_quarter: INTEGER NOT NULL\n- end_of_cal_quarter: DATE NOT NULL\n- end_of_fis_quarter: DATE NOT NULL\n- calendar_quarter_number: INTEGER NOT NULL\n- fiscal_quarter_number: INTEGER NOT NULL\n- calendar_year: INTEGER NOT NULL\n- calendar_year_id: INTEGER NOT NULL\n- fiscal_year: INTEGER NOT NULL\n- fiscal_year_id: INTEGER NOT NULL\n- days_in_cal_year: INTEGER NOT NULL\n- days_in_fis_year: INTEGER NOT NULL\n- end_of_cal_year: DATE NOT NULL\n- end_of_fis_year: DATE NOT NULL\nPRIMARY KEY (time_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;countries&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;countries (table)\n- country_id: INTEGER NOT NULL\n- country_iso_code: CHAR(2) NOT NULL\n- country_name: TEXT NOT NULL\n- country_subregion: TEXT NOT NULL\n- country_subregion_id: INTEGER NOT NULL\n- country_region: TEXT NOT NULL\n- country_region_id: INTEGER NOT NULL\n- country_total: TEXT NOT NULL\n- country_total_id: INTEGER NOT NULL\nPRIMARY KEY (country_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_7&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;promotions&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;promotions (table)\n- promo_id: INTEGER NOT NULL\n- promo_name: TEXT NOT NULL\n- promo_subcategory: TEXT NOT NULL\n- promo_subcategory_id: INTEGER NOT NULL\n- promo_category: TEXT NOT NULL\n- promo_category_id: INTEGER NOT NULL\n- promo_cost: REAL NOT NULL\n- promo_begin_date: DATE NOT NULL\n- promo_end_date: DATE NOT NULL\n- promo_total: TEXT NOT NULL\n- promo_total_id: INTEGER NOT NULL\nPRIMARY KEY (promo_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_8&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;2Cp2CLg8tnAPh2D6s7FpzBpM0NTG8tcgBrofbQMmqe0&quot;,
+      &quot;sql&quot;: &quot;SELECT p.promo_id, p.promo_name, p.promo_category, p.promo_subcategory\nFROM main.promotions AS p\nWHERE p.promo_name LIKE &#x27;%no prom%&#x27;\n   OR p.promo_id = 999&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): promo_id=int; promo_name=str; promo_category=str; promo_subcategory=str\npromo_id | promo_name | promo_category | promo_subcategory\n--- | --- | --- | ---\n999 | NO PROMOTION # | NO PROMOTION | NO PROMOTION\nSQL: SELECT p.promo_id, p.promo_name, p.promo_category, p.promo_subcategory\nFROM main.promotions AS p\nWHERE p.promo_name LIKE &#x27;%no prom%&#x27;\n   OR p.promo_id = 999\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_9&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;Fg0MBDTMRx7JiACR0wkVWVEruPGHc09lMUYaKN1LANk\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_10&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;Fg0MBDTMRx7JiACR0wkVWVEruPGHc09lMUYaKN1LANk&quot;,
+      &quot;sql&quot;: &quot;WITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN t.calendar_year = 2019 THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN t.calendar_year = 2020 THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = &#x27;US&#x27;\n      AND s.promo_id = 999\n      AND t.calendar_quarter_number = 4\n      AND t.calendar_year IN (2019, 2020)\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) &gt; 0\n       AND SUM(sales_2020) &gt;= 1.2 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT\n        s.prod_id,\n        SUM(s.sales_2019) AS sales_2019,\n        SUM(s.sales_2020) AS sales_2020\n    FROM city_product_sales AS s\n    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id\n    GROUP BY s.prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,\n        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct\n    FROM product_sales\n)\nSELECT\n    p.prod_id,\n    p.prod_name,\n    r.q4_2019_share_pct,\n    r.q4_2020_share_pct,\n    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp\nFROM ranked_products AS r\nJOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change_pp DESC, p.prod_id&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): prod_id=int; prod_name=str; q4_2019_share_pct=float; q4_2020_share_pct=float; share_change_pp=float\nprod_id | prod_name | q4_2019_share_pct | q4_2020_share_pct | share_change_pp\n--- | --- | --- | --- | ---\n28 | English Willow Cricket Bat | 0.9944944176339929 | 3.5448214617450002 | 2.5503270441110075\n130 | Pro Maple Youth Bat | 3.5097654753151293 | 2.5552768706100455 | -0.9544886047050838\n14 | Pitching Machine and Batting Cage Combo | 9.5218981264024 | 7.79688475393941 | -1.72501337246299\n21 | Speed Trainer Bats and Training Program | 9.026325948918469 | 5.1552034626071315 | -3.8711224863113376\nSQL: WITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN t.calendar_year = 2019 THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN t.calendar_year = 2020 THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.times AS t ON t.time_id = s.time_id\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = &#x27;US&#x27;\n      AND s.promo_id = 999\n      AND t.calendar_quarter_number = 4\n      AND t.calendar_year IN (2019, 2020)\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) &gt; 0\n       AND SUM(sales_2020) &gt;= 1.2 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT\n        s.prod_id,\n        SUM(s.sales_2019) AS sales_2019,\n        SUM(s.sales_2020) AS sales_2020\n    FROM city_product_sales AS s\n    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id\n    GROUP BY s.prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,\n        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct\n    FROM product_sales\n)\nSELECT\n    p.prod_id,\n    p.prod_name,\n    r.q4_2019_share_pct,\n    r.q4_2020_share_pct,\n    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp\nFROM ranked_products AS r\nJOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change_pp DESC, p.prod_id\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_11&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;Y6GAlIRJbJgt3J6r4Zz4k68NzRfy3Q7t4cf0Yo76GY8\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_12&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;Y6GAlIRJbJgt3J6r4Zz4k68NzRfy3Q7t4cf0Yo76GY8&quot;,
+      &quot;sql&quot;: &quot;SELECT COUNT(DISTINCT s.prod_id) AS distinct_products,\n       COUNT(DISTINCT CASE WHEN p.prod_id IS NULL THEN s.prod_id END) AS unmatched_products\nFROM main.sales AS s\nLEFT JOIN main.products AS p ON p.prod_id = s.prod_id\nWHERE s.promo_id = 999\n  AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)\n    OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): distinct_products=int; unmatched_products=int\ndistinct_products | unmatched_products\n--- | ---\n72 | 51\nSQL: SELECT COUNT(DISTINCT s.prod_id) AS distinct_products,\n       COUNT(DISTINCT CASE WHEN p.prod_id IS NULL THEN s.prod_id END) AS unmatched_products\nFROM main.sales AS s\nLEFT JOIN main.products AS p ON p.prod_id = s.prod_id\nWHERE s.promo_id = 999\n  AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)\n    OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_14&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;TPtHY5MczPdpGEvv1oiEhX5BwnntCrzacJBrxGxQYoQ\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_15&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;TPtHY5MczPdpGEvv1oiEhX5BwnntCrzacJBrxGxQYoQ&quot;,
+      &quot;sql&quot;: &quot;WITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN s.time_id &lt; &#x27;2020-01-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN s.time_id &gt;= &#x27;2020-10-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = &#x27;US&#x27;\n      AND s.promo_id = 999\n      AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)\n        OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) &gt; 0\n       AND SUM(sales_2020) &gt;= 1.2 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT\n        s.prod_id,\n        SUM(s.sales_2019) AS sales_2019,\n        SUM(s.sales_2020) AS sales_2020\n    FROM city_product_sales AS s\n    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id\n    GROUP BY s.prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,\n        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct\n    FROM product_sales\n)\nSELECT\n    r.prod_id,\n    p.prod_name,\n    r.q4_2019_share_pct,\n    r.q4_2020_share_pct,\n    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp\nFROM ranked_products AS r\nLEFT JOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change_pp DESC, r.prod_id&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;15 row(s):\nResult coverage: fetched_rows=15; displayed_rows=15; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): prod_id=int; prod_name=NoneType,str; q4_2019_share_pct=float; q4_2020_share_pct=float; share_change_pp=float\nprod_id | prod_name | q4_2019_share_pct | q4_2020_share_pct | share_change_pp\n--- | --- | --- | --- | ---\n20 | None | 0.6154870224388869 | 12.643571578588729 | 12.028084556149842\n17 | None | 0.25874799186003 | 7.073075886094672 | 6.8143278942346415\n13 | None | 0.2057098816051351 | 3.7648493739705367 | 3.5591394923654014\n28 | English Willow Cricket Bat | 0.9944944176339929 | 3.5448214617450002 | 2.5503270441110075\n25 | None | 0.7405275997317833 | 2.720951402086619 | 1.9804238023548357\n26 | None | 0.8959029603517865 | 2.506522287893383 | 1.6106193275415963\n37 | None | 3.1083072019063827 | 2.506468933011144 | -0.6018382688952388\n35 | None | 2.6589314333770186 | 2.049204426736783 | -0.6097270066402358\n130 | Pro Maple Youth Bat | 3.5097654753151293 | 2.5552768706100455 | -0.9544886047050838\n29 | None | 3.385809745199248 | 2.000982007001408 | -1.3848277381978402\n14 | Pitching Machine and Batting Cage Combo | 9.5218981264024 | 7.79688475393941 | -1.72501337246299\n118 | None | 4.454899346394927 | 0.8683451650671866 | -3.5865541813277404\n21 | Speed Trainer Bats and Training Program | 9.026325948918469 | 5.1552034626071315 | -3.8711224863113376\n18 | None | 16.941234493657557 | 9.774438424273727 | -7.16679606938383\n15 | None | 13.031255931158874 | 4.031686148012404 | -8.99956978314647\nSQL: WITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN s.time_id &lt; &#x27;2020-01-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN s.time_id &gt;= &#x27;2020-10-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = &#x27;US&#x27;\n      AND s.promo_id = 999\n      AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)\n        OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) &gt; 0\n       AND SUM(sales_2020) &gt;= 1.2 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT\n        s.prod_id,\n        SUM(s.sales_2019) AS sales_2019,\n        SUM(s.sales_2020) AS sales_2020\n    FROM city_product_sales AS s\n    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id\n    GROUP BY s.prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,\n        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct\n    FROM product_sales\n)\nSELECT\n    r.prod_id,\n    p.prod_name,\n    r.q4_2019_share_pct,\n    r.q4_2020_share_pct,\n    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp\nFROM ranked_products AS r\nLEFT JOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change_pp DESC, r.prod_id\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section><section><h3>after: score 1</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 60.9022837090306
+}</pre><h4>Final SQL / answer</h4><pre>WITH city_product_sales AS (
+    SELECT
+        c.cust_city_id,
+        s.prod_id,
+        SUM(CASE WHEN s.time_id &lt; &#x27;2020-01-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2019,
+        SUM(CASE WHEN s.time_id &gt;= &#x27;2020-10-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2020
+    FROM main.sales AS s
+    JOIN main.customers AS c ON c.cust_id = s.cust_id
+    JOIN main.countries AS co ON co.country_id = c.country_id
+    WHERE co.country_iso_code = &#x27;US&#x27;
+      AND s.promo_id = 999
+      AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)
+        OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))
+    GROUP BY c.cust_city_id, s.prod_id
+),
+qualifying_cities AS (
+    SELECT cust_city_id
+    FROM city_product_sales
+    GROUP BY cust_city_id
+    HAVING SUM(sales_2019) &gt; 0
+       AND SUM(sales_2020) &gt;= 1.20 * SUM(sales_2019)
+),
+product_sales AS (
+    SELECT prod_id, SUM(sales_2019) AS sales_2019, SUM(sales_2020) AS sales_2020
+    FROM city_product_sales
+    JOIN qualifying_cities USING (cust_city_id)
+    GROUP BY prod_id
+),
+ranked_products AS (
+    SELECT
+        prod_id,
+        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,
+        1.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS share_q4_2019,
+        1.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS share_q4_2020
+    FROM product_sales
+)
+SELECT
+    p.prod_id,
+    p.prod_name,
+    r.share_q4_2019,
+    r.share_q4_2020,
+    r.share_q4_2020 - r.share_q4_2019 AS share_change
+FROM ranked_products AS r
+JOIN main.products AS p ON p.prod_id = r.prod_id
+WHERE r.sales_quintile = 1
+ORDER BY share_change DESC, p.prod_id
+LIMIT -1</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;prod_id&quot;,
+    &quot;prod_name&quot;,
+    &quot;share_q4_2019&quot;,
+    &quot;share_q4_2020&quot;,
+    &quot;share_change&quot;
+  ],
+  &quot;row_count&quot;: 4,
+  &quot;preview&quot;: [
+    [
+      &quot;28&quot;,
+      &quot;English Willow Cricket Bat&quot;,
+      &quot;0.00994494417633993&quot;,
+      &quot;0.03544821461745&quot;,
+      &quot;0.02550327044111007&quot;
+    ],
+    [
+      &quot;130&quot;,
+      &quot;Pro Maple Youth Bat&quot;,
+      &quot;0.0350976547531513&quot;,
+      &quot;0.025552768706100456&quot;,
+      &quot;-0.009544886047050841&quot;
+    ],
+    [
+      &quot;14&quot;,
+      &quot;Pitching Machine and Batting Cage Combo&quot;,
+      &quot;0.095218981264024&quot;,
+      &quot;0.07796884753939409&quot;,
+      &quot;-0.017250133724629912&quot;
+    ],
+    [
+      &quot;21&quot;,
+      &quot;Speed Trainer Bats and Training Program&quot;,
+      &quot;0.09026325948918469&quot;,
+      &quot;0.05155203462607132&quot;,
+      &quot;-0.03871122486311337&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;bab64dbae732b41229896023bac0b5f09e48d3150a1adce82978b434f98fe2f8&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;customers&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;customers (table)\n- cust_id: INTEGER NOT NULL\n- cust_first_name: TEXT NOT NULL\n- cust_last_name: TEXT NOT NULL\n- cust_gender: CHAR(1) NOT NULL\n- cust_year_of_birth: INTEGER NOT NULL\n- cust_marital_status: TEXT\n- cust_street_address: TEXT NOT NULL\n- cust_postal_code: TEXT NOT NULL\n- cust_city: TEXT NOT NULL\n- cust_city_id: INTEGER NOT NULL\n- cust_state_province: TEXT NOT NULL\n- cust_state_province_id: INTEGER NOT NULL\n- country_id: INTEGER NOT NULL\n- cust_main_phone_number: TEXT NOT NULL\n- cust_income_level: TEXT\n- cust_credit_limit: REAL\n- cust_email: TEXT\n- cust_total: TEXT NOT NULL\n- cust_total_id: INTEGER NOT NULL\n- cust_src_id: INTEGER\n- cust_eff_from: DATE\n- cust_eff_to: DATE\n- cust_valid: CHAR(1)\nPRIMARY KEY (cust_id)\nFOREIGN KEY (country_id) REFERENCES countries (country_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;products&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;products (table)\n- prod_id: INTEGER NOT NULL\n- prod_name: TEXT NOT NULL\n- prod_desc: TEXT NOT NULL\n- prod_subcategory: TEXT NOT NULL\n- prod_subcategory_id: INTEGER NOT NULL\n- prod_subcategory_desc: TEXT NOT NULL\n- prod_category: TEXT NOT NULL\n- prod_category_id: INTEGER NOT NULL\n- prod_category_desc: TEXT NOT NULL\n- prod_weight_class: INTEGER NOT NULL\n- prod_unit_of_measure: TEXT\n- prod_pack_size: TEXT NOT NULL\n- supplier_id: INTEGER NOT NULL\n- prod_status: TEXT NOT NULL\n- prod_list_price: REAL NOT NULL\n- prod_min_price: REAL NOT NULL\n- prod_total: TEXT NOT NULL\n- prod_total_id: INTEGER NOT NULL\n- prod_src_id: INTEGER\n- prod_eff_from: DATE\n- prod_eff_to: DATE\n- prod_valid: CHAR(1)\nPRIMARY KEY (prod_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;countries&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;countries (table)\n- country_id: INTEGER NOT NULL\n- country_iso_code: CHAR(2) NOT NULL\n- country_name: TEXT NOT NULL\n- country_subregion: TEXT NOT NULL\n- country_subregion_id: INTEGER NOT NULL\n- country_region: TEXT NOT NULL\n- country_region_id: INTEGER NOT NULL\n- country_total: TEXT NOT NULL\n- country_total_id: INTEGER NOT NULL\nPRIMARY KEY (country_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;sales&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;sales (table)\n- prod_id: INTEGER NOT NULL\n- cust_id: INTEGER NOT NULL\n- time_id: DATE NOT NULL\n- channel_id: INTEGER NOT NULL\n- promo_id: INTEGER NOT NULL\n- quantity_sold: INTEGER NOT NULL\n- amount_sold: REAL NOT NULL\nFOREIGN KEY (promo_id) REFERENCES promotions (promo_id)\nFOREIGN KEY (cust_id) REFERENCES customers (cust_id)\nFOREIGN KEY (prod_id) REFERENCES products (prod_id)\nFOREIGN KEY (channel_id) REFERENCES channels (channel_id)\nFOREIGN KEY (time_id) REFERENCES times (time_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;AoSNEbmUR7rqZG54ro_CJ3bByPUyfWUVaET7o8QhO8Y\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;promotions&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;promotions (table)\n- promo_id: INTEGER NOT NULL\n- promo_name: TEXT NOT NULL\n- promo_subcategory: TEXT NOT NULL\n- promo_subcategory_id: INTEGER NOT NULL\n- promo_category: TEXT NOT NULL\n- promo_category_id: INTEGER NOT NULL\n- promo_cost: REAL NOT NULL\n- promo_begin_date: DATE NOT NULL\n- promo_end_date: DATE NOT NULL\n- promo_total: TEXT NOT NULL\n- promo_total_id: INTEGER NOT NULL\nPRIMARY KEY (promo_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_7&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;AoSNEbmUR7rqZG54ro_CJ3bByPUyfWUVaET7o8QhO8Y&quot;,
+      &quot;sql&quot;: &quot;SELECT promo_id, promo_name, promo_subcategory, promo_category\nFROM main.promotions\nWHERE promo_id = 999 OR promo_name LIKE &#x27;%no promo%&#x27;&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): promo_id=int; promo_name=str; promo_subcategory=str; promo_category=str\npromo_id | promo_name | promo_subcategory | promo_category\n--- | --- | --- | ---\n999 | NO PROMOTION # | NO PROMOTION | NO PROMOTION\nSQL: SELECT promo_id, promo_name, promo_subcategory, promo_category\nFROM main.promotions\nWHERE promo_id = 999 OR promo_name LIKE &#x27;%no promo%&#x27;\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_8&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;KAmZBdMqbEfXUjhANUd814fyUKj5P_W0IdZqgAR14KQ\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_9&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;KAmZBdMqbEfXUjhANUd814fyUKj5P_W0IdZqgAR14KQ&quot;,
+      &quot;sql&quot;: &quot;SELECT c.cust_city_id, c.cust_city, COUNT(DISTINCT c.cust_state_province_id) AS states\nFROM main.customers AS c\nJOIN main.countries AS co ON co.country_id = c.country_id\nWHERE co.country_iso_code = &#x27;US&#x27;\nGROUP BY c.cust_city_id, c.cust_city\nHAVING COUNT(DISTINCT c.cust_state_province_id) &gt; 1\nLIMIT 5&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;(0 rows)\nResult coverage: fetched_rows=0; displayed_rows=0; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nSQL: SELECT c.cust_city_id, c.cust_city, COUNT(DISTINCT c.cust_state_province_id) AS states\nFROM main.customers AS c\nJOIN main.countries AS co ON co.country_id = c.country_id\nWHERE co.country_iso_code = &#x27;US&#x27;\nGROUP BY c.cust_city_id, c.cust_city\nHAVING COUNT(DISTINCT c.cust_state_province_id) &gt; 1\nLIMIT 5&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_10&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;2ia9Icviq20E87MAxOCi0aHTZg0_c_9aYYDzYYbE80k\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_11&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;sql&quot;: &quot;WITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN s.time_id &lt; &#x27;2020-01-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN s.time_id &gt;= &#x27;2020-10-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = &#x27;US&#x27;\n      AND s.promo_id = 999\n      AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)\n        OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) &gt; 0\n       AND SUM(sales_2020) &gt;= 1.20 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT prod_id, SUM(sales_2019) AS sales_2019, SUM(sales_2020) AS sales_2020\n    FROM city_product_sales\n    JOIN qualifying_cities USING (cust_city_id)\n    GROUP BY prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        1.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS share_q4_2019,\n        1.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS share_q4_2020\n    FROM product_sales\n)\nSELECT\n    p.prod_id,\n    p.prod_name,\n    r.share_q4_2019,\n    r.share_q4_2020,\n    r.share_q4_2020 - r.share_q4_2019 AS share_change\nFROM ranked_products AS r\nJOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change DESC, p.prod_id\nLIMIT -1&quot;,
+      &quot;definition_check_id&quot;: &quot;2ia9Icviq20E87MAxOCi0aHTZg0_c_9aYYDzYYbE80k&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): prod_id=int; prod_name=str; share_q4_2019=float; share_q4_2020=float; share_change=float\nprod_id | prod_name | share_q4_2019 | share_q4_2020 | share_change\n--- | --- | --- | --- | ---\n28 | English Willow Cricket Bat | 0.00994494417633993 | 0.03544821461745 | 0.02550327044111007\n130 | Pro Maple Youth Bat | 0.0350976547531513 | 0.025552768706100456 | -0.009544886047050841\n14 | Pitching Machine and Batting Cage Combo | 0.095218981264024 | 0.07796884753939409 | -0.017250133724629912\n21 | Speed Trainer Bats and Training Program | 0.09026325948918469 | 0.05155203462607132 | -0.03871122486311337\nSQL: WITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN s.time_id &lt; &#x27;2020-01-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN s.time_id &gt;= &#x27;2020-10-01&#x27; THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = &#x27;US&#x27;\n      AND s.promo_id = 999\n      AND ((s.time_id &gt;= &#x27;2019-10-01&#x27; AND s.time_id &lt; &#x27;2020-01-01&#x27;)\n        OR (s.time_id &gt;= &#x27;2020-10-01&#x27; AND s.time_id &lt; &#x27;2021-01-01&#x27;))\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) &gt; 0\n       AND SUM(sales_2020) &gt;= 1.20 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT prod_id, SUM(sales_2019) AS sales_2019, SUM(sales_2020) AS sales_2020\n    FROM city_product_sales\n    JOIN qualifying_cities USING (cust_city_id)\n    GROUP BY prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        1.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS share_q4_2019,\n        1.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS share_q4_2020\n    FROM product_sales\n)\nSELECT\n    p.prod_id,\n    p.prod_name,\n    r.share_q4_2019,\n    r.share_q4_2020,\n    r.share_q4_2020 - r.share_q4_2019 AS share_change\nFROM ranked_products AS r\nJOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change DESC, p.prod_id\nLIMIT -1&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section></div></details></body></html>

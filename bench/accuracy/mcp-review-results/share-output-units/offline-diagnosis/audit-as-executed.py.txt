@@ -1,0 +1,38 @@
+"""Offline unit/join ablation only, never model input or a repair score."""
+import ast
+import hashlib
+import json
+import math
+import sqlite3
+from pathlib import Path
+import pandas as pd
+root=Path('/Users/seyoung/workspace/benchmarks')
+run=root/'codex-mcp-unobserved-20261127/checkpoints/003/spider'
+manifest=json.loads((run/'manifest.json').read_text())
+record=run/'codex-mcp/records/local060.json'
+sql=json.loads(record.read_text())['sql']
+db=root/'spider2-databases/complex_oracle.sqlite'
+evaluator=root/'Spider2/spider2-lite/evaluation_suite/evaluate.py'
+assert hashlib.sha256(db.read_bytes()).hexdigest()==manifest['db_sha256']['complex_oracle']
+assert hashlib.sha256(evaluator.read_bytes()).hexdigest()==manifest['evaluator_sha256']
+node=next(n for n in ast.parse(evaluator.read_text()).body if isinstance(n,ast.FunctionDef) and n.name=='compare_pandas_table')
+namespace={'pd':pd,'math':math}
+exec(compile(ast.Module(body=[node],type_ignores=[]),str(evaluator),'exec'),namespace)
+refs=sorted((evaluator.parent/'gold/exec_result').glob('local060*.csv'))
+standard=next(json.loads(s) for s in (evaluator.parent/'gold/spider2lite_eval.jsonl').read_text().splitlines() if json.loads(s)['instance_id']=='local060')
+variants={'original':sql,'fraction_only':sql.replace('100.0 * sales_','1.0 * sales_'),'inner_join_only':sql.replace('LEFT JOIN main.products','JOIN main.products')}
+variants['both']=variants['fraction_only'].replace('LEFT JOIN main.products','JOIN main.products')
+report=[]
+out=root/'share-unit-diagnosis-20261127'
+out.mkdir(exist_ok=True)
+with sqlite3.connect('file:'+str(db)+'?mode=ro',uri=True) as connection:
+ for name,query in variants.items():
+  frame=pd.read_sql_query(query,connection)
+  conditions=standard['condition_cols'] or [[] for _ in refs]
+  if conditions and not all(isinstance(x,list) for x in conditions):conditions=[conditions for _ in refs]
+  comparisons=[{'reference':p.name,'sha256':hashlib.sha256(p.read_bytes()).hexdigest(),'matches':bool(namespace['compare_pandas_table'](frame,pd.read_csv(p),conditions[i],standard.get('ignore_order',False)))} for i,p in enumerate(refs)]
+  report.append({'variant':name,'rows':len(frame),'comparisons':comparisons})
+  frame.to_csv(out/(name+'.csv'),index=False)
+  (out/(name+'.sql')).write_text(query+'\n')
+(out/'audit.json').write_text(json.dumps({'scope':'Offline counterfactual diagnosis only, not model output or inference input','source_record_sha256':hashlib.sha256(record.read_bytes()).hexdigest(),'db_sha256':manifest['db_sha256']['complex_oracle'],'evaluator_sha256':manifest['evaluator_sha256'],'variants':report},indent=2)+'\n')
+print(json.dumps(report,indent=2))
