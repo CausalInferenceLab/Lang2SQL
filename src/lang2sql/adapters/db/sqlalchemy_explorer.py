@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections import Counter
 from typing import Any
 
 from ...core.ports.explorer import Column, DataAccessError, ForeignKey, Table
@@ -174,5 +175,11 @@ class SqlAlchemyExplorer:
                 raise
             if not result.returns_rows:
                 return []
+            duplicates = [name for name, count in Counter(result.keys()).items() if count > 1]
+            if duplicates:
+                raise ValueError(
+                    "Duplicate result columns would discard values; use unique column aliases: "
+                    + ", ".join(duplicates)
+                )
             rows = result.mappings().fetchmany(limit)
             return [dict(r) for r in rows]
