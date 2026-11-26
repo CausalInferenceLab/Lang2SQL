@@ -1,0 +1,32 @@
+```sql
+WITH maxima AS (
+    SELECT MAX(g) AS games,
+           MAX(NULLIF(r, '')) AS runs,
+           MAX(NULLIF(h, '')) AS hits,
+           MAX(NULLIF(hr, '')) AS home_runs
+    FROM main.batting
+),
+leaders AS (
+    SELECT b.player_id, 'Games played' AS statistic, b.g AS score
+    FROM main.batting AS b JOIN maxima AS m ON b.g = m.games
+    UNION ALL
+    SELECT b.player_id, 'Runs', b.r
+    FROM main.batting AS b JOIN maxima AS m ON b.r = m.runs
+    UNION ALL
+    SELECT b.player_id, 'Hits', b.h
+    FROM main.batting AS b JOIN maxima AS m ON b.h = m.hits
+    UNION ALL
+    SELECT b.player_id, 'Home runs', b.hr
+    FROM main.batting AS b JOIN maxima AS m ON b.hr = m.home_runs
+)
+SELECT l.statistic, p.name_given, l.score
+FROM leaders AS l
+JOIN main.player AS p ON p.player_id = l.player_id
+ORDER BY CASE l.statistic
+             WHEN 'Games played' THEN 1
+             WHEN 'Runs' THEN 2
+             WHEN 'Hits' THEN 3
+             WHEN 'Home runs' THEN 4
+         END, p.name_given
+LIMIT 1000
+```

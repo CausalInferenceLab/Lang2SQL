@@ -1,0 +1,169 @@
+{
+  "instance_id": "local023",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "bbd4fe62fa6a2e0f76f06654cab9b54205d94bad1849d25773ea390178f8ef06",
+  "events_sha256": "8fd0d8c31194526659edb524018b5f9a88e3e0ff996643e50209891a82e2416e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 64487,
+      "cached_input_tokens": 50944,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 222,
+      "reasoning_output_tokens": 8
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "average runs per match",
+          "batting averages"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"average runs per match\", \"batting averages\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "match"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "match (table)\n- match_id: INTEGER\n- team_1: INTEGER\n- team_2: INTEGER\n- match_date: DATE\n- season_id: INTEGER\n- venue: TEXT\n- toss_winner: INTEGER\n- toss_decision: TEXT\n- win_type: TEXT\n- win_margin: INTEGER\n- outcome_type: TEXT\n- match_winner: INTEGER\n- man_of_the_match: INTEGER\nPRIMARY KEY (match_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "wicket_taken"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "wicket_taken (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- player_out: INTEGER\n- kind_out: TEXT\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "player_match"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "player_match (table)\n- match_id: INTEGER NOT NULL\n- player_id: INTEGER NOT NULL\n- role: TEXT\n- team_id: INTEGER\nPRIMARY KEY (match_id, player_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "batsman_scored"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "batsman_scored (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- runs_scored: INTEGER\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "ball_by_ball"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ball_by_ball (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- innings_no: INTEGER NOT NULL\n- team_batting: INTEGER\n- team_bowling: INTEGER\n- striker_batting_position: INTEGER\n- striker: INTEGER\n- non_striker: INTEGER\n- bowler: INTEGER\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "player"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "player (table)\n- player_id: INTEGER\n- player_name: TEXT\n- dob: DATE\n- batting_hand: TEXT\n- bowling_skill: TEXT\n- country_name: TEXT\nPRIMARY KEY (player_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "For season 5, should I rank players by total batting runs divided by all matches they played, including matches where they did not bat, and report batting average separately as total batting runs divided by dismissals? Lang2SQL has no confirmed definition for either metric.",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 12.845774749992415
+}

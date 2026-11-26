@@ -1,0 +1,85 @@
+```sql
+WITH role_counts AS (
+    SELECT player_id, role, COUNT(*) AS matches_in_role
+    FROM main.player_match
+    GROUP BY player_id, role
+),
+ranked_roles AS (
+    SELECT player_id, role,
+           SUM(matches_in_role) OVER (PARTITION BY player_id) AS matches_played,
+           ROW_NUMBER() OVER (
+               PARTITION BY player_id ORDER BY matches_in_role DESC, role
+           ) AS role_rank
+    FROM role_counts
+),
+deliveries AS (
+    SELECT b.match_id, b.striker, b.bowler,
+           COALESCE(s.runs_scored, 0) AS runs,
+           CASE WHEN w.kind_out IN (
+               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'
+           ) THEN 1 ELSE 0 END AS bowler_wicket
+    FROM main.ball_by_ball AS b
+    LEFT JOIN main.batsman_scored AS s USING (match_id, over_id, ball_id, innings_no)
+    LEFT JOIN main.wicket_taken AS w USING (match_id, over_id, ball_id, innings_no)
+),
+batting_by_match AS (
+    SELECT striker AS player_id, match_id, SUM(runs) AS match_runs,
+           COUNT(*) AS balls_faced
+    FROM deliveries
+    GROUP BY striker, match_id
+),
+batting AS (
+    SELECT player_id, SUM(match_runs) AS total_runs,
+           MAX(match_runs) AS highest_score,
+           SUM(match_runs >= 30) AS matches_30_plus,
+           SUM(match_runs >= 50) AS matches_50_plus,
+           SUM(match_runs >= 100) AS matches_100_plus,
+           SUM(balls_faced) AS total_balls_faced
+    FROM batting_by_match
+    GROUP BY player_id
+),
+dismissals AS (
+    SELECT player_out AS player_id, COUNT(*) AS total_dismissals
+    FROM main.wicket_taken
+    WHERE kind_out <> 'retired hurt'
+    GROUP BY player_out
+),
+bowling_by_match AS (
+    SELECT bowler AS player_id, match_id, SUM(bowler_wicket) AS wickets,
+           SUM(runs) AS runs_given, COUNT(*) AS balls_bowled
+    FROM deliveries
+    GROUP BY bowler, match_id
+),
+bowling AS (
+    SELECT player_id, wickets, runs_given,
+           SUM(wickets) OVER (PARTITION BY player_id) AS total_wickets,
+           6.0 * SUM(runs_given) OVER (PARTITION BY player_id)
+               / SUM(balls_bowled) OVER (PARTITION BY player_id) AS economy_rate,
+           ROW_NUMBER() OVER (
+               PARTITION BY player_id ORDER BY wickets DESC, runs_given, match_id
+           ) AS performance_rank
+    FROM bowling_by_match
+)
+SELECT p.player_id, p.player_name, r.role AS most_frequent_role,
+       p.batting_hand, p.bowling_skill,
+       COALESCE(b.total_runs, 0) AS total_runs,
+       COALESCE(r.matches_played, 0) AS total_matches_played,
+       COALESCE(d.total_dismissals, 0) AS total_dismissals,
+       1.0 * COALESCE(b.total_runs, 0) / NULLIF(d.total_dismissals, 0) AS batting_average,
+       COALESCE(b.highest_score, 0) AS highest_score,
+       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,
+       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,
+       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,
+       COALESCE(b.total_balls_faced, 0) AS total_balls_faced,
+       100.0 * b.total_runs / NULLIF(b.total_balls_faced, 0) AS strike_rate,
+       COALESCE(w.total_wickets, 0) AS total_wickets,
+       w.economy_rate,
+       w.wickets || '-' || w.runs_given AS best_bowling_performance
+FROM main.player AS p
+LEFT JOIN ranked_roles AS r ON r.player_id = p.player_id AND r.role_rank = 1
+LEFT JOIN batting AS b ON b.player_id = p.player_id
+LEFT JOIN dismissals AS d ON d.player_id = p.player_id
+LEFT JOIN bowling AS w ON w.player_id = p.player_id AND w.performance_rank = 1
+ORDER BY p.player_id
+LIMIT 1000
+```

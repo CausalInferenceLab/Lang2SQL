@@ -1,0 +1,127 @@
+{
+  "instance_id": "local209",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "2ee176658662c3521762dcc10a8cfe935e6cef51d0246fb8814ee4e1cdfaf1c5",
+  "events_sha256": "4eb821d7ffb62911fb44b362eabc21b4511184ce3af4efa4ea154a2c2e314333",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 113393,
+      "cached_input_tokens": 101760,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 590,
+      "reasoning_output_tokens": 9
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "orders"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "orders (table)\n- order_id: INTEGER\n- store_id: INTEGER\n- channel_id: INTEGER\n- payment_order_id: INTEGER\n- delivery_order_id: INTEGER\n- order_status: VARCHAR(50)\n- order_amount: DECIMAL(10, 2)\n- order_delivery_fee: DECIMAL(10, 2)\n- order_delivery_cost: DECIMAL(10, 2)\n- order_created_hour: INTEGER\n- order_created_minute: INTEGER\n- order_created_day: INTEGER\n- order_created_month: INTEGER\n- order_created_year: INTEGER\n- order_moment_created: DATETIME\n- order_moment_accepted: DATETIME\n- order_moment_ready: DATETIME\n- order_moment_collected: DATETIME\n- order_moment_in_expedition: DATETIME\n- order_moment_delivering: DATETIME\n- order_moment_delivered: DATETIME\n- order_moment_finished: DATETIME\n- order_metric_collected_time: DECIMAL(10, 2)\n- order_metric_paused_time: DECIMAL(10, 2)\n- order_metric_production_time: DECIMAL(10, 2)\n- order_metric_walking_time: DECIMAL(10, 2)\n- order_metric_expediton_speed_time: DECIMAL(10, 2)\n- order_metric_transit_time: DECIMAL(10, 2)\n- order_metric_cycle_time: DECIMAL(10, 2)\nPRIMARY KEY (order_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "deliveries"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "deliveries (table)\n- delivery_id: INTEGER\n- delivery_order_id: INTEGER\n- driver_id: INTEGER\n- delivery_distance_meters: DECIMAL(10, 2)\n- delivery_status: VARCHAR(50)\nPRIMARY KEY (delivery_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ome8KQMYHRqDLmSItirgEvIkPCAEgjP9PCnW-gWe3Nc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "stores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "stores (table)\n- store_id: INTEGER\n- hub_id: INTEGER\n- store_name: VARCHAR(50)\n- store_segment: VARCHAR(50)\n- store_plan_price: DECIMAL(10, 2)\n- store_latitude: DECIMAL(9, 6)\n- store_longitude: DECIMAL(9, 6)\nPRIMARY KEY (store_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ome8KQMYHRqDLmSItirgEvIkPCAEgjP9PCnW-gWe3Nc",
+        "sql": "WITH delivered_keys AS (\n    SELECT DISTINCT d.delivery_order_id\n    FROM main.deliveries AS d\n    WHERE d.delivery_status = 'DELIVERED'\n),\nstore_counts AS (\n    SELECT s.store_id, s.store_name,\n           COUNT(*) AS total_orders,\n           COUNT(dk.delivery_order_id) AS delivered_orders\n    FROM main.orders AS o\n    JOIN main.stores AS s ON s.store_id = o.store_id\n    LEFT JOIN delivered_keys AS dk ON dk.delivery_order_id = o.delivery_order_id\n    GROUP BY s.store_id, s.store_name\n)\nSELECT store_id, store_name, total_orders,\n       1.0 * delivered_orders / total_orders AS delivered_ratio\nFROM store_counts\nWHERE total_orders = (SELECT MAX(total_orders) FROM store_counts)\nORDER BY store_id;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): store_id=int; store_name=str; total_orders=int; delivered_ratio=float\nstore_id | store_name | total_orders | delivered_ratio\n--- | --- | --- | ---\n53 | PAPA SUCIS  | 14004 | 0.9904313053413311\nSQL: WITH delivered_keys AS (\n    SELECT DISTINCT d.delivery_order_id\n    FROM main.deliveries AS d\n    WHERE d.delivery_status = 'DELIVERED'\n),\nstore_counts AS (\n    SELECT s.store_id, s.store_name,\n           COUNT(*) AS total_orders,\n           COUNT(dk.delivery_order_id) AS delivered_orders\n    FROM main.orders AS o\n    JOIN main.stores AS s ON s.store_id = o.store_id\n    LEFT JOIN delivered_keys AS dk ON dk.delivery_order_id = o.delivery_order_id\n    GROUP BY s.store_id, s.store_name\n)\nSELECT store_id, store_name, total_orders,\n       1.0 * delivered_orders / total_orders AS delivered_ratio\nFROM store_counts\nWHERE total_orders = (SELECT MAX(total_orders) FROM store_counts)\nORDER BY store_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH delivered_keys AS (\n    SELECT DISTINCT d.delivery_order_id\n    FROM main.deliveries AS d\n    WHERE d.delivery_status = 'DELIVERED'\n),\nstore_counts AS (\n    SELECT s.store_id, s.store_name,\n           COUNT(*) AS total_orders,\n           COUNT(dk.delivery_order_id) AS delivered_orders\n    FROM main.orders AS o\n    JOIN main.stores AS s ON s.store_id = o.store_id\n    LEFT JOIN delivered_keys AS dk ON dk.delivery_order_id = o.delivery_order_id\n    GROUP BY s.store_id, s.store_name\n)\nSELECT store_id, store_name, total_orders,\n       1.0 * delivered_orders / total_orders AS delivered_ratio\nFROM store_counts\nWHERE total_orders = (SELECT MAX(total_orders) FROM store_counts)\nORDER BY store_id\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH delivered_keys AS (\n    SELECT DISTINCT d.delivery_order_id\n    FROM main.deliveries AS d\n    WHERE d.delivery_status = 'DELIVERED'\n),\nstore_counts AS (\n    SELECT s.store_id, s.store_name,\n           COUNT(*) AS total_orders,\n           COUNT(dk.delivery_order_id) AS delivered_orders\n    FROM main.orders AS o\n    JOIN main.stores AS s ON s.store_id = o.store_id\n    LEFT JOIN delivered_keys AS dk ON dk.delivery_order_id = o.delivery_order_id\n    GROUP BY s.store_id, s.store_name\n)\nSELECT store_id, store_name, total_orders,\n       1.0 * delivered_orders / total_orders AS delivered_ratio\nFROM store_counts\nWHERE total_orders = (SELECT MAX(total_orders) FROM store_counts)\nORDER BY store_id\nLIMIT 1000",
+  "seconds": 41.451125916908495
+}

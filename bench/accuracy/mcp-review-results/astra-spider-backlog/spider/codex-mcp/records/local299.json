@@ -1,0 +1,132 @@
+{
+  "instance_id": "local299",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "f688e75e497e2480c247576dcaaded90b1ad36d1b38618787b94247eccf36268",
+  "events_sha256": "c4c76c9f77304eb7360bc32dc46b43ad9fe0d60610d75d3afac210958738a801",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 156519,
+      "cached_input_tokens": 138880,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1538,
+      "reasoning_output_tokens": 235
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_transactions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_transactions (table)\n- customer_id: INTEGER\n- txn_date: TEXT\n- txn_type: TEXT\n- txn_amount: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"XoCISCKOvog0NtAoB-eT3HeIpQLsybH5VhKX-qJ5TGo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "XoCISCKOvog0NtAoB-eT3HeIpQLsybH5VhKX-qJ5TGo",
+        "sql": "WITH spans AS (\n    SELECT customer_id, MIN(txn_date) AS first_day, MAX(txn_date) AS last_day,\n           COUNT(DISTINCT txn_date) AS active_days\n    FROM main.customer_transactions\n    GROUP BY customer_id\n)\nSELECT COUNT(*) AS customers, MIN(first_day) AS earliest, MAX(last_day) AS latest,\n       SUM(active_days) AS active_customer_days,\n       SUM(julianday(last_day) - julianday(first_day) + 1) AS customer_history_days,\n       (SELECT GROUP_CONCAT(DISTINCT txn_type) FROM main.customer_transactions) AS types,\n       (SELECT COUNT(*) FROM main.customer_transactions WHERE txn_amount IS NULL OR date(txn_date) IS NULL OR customer_id IS NULL) AS missing_values\nFROM spans;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): customers=int; earliest=str; latest=str; active_customer_days=int; customer_history_days=float; types=str; missing_values=int\ncustomers | earliest | latest | active_customer_days | customer_history_days | types | missing_values\n--- | --- | --- | --- | --- | --- | ---\n500 | 2020-01-01 | 2020-04-28 | 5457 | 39725.0 | deposit,withdrawal,purchase | 0\nSQL: WITH spans AS (\n    SELECT customer_id, MIN(txn_date) AS first_day, MAX(txn_date) AS last_day,\n           COUNT(DISTINCT txn_date) AS active_days\n    FROM main.customer_transactions\n    GROUP BY customer_id\n)\nSELECT COUNT(*) AS customers, MIN(first_day) AS earliest, MAX(last_day) AS latest,\n       SUM(active_days) AS active_customer_days,\n       SUM(julianday(last_day) - julianday(first_day) + 1) AS customer_history_days,\n       (SELECT GROUP_CONCAT(DISTINCT txn_type) FROM main.customer_transactions) AS types,\n       (SELECT COUNT(*) FROM main.customer_transactions WHERE txn_amount IS NULL OR date(txn_date) IS NULL OR customer_id IS NULL) AS missing_values\nFROM spans\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8qXukhsD3Na-QjiqBuYX5MfL7jKzbc85HqRqM-Opg9M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8qXukhsD3Na-QjiqBuYX5MfL7jKzbc85HqRqM-Opg9M",
+        "expected_columns": [
+          "month",
+          "total_max_30_day_average_balance"
+        ],
+        "sql": "WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date AS day,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, day, baseline_month) AS (\n    SELECT customer_id, MIN(day), strftime('%Y-%m', MIN(day))\n    FROM daily_changes\n    GROUP BY customer_id\n    UNION ALL\n    SELECT customer_id, date(day, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE day < (SELECT MAX(day) FROM daily_changes)\n),\ndaily_balances AS (\n    SELECT d.customer_id, d.day, d.baseline_month,\n           SUM(COALESCE(c.net_change, 0)) OVER (\n               PARTITION BY d.customer_id ORDER BY d.day\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS balance\n    FROM customer_days AS d\n    LEFT JOIN daily_changes AS c\n      ON c.customer_id = d.customer_id AND c.day = d.day\n),\nrolling_balances AS (\n    SELECT customer_id, strftime('%Y-%m', day) AS month, baseline_month,\n           COUNT(*) OVER trailing_month AS days_in_window,\n           AVG(balance) OVER trailing_month AS average_balance\n    FROM daily_balances\n    WINDOW trailing_month AS (\n        PARTITION BY customer_id ORDER BY day\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\nmonthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN average_balance < 0 THEN 0 ELSE average_balance END) AS max_average\n    FROM rolling_balances\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(max_average) AS total_max_30_day_average_balance\nFROM monthly_maxima\nGROUP BY month\nORDER BY month"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month=str; total_max_30_day_average_balance=float\nmonth | total_max_30_day_average_balance\n--- | ---\n2020-02 | 290091.1666666667\n2020-03 | 337746.36666666664\n2020-04 | 316177.56666666665\nSQL: WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date AS day,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, day, baseline_month) AS (\n    SELECT customer_id, MIN(day), strftime('%Y-%m', MIN(day))\n    FROM daily_changes\n    GROUP BY customer_id\n    UNION ALL\n    SELECT customer_id, date(day, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE day < (SELECT MAX(day) FROM daily_changes)\n),\ndaily_balances AS (\n    SELECT d.customer_id, d.day, d.baseline_month,\n           SUM(COALESCE(c.net_change, 0)) OVER (\n               PARTITION BY d.customer_id ORDER BY d.day\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS balance\n    FROM customer_days AS d\n    LEFT JOIN daily_changes AS c\n      ON c.customer_id = d.customer_id AND c.day = d.day\n),\nrolling_balances AS (\n    SELECT customer_id, strftime('%Y-%m', day) AS month, baseline_month,\n           COUNT(*) OVER trailing_month AS days_in_window,\n           AVG(balance) OVER trailing_month AS average_balance\n    FROM daily_balances\n    WINDOW trailing_month AS (\n        PARTITION BY customer_id ORDER BY day\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\nmonthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN average_balance < 0 THEN 0 ELSE average_balance END) AS max_average\n    FROM rolling_balances\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(max_average) AS total_max_30_day_average_balance\nFROM monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date AS day,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, day, baseline_month) AS (\n    SELECT customer_id, MIN(day), strftime('%Y-%m', MIN(day))\n    FROM daily_changes\n    GROUP BY customer_id\n    UNION ALL\n    SELECT customer_id, date(day, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE day < (SELECT MAX(day) FROM daily_changes)\n),\ndaily_balances AS (\n    SELECT d.customer_id, d.day, d.baseline_month,\n           SUM(COALESCE(c.net_change, 0)) OVER (\n               PARTITION BY d.customer_id ORDER BY d.day\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS balance\n    FROM customer_days AS d\n    LEFT JOIN daily_changes AS c\n      ON c.customer_id = d.customer_id AND c.day = d.day\n),\nrolling_balances AS (\n    SELECT customer_id, strftime('%Y-%m', day) AS month, baseline_month,\n           COUNT(*) OVER trailing_month AS days_in_window,\n           AVG(balance) OVER trailing_month AS average_balance\n    FROM daily_balances\n    WINDOW trailing_month AS (\n        PARTITION BY customer_id ORDER BY day\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\nmonthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN average_balance < 0 THEN 0 ELSE average_balance END) AS max_average\n    FROM rolling_balances\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(max_average) AS total_max_30_day_average_balance\nFROM monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date AS day,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, day, baseline_month) AS (\n    SELECT customer_id, MIN(day), strftime('%Y-%m', MIN(day))\n    FROM daily_changes\n    GROUP BY customer_id\n    UNION ALL\n    SELECT customer_id, date(day, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE day < (SELECT MAX(day) FROM daily_changes)\n),\ndaily_balances AS (\n    SELECT d.customer_id, d.day, d.baseline_month,\n           SUM(COALESCE(c.net_change, 0)) OVER (\n               PARTITION BY d.customer_id ORDER BY d.day\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS balance\n    FROM customer_days AS d\n    LEFT JOIN daily_changes AS c\n      ON c.customer_id = d.customer_id AND c.day = d.day\n),\nrolling_balances AS (\n    SELECT customer_id, strftime('%Y-%m', day) AS month, baseline_month,\n           COUNT(*) OVER trailing_month AS days_in_window,\n           AVG(balance) OVER trailing_month AS average_balance\n    FROM daily_balances\n    WINDOW trailing_month AS (\n        PARTITION BY customer_id ORDER BY day\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\nmonthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN average_balance < 0 THEN 0 ELSE average_balance END) AS max_average\n    FROM rolling_balances\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(max_average) AS total_max_30_day_average_balance\nFROM monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000",
+  "seconds": 47.7601000838913
+}

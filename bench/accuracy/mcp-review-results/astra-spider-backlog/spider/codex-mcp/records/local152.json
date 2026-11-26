@@ -1,0 +1,188 @@
+{
+  "instance_id": "local152",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "ed45cf60901dfe9a2f665510bb2ea3e98f53949a456668d6257a1eaeff99fa83",
+  "events_sha256": "5f34b4b3fa8884082c5f4c89d5a6d6e0816cc31882bf33118276326fd5905983",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 137249,
+      "cached_input_tokens": 126464,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1070,
+      "reasoning_output_tokens": 111
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "director_mapping"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "director_mapping (table)\n- movie_id: TEXT\n- name_id: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_MDVz3WF1WrDatfFZEmG12B8lcx-Pgk38CkcFcWtge8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "names"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "names (table)\n- id: TEXT\n- name: TEXT\n- height: REAL\n- date_of_birth: TEXT\n- known_for_movies: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "ratings"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ratings (table)\n- movie_id: TEXT\n- avg_rating: REAL\n- total_votes: INTEGER\n- median_rating: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "movies"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "movies (table)\n- id: TEXT\n- title: TEXT\n- year: INTEGER\n- date_published: TIMESTAMP\n- duration: INTEGER\n- country: TEXT\n- worlwide_gross_income: TEXT\n- languages: TEXT\n- production_company: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_MDVz3WF1WrDatfFZEmG12B8lcx-Pgk38CkcFcWtge8",
+        "sql": "SELECT\n    (SELECT COUNT(*) FROM director_mapping) AS credit_rows,\n    (SELECT COUNT(*) FROM (SELECT DISTINCT name_id, movie_id FROM director_mapping)) AS distinct_credits,\n    COUNT(*) AS joined_rows,\n    COUNT(m.id) AS matched_movies,\n    COUNT(n.id) AS matched_names,\n    COUNT(r.movie_id) AS matched_ratings,\n    COUNT(julianday(m.date_published)) AS usable_dates,\n    MIN(m.date_published) AS earliest_date,\n    MAX(m.date_published) AS latest_date\nFROM director_mapping AS d\nLEFT JOIN movies AS m ON m.id = d.movie_id\nLEFT JOIN names AS n ON n.id = d.name_id\nLEFT JOIN ratings AS r ON r.movie_id = m.id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): credit_rows=int; distinct_credits=int; joined_rows=int; matched_movies=int; matched_names=int; matched_ratings=int; usable_dates=int; earliest_date=str; latest_date=str\ncredit_rows | distinct_credits | joined_rows | matched_movies | matched_names | matched_ratings | usable_dates | earliest_date | latest_date\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n3867 | 3867 | 3867 | 3867 | 3867 | 3867 | 3867 | 2017-01-01 00:00:00 | 2019-12-27 00:00:00\nSQL: SELECT\n    (SELECT COUNT(*) FROM director_mapping) AS credit_rows,\n    (SELECT COUNT(*) FROM (SELECT DISTINCT name_id, movie_id FROM director_mapping)) AS distinct_credits,\n    COUNT(*) AS joined_rows,\n    COUNT(m.id) AS matched_movies,\n    COUNT(n.id) AS matched_names,\n    COUNT(r.movie_id) AS matched_ratings,\n    COUNT(julianday(m.date_published)) AS usable_dates,\n    MIN(m.date_published) AS earliest_date,\n    MAX(m.date_published) AS latest_date\nFROM director_mapping AS d\nLEFT JOIN movies AS m ON m.id = d.movie_id\nLEFT JOIN names AS n ON n.id = d.name_id\nLEFT JOIN ratings AS r ON r.movie_id = m.id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"uwsoDSg3AbyXSB8fTe9R-CKE9xVs7ctQbtooP6P1prY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "uwsoDSg3AbyXSB8fTe9R-CKE9xVs7ctQbtooP6P1prY",
+        "sql": "WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): director_id=str; director_name=str; movie_count=int; avg_inter_movie_days=int; avg_rating=float; total_votes=int; min_rating=float; max_rating=float; total_movie_duration=int\ndirector_id | director_name | movie_count | avg_inter_movie_days | avg_rating | total_votes | min_rating | max_rating | total_movie_duration\n--- | --- | --- | --- | --- | --- | --- | --- | ---\nnm1777967 | A.L. Vijay | 5 | 177 | 5.42 | 1754 | 3.7 | 6.9 | 613\nnm2096009 | Andrew Jones | 5 | 191 | 3.02 | 1989 | 2.7 | 3.2 | 432\nnm0814469 | Sion Sono | 4 | 331 | 6.03 | 2972 | 5.4 | 6.4 | 502\nnm0001752 | Steven Soderbergh | 4 | 254 | 6.47 | 171684 | 6.2 | 7.0 | 401\nnm0425364 | Jesse V. Johnson | 4 | 299 | 5.45 | 14778 | 4.2 | 6.5 | 383\nnm6356309 | Özgür Bakar | 4 | 112 | 3.75 | 1092 | 3.1 | 4.9 | 374\nnm0831321 | Chris Stokes | 4 | 198 | 4.33 | 3664 | 4.0 | 4.6 | 352\nnm2691863 | Justin Price | 4 | 315 | 4.5 | 5343 | 3.0 | 5.8 | 346\nnm0515005 | Sam Liu | 4 | 260 | 6.22 | 28557 | 5.8 | 6.7 | 312\nSQL: WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9\n```",
+  "event_parse_errors": [],
+  "rows": 9,
+  "sql": "WITH director_movies AS (\n    SELECT\n        d.name_id AS director_id,\n        m.id AS movie_id,\n        m.duration,\n        julianday(m.date_published) - LAG(julianday(m.date_published)) OVER (\n            PARTITION BY d.name_id\n            ORDER BY m.date_published, m.id\n        ) AS gap_days\n    FROM director_mapping AS d\n    JOIN movies AS m ON m.id = d.movie_id\n)\nSELECT\n    dm.director_id,\n    n.name AS director_name,\n    COUNT(*) AS movie_count,\n    CAST(ROUND(AVG(dm.gap_days)) AS INTEGER) AS avg_inter_movie_days,\n    ROUND(AVG(r.avg_rating), 2) AS avg_rating,\n    SUM(r.total_votes) AS total_votes,\n    MIN(r.avg_rating) AS min_rating,\n    MAX(r.avg_rating) AS max_rating,\n    SUM(dm.duration) AS total_movie_duration\nFROM director_movies AS dm\nJOIN names AS n ON n.id = dm.director_id\nLEFT JOIN ratings AS r ON r.movie_id = dm.movie_id\nGROUP BY dm.director_id, n.name\nORDER BY movie_count DESC, total_movie_duration DESC\nLIMIT 9",
+  "seconds": 38.499129875097424
+}

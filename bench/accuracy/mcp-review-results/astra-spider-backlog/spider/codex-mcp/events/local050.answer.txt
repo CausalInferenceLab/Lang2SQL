@@ -1,0 +1,49 @@
+```sql
+WITH product_month_sales AS (
+    SELECT
+        s.prod_id,
+        t.calendar_month_number AS month,
+        SUM(CASE WHEN t.calendar_year = 2019 THEN s.amount_sold END) AS sales_2019,
+        SUM(CASE WHEN t.calendar_year = 2020 THEN s.amount_sold END) AS sales_2020
+    FROM main.sales AS s
+    JOIN main.times AS t ON t.time_id = s.time_id
+    JOIN main.customers AS c ON c.cust_id = s.cust_id
+    JOIN main.countries AS co ON co.country_id = c.country_id
+    JOIN main.promotions AS p ON p.promo_id = s.promo_id
+    JOIN main.channels AS ch ON ch.channel_id = s.channel_id
+    WHERE co.country_name = 'France'
+      AND t.calendar_year IN (2019, 2020)
+      AND p.promo_total_id = 1
+      AND ch.channel_total_id = 1
+    GROUP BY s.prod_id, t.calendar_month_number
+),
+projections AS (
+    SELECT
+        month,
+        sales_2020 + sales_2020 * (
+            1.0 * (sales_2020 - sales_2019) / NULLIF(sales_2019, 0)
+        ) AS projected_sales
+    FROM product_month_sales
+),
+monthly_averages AS (
+    SELECT
+        p.month,
+        ROUND(AVG(p.projected_sales * COALESCE(fx.to_us, 1.0)), 2) AS avg_usd
+    FROM projections AS p
+    LEFT JOIN main.currency AS fx
+        ON fx.country = 'France' AND fx.year = 2021 AND fx.month = p.month
+    GROUP BY p.month
+),
+ranked_months AS (
+    SELECT
+        avg_usd,
+        ROW_NUMBER() OVER (ORDER BY avg_usd, month) AS position,
+        COUNT(*) OVER () AS month_count
+    FROM monthly_averages
+    WHERE avg_usd IS NOT NULL
+)
+SELECT AVG(avg_usd) AS median_monthly_average_usd
+FROM ranked_months
+WHERE position BETWEEN (month_count + 1) / 2 AND (month_count + 2) / 2
+LIMIT 1
+```

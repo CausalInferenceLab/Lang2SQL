@@ -1,0 +1,109 @@
+{
+  "instance_id": "local141",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "c94e05a24b424c06e21509a7dec3d03799efe23d98ee786bcf7117791b9fed2e",
+  "events_sha256": "d0654d7cd59bb9ba253bf9e39374ada8b92ed168da18d2df7ed0b721186cea34",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 81640,
+      "cached_input_tokens": 66304,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 236,
+      "reasoning_output_tokens": 37
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "annual total sales",
+          "annual sales quota"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"annual total sales\", \"annual sales quota\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "salesorderheader"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "salesorderheader (table)\n- salesorderid: INTEGER\n- revisionnumber: INTEGER\n- orderdate: DATE\n- duedate: DATE\n- shipdate: DATE\n- STATUS: TEXT\n- onlineorderflag: BOOLEAN\n- purchaseordernumber: TEXT\n- accountnumber: TEXT\n- customerid: INTEGER\n- salespersonid: INTEGER\n- territoryid: INTEGER\n- billtoaddressid: INTEGER\n- shiptoaddressid: INTEGER\n- shipmethodid: INTEGER\n- creditcardid: INTEGER\n- creditcardapprovalcode: TEXT\n- currencyrateid: INTEGER\n- subtotal: FLOAT\n- taxamt: FLOAT\n- freight: FLOAT\n- totaldue: FLOAT\n- comment: TEXT\n- rowguid: TEXT\n- modifieddate: DATE"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "salesperson"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "salesperson (table)\n- businessentityid: INTEGER\n- territoryid: INTEGER\n- salesquota: INTEGER\n- bonus: INTEGER\n- commissionpct: FLOAT\n- salesytd: FLOAT\n- saleslastyear: FLOAT\n- rowguid: TEXT\n- modifieddate: DATE"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "SalesPersonQuotaHistory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SalesPersonQuotaHistory (table)\n- BusinessEntityID: INTEGER\n- QuotaDate: TEXT\n- SalesQuota: REAL\n- rowguid: TEXT\n- ModifiedDate: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "For each salesperson and calendar year, should I sum order `subtotal` (before tax and freight) or `totaldue` (including both), and should I compare that sum with the sum of `SalesQuota` entries dated in that year?",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 13.373454083921388
+}

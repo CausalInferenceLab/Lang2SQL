@@ -1,0 +1,148 @@
+{
+  "instance_id": "local273",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "22e06c21c2da81be4a69cd2ac5ad07c6530552d31b469ed84dcad5a51fdf1745",
+  "events_sha256": "b5ecda0470c26b49f4aa10e1779adceef9a35114692ac8760aa4ca62f9ade480",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 71766,
+      "cached_input_tokens": 55808,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 220,
+      "reasoning_output_tokens": 14
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "pick percentage"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"pick percentage\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "inventory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "inventory (table)\n- id: INTEGER\n- location_id: INTEGER NOT NULL\n- product_id: INTEGER NOT NULL\n- purchase_id: INTEGER NOT NULL\n- qty: REAL NOT NULL\nPRIMARY KEY (id)\nFOREIGN KEY (location_id) REFERENCES locations (id)\nFOREIGN KEY (product_id) REFERENCES products (id)\nFOREIGN KEY (purchase_id) REFERENCES purchases (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "orderlines"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "orderlines (table)\n- id: INTEGER\n- order_id: INTEGER NOT NULL\n- product_id: INTEGER NOT NULL\n- qty: REAL NOT NULL\n- amount: REAL NOT NULL\nPRIMARY KEY (id)\nFOREIGN KEY (order_id) REFERENCES orders (id)\nFOREIGN KEY (product_id) REFERENCES products (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "products"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "products (table)\n- id: INTEGER\n- name: TEXT NOT NULL\n- group_id: INTEGER NOT NULL\nPRIMARY KEY (id)\nFOREIGN KEY (group_id) REFERENCES product_groups (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "purchases"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "purchases (table)\n- id: INTEGER\n- purchased: TEXT NOT NULL\n- brewery_id: INTEGER NOT NULL\n- product_id: INTEGER NOT NULL\n- qty: INTEGER NOT NULL\n- cost: REAL NOT NULL\nPRIMARY KEY (id)\nFOREIGN KEY (brewery_id) REFERENCES breweries (id)\nFOREIGN KEY (product_id) REFERENCES products (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "orders"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "orders (table)\n- id: INTEGER\n- customer_id: INTEGER NOT NULL\n- ordered: TEXT\n- delivery: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (customer_id) REFERENCES customers (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "For each product, should I average the percentage of each order’s required quantity that was picked across all locations, or calculate a percentage for each individual pick? If it’s per pick, should I divide the picked quantity by the order’s required quantity or by the inventory lot’s available quantity?",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 12.194237916031852
+}
