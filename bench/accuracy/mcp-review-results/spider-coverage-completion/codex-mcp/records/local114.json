@@ -1,0 +1,188 @@
+{
+  "instance_id": "local114",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "84dfd07d462fb0a652c9848f8cf1b5b8322fd71257cf9cc0abb3e42587d5d6f3",
+  "events_sha256": "23e02da878f5dbe156989ca2c804daaed13b881eee9d3b2159b7d261802f69e1",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 188156,
+      "cached_input_tokens": 173312,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1172,
+      "reasoning_output_tokens": 57
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "web_orders"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "web_orders (table)\n- id: INTEGER\n- account_id: INTEGER\n- occurred_at: TEXT\n- standard_qty: INTEGER\n- gloss_qty: INTEGER\n- poster_qty: INTEGER\n- total: INTEGER\n- standard_amt_usd: REAL\n- gloss_amt_usd: REAL\n- poster_amt_usd: REAL\n- total_amt_usd: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "web_region"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "web_region (table)\n- id: INTEGER\n- name: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lhIY1-R2WTd03G09Zufn7EKJtFpqhsQGy4RpQYnt6Sk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "web_accounts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "web_accounts (table)\n- id: INTEGER\n- name: TEXT\n- website: TEXT\n- lat: REAL\n- long: REAL\n- primary_poc: TEXT\n- sales_rep_id: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "web_sales_reps"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "web_sales_reps (table)\n- id: INTEGER\n- name: TEXT\n- region_id: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lhIY1-R2WTd03G09Zufn7EKJtFpqhsQGy4RpQYnt6Sk",
+        "sql": "SELECT (SELECT COUNT(*) FROM main.web_orders) AS source_orders,\n       COUNT(*) AS joined_orders, COUNT(DISTINCT o.id) AS distinct_orders,\n       COUNT(DISTINCT r.id) AS active_regions, (SELECT COUNT(*) FROM main.web_region) AS regions,\n       COUNT(o.total_amt_usd) AS known_amounts,\n       SUM(o.total_amt_usd <> ROUND(o.total_amt_usd, 2)) AS subcent_amounts\nFROM main.web_orders AS o\nJOIN main.web_accounts AS a ON a.id = o.account_id\nJOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id\nJOIN main.web_region AS r ON r.id = s.region_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): source_orders=int; joined_orders=int; distinct_orders=int; active_regions=int; regions=int; known_amounts=int; subcent_amounts=int\nsource_orders | joined_orders | distinct_orders | active_regions | regions | known_amounts | subcent_amounts\n--- | --- | --- | --- | --- | --- | ---\n6912 | 6912 | 6912 | 4 | 4 | 6912 | 0\nSQL: SELECT (SELECT COUNT(*) FROM main.web_orders) AS source_orders,\n       COUNT(*) AS joined_orders, COUNT(DISTINCT o.id) AS distinct_orders,\n       COUNT(DISTINCT r.id) AS active_regions, (SELECT COUNT(*) FROM main.web_region) AS regions,\n       COUNT(o.total_amt_usd) AS known_amounts,\n       SUM(o.total_amt_usd <> ROUND(o.total_amt_usd, 2)) AS subcent_amounts\nFROM main.web_orders AS o\nJOIN main.web_accounts AS a ON a.id = o.account_id\nJOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id\nJOIN main.web_region AS r ON r.id = s.region_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"isjV4TsnqvQChjFZbz3LR91NToDBlPfquS0uDXwToUY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "isjV4TsnqvQChjFZbz3LR91NToDBlPfquS0uDXwToUY",
+        "sql": "WITH rep_totals AS (\n    SELECT s.region_id,\n           s.id AS rep_id,\n           s.name AS rep_name,\n           COUNT(*) AS order_count,\n           SUM(CAST(ROUND(o.total_amt_usd * 100) AS INTEGER)) AS sales_cents\n    FROM main.web_orders AS o\n    JOIN main.web_accounts AS a ON a.id = o.account_id\n    JOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id\n    GROUP BY s.region_id, s.id, s.name\n),\nranked_reps AS (\n    SELECT rep_totals.*,\n           SUM(order_count) OVER (PARTITION BY region_id) AS region_orders,\n           SUM(sales_cents) OVER (PARTITION BY region_id) AS region_sales_cents,\n           RANK() OVER (PARTITION BY region_id ORDER BY sales_cents DESC) AS sales_rank\n    FROM rep_totals\n)\nSELECT r.name AS region,\n       COALESCE(t.region_orders, 0) AS number_of_orders,\n       COALESCE(t.region_sales_cents, 0) / 100.0 AS total_sales_usd,\n       t.rep_name AS top_sales_representative,\n       t.sales_cents / 100.0 AS representative_sales_usd\nFROM main.web_region AS r\nLEFT JOIN ranked_reps AS t ON t.region_id = r.id AND t.sales_rank = 1\nORDER BY r.name, t.rep_name, t.rep_id\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): region=str; number_of_orders=int; total_sales_usd=float; top_sales_representative=str; representative_sales_usd=float\nregion | number_of_orders | total_sales_usd | top_sales_representative | representative_sales_usd\n--- | --- | --- | --- | ---\nMidwest | 897 | 3013486.51 | Charles Bidwell | 675637.19\nNortheast | 2357 | 7744405.36 | Tia Amato | 1010690.6\nSoutheast | 2024 | 6458497.0 | Earlie Schleusner | 1098137.72\nWest | 1634 | 5925122.96 | Georgianna Chisholm | 886244.12\nSQL: WITH rep_totals AS (\n    SELECT s.region_id,\n           s.id AS rep_id,\n           s.name AS rep_name,\n           COUNT(*) AS order_count,\n           SUM(CAST(ROUND(o.total_amt_usd * 100) AS INTEGER)) AS sales_cents\n    FROM main.web_orders AS o\n    JOIN main.web_accounts AS a ON a.id = o.account_id\n    JOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id\n    GROUP BY s.region_id, s.id, s.name\n),\nranked_reps AS (\n    SELECT rep_totals.*,\n           SUM(order_count) OVER (PARTITION BY region_id) AS region_orders,\n           SUM(sales_cents) OVER (PARTITION BY region_id) AS region_sales_cents,\n           RANK() OVER (PARTITION BY region_id ORDER BY sales_cents DESC) AS sales_rank\n    FROM rep_totals\n)\nSELECT r.name AS region,\n       COALESCE(t.region_orders, 0) AS number_of_orders,\n       COALESCE(t.region_sales_cents, 0) / 100.0 AS total_sales_usd,\n       t.rep_name AS top_sales_representative,\n       t.sales_cents / 100.0 AS representative_sales_usd\nFROM main.web_region AS r\nLEFT JOIN ranked_reps AS t ON t.region_id = r.id AND t.sales_rank = 1\nORDER BY r.name, t.rep_name, t.rep_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH rep_totals AS (\n    SELECT s.region_id,\n           s.id AS rep_id,\n           s.name AS rep_name,\n           COUNT(*) AS order_count,\n           SUM(CAST(ROUND(o.total_amt_usd * 100) AS INTEGER)) AS sales_cents\n    FROM main.web_orders AS o\n    JOIN main.web_accounts AS a ON a.id = o.account_id\n    JOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id\n    GROUP BY s.region_id, s.id, s.name\n),\nranked_reps AS (\n    SELECT rep_totals.*,\n           SUM(order_count) OVER (PARTITION BY region_id) AS region_orders,\n           SUM(sales_cents) OVER (PARTITION BY region_id) AS region_sales_cents,\n           RANK() OVER (PARTITION BY region_id ORDER BY sales_cents DESC) AS sales_rank\n    FROM rep_totals\n)\nSELECT r.name AS region,\n       COALESCE(t.region_orders, 0) AS number_of_orders,\n       COALESCE(t.region_sales_cents, 0) / 100.0 AS total_sales_usd,\n       t.rep_name AS top_sales_representative,\n       t.sales_cents / 100.0 AS representative_sales_usd\nFROM main.web_region AS r\nLEFT JOIN ranked_reps AS t ON t.region_id = r.id AND t.sales_rank = 1\nORDER BY r.name, t.rep_name, t.rep_id\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 4,
+  "sql": "WITH rep_totals AS (\n    SELECT s.region_id,\n           s.id AS rep_id,\n           s.name AS rep_name,\n           COUNT(*) AS order_count,\n           SUM(CAST(ROUND(o.total_amt_usd * 100) AS INTEGER)) AS sales_cents\n    FROM main.web_orders AS o\n    JOIN main.web_accounts AS a ON a.id = o.account_id\n    JOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id\n    GROUP BY s.region_id, s.id, s.name\n),\nranked_reps AS (\n    SELECT rep_totals.*,\n           SUM(order_count) OVER (PARTITION BY region_id) AS region_orders,\n           SUM(sales_cents) OVER (PARTITION BY region_id) AS region_sales_cents,\n           RANK() OVER (PARTITION BY region_id ORDER BY sales_cents DESC) AS sales_rank\n    FROM rep_totals\n)\nSELECT r.name AS region,\n       COALESCE(t.region_orders, 0) AS number_of_orders,\n       COALESCE(t.region_sales_cents, 0) / 100.0 AS total_sales_usd,\n       t.rep_name AS top_sales_representative,\n       t.sales_cents / 100.0 AS representative_sales_usd\nFROM main.web_region AS r\nLEFT JOIN ranked_reps AS t ON t.region_id = r.id AND t.sales_rank = 1\nORDER BY r.name, t.rep_name, t.rep_id\nLIMIT -1",
+  "seconds": 38.57115562504623
+}

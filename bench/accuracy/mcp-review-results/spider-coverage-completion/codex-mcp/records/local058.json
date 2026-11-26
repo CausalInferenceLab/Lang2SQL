@@ -1,0 +1,111 @@
+{
+  "instance_id": "local058",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "e6da360f8725bce8a4d2478214f45cfec4bdc308a86c4056790e17f635120d45",
+  "events_sha256": "e4a5f62c636ef373d602a3fd934f2d88ad6aaf3616e2b516f84bdcaa04f01465",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 129973,
+      "cached_input_tokens": 116096,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 619,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"9JMi9FATEo3xkluxDcPAJZvgPZChR3hlWJMco12wMvc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hardware_fact_sales_monthly"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hardware_fact_sales_monthly (table)\n- date: TEXT\n- product_code: TEXT\n- customer_code: INTEGER\n- sold_quantity: INTEGER\n- fiscal_year: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hardware_dim_product"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hardware_dim_product (table)\n- product_code: TEXT\n- division: TEXT\n- segment: TEXT\n- category: TEXT\n- product: TEXT\n- variant: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH segment_counts AS (\n    SELECT\n        p.segment,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2020 THEN s.product_code END) AS unique_products_2020,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2021 THEN s.product_code END) AS unique_products_2021\n    FROM main.hardware_fact_sales_monthly AS s\n    JOIN main.hardware_dim_product AS p ON p.product_code = s.product_code\n    WHERE s.fiscal_year IN (2020, 2021)\n    GROUP BY p.segment\n)\nSELECT segment, unique_products_2020\nFROM segment_counts\nORDER BY\n    100.0 * (unique_products_2021 - unique_products_2020) / NULLIF(unique_products_2020, 0) DESC,\n    segment;",
+        "definition_check_id": "9JMi9FATEo3xkluxDcPAJZvgPZChR3hlWJMco12wMvc",
+        "expected_columns": [
+          "segment",
+          "unique_products_2020"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): segment=str; unique_products_2020=int\nsegment | unique_products_2020\n--- | ---\nDesktop | 7\nNetworking | 6\nAccessories | 69\nStorage | 12\nPeripherals | 59\nNotebook | 92\nSQL: WITH segment_counts AS (\n    SELECT\n        p.segment,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2020 THEN s.product_code END) AS unique_products_2020,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2021 THEN s.product_code END) AS unique_products_2021\n    FROM main.hardware_fact_sales_monthly AS s\n    JOIN main.hardware_dim_product AS p ON p.product_code = s.product_code\n    WHERE s.fiscal_year IN (2020, 2021)\n    GROUP BY p.segment\n)\nSELECT segment, unique_products_2020\nFROM segment_counts\nORDER BY\n    100.0 * (unique_products_2021 - unique_products_2020) / NULLIF(unique_products_2020, 0) DESC,\n    segment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH segment_counts AS (\n    SELECT\n        p.segment,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2020 THEN s.product_code END) AS unique_products_2020,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2021 THEN s.product_code END) AS unique_products_2021\n    FROM main.hardware_fact_sales_monthly AS s\n    JOIN main.hardware_dim_product AS p ON p.product_code = s.product_code\n    WHERE s.fiscal_year IN (2020, 2021)\n    GROUP BY p.segment\n)\nSELECT segment, unique_products_2020\nFROM segment_counts\nORDER BY\n    100.0 * (unique_products_2021 - unique_products_2020) / NULLIF(unique_products_2020, 0) DESC,\n    segment\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 6,
+  "sql": "WITH segment_counts AS (\n    SELECT\n        p.segment,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2020 THEN s.product_code END) AS unique_products_2020,\n        COUNT(DISTINCT CASE WHEN s.fiscal_year = 2021 THEN s.product_code END) AS unique_products_2021\n    FROM main.hardware_fact_sales_monthly AS s\n    JOIN main.hardware_dim_product AS p ON p.product_code = s.product_code\n    WHERE s.fiscal_year IN (2020, 2021)\n    GROUP BY p.segment\n)\nSELECT segment, unique_products_2020\nFROM segment_counts\nORDER BY\n    100.0 * (unique_products_2021 - unique_products_2020) / NULLIF(unique_products_2020, 0) DESC,\n    segment\nLIMIT 1000",
+  "seconds": 24.701972750015557
+}

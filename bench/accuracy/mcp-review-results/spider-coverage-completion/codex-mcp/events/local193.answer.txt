@@ -1,0 +1,23 @@
+```sql
+WITH payment_timing AS (
+    SELECT customer_id,
+           amount,
+           julianday(payment_date) AS payment_time,
+           MIN(julianday(payment_date)) OVER (PARTITION BY customer_id) AS first_purchase_time
+    FROM main.payment
+),
+customer_sales AS (
+    SELECT customer_id,
+           SUM(CASE WHEN payment_time < first_purchase_time + 7 THEN amount ELSE 0 END) AS sales_7_days,
+           SUM(CASE WHEN payment_time < first_purchase_time + 30 THEN amount ELSE 0 END) AS sales_30_days,
+           SUM(amount) AS ltv
+    FROM payment_timing
+    GROUP BY customer_id
+    HAVING SUM(amount) <> 0
+)
+SELECT AVG(100.0 * sales_7_days / ltv) AS avg_ltv_pct_7_days,
+       AVG(100.0 * sales_30_days / ltv) AS avg_ltv_pct_30_days,
+       AVG(ltv) AS avg_ltv
+FROM customer_sales
+LIMIT 1
+```

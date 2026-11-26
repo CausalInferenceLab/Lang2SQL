@@ -1,0 +1,192 @@
+{
+  "instance_id": "local066",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "5c962ef1996b9c6035089909dd6e9f47b243da22f02e803b23aab3b16c32d11f",
+  "events_sha256": "1b4315bc279a04725cca331f1c8fd5ae090b966508507dc4f6ca0180eff4699b",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 182895,
+      "cached_input_tokens": 168320,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1058,
+      "reasoning_output_tokens": 58
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"kJfVryeF-KLDftfXYBJBzidfiYvyXgE5BEAKTjzA5bU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "pizza_toppings"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pizza_toppings (table)\n- topping_id: INTEGER\n- topping_name: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "pizza_clean_customer_orders"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pizza_clean_customer_orders (table)\n- order_id: INTEGER\n- customer_id: INTEGER\n- pizza_id: INTEGER\n- exclusions: TEXT\n- extras: TEXT\n- order_time: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "pizza_clean_runner_orders"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pizza_clean_runner_orders (table)\n- order_id: INTEGER\n- runner_id: INTEGER\n- pickup_time: TEXT\n- distance: REAL\n- duration: REAL\n- cancellation: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "pizza_recipes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pizza_recipes (table)\n- pizza_id: INTEGER\n- toppings: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "kJfVryeF-KLDftfXYBJBzidfiYvyXgE5BEAKTjzA5bU",
+        "sql": "SELECT c.order_id, c.pizza_id, c.exclusions, c.extras, p.toppings,\n       r.cancellation, r.pickup_time, r.distance, r.duration\nFROM main.pizza_clean_customer_orders AS c\nJOIN main.pizza_clean_runner_orders AS r ON r.order_id = c.order_id\nJOIN main.pizza_recipes AS p ON p.pizza_id = c.pizza_id\nORDER BY c.order_id, c.pizza_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "14 row(s):\nResult coverage: fetched_rows=14; displayed_rows=14; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): order_id=int; pizza_id=int; exclusions=NoneType,str; extras=NoneType,str; toppings=str; cancellation=NoneType,str; pickup_time=NoneType,str; distance=float; duration=float\norder_id | pizza_id | exclusions | extras | toppings | cancellation | pickup_time | distance | duration\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n1 | 1 | None | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-01 18:15:34 | 20.0 | 32.0\n2 | 1 | None | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-01 19:10:54 | 20.0 | 27.0\n3 | 1 | None | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-03 00:12:37 | 13.4 | 20.0\n3 | 2 | None | None | 4, 6, 7, 9, 11, 12 | None | 2021-01-03 00:12:37 | 13.4 | 20.0\n4 | 1 | 4 | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-04 13:53:03 | 23.4 | 40.0\n4 | 1 | 4 | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-04 13:53:03 | 23.4 | 40.0\n4 | 2 | 4 | None | 4, 6, 7, 9, 11, 12 | None | 2021-01-04 13:53:03 | 23.4 | 40.0\n5 | 1 | None | 1 | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-08 21:10:57 | 10.0 | 15.0\n6 | 2 | None | None | 4, 6, 7, 9, 11, 12 | Restaurant Cancellation | None | 0.0 | 0.0\n7 | 2 | None | 1 | 4, 6, 7, 9, 11, 12 | None | 2021-01-08 21:30:45 | 25.0 | 25.0\n8 | 1 | None | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-10 00:15:02 | 23.4 | 15.0\n9 | 1 | 4 | 1,5 | 1, 2, 3, 4, 5, 6, 8, 10 | Customer Cancellation | None | 0.0 | 0.0\n10 | 1 | None | None | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-11 18:50:20 | 10.0 | 10.0\n10 | 1 | 2,6 | 1,4 | 1, 2, 3, 4, 5, 6, 8, 10 | None | 2021-01-11 18:50:20 | 10.0 | 10.0\nSQL: SELECT c.order_id, c.pizza_id, c.exclusions, c.extras, p.toppings,\n       r.cancellation, r.pickup_time, r.distance, r.duration\nFROM main.pizza_clean_customer_orders AS c\nJOIN main.pizza_clean_runner_orders AS r ON r.order_id = c.order_id\nJOIN main.pizza_recipes AS p ON p.pizza_id = c.pizza_id\nORDER BY c.order_id, c.pizza_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"U-iP_nzlbZOSx0UFRnpSEOQzPQlBNiIvi0brhw8V5A0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "U-iP_nzlbZOSx0UFRnpSEOQzPQlBNiIvi0brhw8V5A0",
+        "sql": "WITH delivered_pizzas AS (\n    SELECT c.pizza_id, c.exclusions, c.extras\n    FROM main.pizza_clean_customer_orders AS c\n    WHERE c.order_id IN (\n        SELECT r.order_id\n        FROM main.pizza_clean_runner_orders AS r\n        WHERE r.cancellation IS NULL AND r.pickup_time IS NOT NULL\n    )\n),\ningredients_used AS (\n    SELECT topping.value AS topping_id\n    FROM delivered_pizzas AS d\n    JOIN main.pizza_recipes AS p ON p.pizza_id = d.pizza_id\n    CROSS JOIN json_each('[' || p.toppings || ']') AS topping\n    WHERE NOT EXISTS (\n        SELECT 1\n        FROM json_each('[' || d.exclusions || ']') AS excluded\n        WHERE excluded.value = topping.value\n    )\n    UNION ALL\n    SELECT extra.value AS topping_id\n    FROM delivered_pizzas AS d\n    CROSS JOIN json_each('[' || d.extras || ']') AS extra\n)\nSELECT t.topping_name AS ingredient_name, COUNT(*) AS quantity\nFROM ingredients_used AS i\nJOIN main.pizza_toppings AS t ON t.topping_id = i.topping_id\nGROUP BY t.topping_id, t.topping_name\nORDER BY quantity DESC, ingredient_name",
+        "expected_columns": [
+          "ingredient_name",
+          "quantity"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): ingredient_name=str; quantity=int\ningredient_name | quantity\n--- | ---\nBacon | 12\nMushrooms | 11\nCheese | 10\nBeef | 9\nChicken | 9\nPepperoni | 9\nSalami | 9\nBBQ Sauce | 8\nOnions | 3\nPeppers | 3\nTomato Sauce | 3\nTomatoes | 3\nSQL: WITH delivered_pizzas AS (\n    SELECT c.pizza_id, c.exclusions, c.extras\n    FROM main.pizza_clean_customer_orders AS c\n    WHERE c.order_id IN (\n        SELECT r.order_id\n        FROM main.pizza_clean_runner_orders AS r\n        WHERE r.cancellation IS NULL AND r.pickup_time IS NOT NULL\n    )\n),\ningredients_used AS (\n    SELECT topping.value AS topping_id\n    FROM delivered_pizzas AS d\n    JOIN main.pizza_recipes AS p ON p.pizza_id = d.pizza_id\n    CROSS JOIN json_each('[' || p.toppings || ']') AS topping\n    WHERE NOT EXISTS (\n        SELECT 1\n        FROM json_each('[' || d.exclusions || ']') AS excluded\n        WHERE excluded.value = topping.value\n    )\n    UNION ALL\n    SELECT extra.value AS topping_id\n    FROM delivered_pizzas AS d\n    CROSS JOIN json_each('[' || d.extras || ']') AS extra\n)\nSELECT t.topping_name AS ingredient_name, COUNT(*) AS quantity\nFROM ingredients_used AS i\nJOIN main.pizza_toppings AS t ON t.topping_id = i.topping_id\nGROUP BY t.topping_id, t.topping_name\nORDER BY quantity DESC, ingredient_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH delivered_pizzas AS (\n    SELECT c.pizza_id, c.exclusions, c.extras\n    FROM main.pizza_clean_customer_orders AS c\n    WHERE c.order_id IN (\n        SELECT r.order_id\n        FROM main.pizza_clean_runner_orders AS r\n        WHERE r.cancellation IS NULL AND r.pickup_time IS NOT NULL\n    )\n),\ningredients_used AS (\n    SELECT topping.value AS topping_id\n    FROM delivered_pizzas AS d\n    JOIN main.pizza_recipes AS p ON p.pizza_id = d.pizza_id\n    CROSS JOIN json_each('[' || p.toppings || ']') AS topping\n    WHERE NOT EXISTS (\n        SELECT 1\n        FROM json_each('[' || d.exclusions || ']') AS excluded\n        WHERE excluded.value = topping.value\n    )\n    UNION ALL\n    SELECT extra.value AS topping_id\n    FROM delivered_pizzas AS d\n    CROSS JOIN json_each('[' || d.extras || ']') AS extra\n)\nSELECT t.topping_name AS ingredient_name, COUNT(*) AS quantity\nFROM ingredients_used AS i\nJOIN main.pizza_toppings AS t ON t.topping_id = i.topping_id\nGROUP BY t.topping_id, t.topping_name\nORDER BY quantity DESC, ingredient_name\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 12,
+  "sql": "WITH delivered_pizzas AS (\n    SELECT c.pizza_id, c.exclusions, c.extras\n    FROM main.pizza_clean_customer_orders AS c\n    WHERE c.order_id IN (\n        SELECT r.order_id\n        FROM main.pizza_clean_runner_orders AS r\n        WHERE r.cancellation IS NULL AND r.pickup_time IS NOT NULL\n    )\n),\ningredients_used AS (\n    SELECT topping.value AS topping_id\n    FROM delivered_pizzas AS d\n    JOIN main.pizza_recipes AS p ON p.pizza_id = d.pizza_id\n    CROSS JOIN json_each('[' || p.toppings || ']') AS topping\n    WHERE NOT EXISTS (\n        SELECT 1\n        FROM json_each('[' || d.exclusions || ']') AS excluded\n        WHERE excluded.value = topping.value\n    )\n    UNION ALL\n    SELECT extra.value AS topping_id\n    FROM delivered_pizzas AS d\n    CROSS JOIN json_each('[' || d.extras || ']') AS extra\n)\nSELECT t.topping_name AS ingredient_name, COUNT(*) AS quantity\nFROM ingredients_used AS i\nJOIN main.pizza_toppings AS t ON t.topping_id = i.topping_id\nGROUP BY t.topping_id, t.topping_name\nORDER BY quantity DESC, ingredient_name\nLIMIT 1000",
+  "seconds": 37.20978679100517
+}

@@ -1,0 +1,131 @@
+{
+  "instance_id": "local329",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "b8428ae03b4befdb02a82e646da0abd7b5899993b9041562f494ebc52eea60d5",
+  "events_sha256": "3f43355a9bd477753537d25afffefe6e2174a045274d385634bd0fcb29055d12",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 182968,
+      "cached_input_tokens": 169088,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 585,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"J0JRycjLuQSfXPGhdI4l_EioV-Zdd71aW_4kxz5ISvc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "form_log"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "form_log (table)\n- stamp: VARCHAR(255)\n- session: VARCHAR(255)\n- action: VARCHAR(255)\n- path: VARCHAR(255)\n- status: VARCHAR(255)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "J0JRycjLuQSfXPGhdI4l_EioV-Zdd71aW_4kxz5ISvc",
+        "sql": "SELECT path, action, COUNT(*) AS events, MIN(stamp) AS earliest, MAX(stamp) AS latest FROM main.form_log WHERE path IN ('/regist/input', '/regist/confirm') GROUP BY path, action"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): path=str; action=str; events=int; earliest=str; latest=str\npath | action | events | earliest | latest\n--- | --- | --- | --- | ---\n/regist/confirm | view | 15 | 2016-12-30 00:57:04 | 2016-12-30 01:00:19\n/regist/input | view | 6 | 2016-12-30 00:56:08 | 2016-12-30 00:56:08\nSQL: SELECT path, action, COUNT(*) AS events, MIN(stamp) AS earliest, MAX(stamp) AS latest FROM main.form_log WHERE path IN ('/regist/input', '/regist/confirm') GROUP BY path, action\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"3luu3e7TG32qToMelag8d686gBbZSQe8mCBuJDsflis\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "3luu3e7TG32qToMelag8d686gBbZSQe8mCBuJDsflis",
+        "expected_columns": [
+          "unique_sessions"
+        ],
+        "sql": "WITH session_visits AS (\n    SELECT\n        session,\n        MIN(CASE WHEN path = '/regist/input' THEN stamp END) AS first_input,\n        MAX(CASE WHEN path = '/regist/confirm' THEN stamp END) AS last_confirm\n    FROM main.form_log\n    WHERE action = 'view'\n      AND path IN ('/regist/input', '/regist/confirm')\n    GROUP BY session\n)\nSELECT COUNT(session) AS unique_sessions\nFROM session_visits\nWHERE first_input < last_confirm\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): unique_sessions=int\nunique_sessions\n---\n1\nSQL: WITH session_visits AS (\n    SELECT\n        session,\n        MIN(CASE WHEN path = '/regist/input' THEN stamp END) AS first_input,\n        MAX(CASE WHEN path = '/regist/confirm' THEN stamp END) AS last_confirm\n    FROM main.form_log\n    WHERE action = 'view'\n      AND path IN ('/regist/input', '/regist/confirm')\n    GROUP BY session\n)\nSELECT COUNT(session) AS unique_sessions\nFROM session_visits\nWHERE first_input < last_confirm\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH session_visits AS (\n    SELECT\n        session,\n        MIN(CASE WHEN path = '/regist/input' THEN stamp END) AS first_input,\n        MAX(CASE WHEN path = '/regist/confirm' THEN stamp END) AS last_confirm\n    FROM main.form_log\n    WHERE action = 'view'\n      AND path IN ('/regist/input', '/regist/confirm')\n    GROUP BY session\n)\nSELECT COUNT(session) AS unique_sessions\nFROM session_visits\nWHERE first_input < last_confirm\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH session_visits AS (\n    SELECT\n        session,\n        MIN(CASE WHEN path = '/regist/input' THEN stamp END) AS first_input,\n        MAX(CASE WHEN path = '/regist/confirm' THEN stamp END) AS last_confirm\n    FROM main.form_log\n    WHERE action = 'view'\n      AND path IN ('/regist/input', '/regist/confirm')\n    GROUP BY session\n)\nSELECT COUNT(session) AS unique_sessions\nFROM session_visits\nWHERE first_input < last_confirm\nLIMIT 1",
+  "seconds": 37.559697124990635
+}

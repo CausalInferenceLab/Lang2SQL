@@ -1,0 +1,19 @@
+```sql
+WITH employee_orders AS (
+    SELECT
+        employeeid,
+        COUNT(*) AS total_orders,
+        COUNT(*) FILTER (WHERE shippeddate >= requireddate) AS late_orders
+    FROM main.orders
+    WHERE employeeid IS NOT NULL
+    GROUP BY employeeid
+    HAVING COUNT(*) > 50
+)
+SELECT
+    employeeid,
+    late_orders,
+    100.0 * late_orders / total_orders AS late_order_percentage
+FROM employee_orders
+ORDER BY late_order_percentage DESC, employeeid ASC
+LIMIT 3;
+```

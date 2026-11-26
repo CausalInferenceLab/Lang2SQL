@@ -1,0 +1,22 @@
+```sql
+WITH order_categories AS (
+    SELECT DISTINCT i.order_id, p.product_category_name
+    FROM main.olist_order_items AS i
+    JOIN main.olist_products AS p ON p.product_id = i.product_id
+    WHERE p.product_category_name IS NOT NULL
+),
+method_counts AS (
+    SELECT c.product_category_name, pay.payment_type, COUNT(*) AS payment_count
+    FROM order_categories AS c
+    JOIN main.olist_order_payments AS pay ON pay.order_id = c.order_id
+    GROUP BY c.product_category_name, pay.payment_type
+),
+category_maxima AS (
+    SELECT product_category_name, MAX(payment_count) AS preferred_method_payments
+    FROM method_counts
+    GROUP BY product_category_name
+)
+SELECT AVG(preferred_method_payments) AS avg_preferred_method_payments
+FROM category_maxima
+LIMIT 1
+```

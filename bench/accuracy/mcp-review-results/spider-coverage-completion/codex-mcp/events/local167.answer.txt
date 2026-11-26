@@ -1,0 +1,25 @@
+```sql
+WITH term_history AS (
+    SELECT
+        t.state,
+        ROW_NUMBER() OVER (
+            PARTITION BY t.id_bioguide
+            ORDER BY t.term_start, t.term_number
+        ) AS term_order,
+        MAX(strftime('%Y-12-31', t.term_start) BETWEEN t.term_start AND t.term_end)
+            OVER (PARTITION BY t.id_bioguide) AS served_on_december_31
+    FROM main.legislators_terms AS t
+    JOIN main.legislators AS l ON l.id_bioguide = t.id_bioguide
+    WHERE l.gender = 'F'
+),
+state_counts AS (
+    SELECT state, COUNT(*) AS female_legislator_count
+    FROM term_history
+    WHERE term_order = 1 AND served_on_december_31 = 1
+    GROUP BY state
+)
+SELECT state, female_legislator_count
+FROM state_counts
+WHERE female_legislator_count = (SELECT MAX(female_legislator_count) FROM state_counts)
+LIMIT 1000
+```

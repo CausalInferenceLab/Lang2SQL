@@ -1,0 +1,24 @@
+WITH RECURSIVE months(month, last_month) AS (
+    SELECT date(MIN(txn_date), 'start of month'),
+           date(MAX(txn_date), 'start of month')
+    FROM main.customer_transactions
+    UNION ALL
+    SELECT date(month, '+1 month'), last_month
+    FROM months
+    WHERE month < last_month
+),
+customer_balances AS (
+    SELECT m.month, t.customer_id,
+           SUM(CASE
+                   WHEN t.txn_type = 'deposit' THEN t.txn_amount
+                   WHEN t.txn_type IN ('purchase', 'withdrawal') THEN -t.txn_amount
+               END) AS balance
+    FROM months AS m
+    JOIN main.customer_transactions AS t ON t.txn_date < m.month
+    GROUP BY m.month, t.customer_id
+)
+SELECT month, SUM(MAX(balance, 0)) AS previous_total_balance
+FROM customer_balances
+GROUP BY month
+ORDER BY month ASC
+LIMIT 1000

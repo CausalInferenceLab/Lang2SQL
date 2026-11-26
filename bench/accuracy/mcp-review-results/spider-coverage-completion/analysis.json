@@ -1,0 +1,190 @@
+{
+  "runtime_revision": "0c7953905ee455c7611652924cb341e596d7937a",
+  "model": "gpt-6.2-astra/high",
+  "correct": 51,
+  "total": 67,
+  "accuracy": 0.7611940298507462,
+  "scope": "Previously-unobserved selected subset completed at one frozen revision. NOT a full135-case same-revision result.",
+  "failed_no_sql": 13,
+  "sql_mismatch": 3,
+  "failures": [
+    {
+      "id": "local168",
+      "db": "city_legislation",
+      "question": "Among job postings that specifically have the Data Analyst, require a non-null annual average salary, and are remote, what is the overall average salary when considering only the top three most frequently demanded skills for these positions?",
+      "status": "failed",
+      "answer": "Should each posting that lists at least one of the top three skills count once, or should I calculate the average salary for each skill and then average those three figures equally?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "e7fec3f6b5f2ec414923ad2d5ea85be869c31fde691c3618c10ff03c864887e9",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local017",
+      "db": "California_Traffic_Collision",
+      "question": "In which year were the two most common causes of traffic accidents different from those in other years?",
+      "status": "failed",
+      "answer": "Which field should define an accident cause for the yearly ranking: `primary_collision_factor` (for example, “vehicle code violation”) or `pcf_violation_category` (for example, “improper turning”)?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "4b5c2f8aec0c108604c8c29a7fd8adbe619184b6d2c1a53ccbec341e214a71e0",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local063",
+      "db": "complex_oracle",
+      "question": "Among all products sold in the United States with promo_id=999, considering only those cities whose sales increased by at least 20% from Q4 2019 (calendar_quarter_id=1772) to Q4 2020 (calendar_quarter_id=1776), which product that ranks in the top 20% of total sales has the smallest percentage-point change in its share of total sales between these two quarters?",
+      "status": "failed",
+      "answer": "Should I rank products by `SUM(amount_sold)` across both quarters in the qualifying cities, then select the top-quintile product whose sales share changed **least in absolute terms** or the one with the **lowest signed change** (Q4 2020 share minus Q4 2019 share)?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "d632a31563320bf44468cac031f51a4b9d7600724829460981c10363d0ec4f4e",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local269",
+      "db": "oracle_sql",
+      "question": "What is the average total quantity across all final packaging combinations, considering only the leaf-level items within each combination after fully expanding any nested packaging relationships?",
+      "status": "failed",
+      "answer": "Should the average include only outermost packages that are never contained in another package, or should each nested package with contents also count as a separate combination?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "226f2f5ba23b13a2c8b7cb38649312b2b5963ac6a873931a45db714db9a8ac08",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local360",
+      "db": "log",
+      "question": "For each user session in the activity log table, identify the number of events that occurred before the first '/detail' click or '/complete' conversion, counting only events that have a non-empty search type. Find the sessions with the minimum count of such pre-click/pre-conversion events. If multiple sessions share this minimum count, include all of them in the results. Return each qualifying session along with the corresponding path and search type.",
+      "status": "predicted",
+      "answer": "```sql\nWITH session_cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target\n    FROM main.activity_log\n    GROUP BY session\n),\npre_target_events AS (\n    SELECT c.session, e.path, e.search_type\n    FROM session_cutoffs AS c\n    LEFT JOIN main.activity_log AS e\n      ON e.session = c.session\n     AND e.search_type <> ''\n     AND (c.first_target IS NULL OR e.stamp < c.first_target)\n),\nsession_counts AS (\n    SELECT session, COUNT(search_type) AS event_count\n    FROM pre_target_events\n    GROUP BY session\n)\nSELECT DISTINCT c.session, c.event_count, e.path, e.search_type\nFROM session_counts AS c\nJOIN pre_target_events AS e ON e.session = c.session\nWHERE c.event_count = (SELECT MIN(event_count) FROM session_counts)\nORDER BY c.session, e.path, e.search_type\nLIMIT 1000\n```",
+      "error_message": null,
+      "record_sha256": "50e78a20ff56e0b5ad8835f5449f52cd53bb443183a9893552328f956a103c5a",
+      "category": "sql_result_mismatch"
+    },
+    {
+      "id": "local356",
+      "db": "f1",
+      "question": "Provide the full names of drivers who have been overtaken on track more times than they have overtaken others on track during race laps, excluding position changes due to pit stops (both at pit entry and exit), retirements, or position changes that occurred during the first lap of a race (considered as start movements).",
+      "status": "predicted",
+      "answer": "```sql\nWITH excluded_laps AS (\n    SELECT race_id, driver_id, lap FROM main.pit_stops\n    UNION\n    SELECT race_id, driver_id, lap + 1 FROM main.pit_stops\n    UNION\n    SELECT race_id, driver_id, lap FROM main.retirements\n),\nrace_laps AS MATERIALIZED (\n    SELECT cur.race_id, cur.lap, cur.driver_id,\n           prev.position AS previous_position, cur.position\n    FROM main.lap_times AS cur\n    JOIN main.lap_times AS prev\n      ON prev.race_id = cur.race_id\n     AND prev.driver_id = cur.driver_id\n     AND prev.lap = cur.lap - 1\n    JOIN main.races_ext AS r ON r.race_id = cur.race_id\n    LEFT JOIN excluded_laps AS x\n      ON x.race_id = cur.race_id\n     AND x.driver_id = cur.driver_id\n     AND x.lap = cur.lap\n    WHERE cur.lap > 1\n      AND r.is_pit_data_available = 1\n      AND x.driver_id IS NULL\n),\npasses AS MATERIALIZED (\n    SELECT a.driver_id AS passer, b.driver_id AS passed\n    FROM race_laps AS a\n    JOIN race_laps AS b\n      ON b.race_id = a.race_id\n     AND b.lap = a.lap\n     AND a.previous_position > b.previous_position\n     AND a.position < b.position\n),\ndriver_events AS (\n    SELECT passed AS driver_id, 1 AS net_times_passed FROM passes\n    UNION ALL\n    SELECT passer AS driver_id, -1 AS net_times_passed FROM passes\n)\nSELECT d.full_name\nFROM main.drivers_ext AS d\nJOIN driver_events AS e ON e.driver_id = d.driver_id\nGROUP BY d.driver_id, d.full_name\nHAVING SUM(e.net_times_passed) > 0\nORDER BY d.full_name\nLIMIT -1\n```",
+      "error_message": null,
+      "record_sha256": "dbae722bf80c5dff527a0533a0a66a14b41ef0fee909271310e29a7049742410",
+      "category": "sql_result_mismatch"
+    },
+    {
+      "id": "local031",
+      "db": "Brazilian_E_Commerce",
+      "question": "What is the highest monthly delivered orders volume in the year with the lowest annual delivered orders volume among 2016, 2017, and 2018?",
+      "status": "failed",
+      "answer": "For orders with `order_status = 'delivered'`, should each order count toward the month and year of purchase (`order_purchase_timestamp`) or of delivery to the customer (`order_delivered_customer_date`)?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "7ce287f5a4286c5a3e68f6c697da50643a55f4444ce0d1100cec06cf77cb3d92",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local054",
+      "db": "chinook",
+      "question": "Could you tell me the first names of customers who spent less than $1 on albums by the best-selling artist, along with the amounts they spent?",
+      "status": "failed",
+      "answer": "Should “best-selling artist” mean the artist with the highest total track revenue or the artist who sold the most track units? Lang2SQL has no confirmed definition for that ranking.",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "0e927478b5a5d5ff0a2298a75323358e375fc6afd57ea21a642c3e3cf4906805",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local026",
+      "db": "IPL",
+      "question": "Please help me identify the top 3 bowlers who, in the overs where the maximum runs were conceded in each match, gave up the highest number of runs in a single over across all matches. For each of these bowlers, provide the match in which they conceded these maximum runs. Only consider overs that had the most runs conceded within their respective matches, and among these, determine which bowlers conceded the most runs in a single over overall.",
+      "status": "failed",
+      "answer": "Should I use standard bowling figures for both rankings, counting runs off the bat, wides, and no-balls while excluding byes, leg-byes, and penalty runs? The database has no confirmed definition of “runs conceded.”",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "32da9046f8e336627fbc66314a93b4ee35bdd8a5ff7b15b4a7d3cb64ee14b0a4",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local221",
+      "db": "EU_soccer",
+      "question": "Tell me top10 teams with the most wins across the league",
+      "status": "failed",
+      "answer": "Should I count one win each time a team scores more goals than its opponent, home or away, across all recorded leagues and seasons? Lang2SQL has no confirmed definition for “wins” and requires clarification before it can run the ranking.",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "60dc676b6dc0ff992103593a9e585f91b0fd0d97179fe96219a8275dbad636af",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local028",
+      "db": "Brazilian_E_Commerce",
+      "question": "Could you generate a report that shows the number of delivered orders for each month in the years 2016, 2017, and 2018? Each column represents a year, and each row represents a month",
+      "status": "failed",
+      "answer": "For orders with `order_status = 'delivered'`, should each order count in the month the customer received it (`order_delivered_customer_date`) or the month it was placed (`order_purchase_timestamp`)?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "680865738101e9ee42a1062c67bf3f0b159fb0905129a3c60a63691d5fa5fa54",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local060",
+      "db": "complex_oracle",
+      "question": "In the United States, for Q4 2019 and Q4 2020, first select only those cities where total sales (with no promotions) rose by at least 20% from Q4 2019 to Q4 2020. Among these cities, rank products by their overall sales (still excluding promotions) in those quarters and take the top 20%. Then compute each top product’s share of total sales in Q4 2019 and Q4 2020 and calculate the difference in share from Q4 2019 to Q4 2020, returning the results in descending order of that share change.",
+      "status": "predicted",
+      "answer": "```sql\nWITH city_product_sales AS (\n    SELECT\n        c.cust_city_id,\n        s.prod_id,\n        SUM(CASE WHEN s.time_id < '2020-01-01' THEN s.amount_sold ELSE 0 END) AS sales_2019,\n        SUM(CASE WHEN s.time_id >= '2020-10-01' THEN s.amount_sold ELSE 0 END) AS sales_2020\n    FROM main.sales AS s\n    JOIN main.customers AS c ON c.cust_id = s.cust_id\n    JOIN main.countries AS co ON co.country_id = c.country_id\n    WHERE co.country_iso_code = 'US'\n      AND s.promo_id = 999\n      AND ((s.time_id >= '2019-10-01' AND s.time_id < '2020-01-01')\n        OR (s.time_id >= '2020-10-01' AND s.time_id < '2021-01-01'))\n    GROUP BY c.cust_city_id, s.prod_id\n),\nqualifying_cities AS (\n    SELECT cust_city_id\n    FROM city_product_sales\n    GROUP BY cust_city_id\n    HAVING SUM(sales_2019) > 0\n       AND SUM(sales_2020) >= 1.2 * SUM(sales_2019)\n),\nproduct_sales AS (\n    SELECT\n        s.prod_id,\n        SUM(s.sales_2019) AS sales_2019,\n        SUM(s.sales_2020) AS sales_2020\n    FROM city_product_sales AS s\n    JOIN qualifying_cities AS c ON c.cust_city_id = s.cust_city_id\n    GROUP BY s.prod_id\n),\nranked_products AS (\n    SELECT\n        prod_id,\n        NTILE(5) OVER (ORDER BY sales_2019 + sales_2020 DESC, prod_id) AS sales_quintile,\n        100.0 * sales_2019 / NULLIF(SUM(sales_2019) OVER (), 0) AS q4_2019_share_pct,\n        100.0 * sales_2020 / NULLIF(SUM(sales_2020) OVER (), 0) AS q4_2020_share_pct\n    FROM product_sales\n)\nSELECT\n    r.prod_id,\n    p.prod_name,\n    r.q4_2019_share_pct,\n    r.q4_2020_share_pct,\n    r.q4_2020_share_pct - r.q4_2019_share_pct AS share_change_pp\nFROM ranked_products AS r\nLEFT JOIN main.products AS p ON p.prod_id = r.prod_id\nWHERE r.sales_quintile = 1\nORDER BY share_change_pp DESC, r.prod_id\nLIMIT 1000\n```",
+      "error_message": null,
+      "record_sha256": "79024d0c2ba7f60c6ad706ecc765ed78f789c1b52bddb2151498dfe971066620",
+      "category": "sql_result_mismatch"
+    },
+    {
+      "id": "local039",
+      "db": "Pagila",
+      "question": "Please help me find the film category with the highest total rental hours in cities where the city's name either starts with \"A\" or contains a hyphen. ",
+      "status": "failed",
+      "answer": "Should I calculate total rental hours by summing the elapsed time from checkout to return for completed rentals, and apply the city-name filter to the customer’s address?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "53e6770d13373a2faf724d84bf35d0eddf5d4773e4b54c8e34fe36d3b20731a4",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local229",
+      "db": "IPL",
+      "question": "Find the IDs of players who scored the highest number of partnership runs for each match. The output should include the IDs of two players, each with their individual scores and the total partnership score. For each pair, the player with the higher individual score should be listed as player 1, and the player with the lower score as player 2. In cases where both players have the same score, the player with the higher ID should be player 1, and the player with the lower ID should be player 2. There can be multiple rows for a single match.",
+      "status": "failed",
+      "answer": "Should the total partnership score include extras recorded while the pair batted together, or should it equal the sum of the two players’ individual runs? This choice can change which pair ranks first in a match.",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "fb08c328f46ec87a499182d6f3914990963d22e7b662429db678ca917dbc362c",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local055",
+      "db": "chinook",
+      "question": "Identify the artist with the highest overall sales of albums (tie broken by alphabetical order) and the artist with the lowest overall sales of albums (tie broken by alphabetical order), then calculate the amount each customer spent specifically on those two artists’ albums. Next, compute the average spending for the customers who purchased from the top-selling artist and the average spending for the customers who purchased from the lowest-selling artist, and finally return the absolute difference between these two averages.",
+      "status": "failed",
+      "answer": "Should I rank artists by total revenue (`invoice_items.UnitPrice × Quantity`) or by the number of tracks sold (`Quantity`) across their albums? The schema supports both, and the business-term lookup found no confirmed definition of “overall sales of albums.”",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "8784b060bde27211a2637450e76755a897bc337eb1f24f2d6d5230238b22db4c",
+      "category": "clarification_no_final_sql"
+    },
+    {
+      "id": "local311",
+      "db": "f1",
+      "question": "Which constructors had the top 3 combined points from their best driver and team, and in which years did they achieve them?",
+      "status": "failed",
+      "answer": "For each constructor and year, should I add the team’s season-ending points to the points earned by its highest-scoring driver for that team, or to the season-ending points of the driver listed first in `team_driver_ranks`?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+      "record_sha256": "56b036aaa3b7cb53d668e125d34d065aa4d09331f2ea3638d434f94cb83317ac",
+      "category": "clarification_no_final_sql"
+    }
+  ],
+  "development_ledger": {
+    "observed_unique": 135,
+    "denominator": 135,
+    "any_pass_for_exclusion_only": 76,
+    "remaining_no_observed_pass": 59,
+    "warning": "Mixed revisions/models/attempts, not accuracy. No completed full135-case run exists."
+  },
+  "subsequent_repair": {
+    "id": "local060",
+    "pr": "https://github.com/CausalInferenceLab/Lang2SQL/pull/352",
+    "note": "Separate selected experiment0→1; original51/67 score retained unchanged."
+  },
+  "remaining_sql_mismatches": [
+    "local360",
+    "local356"
+  ],
+  "product_or_prompt_changes_in_this_archive": 0,
+  "bird_run": "Still live, same session85932 and frozen source; not restarted or modified."
+}

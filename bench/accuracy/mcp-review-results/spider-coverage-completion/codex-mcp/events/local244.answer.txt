@@ -1,0 +1,30 @@
+```sql
+WITH cutoffs AS (
+    SELECT
+        (MIN(Milliseconds) + AVG(Milliseconds)) / 2.0 AS lower_midpoint,
+        (AVG(Milliseconds) + MAX(Milliseconds)) / 2.0 AS upper_midpoint
+    FROM main.Track
+),
+classified_tracks AS (
+    SELECT
+        t.TrackId,
+        t.Milliseconds,
+        CASE
+            WHEN t.Milliseconds <= c.lower_midpoint THEN 'short'
+            WHEN t.Milliseconds <= c.upper_midpoint THEN 'medium'
+            ELSE 'long'
+        END AS category
+    FROM main.Track AS t
+    CROSS JOIN cutoffs AS c
+)
+SELECT
+    t.category,
+    MIN(t.Milliseconds) / 60000.0 AS min_minutes,
+    MAX(t.Milliseconds) / 60000.0 AS max_minutes,
+    COALESCE(SUM(CAST(ROUND(i.UnitPrice * 100) AS INTEGER) * i.Quantity), 0) / 100.0 AS total_revenue
+FROM classified_tracks AS t
+LEFT JOIN main.InvoiceLine AS i ON i.TrackId = t.TrackId
+GROUP BY t.category
+ORDER BY MIN(t.Milliseconds)
+LIMIT 3
+```

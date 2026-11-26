@@ -1,0 +1,25 @@
+WITH RECURSIVE contents(container_id, item_id, quantity) AS (
+    SELECT r.packaging_id, r.contains_id, r.qty
+    FROM main.packaging_relations AS r
+    WHERE r.packaging_id NOT IN (
+        SELECT contains_id FROM main.packaging_relations
+    )
+
+    UNION ALL
+
+    SELECT c.container_id, r.contains_id, c.quantity * r.qty
+    FROM contents AS c
+    JOIN main.packaging_relations AS r ON r.packaging_id = c.item_id
+),
+qualifying_items AS (
+    SELECT container_id, item_id
+    FROM contents
+    GROUP BY container_id, item_id
+    HAVING SUM(quantity) > 500
+)
+SELECT container.name AS container_name, item.name AS item_name
+FROM qualifying_items AS q
+JOIN main.packaging AS container ON container.id = q.container_id
+JOIN main.packaging AS item ON item.id = q.item_id
+ORDER BY container.name, item.name
+LIMIT 1000

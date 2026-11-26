@@ -1,0 +1,21 @@
+```sql
+WITH dated_sales AS (
+    SELECT calendar_year, week_date, sales, date(calendar_year || '-06-15') AS cutoff
+    FROM main.cleaned_weekly_sales
+    WHERE calendar_year IN (2018, 2019, 2020)
+),
+period_totals AS (
+    SELECT calendar_year,
+           SUM(CASE WHEN week_date < cutoff THEN sales END) AS sales_before,
+           SUM(CASE WHEN week_date >= cutoff THEN sales END) AS sales_after
+    FROM dated_sales
+    WHERE week_date >= date(cutoff, '-28 days')
+      AND week_date < date(cutoff, '+28 days')
+    GROUP BY calendar_year
+)
+SELECT calendar_year,
+       100.0 * (sales_after - sales_before) / NULLIF(sales_before, 0) AS sales_change_pct
+FROM period_totals
+ORDER BY calendar_year
+LIMIT 3
+```

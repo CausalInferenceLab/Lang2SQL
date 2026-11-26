@@ -1,0 +1,149 @@
+{
+  "instance_id": "local055",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "3977b668e2dd426a86dace986b87ec2cab099543d835fe7d70a0ee224a198a61",
+  "events_sha256": "5546ce22ffde8ed7fd069c982917e291c2262d867af7b2f71dd16b73c7a4bbac",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 97060,
+      "cached_input_tokens": 84608,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 403,
+      "reasoning_output_tokens": 152
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "albums"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "albums (table)\n- AlbumId: INTEGER NOT NULL\n- Title: NVARCHAR(160) NOT NULL\n- ArtistId: INTEGER NOT NULL\nPRIMARY KEY (AlbumId)\nFOREIGN KEY (ArtistId) REFERENCES artists (ArtistId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "invoices"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "invoices (table)\n- InvoiceId: INTEGER NOT NULL\n- CustomerId: INTEGER NOT NULL\n- InvoiceDate: DATETIME NOT NULL\n- BillingAddress: NVARCHAR(70)\n- BillingCity: NVARCHAR(40)\n- BillingState: NVARCHAR(40)\n- BillingCountry: NVARCHAR(40)\n- BillingPostalCode: NVARCHAR(10)\n- Total: NUMERIC(10, 2) NOT NULL\nPRIMARY KEY (InvoiceId)\nFOREIGN KEY (CustomerId) REFERENCES customers (CustomerId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "artists"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "artists (table)\n- ArtistId: INTEGER NOT NULL\n- Name: NVARCHAR(120)\nPRIMARY KEY (ArtistId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "tracks"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "tracks (table)\n- TrackId: INTEGER NOT NULL\n- Name: NVARCHAR(200) NOT NULL\n- AlbumId: INTEGER\n- MediaTypeId: INTEGER NOT NULL\n- GenreId: INTEGER\n- Composer: NVARCHAR(220)\n- Milliseconds: INTEGER NOT NULL\n- Bytes: INTEGER\n- UnitPrice: NUMERIC(10, 2) NOT NULL\nPRIMARY KEY (TrackId)\nFOREIGN KEY (MediaTypeId) REFERENCES media_types (MediaTypeId)\nFOREIGN KEY (GenreId) REFERENCES genres (GenreId)\nFOREIGN KEY (AlbumId) REFERENCES albums (AlbumId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "invoice_items"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "invoice_items (table)\n- InvoiceLineId: INTEGER NOT NULL\n- InvoiceId: INTEGER NOT NULL\n- TrackId: INTEGER NOT NULL\n- UnitPrice: NUMERIC(10, 2) NOT NULL\n- Quantity: INTEGER NOT NULL\nPRIMARY KEY (InvoiceLineId)\nFOREIGN KEY (TrackId) REFERENCES tracks (TrackId)\nFOREIGN KEY (InvoiceId) REFERENCES invoices (InvoiceId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "overall sales of albums",
+          "customer spending on an artist's albums"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"overall sales of albums\", \"customer spending on an artist's albums\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    }
+  ],
+  "answer": "Should I rank artists by total revenue (`invoice_items.UnitPrice × Quantity`) or by the number of tracks sold (`Quantity`) across their albums? The schema supports both, and the business-term lookup found no confirmed definition of “overall sales of albums.”",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 20.024635583977215
+}

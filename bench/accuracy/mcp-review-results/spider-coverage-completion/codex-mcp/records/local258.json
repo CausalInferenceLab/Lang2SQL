@@ -1,0 +1,305 @@
+{
+  "instance_id": "local258",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "7c15a65d9767528c668a2209788b4f798734081299a5a36ad80de2958202fd53",
+  "events_sha256": "0381bde1de4e8769b3d8d56849e229c15430cb3d24c1a0478a69cfe9c5cc5f79",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 234899,
+      "cached_input_tokens": 202752,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 2300,
+      "reasoning_output_tokens": 104
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "ball_by_ball"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ball_by_ball (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- innings_no: INTEGER NOT NULL\n- team_batting: INTEGER\n- team_bowling: INTEGER\n- striker_batting_position: INTEGER\n- striker: INTEGER\n- non_striker: INTEGER\n- bowler: INTEGER\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "player"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "player (table)\n- player_id: INTEGER\n- player_name: TEXT\n- dob: DATE\n- batting_hand: TEXT\n- bowling_skill: TEXT\n- country_name: TEXT\nPRIMARY KEY (player_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"oeB68XKjzZXTPi0LNrsg62RLjo4gxuOd_Zv7hjDX_n4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "wicket_taken"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "wicket_taken (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- player_out: INTEGER\n- kind_out: TEXT\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "extra_runs"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "extra_runs (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- extra_type: TEXT\n- extra_runs: INTEGER\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "batsman_scored"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "batsman_scored (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- runs_scored: INTEGER\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "oeB68XKjzZXTPi0LNrsg62RLjo4gxuOd_Zv7hjDX_n4",
+        "sql": "SELECT 'dismissal' AS field, kind_out AS value, COUNT(*) AS frequency FROM main.wicket_taken GROUP BY kind_out\nUNION ALL\nSELECT 'extra', extra_type, COUNT(*) FROM main.extra_runs GROUP BY extra_type\nUNION ALL\nSELECT 'runs', typeof(runs_scored), COUNT(*) FROM main.batsman_scored GROUP BY typeof(runs_scored)\nUNION ALL\nSELECT 'bowlers', NULL, COUNT(DISTINCT bowler) FROM main.ball_by_ball"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "16 row(s):\nResult coverage: fetched_rows=16; displayed_rows=16; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): field=str; value=NoneType,str; frequency=int\nfield | value | frequency\n--- | --- | ---\ndismissal | bowled | 1234\ndismissal | caught | 3894\ndismissal | caught and bowled | 184\ndismissal | hit wicket | 8\ndismissal | lbw | 393\ndismissal | obstructing the field | 1\ndismissal | retired hurt | 8\ndismissal | run out | 677\ndismissal | stumped | 219\nextra | byes | 373\nextra | legbyes | 2317\nextra | noballs | 567\nextra | penalty | 1\nextra | wides | 4091\nruns | integer | 131259\nbowlers | None | 330\nSQL: SELECT 'dismissal' AS field, kind_out AS value, COUNT(*) AS frequency FROM main.wicket_taken GROUP BY kind_out\nUNION ALL\nSELECT 'extra', extra_type, COUNT(*) FROM main.extra_runs GROUP BY extra_type\nUNION ALL\nSELECT 'runs', typeof(runs_scored), COUNT(*) FROM main.batsman_scored GROUP BY typeof(runs_scored)\nUNION ALL\nSELECT 'bowlers', NULL, COUNT(DISTINCT bowler) FROM main.ball_by_ball\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"AJEDae-E5okNc5Db8NtJMXPW3X6CSK6vsHsayOyanmY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "AJEDae-E5okNc5Db8NtJMXPW3X6CSK6vsHsayOyanmY",
+        "expected_columns": [
+          "bowler_name",
+          "total_wickets",
+          "economy_rate",
+          "strike_rate",
+          "best_bowling"
+        ],
+        "sql": "WITH match_figures AS (\n    SELECT\n        b.bowler,\n        b.match_id,\n        COUNT(w.match_id) AS wickets,\n        SUM(COALESCE(s.runs_scored, 0)) AS bat_runs,\n        COUNT(*) - COUNT(e.match_id) AS legal_balls\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s\n        USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w\n        ON w.match_id = b.match_id AND w.innings_no = b.innings_no\n        AND w.over_id = b.over_id AND w.ball_id = b.ball_id\n        AND w.kind_out IN ('bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped')\n    LEFT JOIN main.extra_runs AS e\n        ON e.match_id = b.match_id AND e.innings_no = b.innings_no\n        AND e.over_id = b.over_id AND e.ball_id = b.ball_id\n        AND e.extra_type IN ('wides', 'noballs')\n    GROUP BY b.bowler, b.match_id\n),\nranked_matches AS (\n    SELECT\n        match_figures.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY bowler\n            ORDER BY wickets DESC, bat_runs ASC, match_id ASC\n        ) AS match_rank\n    FROM match_figures\n)\nSELECT\n    p.player_name AS bowler_name,\n    SUM(m.wickets) AS total_wickets,\n    6.0 * SUM(m.bat_runs) / NULLIF(SUM(m.legal_balls), 0) AS economy_rate,\n    1.0 * SUM(m.legal_balls) / NULLIF(SUM(m.wickets), 0) AS strike_rate,\n    MAX(CASE WHEN m.match_rank = 1 THEN m.wickets || '-' || m.bat_runs END) AS best_bowling\nFROM ranked_matches AS m\nJOIN main.player AS p ON p.player_id = m.bowler\nGROUP BY p.player_id, p.player_name\nORDER BY total_wickets DESC, p.player_name, p.player_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "329 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=329; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bowler_name=str; total_wickets=int; economy_rate=float; strike_rate=float; best_bowling=str\nbowler_name | total_wickets | economy_rate | strike_rate | best_bowling\n--- | --- | --- | --- | ---\nSL Malinga | 143 | 6.309305373525557 | 16.006993006993007 | 5-12\nA Mishra | 123 | 7.130982367758186 | 19.365853658536587 | 5-17\nDJ Bravo | 122 | 7.902874132804757 | 16.540983606557376 | 4-21\nHarbhajan Singh | 119 | 6.801346801346801 | 22.462184873949578 | 5-17\nPP Chawla | 119 | 7.414410662224073 | 20.176470588235293 | 4-17\nR Ashwin | 100 | 6.293909973521624 | 22.66 | 4-34\nA Nehra | 97 | 7.512805919180421 | 18.11340206185567 | 4-10\nR Vinay Kumar | 97 | 8.16633466135458 | 20.701030927835053 | 4-39\nZ Khan | 92 | 7.302349336057201 | 21.282608695652176 | 4-17\nDW Steyn | 91 | 6.380530973451328 | 22.35164835164835 | 3-8\nRP Singh | 90 | 7.480296973158195 | 19.455555555555556 | 4-22\nPP Ojha | 89 | 7.143759873617694 | 21.337078651685392 | 3-10\nB Kumar | 85 | 6.766646670665867 | 19.611764705882354 | 4-12\nSP Narine | 85 | 6.073691014867485 | 18.2 | 5-18\nP Kumar | 84 | 7.341584158415841 | 28.857142857142858 | 3-16\nJA Morkel | 83 | 7.890459363957597 | 20.457831325301203 | 4-32\nSR Watson | 81 | 7.339770669885335 | 20.45679012345679 | 4-27\nIK Pathan | 79 | 7.46606334841629 | 25.17721518987342 | 3-21\nL Balaji | 75 | 7.758064516129032 | 19.84 | 5-23\nM Morkel | 75 | 7.358633776091081 | 21.08 | 4-15\nDS Kulkarni | 72 | 7.44131455399061 | 17.75 | 4-14\nMM Patel | 72 | 7.316846986089645 | 17.97222222222222 | 5-21\nUT Yadav | 72 | 8.097591105620754 | 22.48611111111111 | 4-24\nMM Sharma | 70 | 7.795238095238095 | 18.0 | 4-14\nAB Dinda | 68 | 7.656467315716273 | 21.147058823529413 | 4-16\nR Bhatia | 68 | 7.280254777070064 | 23.08823529411765 | 4-15\nJH Kallis | 65 | 7.6658986175115205 | 26.70769230769231 | 3-12\nSK Trivedi | 65 | 7.330677290836653 | 23.16923076923077 | 4-23\nM Muralitharan | 59 | 6.5 | 25.016949152542374 | 3-11\nKA Pollard | 56 | 8.378787878787879 | 21.214285714285715 | 4-42\nSK Warne | 55 | 7.102564102564102 | 21.272727272727273 | 4-21\nYS Chahal | 54 | 7.796052631578948 | 16.88888888888889 | 4-25\nI Sharma | 53 | 7.68406779661017 | 27.830188679245282 | 5-11\nSandeep Sharma | 52 | 7.432639649507119 | 17.557692307692307 | 4-25\nMG Johnson | 51 | 7.814968814968815 | 18.862745098039216 | 3-21\nJP Faulkner | 49 | 8.22398414271556 | 20.591836734693878 | 5-14\nSB Jakati | 47 | 7.825592417061611 | 22.4468085106383 | 4-22\nA Kumble | 45 | 6.385492227979275 | 21.444444444444443 | 5-5\nRJ Harris | 45 | 7.197115384615385 | 18.488888888888887 | 4-34\nShakib Al Hasan | 42 | 6.948805460750854 | 20.928571428571427 | 3-17\nAR Patel | 41 | 7.214057507987221 | 22.902439024390244 | 4-20\nCH Morris | 40 | 7.174242424242424 | 19.8 | 4-20\nR Sharma | 40 | 6.995661605206074 | 23.05 | 3-13\nS Aravind | 40 | 7.684575389948007 | 14.425 | 4-14\nS Sreesanth | 40 | 7.581818181818182 | 22.0 | 3-28\nYK Pathan | 40 | 7.137835337650324 | 27.025 | 3-20\nP Awana | 39 | 8.03485254691689 | 19.128205128205128 | 4-32\nIqbal Abdulla | 38 | 6.936218678815489 | 23.105263157894736 | 3-24\nDE Bollinger | 37 | 6.90625 | 15.567567567567568 | 4-13\nMS Gony | 37 | 8.340277777777779 | 23.35135135135135 | 3-31\nSQL: WITH match_figures AS (\n    SELECT\n        b.bowler,\n        b.match_id,\n        COUNT(w.match_id) AS wickets,\n        SUM(COALESCE(s.runs_scored, 0)) AS bat_runs,\n        COUNT(*) - COUNT(e.match_id) AS legal_balls\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s\n        USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w\n        ON w.match_id = b.match_id AND w.innings_no = b.innings_no\n        AND w.over_id = b.over_id AND w.ball_id = b.ball_id\n        AND w.kind_out IN ('bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped')\n    LEFT JOIN main.extra_runs AS e\n        ON e.match_id = b.match_id AND e.innings_no = b.innings_no\n        AND e.over_id = b.over_id AND e.ball_id = b.ball_id\n        AND e.extra_type IN ('wides', 'noballs')\n    GROUP BY b.bowler, b.match_id\n),\nranked_matches AS (\n    SELECT\n        match_figures.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY bowler\n            ORDER BY wickets DESC, bat_runs ASC, match_id ASC\n        ) AS match_rank\n    FROM match_figures\n)\nSELECT\n    p.player_name AS bowler_name,\n    SUM(m.wickets) AS total_wickets,\n    6.0 * SUM(m.bat_runs) / NULLIF(SUM(m.legal_balls), 0) AS economy_rate,\n    1.0 * SUM(m.legal_balls) / NULLIF(SUM(m.wickets), 0) AS strike_rate,\n    MAX(CASE WHEN m.match_rank = 1 THEN m.wickets || '-' || m.bat_runs END) AS best_bowling\nFROM ranked_matches AS m\nJOIN main.player AS p ON p.player_id = m.bowler\nGROUP BY p.player_id, p.player_name\nORDER BY total_wickets DESC, p.player_name, p.player_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"7g2twS-av75dE8nvAeBoSR3PxPrL7Ypc4jfAXzURVHY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "7g2twS-av75dE8nvAeBoSR3PxPrL7Ypc4jfAXzURVHY",
+        "sql": "SELECT b.bowler, typeof(b.bowler) AS stored_type, COUNT(*) AS deliveries FROM main.ball_by_ball AS b LEFT JOIN main.player AS p ON p.player_id = b.bowler WHERE p.player_id IS NULL GROUP BY b.bowler"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bowler=int; stored_type=str; deliveries=int\nbowler | stored_type | deliveries\n--- | --- | ---\n35 | integer | 1727\nSQL: SELECT b.bowler, typeof(b.bowler) AS stored_type, COUNT(*) AS deliveries FROM main.ball_by_ball AS b LEFT JOIN main.player AS p ON p.player_id = b.bowler WHERE p.player_id IS NULL GROUP BY b.bowler\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_13",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lVaYLxna-_GunXTxvnx237QoAxu-Ebq7ykl6FsQgPTo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_14",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lVaYLxna-_GunXTxvnx237QoAxu-Ebq7ykl6FsQgPTo",
+        "sql": "WITH match_figures AS (\n    SELECT\n        b.bowler,\n        b.match_id,\n        COUNT(w.match_id) AS wickets,\n        SUM(COALESCE(s.runs_scored, 0)) AS bat_runs,\n        COUNT(*) - COUNT(e.match_id) AS legal_balls\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s\n        USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w\n        ON w.match_id = b.match_id AND w.innings_no = b.innings_no\n        AND w.over_id = b.over_id AND w.ball_id = b.ball_id\n        AND w.kind_out IN ('bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped')\n    LEFT JOIN main.extra_runs AS e\n        ON e.match_id = b.match_id AND e.innings_no = b.innings_no\n        AND e.over_id = b.over_id AND e.ball_id = b.ball_id\n        AND e.extra_type IN ('wides', 'noballs')\n    GROUP BY b.bowler, b.match_id\n),\nranked_matches AS (\n    SELECT\n        match_figures.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY bowler\n            ORDER BY wickets DESC, bat_runs ASC, match_id ASC\n        ) AS match_rank\n    FROM match_figures\n)\nSELECT\n    m.bowler AS bowler_id,\n    p.player_name AS bowler_name,\n    SUM(m.wickets) AS total_wickets,\n    6.0 * SUM(m.bat_runs) / NULLIF(SUM(m.legal_balls), 0) AS economy_rate,\n    1.0 * SUM(m.legal_balls) / NULLIF(SUM(m.wickets), 0) AS strike_rate,\n    MAX(CASE WHEN m.match_rank = 1 THEN m.wickets || '-' || m.bat_runs END) AS best_bowling\nFROM ranked_matches AS m\nLEFT JOIN main.player AS p ON p.player_id = m.bowler\nGROUP BY m.bowler, p.player_name\nORDER BY total_wickets DESC, m.bowler\nLIMIT -1",
+        "expected_columns": [
+          "bowler_id",
+          "bowler_name",
+          "total_wickets",
+          "economy_rate",
+          "strike_rate",
+          "best_bowling"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "330 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=330; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bowler_id=int; bowler_name=NoneType,str; total_wickets=int; economy_rate=float; strike_rate=float; best_bowling=str\nbowler_id | bowler_name | total_wickets | economy_rate | strike_rate | best_bowling\n--- | --- | --- | --- | --- | ---\n194 | SL Malinga | 143 | 6.309305373525557 | 16.006993006993007 | 5-12\n136 | A Mishra | 123 | 7.130982367758186 | 19.365853658536587 | 5-17\n71 | DJ Bravo | 122 | 7.902874132804757 | 16.540983606557376 | 4-21\n50 | Harbhajan Singh | 119 | 6.801346801346801 | 22.462184873949578 | 5-17\n67 | PP Chawla | 119 | 7.414410662224073 | 20.176470588235293 | 4-17\n201 | R Ashwin | 100 | 6.293909973521624 | 22.66 | 4-34\n73 | A Nehra | 97 | 7.512805919180421 | 18.11340206185567 | 4-10\n81 | R Vinay Kumar | 97 | 8.16633466135458 | 20.701030927835053 | 4-39\n15 | Z Khan | 92 | 7.302349336057201 | 21.282608695652176 | 4-17\n94 | DW Steyn | 91 | 6.380530973451328 | 22.35164835164835 | 3-8\n61 | RP Singh | 90 | 7.480296973158195 | 19.455555555555556 | 4-22\n131 | PP Ojha | 89 | 7.143759873617694 | 21.337078651685392 | 3-10\n299 | B Kumar | 85 | 6.766646670665867 | 19.611764705882354 | 4-12\n315 | SP Narine | 85 | 6.073691014867485 | 18.2 | 5-18\n14 | P Kumar | 84 | 7.341584158415841 | 28.857142857142858 | 3-16\n109 | JA Morkel | 83 | 7.890459363957597 | 20.457831325301203 | 4-32\n32 | SR Watson | 81 | 7.339770669885335 | 20.45679012345679 | 4-27\n29 | IK Pathan | 79 | 7.46606334841629 | 25.17721518987342 | 3-21\n35 | None | 77 | 7.458308693081017 | 21.961038961038962 | 5-16\n151 | L Balaji | 75 | 7.758064516129032 | 19.84 | 5-23\n190 | M Morkel | 75 | 7.358633776091081 | 21.08 | 4-15\n80 | DS Kulkarni | 72 | 7.44131455399061 | 17.75 | 4-14\n126 | MM Patel | 72 | 7.316846986089645 | 17.97222222222222 | 5-21\n232 | UT Yadav | 72 | 8.097591105620754 | 22.48611111111111 | 4-24\n364 | MM Sharma | 70 | 7.795238095238095 | 18.0 | 4-14\n89 | R Bhatia | 68 | 7.280254777070064 | 23.08823529411765 | 4-15\n106 | AB Dinda | 68 | 7.656467315716273 | 21.147058823529413 | 4-16\n9 | JH Kallis | 65 | 7.6658986175115205 | 26.70769230769231 | 3-12\n39 | SK Trivedi | 65 | 7.330677290836653 | 23.16923076923077 | 4-23\n121 | M Muralitharan | 59 | 6.5 | 25.016949152542374 | 3-11\n221 | KA Pollard | 56 | 8.378787878787879 | 21.214285714285715 | 4-42\n38 | SK Warne | 55 | 7.102564102564102 | 21.272727272727273 | 4-21\n382 | YS Chahal | 54 | 7.796052631578948 | 16.88888888888889 | 4-25\n84 | I Sharma | 53 | 7.68406779661017 | 27.830188679245282 | 5-11\n367 | Sandeep Sharma | 52 | 7.432639649507119 | 17.557692307692307 | 4-25\n357 | MG Johnson | 51 | 7.814968814968815 | 18.862745098039216 | 3-21\n310 | JP Faulkner | 49 | 8.22398414271556 | 20.591836734693878 | 5-14\n186 | SB Jakati | 47 | 7.825592417061611 | 22.4468085106383 | 4-22\n124 | A Kumble | 45 | 6.385492227979275 | 21.444444444444443 | 5-5\n188 | RJ Harris | 45 | 7.197115384615385 | 18.488888888888887 | 4-34\n276 | Shakib Al Hasan | 42 | 6.948805460750854 | 20.928571428571427 | 3-17\n374 | AR Patel | 41 | 7.214057507987221 | 22.902439024390244 | 4-20\n31 | YK Pathan | 40 | 7.137835337650324 | 27.025 | 3-20\n77 | S Sreesanth | 40 | 7.581818181818182 | 22.0 | 3-28\n235 | R Sharma | 40 | 6.995661605206074 | 23.05 | 3-13\n270 | S Aravind | 40 | 7.684575389948007 | 14.425 | 4-14\n350 | CH Morris | 40 | 7.174242424242424 | 19.8 | 4-20\n333 | P Awana | 39 | 8.03485254691689 | 19.128205128205128 | 4-32\n140 | Iqbal Abdulla | 38 | 6.936218678815489 | 23.105263157894736 | 3-24\n120 | MS Gony | 37 | 8.340277777777779 | 23.35135135135135 | 3-31\nSQL: WITH match_figures AS (\n    SELECT\n        b.bowler,\n        b.match_id,\n        COUNT(w.match_id) AS wickets,\n        SUM(COALESCE(s.runs_scored, 0)) AS bat_runs,\n        COUNT(*) - COUNT(e.match_id) AS legal_balls\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s\n        USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w\n        ON w.match_id = b.match_id AND w.innings_no = b.innings_no\n        AND w.over_id = b.over_id AND w.ball_id = b.ball_id\n        AND w.kind_out IN ('bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped')\n    LEFT JOIN main.extra_runs AS e\n        ON e.match_id = b.match_id AND e.innings_no = b.innings_no\n        AND e.over_id = b.over_id AND e.ball_id = b.ball_id\n        AND e.extra_type IN ('wides', 'noballs')\n    GROUP BY b.bowler, b.match_id\n),\nranked_matches AS (\n    SELECT\n        match_figures.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY bowler\n            ORDER BY wickets DESC, bat_runs ASC, match_id ASC\n        ) AS match_rank\n    FROM match_figures\n)\nSELECT\n    m.bowler AS bowler_id,\n    p.player_name AS bowler_name,\n    SUM(m.wickets) AS total_wickets,\n    6.0 * SUM(m.bat_runs) / NULLIF(SUM(m.legal_balls), 0) AS economy_rate,\n    1.0 * SUM(m.legal_balls) / NULLIF(SUM(m.wickets), 0) AS strike_rate,\n    MAX(CASE WHEN m.match_rank = 1 THEN m.wickets || '-' || m.bat_runs END) AS best_bowling\nFROM ranked_matches AS m\nLEFT JOIN main.player AS p ON p.player_id = m.bowler\nGROUP BY m.bowler, p.player_name\nORDER BY total_wickets DESC, m.bowler\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH match_figures AS (\n    SELECT\n        b.bowler,\n        b.match_id,\n        COUNT(w.match_id) AS wickets,\n        SUM(COALESCE(s.runs_scored, 0)) AS bat_runs,\n        COUNT(*) - COUNT(e.match_id) AS legal_balls\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s\n        USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w\n        ON w.match_id = b.match_id AND w.innings_no = b.innings_no\n        AND w.over_id = b.over_id AND w.ball_id = b.ball_id\n        AND w.kind_out IN ('bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped')\n    LEFT JOIN main.extra_runs AS e\n        ON e.match_id = b.match_id AND e.innings_no = b.innings_no\n        AND e.over_id = b.over_id AND e.ball_id = b.ball_id\n        AND e.extra_type IN ('wides', 'noballs')\n    GROUP BY b.bowler, b.match_id\n),\nranked_matches AS (\n    SELECT\n        match_figures.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY bowler\n            ORDER BY wickets DESC, bat_runs ASC, match_id ASC\n        ) AS match_rank\n    FROM match_figures\n)\nSELECT\n    m.bowler AS bowler_id,\n    p.player_name AS bowler_name,\n    SUM(m.wickets) AS total_wickets,\n    6.0 * SUM(m.bat_runs) / NULLIF(SUM(m.legal_balls), 0) AS economy_rate,\n    1.0 * SUM(m.legal_balls) / NULLIF(SUM(m.wickets), 0) AS strike_rate,\n    MAX(CASE WHEN m.match_rank = 1 THEN m.wickets || '-' || m.bat_runs END) AS best_bowling\nFROM ranked_matches AS m\nLEFT JOIN main.player AS p ON p.player_id = m.bowler\nGROUP BY m.bowler, p.player_name\nORDER BY total_wickets DESC, m.bowler\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 330,
+  "sql": "WITH match_figures AS (\n    SELECT\n        b.bowler,\n        b.match_id,\n        COUNT(w.match_id) AS wickets,\n        SUM(COALESCE(s.runs_scored, 0)) AS bat_runs,\n        COUNT(*) - COUNT(e.match_id) AS legal_balls\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s\n        USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w\n        ON w.match_id = b.match_id AND w.innings_no = b.innings_no\n        AND w.over_id = b.over_id AND w.ball_id = b.ball_id\n        AND w.kind_out IN ('bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped')\n    LEFT JOIN main.extra_runs AS e\n        ON e.match_id = b.match_id AND e.innings_no = b.innings_no\n        AND e.over_id = b.over_id AND e.ball_id = b.ball_id\n        AND e.extra_type IN ('wides', 'noballs')\n    GROUP BY b.bowler, b.match_id\n),\nranked_matches AS (\n    SELECT\n        match_figures.*,\n        ROW_NUMBER() OVER (\n            PARTITION BY bowler\n            ORDER BY wickets DESC, bat_runs ASC, match_id ASC\n        ) AS match_rank\n    FROM match_figures\n)\nSELECT\n    m.bowler AS bowler_id,\n    p.player_name AS bowler_name,\n    SUM(m.wickets) AS total_wickets,\n    6.0 * SUM(m.bat_runs) / NULLIF(SUM(m.legal_balls), 0) AS economy_rate,\n    1.0 * SUM(m.legal_balls) / NULLIF(SUM(m.wickets), 0) AS strike_rate,\n    MAX(CASE WHEN m.match_rank = 1 THEN m.wickets || '-' || m.bat_runs END) AS best_bowling\nFROM ranked_matches AS m\nLEFT JOIN main.player AS p ON p.player_id = m.bowler\nGROUP BY m.bowler, p.player_name\nORDER BY total_wickets DESC, m.bowler\nLIMIT -1",
+  "seconds": 68.78086304105818
+}

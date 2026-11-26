@@ -1,0 +1,29 @@
+WITH team_results AS (
+    SELECT league_id, home_team_api_id AS team_api_id,
+           CASE WHEN home_team_goal > away_team_goal THEN 1 ELSE 0 END AS win
+    FROM main."Match"
+    UNION ALL
+    SELECT league_id, away_team_api_id AS team_api_id,
+           CASE WHEN away_team_goal > home_team_goal THEN 1 ELSE 0 END AS win
+    FROM main."Match"
+),
+team_totals AS (
+    SELECT league_id, team_api_id, SUM(win) AS total_wins
+    FROM team_results
+    GROUP BY league_id, team_api_id
+),
+ranked_teams AS (
+    SELECT league_id, team_api_id, total_wins,
+           ROW_NUMBER() OVER (
+               PARTITION BY league_id
+               ORDER BY total_wins, team_api_id
+           ) AS position
+    FROM team_totals
+)
+SELECT l.name AS league, t.team_long_name AS team, r.total_wins
+FROM ranked_teams AS r
+JOIN main.League AS l ON l.id = r.league_id
+JOIN main.Team AS t ON t.team_api_id = r.team_api_id
+WHERE r.position = 1
+ORDER BY l.name
+LIMIT 1000

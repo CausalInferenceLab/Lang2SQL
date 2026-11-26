@@ -1,0 +1,40 @@
+```sql
+WITH monthly AS (
+    SELECT
+        CAST(strftime('%Y', insert_date) AS INTEGER) AS year,
+        CAST(strftime('%m', insert_date) AS INTEGER) AS month,
+        COUNT(*) AS monthly_total
+    FROM main.cities
+    WHERE insert_date >= '2021-01-01'
+      AND insert_date < '2024-01-01'
+      AND strftime('%m', insert_date) IN ('04', '05', '06')
+    GROUP BY year, month
+),
+cumulative AS (
+    SELECT
+        year, month, monthly_total,
+        SUM(monthly_total) OVER (
+            PARTITION BY month ORDER BY year
+            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+        ) AS running_total
+    FROM monthly
+),
+compared AS (
+    SELECT
+        year, month, monthly_total, running_total,
+        LAG(monthly_total) OVER same_month AS prior_monthly_total,
+        LAG(running_total) OVER same_month AS prior_running_total
+    FROM cumulative
+    WINDOW same_month AS (PARTITION BY month ORDER BY year)
+)
+SELECT
+    year, month, monthly_total, running_total,
+    100.0 * (monthly_total - prior_monthly_total)
+        / NULLIF(prior_monthly_total, 0) AS monthly_yoy_growth_pct,
+    100.0 * (running_total - prior_running_total)
+        / NULLIF(prior_running_total, 0) AS running_yoy_growth_pct
+FROM compared
+WHERE year IN (2022, 2023)
+ORDER BY year, month
+LIMIT 6
+```

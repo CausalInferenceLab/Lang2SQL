@@ -1,0 +1,176 @@
+{
+  "instance_id": "local197",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "56d42ad550da86739b3a6abffad8057a8f855a8ad16f3500cbd66391485e457a",
+  "events_sha256": "acba8b991b3c2060ce4275e8e780420d66d96594420d48ac1adf98729447a4e4",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 200831,
+      "cached_input_tokens": 183680,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1203,
+      "reasoning_output_tokens": 98
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"bGmDRNkwSZhmC8JDJL63wI6b-SLTViqkmb44wXTC0fw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer (table)\n- customer_id: INTEGER NOT NULL\n- store_id: INTEGER NOT NULL\n- first_name: VARCHAR(45) NOT NULL\n- last_name: VARCHAR(45) NOT NULL\n- email: VARCHAR(50)\n- address_id: INTEGER NOT NULL\n- active: CHAR(1) NOT NULL\n- create_date: TIMESTAMP NOT NULL\n- last_update: TIMESTAMP NOT NULL\nPRIMARY KEY (customer_id)\nFOREIGN KEY (store_id) REFERENCES store (store_id)\nFOREIGN KEY (address_id) REFERENCES address (address_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "payment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "payment (table)\n- payment_id: INTEGER NOT NULL\n- customer_id: INTEGER NOT NULL\n- staff_id: SMALLINT NOT NULL\n- rental_id: INTEGER\n- amount: DECIMAL(5, 2) NOT NULL\n- payment_date: TIMESTAMP NOT NULL\n- last_update: TIMESTAMP NOT NULL\nPRIMARY KEY (payment_id)\nFOREIGN KEY (rental_id) REFERENCES rental (rental_id)\nFOREIGN KEY (customer_id) REFERENCES customer (customer_id)\nFOREIGN KEY (staff_id) REFERENCES staff (staff_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "aggregate": "sum",
+        "dialect": "sqlite",
+        "input_scale": 2,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "bGmDRNkwSZhmC8JDJL63wI6b-SLTViqkmb44wXTC0fw",
+        "sql": "WITH decimal_input AS (\n  SELECT date(p.payment_date, 'start of month') AS group_id,\n         CAST(ROUND(p.amount * 100) AS INTEGER) AS scaled_value\n  FROM main.payment AS p\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)\nSELECT group_id, n, status, invalid_count, rounded_value\nFROM decimal_result\nORDER BY group_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nResult coverage: fetched_rows=5; displayed_rows=5; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): group_id=str; n=int; status=str; invalid_count=int; rounded_value=float\ngroup_id | n | status | invalid_count | rounded_value\n--- | --- | --- | --- | ---\n2005-05-01 | 1157 | ok | 0 | 4824.43\n2005-06-01 | 2312 | ok | 0 | 9631.88\n2005-07-01 | 6711 | ok | 0 | 28373.89\n2005-08-01 | 5687 | ok | 0 | 24072.13\n2006-02-01 | 182 | ok | 0 | 514.18\nSQL: WITH decimal_input AS (\n  SELECT date(p.payment_date, 'start of month') AS group_id,\n         CAST(ROUND(p.amount * 100) AS INTEGER) AS scaled_value\n  FROM main.payment AS p\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 90071992547409 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)\nSELECT group_id, n, status, invalid_count, rounded_value\nFROM decimal_result\nORDER BY group_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"YnvHJy8G6F9zifJ62dP6PVQNWiRFKCdpCLPivWPwnG8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "YnvHJy8G6F9zifJ62dP6PVQNWiRFKCdpCLPivWPwnG8",
+        "sql": "WITH monthly_payments AS (\n    SELECT p.customer_id,\n           DATE(p.payment_date, 'start of month') AS month_start,\n           SUM(CAST(ROUND(p.amount * 100) AS INTEGER)) AS total_cents\n    FROM main.payment AS p\n    GROUP BY p.customer_id, DATE(p.payment_date, 'start of month')\n),\ntop_customers AS (\n    SELECT customer_id\n    FROM monthly_payments\n    GROUP BY customer_id\n    ORDER BY SUM(total_cents) DESC, customer_id\n    LIMIT 10\n),\nmonthly_changes AS (\n    SELECT curr.customer_id,\n           curr.month_start,\n           ABS(curr.total_cents - prev.total_cents) AS difference_cents\n    FROM top_customers AS t\n    JOIN monthly_payments AS curr ON curr.customer_id = t.customer_id\n    JOIN monthly_payments AS prev\n      ON prev.customer_id = curr.customer_id\n     AND prev.month_start = DATE(curr.month_start, '-1 month')\n)\nSELECT c.first_name || ' ' || c.last_name AS customer_name,\n       STRFTIME('%Y-%m', m.month_start) AS ending_month,\n       ROUND(m.difference_cents / 100.0, 2) AS payment_difference\nFROM monthly_changes AS m\nJOIN main.customer AS c ON c.customer_id = m.customer_id\nORDER BY m.difference_cents DESC, m.month_start, m.customer_id\nLIMIT 1",
+        "expected_columns": [
+          "customer_name",
+          "ending_month",
+          "payment_difference"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): customer_name=str; ending_month=str; payment_difference=float\ncustomer_name | ending_month | payment_difference\n--- | --- | ---\nELEANOR HUNT | 2005-07 | 77.83\nSQL: WITH monthly_payments AS (\n    SELECT p.customer_id,\n           DATE(p.payment_date, 'start of month') AS month_start,\n           SUM(CAST(ROUND(p.amount * 100) AS INTEGER)) AS total_cents\n    FROM main.payment AS p\n    GROUP BY p.customer_id, DATE(p.payment_date, 'start of month')\n),\ntop_customers AS (\n    SELECT customer_id\n    FROM monthly_payments\n    GROUP BY customer_id\n    ORDER BY SUM(total_cents) DESC, customer_id\n    LIMIT 10\n),\nmonthly_changes AS (\n    SELECT curr.customer_id,\n           curr.month_start,\n           ABS(curr.total_cents - prev.total_cents) AS difference_cents\n    FROM top_customers AS t\n    JOIN monthly_payments AS curr ON curr.customer_id = t.customer_id\n    JOIN monthly_payments AS prev\n      ON prev.customer_id = curr.customer_id\n     AND prev.month_start = DATE(curr.month_start, '-1 month')\n)\nSELECT c.first_name || ' ' || c.last_name AS customer_name,\n       STRFTIME('%Y-%m', m.month_start) AS ending_month,\n       ROUND(m.difference_cents / 100.0, 2) AS payment_difference\nFROM monthly_changes AS m\nJOIN main.customer AS c ON c.customer_id = m.customer_id\nORDER BY m.difference_cents DESC, m.month_start, m.customer_id\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH monthly_payments AS (\n    SELECT p.customer_id,\n           DATE(p.payment_date, 'start of month') AS month_start,\n           SUM(CAST(ROUND(p.amount * 100) AS INTEGER)) AS total_cents\n    FROM main.payment AS p\n    GROUP BY p.customer_id, DATE(p.payment_date, 'start of month')\n),\ntop_customers AS (\n    SELECT customer_id\n    FROM monthly_payments\n    GROUP BY customer_id\n    ORDER BY SUM(total_cents) DESC, customer_id\n    LIMIT 10\n),\nmonthly_changes AS (\n    SELECT curr.customer_id,\n           curr.month_start,\n           ABS(curr.total_cents - prev.total_cents) AS difference_cents\n    FROM top_customers AS t\n    JOIN monthly_payments AS curr ON curr.customer_id = t.customer_id\n    JOIN monthly_payments AS prev\n      ON prev.customer_id = curr.customer_id\n     AND prev.month_start = DATE(curr.month_start, '-1 month')\n)\nSELECT c.first_name || ' ' || c.last_name AS customer_name,\n       STRFTIME('%Y-%m', m.month_start) AS ending_month,\n       ROUND(m.difference_cents / 100.0, 2) AS payment_difference\nFROM monthly_changes AS m\nJOIN main.customer AS c ON c.customer_id = m.customer_id\nORDER BY m.difference_cents DESC, m.month_start, m.customer_id\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH monthly_payments AS (\n    SELECT p.customer_id,\n           DATE(p.payment_date, 'start of month') AS month_start,\n           SUM(CAST(ROUND(p.amount * 100) AS INTEGER)) AS total_cents\n    FROM main.payment AS p\n    GROUP BY p.customer_id, DATE(p.payment_date, 'start of month')\n),\ntop_customers AS (\n    SELECT customer_id\n    FROM monthly_payments\n    GROUP BY customer_id\n    ORDER BY SUM(total_cents) DESC, customer_id\n    LIMIT 10\n),\nmonthly_changes AS (\n    SELECT curr.customer_id,\n           curr.month_start,\n           ABS(curr.total_cents - prev.total_cents) AS difference_cents\n    FROM top_customers AS t\n    JOIN monthly_payments AS curr ON curr.customer_id = t.customer_id\n    JOIN monthly_payments AS prev\n      ON prev.customer_id = curr.customer_id\n     AND prev.month_start = DATE(curr.month_start, '-1 month')\n)\nSELECT c.first_name || ' ' || c.last_name AS customer_name,\n       STRFTIME('%Y-%m', m.month_start) AS ending_month,\n       ROUND(m.difference_cents / 100.0, 2) AS payment_difference\nFROM monthly_changes AS m\nJOIN main.customer AS c ON c.customer_id = m.customer_id\nORDER BY m.difference_cents DESC, m.month_start, m.customer_id\nLIMIT 1",
+  "seconds": 41.326272624894045
+}
