@@ -1,0 +1,1067 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lang2SQL trace comparison</title><style>body{font:16px system-ui;margin:24px;color:#172033;background:#f5f7fb}.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}section,details{padding:12px;background:white;border:1px solid #ccd4df;border-radius:6px;margin:8px 0}summary{cursor:pointer;font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}</style><body><h1>Lang2SQL trace comparison</h1><pre>Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.</pre><pre>{
+  &quot;0 -&gt; 0&quot;: 1,
+  &quot;0 -&gt; 1&quot;: 1
+}</pre><details><summary>Provenance and settings</summary><pre>[
+  {
+    &quot;path&quot;: &quot;/Users/seyoung/workspace/benchmarks/codex-mcp-unobserved-20261127/checkpoints/005/bird&quot;,
+    &quot;manifest_sha256&quot;: &quot;083dc1599cad3bf7fa2ee082467dff66863642168e0539dcd4faa1f5da600db3&quot;,
+    &quot;scores_sha256&quot;: &quot;ae1f68899f5d64c7b42188fb782a4420aca2080ad31c64c04b3d0a997e680aea&quot;,
+    &quot;settings&quot;: {
+      &quot;profiles&quot;: [
+        {
+          &quot;name&quot;: &quot;codex-mcp&quot;,
+          &quot;model&quot;: &quot;gpt-6.2-astra&quot;,
+          &quot;reasoning_effort&quot;: &quot;high&quot;
+        }
+      ],
+      &quot;backend&quot;: &quot;ChatGPT login -&gt; Codex CLI -&gt; production Lang2SQL MCP&quot;,
+      &quot;revision&quot;: &quot;0c7953905ee455c7611652924cb341e596d7937a&quot;,
+      &quot;codex_version&quot;: &quot;codex-cli 0.170.0&quot;,
+      &quot;sources&quot;: {
+        &quot;bench/accuracy/codex_mcp.py&quot;: &quot;561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0&quot;,
+        &quot;src/lang2sql/frontends/mcp/server.py&quot;: &quot;0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb&quot;
+      },
+      &quot;schema_document_sha256&quot;: &quot;5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b&quot;,
+      &quot;review_source&quot;: null,
+      &quot;failure_selection&quot;: null,
+      &quot;split&quot;: &quot;development&quot;,
+      &quot;concurrency&quot;: 2,
+      &quot;case_timeout&quot;: 600.0,
+      &quot;sql_timeout&quot;: 30,
+      &quot;max_rows&quot;: 100000,
+      &quot;api_calls&quot;: null,
+      &quot;usage_unit&quot;: &quot;one Codex CLI invocation per question; internal model-call count unavailable&quot;
+    }
+  },
+  {
+    &quot;path&quot;: &quot;/Users/seyoung/workspace/benchmarks/codex-mcp-new-projection-failures-20261127/bird-gpt-6.2-astra&quot;,
+    &quot;manifest_sha256&quot;: &quot;5095f449da298332b328c22e687a8e734a117f690349132ee4cf833c80c31042&quot;,
+    &quot;scores_sha256&quot;: &quot;f41618138ae9e506321d2e34a4f60b5f2f97778d87b99e56854d2bf5f1a319a5&quot;,
+    &quot;settings&quot;: {
+      &quot;profiles&quot;: [
+        {
+          &quot;name&quot;: &quot;codex-mcp&quot;,
+          &quot;model&quot;: &quot;gpt-6.2-astra&quot;,
+          &quot;reasoning_effort&quot;: &quot;high&quot;
+        }
+      ],
+      &quot;backend&quot;: &quot;ChatGPT login -&gt; Codex CLI -&gt; production Lang2SQL MCP&quot;,
+      &quot;revision&quot;: &quot;18170e69e8995ce8f39647ff00709fa844f4c18c&quot;,
+      &quot;codex_version&quot;: &quot;codex-cli 0.170.0&quot;,
+      &quot;sources&quot;: {
+        &quot;bench/accuracy/codex_mcp.py&quot;: &quot;561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0&quot;,
+        &quot;src/lang2sql/frontends/mcp/server.py&quot;: &quot;0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb&quot;
+      },
+      &quot;schema_document_sha256&quot;: &quot;5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b&quot;,
+      &quot;review_source&quot;: null,
+      &quot;failure_selection&quot;: null,
+      &quot;split&quot;: &quot;development&quot;,
+      &quot;concurrency&quot;: 2,
+      &quot;case_timeout&quot;: 600.0,
+      &quot;sql_timeout&quot;: 30,
+      &quot;max_rows&quot;: 100000,
+      &quot;api_calls&quot;: null,
+      &quot;usage_unit&quot;: &quot;one Codex CLI invocation per question; internal model-call count unavailable&quot;
+    }
+  }
+]</pre></details><details id="bird149"><summary>bird149: 0 -&gt; 0</summary><pre>{
+  &quot;instance_id&quot;: &quot;bird149&quot;,
+  &quot;db&quot;: &quot;debit_card_specializing&quot;,
+  &quot;question&quot;: &quot;For each of the SME, LAM, and KAM segments, identify the CZK customer with the lowest total recorded consumption in 2013, breaking a tie by smaller customer ID. What are the differences between those customers&#x27; 2013 totals in SME minus LAM, LAM minus KAM, and KAM minus SME order? Round each to two decimals.&quot;,
+  &quot;evidence&quot;: &quot;&quot;
+}</pre><h3>SQL diff</h3><pre>--- before.sql
++++ after.sql
+@@ -1,32 +1,32 @@
+-WITH annual_totals AS (
++WITH customer_totals AS (
+     SELECT c.Segment, c.CustomerID,
+-           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths
++           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_cents
+     FROM main.customers AS c
+     JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID
+     WHERE c.Currency = &#x27;CZK&#x27;
+       AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)
+-      AND y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;
+-      AND y.Consumption IS NOT NULL
++      AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;
+     GROUP BY c.Segment, c.CustomerID
++    HAVING COUNT(y.Consumption) &gt; 0
+ ),
+ ranked AS (
+-    SELECT annual_totals.*,
++    SELECT Segment, CustomerID, total_cents,
+            ROW_NUMBER() OVER (
+-               PARTITION BY Segment ORDER BY total_hundredths, CustomerID
+-           ) AS segment_rank
+-    FROM annual_totals
++               PARTITION BY Segment ORDER BY total_cents, CustomerID
++           ) AS position
++    FROM customer_totals
+ ),
+ winners AS (
+-    SELECT Segment, CustomerID, total_hundredths
++    SELECT Segment, CustomerID, total_cents
+     FROM ranked
+-    WHERE segment_rank = 1
++    WHERE position = 1
+ )
+-SELECT sme.CustomerID AS sme_customer_id, sme.total_hundredths / 100.0 AS sme_total,
+-       lam.CustomerID AS lam_customer_id, lam.total_hundredths / 100.0 AS lam_total,
+-       kam.CustomerID AS kam_customer_id, kam.total_hundredths / 100.0 AS kam_total,
+-       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,
+-       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,
+-       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme
++SELECT sme.CustomerID AS sme_customer_id,
++       lam.CustomerID AS lam_customer_id,
++       kam.CustomerID AS kam_customer_id,
++       ROUND((sme.total_cents - lam.total_cents) / 100.0, 2) AS sme_minus_lam,
++       ROUND((lam.total_cents - kam.total_cents) / 100.0, 2) AS lam_minus_kam,
++       ROUND((kam.total_cents - sme.total_cents) / 100.0, 2) AS kam_minus_sme
+ FROM winners AS sme
+ CROSS JOIN winners AS lam
+ CROSS JOIN winners AS kam</pre><div class="pair"><section><h3>before: score 0</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 66.03319512493908
+}</pre><h4>Final SQL / answer</h4><pre>WITH annual_totals AS (
+    SELECT c.Segment, c.CustomerID,
+           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths
+    FROM main.customers AS c
+    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID
+    WHERE c.Currency = &#x27;CZK&#x27;
+      AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)
+      AND y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;
+      AND y.Consumption IS NOT NULL
+    GROUP BY c.Segment, c.CustomerID
+),
+ranked AS (
+    SELECT annual_totals.*,
+           ROW_NUMBER() OVER (
+               PARTITION BY Segment ORDER BY total_hundredths, CustomerID
+           ) AS segment_rank
+    FROM annual_totals
+),
+winners AS (
+    SELECT Segment, CustomerID, total_hundredths
+    FROM ranked
+    WHERE segment_rank = 1
+)
+SELECT sme.CustomerID AS sme_customer_id, sme.total_hundredths / 100.0 AS sme_total,
+       lam.CustomerID AS lam_customer_id, lam.total_hundredths / 100.0 AS lam_total,
+       kam.CustomerID AS kam_customer_id, kam.total_hundredths / 100.0 AS kam_total,
+       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,
+       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,
+       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme
+FROM winners AS sme
+CROSS JOIN winners AS lam
+CROSS JOIN winners AS kam
+WHERE sme.Segment = &#x27;SME&#x27; AND lam.Segment = &#x27;LAM&#x27; AND kam.Segment = &#x27;KAM&#x27;
+LIMIT 1</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;sme_customer_id&quot;,
+    &quot;sme_total&quot;,
+    &quot;lam_customer_id&quot;,
+    &quot;lam_total&quot;,
+    &quot;kam_customer_id&quot;,
+    &quot;kam_total&quot;,
+    &quot;sme_minus_lam&quot;,
+    &quot;lam_minus_kam&quot;,
+    &quot;kam_minus_sme&quot;
+  ],
+  &quot;row_count&quot;: 1,
+  &quot;preview&quot;: [
+    [
+      &quot;12685&quot;,
+      &quot;-14007.1&quot;,
+      &quot;50066&quot;,
+      &quot;2.24&quot;,
+      &quot;45195&quot;,
+      &quot;-6044.38&quot;,
+      &quot;-14009.34&quot;,
+      &quot;6046.62&quot;,
+      &quot;7962.72&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;57fae8259166735f2ece73a91b90fb001a4870112f7df294f950e8e3140e597d&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;J__XXotiN39Lk9MPE3OXLpIezTHo0pZhhsTY7MTchVw\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;customers&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;yearmonth&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;J__XXotiN39Lk9MPE3OXLpIezTHo0pZhhsTY7MTchVw&quot;,
+      &quot;sql&quot;: &quot;SELECT c.Segment, MIN(y.Date), MAX(y.Date), COUNT(*), COUNT(y.Consumption), MIN(y.Consumption), MAX(y.Consumption),\n       MAX(LENGTH(RTRIM(SUBSTR(CAST(y.Consumption AS TEXT), INSTR(CAST(y.Consumption AS TEXT), &#x27;.&#x27;) + 1), &#x27;0&#x27;))) AS decimal_places\nFROM main.yearmonth AS y\nJOIN main.customers AS c ON c.CustomerID = y.CustomerID\nWHERE c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n  AND y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;\nGROUP BY c.Segment&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; MIN(y.Date)=str; MAX(y.Date)=str; COUNT(*)=int; COUNT(y.Consumption)=int; MIN(y.Consumption)=float; MAX(y.Consumption)=float; decimal_places=int\nSegment | MIN(y.Date) | MAX(y.Date) | COUNT(*) | COUNT(y.Consumption) | MIN(y.Consumption) | MAX(y.Consumption) | decimal_places\n--- | --- | --- | --- | --- | --- | --- | ---\nKAM | 201301 | 201311 | 14298 | 14298 | -582092.86 | 2052187.11 | 2\nLAM | 201301 | 201311 | 28994 | 28994 | -2458.05 | 712501.76 | 2\nSME | 201301 | 201311 | 167502 | 167502 | -14896.12 | 786530.79 | 2\nSQL: SELECT c.Segment, MIN(y.Date), MAX(y.Date), COUNT(*), COUNT(y.Consumption), MIN(y.Consumption), MAX(y.Consumption),\n       MAX(LENGTH(RTRIM(SUBSTR(CAST(y.Consumption AS TEXT), INSTR(CAST(y.Consumption AS TEXT), &#x27;.&#x27;) + 1), &#x27;0&#x27;))) AS decimal_places\nFROM main.yearmonth AS y\nJOIN main.customers AS c ON c.CustomerID = y.CustomerID\nWHERE c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n  AND y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;\nGROUP BY c.Segment\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;fixed_decimal_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;aggregate&quot;: &quot;sum&quot;,
+      &quot;dialect&quot;: &quot;sqlite&quot;,
+      &quot;input_scale&quot;: 2,
+      &quot;output_scale&quot;: 2
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;i-yEGbwb-XwCMxtHnxDK4PyW0nNWIyNN6un5-Y6Qc24\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_7&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;fixed_decimal_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;aggregate&quot;: &quot;sum&quot;,
+      &quot;dialect&quot;: &quot;sqlite&quot;,
+      &quot;input_scale&quot;: 2,
+      &quot;output_scale&quot;: 2
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_8&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;i-yEGbwb-XwCMxtHnxDK4PyW0nNWIyNN6un5-Y6Qc24&quot;,
+      &quot;sql&quot;: &quot;WITH decimal_input AS (\n    SELECT y.CustomerID AS group_id, CAST(ROUND(y.Consumption * 100) AS INTEGER) AS scaled_value\n    FROM main.yearmonth AS y\n    JOIN main.customers AS c ON c.CustomerID = y.CustomerID\n    WHERE y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;\n      AND c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)\nSELECT status, MAX(invalid_count), COUNT(*), MIN(rounded_value) FROM decimal_result GROUP BY status&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): status=str; MAX(invalid_count)=int; COUNT(*)=int; MIN(rounded_value)=float\nstatus | MAX(invalid_count) | COUNT(*) | MIN(rounded_value)\n--- | --- | --- | ---\nok | 0 | 25978 | -14007.1\nSQL: WITH decimal_input AS (\n    SELECT y.CustomerID AS group_id, CAST(ROUND(y.Consumption * 100) AS INTEGER) AS scaled_value\n    FROM main.yearmonth AS y\n    JOIN main.customers AS c ON c.CustomerID = y.CustomerID\n    WHERE y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;\n      AND c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)\nSELECT status, MAX(invalid_count), COUNT(*), MIN(rounded_value) FROM decimal_result GROUP BY status\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_9&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;zEylggxd4h2JwWilFRnG7n1mTwdIaq9psBvxzDSYUDg\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_10&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;zEylggxd4h2JwWilFRnG7n1mTwdIaq9psBvxzDSYUDg&quot;,
+      &quot;sql&quot;: &quot;WITH annual_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = &#x27;CZK&#x27;\n      AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n      AND y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT annual_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment ORDER BY total_hundredths, CustomerID\n           ) AS segment_rank\n    FROM annual_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE segment_rank = 1\n)\nSELECT sme.CustomerID AS sme_customer_id, sme.total_hundredths / 100.0 AS sme_total,\n       lam.CustomerID AS lam_customer_id, lam.total_hundredths / 100.0 AS lam_total,\n       kam.CustomerID AS kam_customer_id, kam.total_hundredths / 100.0 AS kam_total,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = &#x27;SME&#x27; AND lam.Segment = &#x27;LAM&#x27; AND kam.Segment = &#x27;KAM&#x27;\nLIMIT 1&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): sme_customer_id=int; sme_total=float; lam_customer_id=int; lam_total=float; kam_customer_id=int; kam_total=float; sme_minus_lam=float; lam_minus_kam=float; kam_minus_sme=float\nsme_customer_id | sme_total | lam_customer_id | lam_total | kam_customer_id | kam_total | sme_minus_lam | lam_minus_kam | kam_minus_sme\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n12685 | -14007.1 | 50066 | 2.24 | 45195 | -6044.38 | -14009.34 | 6046.62 | 7962.72\nSQL: WITH annual_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = &#x27;CZK&#x27;\n      AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n      AND y.Date BETWEEN &#x27;201301&#x27; AND &#x27;201312&#x27;\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT annual_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment ORDER BY total_hundredths, CustomerID\n           ) AS segment_rank\n    FROM annual_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE segment_rank = 1\n)\nSELECT sme.CustomerID AS sme_customer_id, sme.total_hundredths / 100.0 AS sme_total,\n       lam.CustomerID AS lam_customer_id, lam.total_hundredths / 100.0 AS lam_total,\n       kam.CustomerID AS kam_customer_id, kam.total_hundredths / 100.0 AS kam_total,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = &#x27;SME&#x27; AND lam.Segment = &#x27;LAM&#x27; AND kam.Segment = &#x27;KAM&#x27;\nLIMIT 1&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section><section><h3>after: score 0</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 55.86686725006439
+}</pre><h4>Final SQL / answer</h4><pre>WITH customer_totals AS (
+    SELECT c.Segment, c.CustomerID,
+           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_cents
+    FROM main.customers AS c
+    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID
+    WHERE c.Currency = &#x27;CZK&#x27;
+      AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)
+      AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;
+    GROUP BY c.Segment, c.CustomerID
+    HAVING COUNT(y.Consumption) &gt; 0
+),
+ranked AS (
+    SELECT Segment, CustomerID, total_cents,
+           ROW_NUMBER() OVER (
+               PARTITION BY Segment ORDER BY total_cents, CustomerID
+           ) AS position
+    FROM customer_totals
+),
+winners AS (
+    SELECT Segment, CustomerID, total_cents
+    FROM ranked
+    WHERE position = 1
+)
+SELECT sme.CustomerID AS sme_customer_id,
+       lam.CustomerID AS lam_customer_id,
+       kam.CustomerID AS kam_customer_id,
+       ROUND((sme.total_cents - lam.total_cents) / 100.0, 2) AS sme_minus_lam,
+       ROUND((lam.total_cents - kam.total_cents) / 100.0, 2) AS lam_minus_kam,
+       ROUND((kam.total_cents - sme.total_cents) / 100.0, 2) AS kam_minus_sme
+FROM winners AS sme
+CROSS JOIN winners AS lam
+CROSS JOIN winners AS kam
+WHERE sme.Segment = &#x27;SME&#x27; AND lam.Segment = &#x27;LAM&#x27; AND kam.Segment = &#x27;KAM&#x27;
+LIMIT 1</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;sme_customer_id&quot;,
+    &quot;lam_customer_id&quot;,
+    &quot;kam_customer_id&quot;,
+    &quot;sme_minus_lam&quot;,
+    &quot;lam_minus_kam&quot;,
+    &quot;kam_minus_sme&quot;
+  ],
+  &quot;row_count&quot;: 1,
+  &quot;preview&quot;: [
+    [
+      &quot;12685&quot;,
+      &quot;50066&quot;,
+      &quot;45195&quot;,
+      &quot;-14009.34&quot;,
+      &quot;6046.62&quot;,
+      &quot;7962.72&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;73073c973e53e66a8234582781864bbfc4a7faa5b5cdee5188f87a04644c1d3b&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;customers&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;pvxcFRrMfPOUYxxWotgB8BKc4sL8etyd7oDrRl3BHtw\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;yearmonth&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;pvxcFRrMfPOUYxxWotgB8BKc4sL8etyd7oDrRl3BHtw&quot;,
+      &quot;sql&quot;: &quot;SELECT c.Segment, MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS records, COUNT(y.Consumption) AS recorded_values,\n       MAX(ABS(y.Consumption - ROUND(y.Consumption, 2))) AS max_subcent,\n       MAX(ABS(y.Consumption)) AS largest_magnitude\nFROM main.customers AS c\nJOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\nWHERE c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n  AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;\nGROUP BY c.Segment&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; first_month=str; last_month=str; records=int; recorded_values=int; max_subcent=float; largest_magnitude=float\nSegment | first_month | last_month | records | recorded_values | max_subcent | largest_magnitude\n--- | --- | --- | --- | --- | --- | ---\nKAM | 201301 | 201311 | 14298 | 14298 | 0.0 | 2052187.11\nLAM | 201301 | 201311 | 28994 | 28994 | 0.0 | 712501.76\nSME | 201301 | 201311 | 167502 | 167502 | 0.0 | 786530.79\nSQL: SELECT c.Segment, MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS records, COUNT(y.Consumption) AS recorded_values,\n       MAX(ABS(y.Consumption - ROUND(y.Consumption, 2))) AS max_subcent,\n       MAX(ABS(y.Consumption)) AS largest_magnitude\nFROM main.customers AS c\nJOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\nWHERE c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n  AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;\nGROUP BY c.Segment\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;pcWjciTU1rdG9yqce9zom9m5Wuto8dxRnatJW2TcUIc\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;fixed_decimal_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;aggregate&quot;: &quot;sum&quot;,
+      &quot;dialect&quot;: &quot;sqlite&quot;,
+      &quot;input_scale&quot;: 2,
+      &quot;output_scale&quot;: 2
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_7&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;fixed_decimal_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;aggregate&quot;: &quot;sum&quot;,
+      &quot;dialect&quot;: &quot;sqlite&quot;,
+      &quot;input_scale&quot;: 2,
+      &quot;output_scale&quot;: 2
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_8&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;pcWjciTU1rdG9yqce9zom9m5Wuto8dxRnatJW2TcUIc&quot;,
+      &quot;sql&quot;: &quot;WITH decimal_input AS (\n  SELECT c.CustomerID AS group_id, CAST(ROUND(y.Consumption * 100) AS INTEGER) AS scaled_value\n  FROM main.customers AS c\n  JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n  WHERE c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n    AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n),\nranked AS (\n  SELECT c.Segment, d.*, ROW_NUMBER() OVER (\n    PARTITION BY c.Segment ORDER BY d.rounded_units, d.group_id\n  ) AS position\n  FROM decimal_result AS d JOIN main.customers AS c ON c.CustomerID = d.group_id\n)\nSELECT Segment, status, SUM(invalid_count) AS invalid_count,\n       MAX(CASE WHEN position = 1 THEN group_id END) AS customer_id,\n       MIN(rounded_value) AS minimum_total\nFROM ranked GROUP BY Segment, status&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; status=str; invalid_count=int; customer_id=int; minimum_total=float\nSegment | status | invalid_count | customer_id | minimum_total\n--- | --- | --- | --- | ---\nKAM | ok | 0 | 45195 | -6044.38\nLAM | ok | 0 | 50066 | 2.24\nSME | ok | 0 | 12685 | -14007.1\nSQL: WITH decimal_input AS (\n  SELECT c.CustomerID AS group_id, CAST(ROUND(y.Consumption * 100) AS INTEGER) AS scaled_value\n  FROM main.customers AS c\n  JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n  WHERE c.Currency = &#x27;CZK&#x27; AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n    AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) &lt;&gt; &#x27;integer&#x27; THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = &#x27;integer&#x27; AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count &gt; 0 THEN &#x27;invalid_input&#x27;\n      WHEN n = 0 THEN &#x27;empty&#x27;\n      WHEN oversized_count &gt; 0 OR abs_total &gt; 90071992547409\n        OR n &gt; 90071992547409 THEN &#x27;overflow&#x27;\n      ELSE &#x27;ok&#x27; END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total &lt;= 90071992547409 AND n &lt;= 90071992547409\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, 100 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = &#x27;ok&#x27; THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) &gt;= (denominator + 1) / 2\n        THEN CASE WHEN numerator &lt; 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n),\nranked AS (\n  SELECT c.Segment, d.*, ROW_NUMBER() OVER (\n    PARTITION BY c.Segment ORDER BY d.rounded_units, d.group_id\n  ) AS position\n  FROM decimal_result AS d JOIN main.customers AS c ON c.CustomerID = d.group_id\n)\nSELECT Segment, status, SUM(invalid_count) AS invalid_count,\n       MAX(CASE WHEN position = 1 THEN group_id END) AS customer_id,\n       MIN(rounded_value) AS minimum_total\nFROM ranked GROUP BY Segment, status\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_9&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;vW_32-K6lTEKlaVrJTwolrw3DveQKKRzbWOEOZpDqAw\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_10&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;vW_32-K6lTEKlaVrJTwolrw3DveQKKRzbWOEOZpDqAw&quot;,
+      &quot;expected_columns&quot;: [
+        &quot;sme_customer_id&quot;,
+        &quot;lam_customer_id&quot;,
+        &quot;kam_customer_id&quot;,
+        &quot;sme_minus_lam&quot;,
+        &quot;lam_minus_kam&quot;,
+        &quot;kam_minus_sme&quot;
+      ],
+      &quot;expected_rows&quot;: 1,
+      &quot;sql&quot;: &quot;WITH customer_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_cents\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = &#x27;CZK&#x27;\n      AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n      AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;\n    GROUP BY c.Segment, c.CustomerID\n    HAVING COUNT(y.Consumption) &gt; 0\n),\nranked AS (\n    SELECT Segment, CustomerID, total_cents,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment ORDER BY total_cents, CustomerID\n           ) AS position\n    FROM customer_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_cents\n    FROM ranked\n    WHERE position = 1\n)\nSELECT sme.CustomerID AS sme_customer_id,\n       lam.CustomerID AS lam_customer_id,\n       kam.CustomerID AS kam_customer_id,\n       ROUND((sme.total_cents - lam.total_cents) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_cents - kam.total_cents) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_cents - sme.total_cents) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = &#x27;SME&#x27; AND lam.Segment = &#x27;LAM&#x27; AND kam.Segment = &#x27;KAM&#x27;\nLIMIT 1&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): sme_customer_id=int; lam_customer_id=int; kam_customer_id=int; sme_minus_lam=float; lam_minus_kam=float; kam_minus_sme=float\nsme_customer_id | lam_customer_id | kam_customer_id | sme_minus_lam | lam_minus_kam | kam_minus_sme\n--- | --- | --- | --- | --- | ---\n12685 | 50066 | 45195 | -14009.34 | 6046.62 | 7962.72\nSQL: WITH customer_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_cents\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = &#x27;CZK&#x27;\n      AND c.Segment IN (&#x27;SME&#x27;, &#x27;LAM&#x27;, &#x27;KAM&#x27;)\n      AND y.Date &gt;= &#x27;201301&#x27; AND y.Date &lt; &#x27;201401&#x27;\n    GROUP BY c.Segment, c.CustomerID\n    HAVING COUNT(y.Consumption) &gt; 0\n),\nranked AS (\n    SELECT Segment, CustomerID, total_cents,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment ORDER BY total_cents, CustomerID\n           ) AS position\n    FROM customer_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_cents\n    FROM ranked\n    WHERE position = 1\n)\nSELECT sme.CustomerID AS sme_customer_id,\n       lam.CustomerID AS lam_customer_id,\n       kam.CustomerID AS kam_customer_id,\n       ROUND((sme.total_cents - lam.total_cents) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_cents - kam.total_cents) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_cents - sme.total_cents) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = &#x27;SME&#x27; AND lam.Segment = &#x27;LAM&#x27; AND kam.Segment = &#x27;KAM&#x27;\nLIMIT 1&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section></div></details><details id="bird163"><summary>bird163: 0 -&gt; 1</summary><pre>{
+  &quot;instance_id&quot;: &quot;bird163&quot;,
+  &quot;db&quot;: &quot;european_football_2&quot;,
+  &quot;question&quot;: &quot;Which away teams are tied for the most away wins in the Scottish Premier League 2009/2010 season?&quot;,
+  &quot;evidence&quot;: &quot;&quot;
+}</pre><h3>SQL diff</h3><pre>--- before.sql
++++ after.sql
+@@ -1,15 +1,15 @@
+-WITH team_wins AS (
+-    SELECT m.away_team_api_id, COUNT(*) AS away_wins
+-    FROM main.&quot;Match&quot; AS m
+-    JOIN main.League AS l ON l.id = m.league_id
++WITH away_wins AS (
++    SELECT m.away_team_api_id, COUNT(*) AS wins
++    FROM &quot;Match&quot; AS m
++    JOIN League AS l ON l.id = m.league_id
+     WHERE l.name = &#x27;Scotland Premier League&#x27;
+       AND m.season = &#x27;2009/2010&#x27;
+       AND m.away_team_goal &gt; m.home_team_goal
+     GROUP BY m.away_team_api_id
+ )
+-SELECT t.team_long_name, w.away_wins
+-FROM team_wins AS w
+-JOIN main.Team AS t ON t.team_api_id = w.away_team_api_id
+-WHERE w.away_wins = (SELECT MAX(away_wins) FROM team_wins)
++SELECT t.team_long_name
++FROM away_wins AS w
++JOIN Team AS t ON t.team_api_id = w.away_team_api_id
++WHERE w.wins = (SELECT MAX(wins) FROM away_wins)
+ ORDER BY t.team_long_name
+ LIMIT 1000</pre><div class="pair"><section><h3>before: score 0</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 28.413047708920203
+}</pre><h4>Final SQL / answer</h4><pre>WITH team_wins AS (
+    SELECT m.away_team_api_id, COUNT(*) AS away_wins
+    FROM main.&quot;Match&quot; AS m
+    JOIN main.League AS l ON l.id = m.league_id
+    WHERE l.name = &#x27;Scotland Premier League&#x27;
+      AND m.season = &#x27;2009/2010&#x27;
+      AND m.away_team_goal &gt; m.home_team_goal
+    GROUP BY m.away_team_api_id
+)
+SELECT t.team_long_name, w.away_wins
+FROM team_wins AS w
+JOIN main.Team AS t ON t.team_api_id = w.away_team_api_id
+WHERE w.away_wins = (SELECT MAX(away_wins) FROM team_wins)
+ORDER BY t.team_long_name
+LIMIT 1000</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;team_long_name&quot;,
+    &quot;away_wins&quot;
+  ],
+  &quot;row_count&quot;: 2,
+  &quot;preview&quot;: [
+    [
+      &quot;Celtic&quot;,
+      &quot;11&quot;
+    ],
+    [
+      &quot;Rangers&quot;,
+      &quot;11&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;f662129752f57b0306730ab92fea55c1630830478e1d7ca62f02bb7ea06b5c23&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;Match&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;Match (table)\n- id: INTEGER\n- country_id: INTEGER\n- league_id: INTEGER\n- season: TEXT\n- stage: INTEGER\n- date: TEXT\n- match_api_id: INTEGER\n- home_team_api_id: INTEGER\n- away_team_api_id: INTEGER\n- home_team_goal: INTEGER\n- away_team_goal: INTEGER\n- home_player_X1: INTEGER\n- home_player_X2: INTEGER\n- home_player_X3: INTEGER\n- home_player_X4: INTEGER\n- home_player_X5: INTEGER\n- home_player_X6: INTEGER\n- home_player_X7: INTEGER\n- home_player_X8: INTEGER\n- home_player_X9: INTEGER\n- home_player_X10: INTEGER\n- home_player_X11: INTEGER\n- away_player_X1: INTEGER\n- away_player_X2: INTEGER\n- away_player_X3: INTEGER\n- away_player_X4: INTEGER\n- away_player_X5: INTEGER\n- away_player_X6: INTEGER\n- away_player_X7: INTEGER\n- away_player_X8: INTEGER\n- away_player_X9: INTEGER\n- away_player_X10: INTEGER\n- away_player_X11: INTEGER\n- home_player_Y1: INTEGER\n- home_player_Y2: INTEGER\n- home_player_Y3: INTEGER\n- home_player_Y4: INTEGER\n- home_player_Y5: INTEGER\n- home_player_Y6: INTEGER\n- home_player_Y7: INTEGER\n- home_player_Y8: INTEGER\n- home_player_Y9: INTEGER\n- home_player_Y10: INTEGER\n- home_player_Y11: INTEGER\n- away_player_Y1: INTEGER\n- away_player_Y2: INTEGER\n- away_player_Y3: INTEGER\n- away_player_Y4: INTEGER\n- away_player_Y5: INTEGER\n- away_player_Y6: INTEGER\n- away_player_Y7: INTEGER\n- away_player_Y8: INTEGER\n- away_player_Y9: INTEGER\n- away_player_Y10: INTEGER\n- away_player_Y11: INTEGER\n- home_player_1: INTEGER\n- home_player_2: INTEGER\n- home_player_3: INTEGER\n- home_player_4: INTEGER\n- home_player_5: INTEGER\n- home_player_6: INTEGER\n- home_player_7: INTEGER\n- home_player_8: INTEGER\n- home_player_9: INTEGER\n- home_player_10: INTEGER\n- home_player_11: INTEGER\n- away_player_1: INTEGER\n- away_player_2: INTEGER\n- away_player_3: INTEGER\n- away_player_4: INTEGER\n- away_player_5: INTEGER\n- away_player_6: INTEGER\n- away_player_7: INTEGER\n- away_player_8: INTEGER\n- away_player_9: INTEGER\n- away_player_10: INTEGER\n- away_player_11: INTEGER\n- goal: TEXT\n- shoton: TEXT\n- shotoff: TEXT\n- foulcommit: TEXT\n- card: TEXT\n- cross: TEXT\n- corner: TEXT\n- possession: TEXT\n- B365H: REAL\n- B365D: REAL\n- B365A: REAL\n- BWH: REAL\n- BWD: REAL\n- BWA: REAL\n- IWH: REAL\n- IWD: REAL\n- IWA: REAL\n- LBH: REAL\n- LBD: REAL\n- LBA: REAL\n- PSH: REAL\n- PSD: REAL\n- PSA: REAL\n- WHH: REAL\n- WHD: REAL\n- WHA: REAL\n- SJH: REAL\n- SJD: REAL\n- SJA: REAL\n- VCH: REAL\n- VCD: REAL\n- VCA: REAL\n- GBH: REAL\n- GBD: REAL\n- GBA: REAL\n- BSH: REAL\n- BSD: REAL\n- BSA: REAL\nPRIMARY KEY (id)\nFOREIGN KEY (away_player_11) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_10) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_9) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_8) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_7) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_6) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_5) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_4) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_3) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_2) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_1) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_11) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_10) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_9) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_8) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_7) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_6) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_5) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_4) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_3) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_2) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_1) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_team_api_id) REFERENCES Team (team_api_id)\nFOREIGN KEY (home_team_api_id) REFERENCES Team (team_api_id)\nFOREIGN KEY (league_id) REFERENCES League (id)\nFOREIGN KEY (country_id) REFERENCES Country (id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;League&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;League (table)\n- id: INTEGER\n- country_id: INTEGER\n- name: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (country_id) REFERENCES country (id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;IacufnDrHPA4C00N1uX9gzHBb5k-87nd3ihD1mKu_74\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;Team&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;Team (table)\n- id: INTEGER\n- team_api_id: INTEGER\n- team_fifa_api_id: INTEGER\n- team_long_name: TEXT\n- team_short_name: TEXT\nPRIMARY KEY (id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;IacufnDrHPA4C00N1uX9gzHBb5k-87nd3ihD1mKu_74&quot;,
+      &quot;sql&quot;: &quot;SELECT l.name FROM main.League AS l WHERE l.name LIKE &#x27;%Scot%&#x27;&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): name=str\nname\n---\nScotland Premier League\nSQL: SELECT l.name FROM main.League AS l WHERE l.name LIKE &#x27;%Scot%&#x27;\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;732H6zQXo9uWw0p4IlL1TeKI4hBu3FvQ1CbFt6W3bEA\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_7&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;732H6zQXo9uWw0p4IlL1TeKI4hBu3FvQ1CbFt6W3bEA&quot;,
+      &quot;sql&quot;: &quot;WITH team_wins AS (\n    SELECT m.away_team_api_id, COUNT(*) AS away_wins\n    FROM main.\&quot;Match\&quot; AS m\n    JOIN main.League AS l ON l.id = m.league_id\n    WHERE l.name = &#x27;Scotland Premier League&#x27;\n      AND m.season = &#x27;2009/2010&#x27;\n      AND m.away_team_goal &gt; m.home_team_goal\n    GROUP BY m.away_team_api_id\n)\nSELECT t.team_long_name, w.away_wins\nFROM team_wins AS w\nJOIN main.Team AS t ON t.team_api_id = w.away_team_api_id\nWHERE w.away_wins = (SELECT MAX(away_wins) FROM team_wins)\nORDER BY t.team_long_name&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): team_long_name=str; away_wins=int\nteam_long_name | away_wins\n--- | ---\nCeltic | 11\nRangers | 11\nSQL: WITH team_wins AS (\n    SELECT m.away_team_api_id, COUNT(*) AS away_wins\n    FROM main.\&quot;Match\&quot; AS m\n    JOIN main.League AS l ON l.id = m.league_id\n    WHERE l.name = &#x27;Scotland Premier League&#x27;\n      AND m.season = &#x27;2009/2010&#x27;\n      AND m.away_team_goal &gt; m.home_team_goal\n    GROUP BY m.away_team_api_id\n)\nSELECT t.team_long_name, w.away_wins\nFROM team_wins AS w\nJOIN main.Team AS t ON t.team_api_id = w.away_team_api_id\nWHERE w.away_wins = (SELECT MAX(away_wins) FROM team_wins)\nORDER BY t.team_long_name\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section><section><h3>after: score 1</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 31.553919082973152
+}</pre><h4>Final SQL / answer</h4><pre>WITH away_wins AS (
+    SELECT m.away_team_api_id, COUNT(*) AS wins
+    FROM &quot;Match&quot; AS m
+    JOIN League AS l ON l.id = m.league_id
+    WHERE l.name = &#x27;Scotland Premier League&#x27;
+      AND m.season = &#x27;2009/2010&#x27;
+      AND m.away_team_goal &gt; m.home_team_goal
+    GROUP BY m.away_team_api_id
+)
+SELECT t.team_long_name
+FROM away_wins AS w
+JOIN Team AS t ON t.team_api_id = w.away_team_api_id
+WHERE w.wins = (SELECT MAX(wins) FROM away_wins)
+ORDER BY t.team_long_name
+LIMIT 1000</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;team_long_name&quot;
+  ],
+  &quot;row_count&quot;: 2,
+  &quot;preview&quot;: [
+    [
+      &quot;Celtic&quot;
+    ],
+    [
+      &quot;Rangers&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;ad11e8a37e66ff04cc75fbcd5684c6100ff1845305a6cb6d0d0f93b023d51c53&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;Team&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;Team (table)\n- id: INTEGER\n- team_api_id: INTEGER\n- team_fifa_api_id: INTEGER\n- team_long_name: TEXT\n- team_short_name: TEXT\nPRIMARY KEY (id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;Match&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;Match (table)\n- id: INTEGER\n- country_id: INTEGER\n- league_id: INTEGER\n- season: TEXT\n- stage: INTEGER\n- date: TEXT\n- match_api_id: INTEGER\n- home_team_api_id: INTEGER\n- away_team_api_id: INTEGER\n- home_team_goal: INTEGER\n- away_team_goal: INTEGER\n- home_player_X1: INTEGER\n- home_player_X2: INTEGER\n- home_player_X3: INTEGER\n- home_player_X4: INTEGER\n- home_player_X5: INTEGER\n- home_player_X6: INTEGER\n- home_player_X7: INTEGER\n- home_player_X8: INTEGER\n- home_player_X9: INTEGER\n- home_player_X10: INTEGER\n- home_player_X11: INTEGER\n- away_player_X1: INTEGER\n- away_player_X2: INTEGER\n- away_player_X3: INTEGER\n- away_player_X4: INTEGER\n- away_player_X5: INTEGER\n- away_player_X6: INTEGER\n- away_player_X7: INTEGER\n- away_player_X8: INTEGER\n- away_player_X9: INTEGER\n- away_player_X10: INTEGER\n- away_player_X11: INTEGER\n- home_player_Y1: INTEGER\n- home_player_Y2: INTEGER\n- home_player_Y3: INTEGER\n- home_player_Y4: INTEGER\n- home_player_Y5: INTEGER\n- home_player_Y6: INTEGER\n- home_player_Y7: INTEGER\n- home_player_Y8: INTEGER\n- home_player_Y9: INTEGER\n- home_player_Y10: INTEGER\n- home_player_Y11: INTEGER\n- away_player_Y1: INTEGER\n- away_player_Y2: INTEGER\n- away_player_Y3: INTEGER\n- away_player_Y4: INTEGER\n- away_player_Y5: INTEGER\n- away_player_Y6: INTEGER\n- away_player_Y7: INTEGER\n- away_player_Y8: INTEGER\n- away_player_Y9: INTEGER\n- away_player_Y10: INTEGER\n- away_player_Y11: INTEGER\n- home_player_1: INTEGER\n- home_player_2: INTEGER\n- home_player_3: INTEGER\n- home_player_4: INTEGER\n- home_player_5: INTEGER\n- home_player_6: INTEGER\n- home_player_7: INTEGER\n- home_player_8: INTEGER\n- home_player_9: INTEGER\n- home_player_10: INTEGER\n- home_player_11: INTEGER\n- away_player_1: INTEGER\n- away_player_2: INTEGER\n- away_player_3: INTEGER\n- away_player_4: INTEGER\n- away_player_5: INTEGER\n- away_player_6: INTEGER\n- away_player_7: INTEGER\n- away_player_8: INTEGER\n- away_player_9: INTEGER\n- away_player_10: INTEGER\n- away_player_11: INTEGER\n- goal: TEXT\n- shoton: TEXT\n- shotoff: TEXT\n- foulcommit: TEXT\n- card: TEXT\n- cross: TEXT\n- corner: TEXT\n- possession: TEXT\n- B365H: REAL\n- B365D: REAL\n- B365A: REAL\n- BWH: REAL\n- BWD: REAL\n- BWA: REAL\n- IWH: REAL\n- IWD: REAL\n- IWA: REAL\n- LBH: REAL\n- LBD: REAL\n- LBA: REAL\n- PSH: REAL\n- PSD: REAL\n- PSA: REAL\n- WHH: REAL\n- WHD: REAL\n- WHA: REAL\n- SJH: REAL\n- SJD: REAL\n- SJA: REAL\n- VCH: REAL\n- VCD: REAL\n- VCA: REAL\n- GBH: REAL\n- GBD: REAL\n- GBA: REAL\n- BSH: REAL\n- BSD: REAL\n- BSA: REAL\nPRIMARY KEY (id)\nFOREIGN KEY (away_player_11) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_10) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_9) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_8) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_7) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_6) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_5) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_4) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_3) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_2) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_player_1) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_11) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_10) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_9) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_8) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_7) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_6) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_5) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_4) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_3) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_2) REFERENCES Player (player_api_id)\nFOREIGN KEY (home_player_1) REFERENCES Player (player_api_id)\nFOREIGN KEY (away_team_api_id) REFERENCES Team (team_api_id)\nFOREIGN KEY (home_team_api_id) REFERENCES Team (team_api_id)\nFOREIGN KEY (league_id) REFERENCES League (id)\nFOREIGN KEY (country_id) REFERENCES Country (id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;Q6NAHIvzcv0wHu0ZbrnsXl01-uJpoycX56WkB4cw4rg\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;League&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;League (table)\n- id: INTEGER\n- country_id: INTEGER\n- name: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (country_id) REFERENCES country (id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;sql&quot;: &quot;SELECT l.name, m.season, COUNT(*) AS matches FROM League AS l JOIN \&quot;Match\&quot; AS m ON m.league_id = l.id WHERE l.name LIKE &#x27;%Scot%&#x27; AND m.season = &#x27;2009/2010&#x27; GROUP BY l.name, m.season&quot;,
+      &quot;definition_check_id&quot;: &quot;Q6NAHIvzcv0wHu0ZbrnsXl01-uJpoycX56WkB4cw4rg&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): name=str; season=str; matches=int\nname | season | matches\n--- | --- | ---\nScotland Premier League | 2009/2010 | 228\nSQL: SELECT l.name, m.season, COUNT(*) AS matches FROM League AS l JOIN \&quot;Match\&quot; AS m ON m.league_id = l.id WHERE l.name LIKE &#x27;%Scot%&#x27; AND m.season = &#x27;2009/2010&#x27; GROUP BY l.name, m.season\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;7LyYvZZwwVC7x5nGkgapximggeXqiDBcF1NnrSWGz7E\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_7&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;7LyYvZZwwVC7x5nGkgapximggeXqiDBcF1NnrSWGz7E&quot;,
+      &quot;expected_columns&quot;: [
+        &quot;team_long_name&quot;
+      ],
+      &quot;sql&quot;: &quot;WITH away_wins AS (\n    SELECT m.away_team_api_id, COUNT(*) AS wins\n    FROM \&quot;Match\&quot; AS m\n    JOIN League AS l ON l.id = m.league_id\n    WHERE l.name = &#x27;Scotland Premier League&#x27;\n      AND m.season = &#x27;2009/2010&#x27;\n      AND m.away_team_goal &gt; m.home_team_goal\n    GROUP BY m.away_team_api_id\n)\nSELECT t.team_long_name\nFROM away_wins AS w\nJOIN Team AS t ON t.team_api_id = w.away_team_api_id\nWHERE w.wins = (SELECT MAX(wins) FROM away_wins)\nORDER BY t.team_long_name&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;2 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): team_long_name=str\nteam_long_name\n---\nCeltic\nRangers\nSQL: WITH away_wins AS (\n    SELECT m.away_team_api_id, COUNT(*) AS wins\n    FROM \&quot;Match\&quot; AS m\n    JOIN League AS l ON l.id = m.league_id\n    WHERE l.name = &#x27;Scotland Premier League&#x27;\n      AND m.season = &#x27;2009/2010&#x27;\n      AND m.away_team_goal &gt; m.home_team_goal\n    GROUP BY m.away_team_api_id\n)\nSELECT t.team_long_name\nFROM away_wins AS w\nJOIN Team AS t ON t.team_api_id = w.away_team_api_id\nWHERE w.wins = (SELECT MAX(wins) FROM away_wins)\nORDER BY t.team_long_name\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section></div></details></body></html>

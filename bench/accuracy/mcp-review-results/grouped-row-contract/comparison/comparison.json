@@ -1,0 +1,343 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-bird-backlog-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "84b87f30d62b5e0229d7132a60cf8f843856046e5282d385d26b17cc7b2ab49e",
+      "scores_sha256": "d18f997680dc10f7a3065e2f184f13612d69355569eb42b072d44c5d1e2f4f9b",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "4ff3abfeea46a253aef51470e4eb584538939a49",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-grouped-row-contract-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "c861f6a756576d78347caab1c3f6b2b190da0898ef5cb2b29f5a222a77ffeafb",
+      "scores_sha256": "db3a4be06ca0be9d34d94e20b7ece04db5bdae363abbda120ca0fb2316e876ac",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "18170e69e8995ce8f39647ff00709fa844f4c18c",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 0": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird273",
+        "db": "formula_1",
+        "question": "I'm writing a piece about how the same common forenames recur across Formula 1 history. Could you tell me how many different drivers named Peter have ever won a Formula 1 race, and the same for drivers named John? Please give me one count per forename, so I can compare the two — if they turn out to be equal, just report both counts side by side. Nothing else needed.",
+        "evidence": "A race win means the driver finished first in that race."
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,7 +1,7 @@\n SELECT\n     COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n     COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\n-FROM results AS r\n-JOIN drivers AS d ON d.driverId = r.driverId\n+FROM main.results AS r\n+JOIN main.drivers AS d ON d.driverId = r.driverId\n WHERE r.position = 1\n LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "72cb6315928eca42c1f8c7500dc64c53fc5b559013019a814762df263599c8f3",
+        "record": {
+          "instance_id": "bird273",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "f5b357a22dd034061b07a2652deb6caa82d821658989439b83ed554ac53e2677",
+          "events_sha256": "76a9a707543962efc349e06aa01aa5908871c9acc2cf5cdaf744b366a1050fcd",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 91365,
+              "cached_input_tokens": 80768,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 365,
+              "reasoning_output_tokens": 0
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"J_OvlNOigQFNLklVkcjLNgkNtteAWpsPJ6lJ4aEUNhc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "results"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "drivers"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "J_OvlNOigQFNLklVkcjLNgkNtteAWpsPJ6lJ4aEUNhc",
+                "expected_columns": [
+                  "Peter",
+                  "John"
+                ],
+                "sql": "SELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM results AS r\nJOIN drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Peter=int; John=int\nPeter | John\n--- | ---\n3 | 2\nSQL: SELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM results AS r\nJOIN drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM results AS r\nJOIN drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM results AS r\nJOIN drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1\nLIMIT 1000",
+          "seconds": 19.320132666965947
+        },
+        "result": {
+          "columns": [
+            "Peter",
+            "John"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "3",
+              "2"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "815606f1f53d26107557d8fdb223a985d557d5c56712c72d428d649c9f0fbbbb"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "a80ec4dfcfc1c73f5b8360f7c0af0dd59faa4afba2791a4e619b2127bcc83c60",
+        "record": {
+          "instance_id": "bird273",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "f5b357a22dd034061b07a2652deb6caa82d821658989439b83ed554ac53e2677",
+          "events_sha256": "9543070657553660628d2f0515a259d190542055c1fd552241caf154043b8363",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 110264,
+              "cached_input_tokens": 99328,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 429,
+              "reasoning_output_tokens": 9
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "drivers"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "results"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"L4q4IfN47sIHw8MZMJGWfxEG1n_J5OBleIm06zIGA9Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "L4q4IfN47sIHw8MZMJGWfxEG1n_J5OBleIm06zIGA9Y",
+                "expected_columns": [
+                  "Peter",
+                  "John"
+                ],
+                "expected_rows": 1,
+                "sql": "SELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM main.results AS r\nJOIN main.drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Peter=int; John=int\nPeter | John\n--- | ---\n3 | 2\nSQL: SELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM main.results AS r\nJOIN main.drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM main.results AS r\nJOIN main.drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,\n    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John\nFROM main.results AS r\nJOIN main.drivers AS d ON d.driverId = r.driverId\nWHERE r.position = 1\nLIMIT 1000",
+          "seconds": 21.288923042011447
+        },
+        "result": {
+          "columns": [
+            "Peter",
+            "John"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "3",
+              "2"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "815606f1f53d26107557d8fdb223a985d557d5c56712c72d428d649c9f0fbbbb"
+        }
+      }
+    }
+  ]
+}
