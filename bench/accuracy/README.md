@@ -194,3 +194,17 @@ next attempt. They are not a latest-result ledger, regression check, pass@1
 estimate or full-suite score. Keep all original failures and repair attempts.
 A final accuracy claim still needs the prescribed full-suite evaluation with
 one fixed configuration and unchanged official denominator.
+
+## Compare completed Codex MCP traces
+
+Run `python -m bench.accuracy.compare_traces --baseline OLD_RUN --current NEW_RUN
+--output NEW_REPORT_DIRECTORY` after both runs are complete and scored. The
+current run may be a subset of the baseline. The command checks case inputs,
+database and scorer identity, score coverage, event hashes and CSV row counts.
+It writes `comparison.json` and a self-contained `index.html` with per-case SQL
+diffs, both recorded grades, errors, result previews and every MCP call.
+
+The report does not invoke models, execute SQL or regrade answers. Transitions
+apply only to the compared cases, not full accuracy; it does not infer semantic
+root causes automatically. CSV previews show at most 20 rows and retain the
+full row count. All question, SQL and trace content is escaped before rendering.
