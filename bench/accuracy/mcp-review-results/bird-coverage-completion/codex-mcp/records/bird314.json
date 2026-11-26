@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird314",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "c193b07e0652b12c5b913ad7a5f69ca1c176643b72813abb4a7c27ddd7d5ed48",
+  "events_sha256": "0587d0e5500ce583ddf5b54746af7fe88ed751f406b88d4385f0463b07fe6ba8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169996,
+      "cached_input_tokens": 157952,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 724,
+      "reasoning_output_tokens": 15
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "expense"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "expense (table)\n- expense_id: TEXT\n- expense_description: TEXT\n- expense_date: TEXT\n- cost: REAL\n- approved: TEXT\n- link_to_member: TEXT\n- link_to_budget: TEXT\nPRIMARY KEY (expense_id)\nFOREIGN KEY (link_to_budget) REFERENCES budget (budget_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"y0F-J3xVadqTV9-DmQ5tEM694IiU4RogG5MRf29pS3U\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "y0F-J3xVadqTV9-DmQ5tEM694IiU4RogG5MRf29pS3U",
+        "sql": "SELECT DISTINCT e.expense_description\nFROM expense AS e\nJOIN budget AS b ON b.budget_id = e.link_to_budget\nWHERE b.link_to_event IN (SELECT link_to_event FROM budget WHERE remaining < 0)\nORDER BY e.expense_description"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): expense_description=str\nexpense_description\n---\nParking\nPizza\nPosters\nTravel Mug\nWater, Cookies\nWater, chips, cookies\nSQL: SELECT DISTINCT e.expense_description\nFROM expense AS e\nJOIN budget AS b ON b.budget_id = e.link_to_budget\nWHERE b.link_to_event IN (SELECT link_to_event FROM budget WHERE remaining < 0)\nORDER BY e.expense_description\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"l9j2X0WYQ3gwAnCTnGLUO0zY1CGgct4abH0eej_X9sA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "l9j2X0WYQ3gwAnCTnGLUO0zY1CGgct4abH0eej_X9sA",
+        "expected_columns": [
+          "item_kind_count"
+        ],
+        "sql": "WITH RECURSIVE over_budget_events AS (\n    SELECT DISTINCT link_to_event\n    FROM budget\n    WHERE remaining < 0\n),\nitems(item, rest) AS (\n    SELECT NULL, e.expense_description || ','\n    FROM expense AS e\n    JOIN budget AS b ON b.budget_id = e.link_to_budget\n    JOIN over_budget_events AS o ON o.link_to_event = b.link_to_event\n\n    UNION ALL\n\n    SELECT lower(trim(substr(rest, 1, instr(rest, ',') - 1))),\n           substr(rest, instr(rest, ',') + 1)\n    FROM items\n    WHERE rest <> ''\n)\nSELECT COUNT(DISTINCT item) AS item_kind_count\nFROM items\nWHERE item <> ''\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): item_kind_count=int\nitem_kind_count\n---\n7\nSQL: WITH RECURSIVE over_budget_events AS (\n    SELECT DISTINCT link_to_event\n    FROM budget\n    WHERE remaining < 0\n),\nitems(item, rest) AS (\n    SELECT NULL, e.expense_description || ','\n    FROM expense AS e\n    JOIN budget AS b ON b.budget_id = e.link_to_budget\n    JOIN over_budget_events AS o ON o.link_to_event = b.link_to_event\n\n    UNION ALL\n\n    SELECT lower(trim(substr(rest, 1, instr(rest, ',') - 1))),\n           substr(rest, instr(rest, ',') + 1)\n    FROM items\n    WHERE rest <> ''\n)\nSELECT COUNT(DISTINCT item) AS item_kind_count\nFROM items\nWHERE item <> ''\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH RECURSIVE over_budget_events AS (\n    SELECT DISTINCT link_to_event\n    FROM budget\n    WHERE remaining < 0\n),\nitems(item, rest) AS (\n    SELECT NULL, e.expense_description || ','\n    FROM expense AS e\n    JOIN budget AS b ON b.budget_id = e.link_to_budget\n    JOIN over_budget_events AS o ON o.link_to_event = b.link_to_event\n\n    UNION ALL\n\n    SELECT lower(trim(substr(rest, 1, instr(rest, ',') - 1))),\n           substr(rest, instr(rest, ',') + 1)\n    FROM items\n    WHERE rest <> ''\n)\nSELECT COUNT(DISTINCT item) AS item_kind_count\nFROM items\nWHERE item <> ''\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH RECURSIVE over_budget_events AS (\n    SELECT DISTINCT link_to_event\n    FROM budget\n    WHERE remaining < 0\n),\nitems(item, rest) AS (\n    SELECT NULL, e.expense_description || ','\n    FROM expense AS e\n    JOIN budget AS b ON b.budget_id = e.link_to_budget\n    JOIN over_budget_events AS o ON o.link_to_event = b.link_to_event\n\n    UNION ALL\n\n    SELECT lower(trim(substr(rest, 1, instr(rest, ',') - 1))),\n           substr(rest, instr(rest, ',') + 1)\n    FROM items\n    WHERE rest <> ''\n)\nSELECT COUNT(DISTINCT item) AS item_kind_count\nFROM items\nWHERE item <> ''\nLIMIT 1",
+  "seconds": 27.90084575000219
+}

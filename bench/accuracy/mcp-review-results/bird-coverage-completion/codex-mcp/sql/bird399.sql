@@ -1,0 +1,6 @@
+SELECT MAX(CAST(l.RNP AS NUMERIC)) AS highest_anti_rnp
+FROM Laboratory AS l
+JOIN Patient AS p ON p.ID = l.ID
+WHERE p.Admission = '-'
+  AND l.RNP <> 'negative'
+LIMIT 1

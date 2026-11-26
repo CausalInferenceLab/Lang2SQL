@@ -1,0 +1,159 @@
+{
+  "runtime_revision": "0c7953905ee455c7611652924cb341e596d7937a",
+  "model": "gpt-6.2-astra/high",
+  "correct": 391,
+  "total": 411,
+  "accuracy": 0.9513381995133819,
+  "scope": "Previously-unobserved selectedsubset, notfull500same-versionaccuracy. Alloverlappingcheckpoints supersededbythisterminalsource; neveraddcheckpointdenominators.",
+  "failed_no_sql": 11,
+  "sql_mismatch": 9,
+  "failures": [
+    {
+      "id": "bird063",
+      "status": "failed",
+      "question": "I'm cataloguing how the frame styles on Tarmogoyf's printings evolved over time. What is the number of years between the oldest and the newest frame style used on the printings of Tarmogoyf? The span in years is the newer year minus the older year.",
+      "answer": "Tarmogoyf’s frame versions are `2003`, `2015`, and `future`. The supplied documentation gives no year for `future`. What year should I use for that style, or should I calculate the span using only the two numeric versions?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird086",
+      "status": "predicted",
+      "question": "Among the Commander-leadable cards that the Card Kingdom catalog lists for both a foil printing and a regular non-foil printing – cards listed for only one of the two printings don't count – I want the single most recent card frame year (the latest calendar year among the frame versions), and the count of cards in that group whose frame version is that year. Please return just that one row: the frame year and its card count.",
+      "answer": "```sql\nSELECT CAST(frameVersion AS INTEGER) AS frame_year, COUNT(*) AS card_count\nFROM main.cards\nWHERE INSTR(leadershipSkills, '''commander'': True') > 0\n  AND cardKingdomFoilId IS NOT NULL\n  AND cardKingdomId IS NOT NULL\n  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY frame_year\nORDER BY frame_year DESC\nLIMIT 1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird148",
+      "status": "predicted",
+      "question": "I'm reviewing the history of the question 'Why square the difference instead of taking the absolute value in standard deviation?'. For that post, who left the most edit comments, and how many did they leave? Please give me each editor's display name along with their number of edit comments on that post. If several editors are tied for the most, list each of them with their count. Also, please count every revision as its own event, even when successive revisions carry the same note.",
+      "answer": "```sql\nWITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM main.posts AS p\n    JOIN main.postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN main.users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT -1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird149",
+      "status": "predicted",
+      "question": "For each of the SME, LAM, and KAM segments, identify the CZK customer with the lowest total recorded consumption in 2013, breaking a tie by smaller customer ID. What are the differences between those customers' 2013 totals in SME minus LAM, LAM minus KAM, and KAM minus SME order? Round each to two decimals.",
+      "answer": "```sql\nWITH annual_totals AS (\n    SELECT c.Segment, c.CustomerID,\n           SUM(CAST(ROUND(y.Consumption * 100) AS INTEGER)) AS total_hundredths\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'CZK'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date BETWEEN '201301' AND '201312'\n      AND y.Consumption IS NOT NULL\n    GROUP BY c.Segment, c.CustomerID\n),\nranked AS (\n    SELECT annual_totals.*,\n           ROW_NUMBER() OVER (\n               PARTITION BY Segment ORDER BY total_hundredths, CustomerID\n           ) AS segment_rank\n    FROM annual_totals\n),\nwinners AS (\n    SELECT Segment, CustomerID, total_hundredths\n    FROM ranked\n    WHERE segment_rank = 1\n)\nSELECT sme.CustomerID AS sme_customer_id, sme.total_hundredths / 100.0 AS sme_total,\n       lam.CustomerID AS lam_customer_id, lam.total_hundredths / 100.0 AS lam_total,\n       kam.CustomerID AS kam_customer_id, kam.total_hundredths / 100.0 AS kam_total,\n       ROUND((sme.total_hundredths - lam.total_hundredths) / 100.0, 2) AS sme_minus_lam,\n       ROUND((lam.total_hundredths - kam.total_hundredths) / 100.0, 2) AS lam_minus_kam,\n       ROUND((kam.total_hundredths - sme.total_hundredths) / 100.0, 2) AS kam_minus_sme\nFROM winners AS sme\nCROSS JOIN winners AS lam\nCROSS JOIN winners AS kam\nWHERE sme.Segment = 'SME' AND lam.Segment = 'LAM' AND kam.Segment = 'KAM'\nLIMIT 1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird162",
+      "status": "failed",
+      "question": "For my February 2013 activity report: how many SME customers actually purchased gas in February 2013? Please give me just a single whole number - the count of SME customers who consumed gas during the calendar month of February 2013 (Feb 1-28, 2013).",
+      "answer": "The transaction records cover only August 23–26, 2012. The February 2013 monthly records show consumption without identifying the product. Does `yearmonth.Consumption > 0` specifically indicate a gasoline purchase for this report?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird163",
+      "status": "predicted",
+      "question": "Which away teams are tied for the most away wins in the Scottish Premier League 2009/2010 season?",
+      "answer": "```sql\nWITH team_wins AS (\n    SELECT m.away_team_api_id, COUNT(*) AS away_wins\n    FROM main.\"Match\" AS m\n    JOIN main.League AS l ON l.id = m.league_id\n    WHERE l.name = 'Scotland Premier League'\n      AND m.season = '2009/2010'\n      AND m.away_team_goal > m.home_team_goal\n    GROUP BY m.away_team_api_id\n)\nSELECT t.team_long_name, w.away_wins\nFROM team_wins AS w\nJOIN main.Team AS t ON t.team_api_id = w.away_team_api_id\nWHERE w.away_wins = (SELECT MAX(away_wins) FROM team_wins)\nORDER BY t.team_long_name\nLIMIT 1000\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird228",
+      "status": "failed",
+      "question": "For the year-end review of my branch at location 1: how many accounts that were on the branch's books as of 31 December 1995 hold an active loan contract? I want a single integer, nothing else. An account counts only if it belonged to the branch on that date, and only contracts that are still active by their repayment status count - statuses A and B are finished contracts and shouldn't be included.",
+      "answer": "Should I count accounts opened by 31 December 1995 whose recorded branch is location 1? The schema records each account’s opening date and one branch, but has no branch assignment history to verify transfers.",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird278",
+      "status": "predicted",
+      "question": "For my monthly recap I need the fastest pit stop made during any F1 race held in September 2016. Please tell me the driver's full name, the pit stop time, the name of the race where it happened, the circuit name, and the circuit location. If two or more pit stops share the fastest time, list each of them with its own driver, race, circuit name and circuit location.",
+      "answer": "```sql\nWITH september_stops AS (\n    SELECT p.driverId, p.milliseconds, r.name AS race_name, r.circuitId,\n           MIN(p.milliseconds) OVER () AS fastest_ms\n    FROM pitStops AS p\n    JOIN races AS r ON r.raceId = p.raceId\n    WHERE r.date >= '2016-09-01' AND r.date < '2016-10-01'\n)\nSELECT d.forename || ' ' || d.surname AS driver_name,\n       s.milliseconds / 1000.0 AS pit_stop_seconds,\n       s.race_name,\n       c.name AS circuit_name,\n       c.location AS circuit_location\nFROM september_stops AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nJOIN circuits AS c ON c.circuitId = s.circuitId\nWHERE s.milliseconds = s.fastest_ms\nLIMIT -1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird279",
+      "status": "failed",
+      "question": "I'm profiling the oldest driver ever to win a Formula 1 race. Please identify the winning driver with the earliest date of birth - if two winning drivers share that birth date, use the one whose full name (forename then surname) comes first alphabetically. For that driver, return his full name (forename then surname), his nationality, the name and date of the first race he won (the earliest date; if two of his wins share that date, the one whose race name comes first alphabetically), and the total number of races he started over his entire career. A win means finishing in position 1 in a race. The career covers every race in the database, from 1950 through 2017. Return a single row.",
+      "answer": "What rule should I use to count a career start? The database records grid position, laps completed, and result status. Which values identify a start, including when the driver completed zero laps?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird299",
+      "status": "predicted",
+      "question": "Which closed events are tied for the highest ratio of total spending to total budget amount?",
+      "answer": "```sql\nWITH event_ratios AS (\n    SELECT e.event_id,\n           e.event_name,\n           SUM(CAST(ROUND(b.spent * 100) AS INTEGER))\n               / NULLIF(100.0 * SUM(b.amount), 0) AS spending_to_budget_ratio\n    FROM main.event AS e\n    JOIN main.budget AS b ON b.link_to_event = e.event_id\n    WHERE e.status = 'Closed'\n    GROUP BY e.event_id, e.event_name\n)\nSELECT event_id, event_name, spending_to_budget_ratio\nFROM event_ratios\nWHERE spending_to_budget_ratio = (SELECT MAX(spending_to_budget_ratio) FROM event_ratios)\nORDER BY event_name, event_id\nLIMIT 1000\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird321",
+      "status": "failed",
+      "question": "I want to review what the money actually went on for the well-funded events, by venue. For events that had a budget line of more than forty dollars, how many different things were bought for them at each location? Please give me, for each location, the location of the event and the number of different things bought for such events at that location, and nothing else. Note that a budget line of more than forty dollars means a single budgeted amount strictly over 40 dollars, and all qualifying events held at a location should be pooled together.",
+      "answer": "Should an expense description like `Water, Cookies` count as one distinct purchase description or as two distinct items, with water and cookies each counted once per location?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird345",
+      "status": "failed",
+      "question": "I'm setting a typical weight for a green-skinned creature class. Can you tell me the average weight in kg of the heroes with green skin? Count only heroes whose weight is known, and give me one number rounded to one decimal place.",
+      "answer": "Six heroes with green skin have a recorded weight of 0 kg. Should I exclude those entries as unknown or include them as zero when calculating the average?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird348",
+      "status": "failed",
+      "question": "I want to profile the cohort of heroes whose Intelligence score matches Abomination's Intelligence score. What is their average measured weight in kg? Please round the average to two decimals.",
+      "answer": "Of the 140 heroes who match Abomination’s Intelligence score, 29 have a recorded weight of 0 kg. Should the average include those zeros as measurements or exclude them as missing weights?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird352",
+      "status": "failed",
+      "question": "How many characters published by A-Bomb's publisher have no race listed? I just need a single count. (By A-Bomb's publisher, I mean the publisher that publishes the character A-Bomb.)",
+      "answer": "For A-Bomb’s publisher, 170 characters have `'-'` as their race, and one more has no matching race value. Should “no race listed” include both cases (171) or only `'-'` (170)?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird374",
+      "status": "failed",
+      "question": "I want to know about the lightest superhero whose weight has actually been recorded. Among all heroes sharing that lightest weight, give me the largest number of superpowers any of them has. If such a hero has no powers, that counts as 0. Please return just that one number.",
+      "answer": "The database contains 172 heroes with a weight of `0` kg and 64 with `NULL`. Should `0` kg count as a recorded weight, or should I use only positive weights?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird380",
+      "status": "predicted",
+      "question": "I'm comparing the builds of heroes whose power sets overlap with 3-D Man's. What is the average weight in kg of the heroes other than 3-D Man that share at least one superpower with him? Please round it to two decimal places, leave out any heroes whose weight isn't recorded, and return just that single number.",
+      "answer": "```sql\nWITH shared_power_heroes AS (\n    SELECT candidate.hero_id\n    FROM main.superhero AS target\n    JOIN main.hero_power AS owned ON owned.hero_id = target.id\n    JOIN main.hero_power AS candidate ON candidate.power_id = owned.power_id\n    WHERE target.superhero_name = '3-D Man'\n      AND candidate.hero_id <> target.id\n)\nSELECT ROUND(AVG(hero.weight_kg), 2) AS average_weight_kg\nFROM main.superhero AS hero\nWHERE hero.weight_kg IS NOT NULL\n  AND hero.id IN (SELECT hero_id FROM shared_power_heroes)\nLIMIT 1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird395",
+      "status": "predicted",
+      "question": "As part of the data-completeness review, I'd like to know how much laboratory follow-up our never-examined patients actually have, split by sex. Could you give me, for each sex (F and M), the average number of laboratory test dates recorded for the patients of that sex who have no examination record at all? Please cover the whole registry, all years, and round the averages to two decimal places. Nothing else needed beyond the two averages.",
+      "answer": "```sql\nWITH patient_counts AS (\n    SELECT p.ID, p.SEX, COUNT(l.Date) AS test_dates\n    FROM main.Patient AS p\n    LEFT JOIN main.Laboratory AS l ON l.ID = p.ID\n    WHERE p.SEX IN ('F', 'M')\n      AND p.ID NOT IN (\n          SELECT e.ID\n          FROM main.Examination AS e\n          WHERE e.ID IS NOT NULL\n      )\n    GROUP BY p.ID, p.SEX\n)\nSELECT ROUND(AVG(CASE WHEN SEX = 'F' THEN test_dates END), 2) AS F,\n       ROUND(AVG(CASE WHEN SEX = 'M' THEN test_dates END), 2) AS M\nFROM patient_counts\nLIMIT 1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird409",
+      "status": "failed",
+      "question": "For our annual report, I need the count of patients in the thrombosis cohort who showed thrombosis at any examination performed between 01/01/1997 and 12/31/1997, inclusive. Please give me just that number of patients.",
+      "answer": "For the annual report, should I count every distinct patient with a thrombosis grade of 1, 2, or 3 on at least one 1997 examination, or does the cohort use a different grade threshold or eligibility rule?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    },
+    {
+      "id": "bird467",
+      "status": "predicted",
+      "question": "I'm preparing a case series on early renal involvement and need to size my cohort. How many patients were under age 50 on the day of a laboratory test performed between 1 January 1981 and 31 December 1986 inclusive, had a platelet count from 100 through 400 at that test, and showed proteinuria at that test? Age means completed years on the day of the test, so under 50 is strictly below 50. The platelet range is inclusive. I just need the number of patients satisfying all conditions.",
+      "answer": "```sql\nSELECT COUNT(DISTINCT l.ID) AS patient_count\nFROM main.Laboratory AS l\nJOIN main.Patient AS p ON p.ID = l.ID\nWHERE l.\"Date\" BETWEEN '1981-01-01' AND '1986-12-31'\n  AND l.\"Date\" >= p.Birthday\n  AND l.\"Date\" < date(p.Birthday, '+50 years')\n  AND l.PLT BETWEEN 100 AND 400\n  AND (\n      CAST(l.\"U-PRO\" AS REAL) > 0\n      OR l.\"U-PRO\" = 'TR'\n      OR (l.\"U-PRO\" GLOB '%*' AND l.\"U-PRO\" NOT GLOB '*[^%]*')\n  )\nLIMIT 1\n```",
+      "error_message": null
+    },
+    {
+      "id": "bird495",
+      "status": "failed",
+      "question": "For molecule TR377, I'd like a profile of its bond composition, covering single and double bonds only. For each bond kind, please give me: the bond kind symbol, the number of bonds of that kind in the molecule, and the number of element pairs that bond kind joins. Also include the molecule's carcinogenicity label. List the bond kinds from most frequent to least; if two kinds are equally frequent, list them alphabetically by symbol.",
+      "answer": "Should each bond kind count distinct unordered element pairs, so every carbon–oxygen bond contributes to the bond count, but carbon–oxygen counts only once toward the element-pair count?",
+      "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback"
+    }
+  ],
+  "coverage": "Nowall500BIRDand135SpidercaseshaveatleastonevalidatedcompletedCodexMCPobservationacrossversions. No completedfull500/full135same-versionrun.",
+  "new_failures_since_checkpoint011": [
+    "bird467",
+    "bird495"
+  ],
+  "product_changes": 0,
+  "subsequent_repairs": "SeparatePRexperiments do notchange original391/411score."
+}

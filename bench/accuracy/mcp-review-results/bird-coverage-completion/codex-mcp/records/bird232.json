@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird232",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "3849367cb4307fa63cd6e13f1379e6711b3bd9eac6130578850600564aecc5f8",
+  "events_sha256": "eec957d1d62b571d312f8c4ac88c23988ac5585d96e4674eee317ed822f01c1f",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167136,
+      "cached_input_tokens": 155520,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 787,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "account (table)\n- account_id: INTEGER NOT NULL\n- district_id: INTEGER NOT NULL\n- frequency: TEXT NOT NULL\n- date: DATE NOT NULL\nPRIMARY KEY (account_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wIapeIKBCoyGCPsTIFkAA2At2SywGKPBns1wdxOI3Ck\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wIapeIKBCoyGCPsTIFkAA2At2SywGKPBns1wdxOI3Ck",
+        "sql": "SELECT\n    (SELECT COUNT(*) FROM main.district WHERE A4 = '' OR A4 GLOB '*[^0-9]*') AS nonnumeric_populations,\n    (SELECT COUNT(*) FROM main.district WHERE typeof(A11) <> 'integer') AS noninteger_salaries,\n    (SELECT MIN(date) FROM main.account) AS first_opening,\n    (SELECT MAX(date) FROM main.account) AS last_opening,\n    (SELECT COUNT(*) FROM main.account WHERE date(date) IS NOT date) AS non_iso_dates"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): nonnumeric_populations=int; noninteger_salaries=int; first_opening=str; last_opening=str; non_iso_dates=int\nnonnumeric_populations | noninteger_salaries | first_opening | last_opening | non_iso_dates\n--- | --- | --- | --- | ---\n0 | 0 | 1993-01-01 | 1997-12-29 | 0\nSQL: SELECT\n    (SELECT COUNT(*) FROM main.district WHERE A4 = '' OR A4 GLOB '*[^0-9]*') AS nonnumeric_populations,\n    (SELECT COUNT(*) FROM main.district WHERE typeof(A11) <> 'integer') AS noninteger_salaries,\n    (SELECT MIN(date) FROM main.account) AS first_opening,\n    (SELECT MAX(date) FROM main.account) AS last_opening,\n    (SELECT COUNT(*) FROM main.account WHERE date(date) IS NOT date) AS non_iso_dates\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"O8h5iYdBP29YIHeCAzD4MlqWXrMRvH8prBybcHM0FTU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "O8h5iYdBP29YIHeCAzD4MlqWXrMRvH8prBybcHM0FTU",
+        "expected_columns": [
+          "monthly_statement_accounts",
+          "qualifying_districts",
+          "average_salary"
+        ],
+        "sql": "WITH openings_by_district AS (\n    SELECT a.district_id, COUNT(*) AS account_count\n    FROM main.account AS a\n    WHERE a.frequency = 'POPLATEK MESICNE'\n      AND a.date >= '1997-01-01'\n      AND a.date < '1998-01-01'\n    GROUP BY a.district_id\n)\nSELECT\n    SUM(o.account_count) AS monthly_statement_accounts,\n    COUNT(*) AS qualifying_districts,\n    ROUND(AVG(d.A11), 2) AS average_salary\nFROM openings_by_district AS o\nJOIN main.district AS d ON d.district_id = o.district_id\nWHERE CAST(d.A4 AS INTEGER) >= 100000\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): monthly_statement_accounts=int; qualifying_districts=int; average_salary=float\nmonthly_statement_accounts | qualifying_districts | average_salary\n--- | --- | ---\n569 | 46 | 9189.52\nSQL: WITH openings_by_district AS (\n    SELECT a.district_id, COUNT(*) AS account_count\n    FROM main.account AS a\n    WHERE a.frequency = 'POPLATEK MESICNE'\n      AND a.date >= '1997-01-01'\n      AND a.date < '1998-01-01'\n    GROUP BY a.district_id\n)\nSELECT\n    SUM(o.account_count) AS monthly_statement_accounts,\n    COUNT(*) AS qualifying_districts,\n    ROUND(AVG(d.A11), 2) AS average_salary\nFROM openings_by_district AS o\nJOIN main.district AS d ON d.district_id = o.district_id\nWHERE CAST(d.A4 AS INTEGER) >= 100000\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH openings_by_district AS (\n    SELECT a.district_id, COUNT(*) AS account_count\n    FROM main.account AS a\n    WHERE a.frequency = 'POPLATEK MESICNE'\n      AND a.date >= '1997-01-01'\n      AND a.date < '1998-01-01'\n    GROUP BY a.district_id\n)\nSELECT\n    SUM(o.account_count) AS monthly_statement_accounts,\n    COUNT(*) AS qualifying_districts,\n    ROUND(AVG(d.A11), 2) AS average_salary\nFROM openings_by_district AS o\nJOIN main.district AS d ON d.district_id = o.district_id\nWHERE CAST(d.A4 AS INTEGER) >= 100000\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH openings_by_district AS (\n    SELECT a.district_id, COUNT(*) AS account_count\n    FROM main.account AS a\n    WHERE a.frequency = 'POPLATEK MESICNE'\n      AND a.date >= '1997-01-01'\n      AND a.date < '1998-01-01'\n    GROUP BY a.district_id\n)\nSELECT\n    SUM(o.account_count) AS monthly_statement_accounts,\n    COUNT(*) AS qualifying_districts,\n    ROUND(AVG(d.A11), 2) AS average_salary\nFROM openings_by_district AS o\nJOIN main.district AS d ON d.district_id = o.district_id\nWHERE CAST(d.A4 AS INTEGER) >= 100000\nLIMIT 1",
+  "seconds": 31.055994791095145
+}

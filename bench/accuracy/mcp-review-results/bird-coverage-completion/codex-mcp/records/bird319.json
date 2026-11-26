@@ -1,0 +1,111 @@
+{
+  "instance_id": "bird319",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "3ac6dfa7f97e66d79c551b312246b878a3edad4328f59b66ba61489260f6e9d6",
+  "events_sha256": "adf8d2e5b069fd6651fe5d003b8ad5cafdcc6860a18aa3eedef272e082673fb0",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 117253,
+      "cached_input_tokens": 105984,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 396,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NxjUReo0QmOp0q2MCiwgqEuZW1cp5UQXT4A81q7xYAM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attendance"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attendance (table)\n- link_to_event: TEXT\n- link_to_member: TEXT\nPRIMARY KEY (link_to_event, link_to_member)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NxjUReo0QmOp0q2MCiwgqEuZW1cp5UQXT4A81q7xYAM",
+        "sql": "SELECT\n    e.type AS event_category,\n    COUNT(DISTINCT a.link_to_member) AS member_count\nFROM main.event AS e\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nWHERE e.location = 'MU 215'\nGROUP BY e.type\nORDER BY e.type;",
+        "expected_columns": [
+          "event_category",
+          "member_count"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_category=str; member_count=int\nevent_category | member_count\n--- | ---\nElection | 0\nGuest Speaker | 29\nMeeting | 30\nSQL: SELECT\n    e.type AS event_category,\n    COUNT(DISTINCT a.link_to_member) AS member_count\nFROM main.event AS e\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nWHERE e.location = 'MU 215'\nGROUP BY e.type\nORDER BY e.type\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    e.type AS event_category,\n    COUNT(DISTINCT a.link_to_member) AS member_count\nFROM main.event AS e\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nWHERE e.location = 'MU 215'\nGROUP BY e.type\nORDER BY e.type\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "SELECT\n    e.type AS event_category,\n    COUNT(DISTINCT a.link_to_member) AS member_count\nFROM main.event AS e\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nWHERE e.location = 'MU 215'\nGROUP BY e.type\nORDER BY e.type\nLIMIT 1000",
+  "seconds": 20.86134966602549
+}

@@ -1,0 +1,14 @@
+```sql
+SELECT
+    100.0 * COUNT(*) FILTER (
+        WHERE c.cardKingdomId IS NOT NULL
+          AND c.cardKingdomFoilId IS NOT NULL
+    ) / NULLIF(COUNT(*), 0) AS percentage_with_both_ids
+FROM main.cards AS c
+WHERE c.setCode IN (
+    SELECT s.code
+    FROM main.sets AS s
+    WHERE s.name = 'Coldsnap'
+)
+LIMIT 1
+```

@@ -1,0 +1,10 @@
+WITH printing_counts AS (
+    SELECT c.id, c.name, c.artist, c.isPromo, COUNT(r.id) AS ruling_count
+    FROM main.cards AS c
+    LEFT JOIN main.rulings AS r ON r.uuid = c.uuid
+    GROUP BY c.id, c.name, c.artist, c.isPromo
+)
+SELECT DISTINCT name, artist, isPromo
+FROM printing_counts
+WHERE ruling_count = (SELECT MAX(ruling_count) FROM printing_counts)
+LIMIT 1000

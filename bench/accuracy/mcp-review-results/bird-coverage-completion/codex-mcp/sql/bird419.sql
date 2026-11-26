@@ -1,0 +1,7 @@
+SELECT AVG(l.HCT) AS average_hematocrit
+FROM main.Laboratory AS l
+WHERE l."Date" >= '1991-01-01'
+  AND l."Date" < '1992-01-01'
+  AND l.HCT IS NOT NULL
+  AND CAST(REPLACE(l."U-PRO", '>=', '') AS REAL) >= 300
+LIMIT 1

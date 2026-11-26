@@ -1,0 +1,15 @@
+```sql
+WITH totals AS (
+    SELECT cr.constructorId, SUM(cr.points) AS score
+    FROM constructorResults AS cr
+    JOIN races AS r ON r.raceId = cr.raceId
+    WHERE r.name = 'Monaco Grand Prix'
+      AND r.year BETWEEN 1980 AND 2010
+    GROUP BY cr.constructorId
+)
+SELECT t.score, c.name, c.nationality
+FROM totals AS t
+JOIN constructors AS c ON c.constructorId = t.constructorId
+WHERE t.score = (SELECT MAX(score) FROM totals)
+LIMIT 1000
+```

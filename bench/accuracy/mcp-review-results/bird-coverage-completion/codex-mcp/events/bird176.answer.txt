@@ -1,0 +1,20 @@
+```sql
+WITH eligible_clubs AS (
+    SELECT a.team_api_id,
+           MAX(a.date) FILTER (WHERE a.date < '2014-09-20') AS latest_date
+    FROM main.Team_Attributes AS a
+    GROUP BY a.team_api_id
+    HAVING COUNT(*) FILTER (WHERE a.chanceCreationPassingClass = 'Risky') > 0
+)
+SELECT t.team_short_name,
+       COUNT(*) AS club_count,
+       ROUND(AVG(a.chanceCreationPassing), 1) AS average_passing_risk
+FROM eligible_clubs AS c
+JOIN main.Team AS t ON t.team_api_id = c.team_api_id
+LEFT JOIN main.Team_Attributes AS a
+       ON a.team_api_id = c.team_api_id AND a.date = c.latest_date
+GROUP BY t.team_short_name
+HAVING COUNT(*) > 1
+ORDER BY average_passing_risk DESC, t.team_short_name ASC
+LIMIT 1000
+```

@@ -1,0 +1,19 @@
+WITH reference_date(as_of) AS (
+    VALUES ('2026-10-09')
+),
+patient_ages AS (
+    SELECT CAST(strftime('%Y', r.as_of) AS INTEGER)
+           - CAST(strftime('%Y', p.Birthday) AS INTEGER)
+           - (strftime('%m-%d', p.Birthday) > strftime('%m-%d', r.as_of)) AS age_years
+    FROM Patient AS p
+    CROSS JOIN reference_date AS r
+    WHERE p.ID IN (
+        SELECT l.ID
+        FROM Laboratory AS l
+        WHERE CAST(l.RNP AS REAL) >= 64
+    )
+)
+SELECT ROUND(AVG(age_years), 1) AS average_age_years
+FROM patient_ages
+WHERE age_years BETWEEN 0 AND 69
+LIMIT 1

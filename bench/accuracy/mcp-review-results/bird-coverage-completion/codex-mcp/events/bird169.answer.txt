@@ -1,0 +1,20 @@
+```sql
+WITH ranked AS (
+    SELECT p.player_name, a.overall_rating,
+           ROW_NUMBER() OVER (
+               PARTITION BY p.player_api_id ORDER BY a.date DESC
+           ) AS recency
+    FROM Player AS p
+    JOIN Player_Attributes AS a ON a.player_api_id = p.player_api_id
+    WHERE p.player_name IN ('Ariel Borysiuk', 'Paulin Puel')
+),
+latest AS (
+    SELECT MAX(CASE WHEN player_name = 'Ariel Borysiuk' THEN overall_rating END) AS ariel,
+           MAX(CASE WHEN player_name = 'Paulin Puel' THEN overall_rating END) AS paulin
+    FROM ranked
+    WHERE recency = 1
+)
+SELECT ROUND(100.0 * (ariel - paulin) / NULLIF(paulin, 0), 2) AS percentage_higher
+FROM latest
+LIMIT 1
+```

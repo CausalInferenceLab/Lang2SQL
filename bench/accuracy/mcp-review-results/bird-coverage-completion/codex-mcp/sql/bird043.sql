@@ -1,0 +1,13 @@
+SELECT
+    f."County Name" AS county_name,
+    COUNT(*) AS qualifying_schools
+FROM frpm AS f
+JOIN satscores AS s ON s.cds = f.CDSCode
+WHERE f."Academic Year" = '2014-2015'
+  AND s.rtype = 'S'
+  AND s.NumGE1500 >= 1
+  AND CAST(f."Free Meal Count (K-12)" AS REAL)
+      / NULLIF(f."Enrollment (K-12)", 0) > 0.1
+GROUP BY f."County Name"
+ORDER BY qualifying_schools DESC, county_name ASC
+LIMIT 1000

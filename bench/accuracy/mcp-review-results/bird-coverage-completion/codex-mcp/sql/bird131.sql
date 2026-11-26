@@ -1,0 +1,9 @@
+SELECT CAST(ROUND(AVG(u.Reputation)) AS INTEGER) AS average_reputation
+FROM main.users AS u
+WHERE u.Id IN (
+    SELECT p.OwnerUserId
+    FROM main.posts AS p
+    WHERE p.Score < 20
+      AND instr(p.Tags, '<r>') > 0
+)
+LIMIT 1000

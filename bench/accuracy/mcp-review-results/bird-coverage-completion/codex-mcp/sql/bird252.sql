@@ -1,0 +1,14 @@
+SELECT
+    d.forename,
+    d.surname,
+    d.url,
+    d.dob,
+    COUNT(NULLIF(q.q3, '')) AS q3_times
+FROM drivers AS d
+LEFT JOIN qualifying AS q ON q.driverId = d.driverId
+WHERE d.nationality = 'German'
+  AND d.dob >= '1971-01-01'
+  AND d.dob < '1986-01-01'
+GROUP BY d.driverId
+ORDER BY q3_times DESC, d.dob ASC
+LIMIT 1000

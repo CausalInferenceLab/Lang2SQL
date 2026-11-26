@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird044",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "a34fa171d1d51f85c01bd7c54100b468af07a62530425683065b3d2def3b2afe",
+  "events_sha256": "9b9333578d1eaf3f87e87a934c7ff0f02eaea8fb56435d396b642d864ddf94c7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 161293,
+      "cached_input_tokens": 149248,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 711,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ar827inY_iDVN-YyXBbJ4htFkfATaw8BXMtwVEKMcIs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ar827inY_iDVN-YyXBbJ4htFkfATaw8BXMtwVEKMcIs",
+        "sql": "SELECT ref.CDSCode, ref.County, sat.rtype, typeof(sat.NumGE1500) AS count_type,\n       MIN(length(sat.cds)) AS min_code_length, MAX(length(sat.cds)) AS max_code_length,\n       COUNT(*) AS records, COUNT(s.School) AS named_schools\nFROM schools AS ref\nJOIN satscores AS sat ON sat.cname = ref.County\nLEFT JOIN schools AS s ON s.CDSCode = sat.cds\nWHERE ref.CDSCode IN ('1611430131177', '01611430131177')\nGROUP BY ref.CDSCode, ref.County, sat.rtype, typeof(sat.NumGE1500)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): CDSCode=str; County=str; rtype=str; count_type=str; min_code_length=int; max_code_length=int; records=int; named_schools=int\nCDSCode | County | rtype | count_type | min_code_length | max_code_length | records | named_schools\n--- | --- | --- | --- | --- | --- | --- | ---\n01611430131177 | Alameda | D | integer | 14 | 14 | 18 | 0\n01611430131177 | Alameda | S | integer | 14 | 14 | 55 | 55\n01611430131177 | Alameda | S | null | 14 | 14 | 18 | 18\nSQL: SELECT ref.CDSCode, ref.County, sat.rtype, typeof(sat.NumGE1500) AS count_type,\n       MIN(length(sat.cds)) AS min_code_length, MAX(length(sat.cds)) AS max_code_length,\n       COUNT(*) AS records, COUNT(s.School) AS named_schools\nFROM schools AS ref\nJOIN satscores AS sat ON sat.cname = ref.County\nLEFT JOIN schools AS s ON s.CDSCode = sat.cds\nWHERE ref.CDSCode IN ('1611430131177', '01611430131177')\nGROUP BY ref.CDSCode, ref.County, sat.rtype, typeof(sat.NumGE1500)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"dmHvjQj1Xhd_W2HyOCOuUC3OiyYU_R0yMvk-H7qwS4I\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "dmHvjQj1Xhd_W2HyOCOuUC3OiyYU_R0yMvk-H7qwS4I",
+        "expected_columns": [
+          "AdmFName1",
+          "AdmLName1"
+        ],
+        "sql": "SELECT s.AdmFName1, s.AdmLName1\nFROM schools AS ref\nJOIN schools AS s ON s.County = ref.County\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE ref.CDSCode = '01611430131177'\n  AND sat.rtype = 'S'\n  AND sat.NumGE1500 IS NOT NULL\nORDER BY sat.NumGE1500 DESC, s.CDSCode ASC\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): AdmFName1=str; AdmLName1=str\nAdmFName1 | AdmLName1\n--- | ---\nZachary | Larsen\nSQL: SELECT s.AdmFName1, s.AdmLName1\nFROM schools AS ref\nJOIN schools AS s ON s.County = ref.County\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE ref.CDSCode = '01611430131177'\n  AND sat.rtype = 'S'\n  AND sat.NumGE1500 IS NOT NULL\nORDER BY sat.NumGE1500 DESC, s.CDSCode ASC\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT s.AdmFName1, s.AdmLName1\nFROM schools AS ref\nJOIN schools AS s ON s.County = ref.County\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE ref.CDSCode = '01611430131177'\n  AND sat.rtype = 'S'\n  AND sat.NumGE1500 IS NOT NULL\nORDER BY sat.NumGE1500 DESC, s.CDSCode ASC\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT s.AdmFName1, s.AdmLName1\nFROM schools AS ref\nJOIN schools AS s ON s.County = ref.County\nJOIN satscores AS sat ON sat.cds = s.CDSCode\nWHERE ref.CDSCode = '01611430131177'\n  AND sat.rtype = 'S'\n  AND sat.NumGE1500 IS NOT NULL\nORDER BY sat.NumGE1500 DESC, s.CDSCode ASC\nLIMIT 1",
+  "seconds": 29.464447082951665
+}

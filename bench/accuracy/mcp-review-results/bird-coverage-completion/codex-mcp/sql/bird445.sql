@@ -1,0 +1,22 @@
+WITH ranked_igg AS (
+    SELECT ID, IGG,
+           ROW_NUMBER() OVER (PARTITION BY ID ORDER BY "Date" DESC) AS recency
+    FROM main.Laboratory
+    WHERE IGG IS NOT NULL
+)
+SELECT
+    CASE p.Admission
+        WHEN '+' THEN 'admitted to the hospital'
+        WHEN '-' THEN 'followed at the outpatient clinic'
+    END AS care_setting,
+    ROUND(
+        100.0 * COUNT(CASE WHEN r.IGG > 900 AND r.IGG < 2000 THEN 1 END)
+        / COUNT(*),
+        1
+    ) AS normal_igg_percentage
+FROM main.Patient AS p
+LEFT JOIN ranked_igg AS r ON r.ID = p.ID AND r.recency = 1
+WHERE p.Admission IN ('+', '-')
+GROUP BY p.Admission
+ORDER BY p.Admission
+LIMIT 2

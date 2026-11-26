@@ -1,0 +1,99 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+For accounts opened from 1995 through 2000 in East Bohemia districts, list each account ID and its statement-issuance frequency.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `account` (
+    `account_id` INTEGER, -- the id of the account; example: [1, 2]
+    `district_id` INTEGER, -- location of branch; example: [18, 1]
+    `frequency` TEXT, -- frequency of the acount; example: ['POPLATEK MESICNE']
+    `date` DATE, -- the creation date of the account; example: ['1995-03-24', '1993-02-26']
+    PRIMARY KEY (`account_id`),
+    FOREIGN KEY (`district_id`) REFERENCES `district` (`district_id`)
+);
+
+CREATE TABLE `card` (
+    `card_id` INTEGER, -- id number of credit card; example: [1, 2]
+    `disp_id` INTEGER, -- disposition id; example: [9, 19]
+    `type` TEXT, -- type of credit card; example: ['gold', 'classic']
+    `issued` DATE, -- the date when the credit card issued; example: ['1998-10-16', '1998-03-13']
+    PRIMARY KEY (`card_id`),
+    FOREIGN KEY (`disp_id`) REFERENCES `disp` (`disp_id`)
+);
+
+CREATE TABLE `client` (
+    `client_id` INTEGER, -- the unique number; example: [1, 2]
+    `gender` TEXT, -- example: ['F', 'M']
+    `birth_date` DATE, -- birth date; example: ['1970-12-13', '1945-02-04']
+    `district_id` INTEGER, -- location of branch; example: [18, 1]
+    PRIMARY KEY (`client_id`),
+    FOREIGN KEY (`district_id`) REFERENCES `district` (`district_id`)
+);
+
+CREATE TABLE `disp` (
+    `disp_id` INTEGER, -- unique number of identifying this row of record; example: [1, 2]
+    `client_id` INTEGER, -- id number of client; example: [1, 2]
+    `account_id` INTEGER, -- id number of account; example: [1, 2]
+    `type` TEXT, -- type of disposition; example: ['OWNER', 'DISPONENT']
+    PRIMARY KEY (`disp_id`),
+    FOREIGN KEY (`client_id`) REFERENCES `client` (`client_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+CREATE TABLE `district` (
+    `district_id` INTEGER, -- location of branch; example: [1, 2]
+    `A2` TEXT, -- district_name; example: ['Hl.m. Praha', 'Benesov']
+    `A3` TEXT, -- region; example: ['Prague', 'central Bohemia']
+    `A4` TEXT, -- number of inhabitants; example: ['1204953', '88884']
+    `A5` TEXT, -- municipality < district < region; example: ['0', '80']
+    `A6` TEXT, -- municipality < district < region; example: ['0', '26']
+    `A7` TEXT, -- municipality < district < region; example: ['0', '6']
+    `A8` INTEGER, -- municipality < district < region; example: [1, 2]
+    `A9` INTEGER, -- example: [1, 5]
+    `A10` REAL, -- ratio of urban inhabitants; example: [100.0, 46.7]
+    `A11` INTEGER, -- average salary; example: [12541, 8507]
+    `A12` REAL, -- unemployment rate 1995; example: [0.2, 1.6]
+    `A13` REAL, -- unemployment rate 1996; example: [0.43, 1.85]
+    `A14` INTEGER, -- no. of entrepreneurs per 1000 inhabitants; example: [167, 132]
+    `A15` INTEGER, -- no. of committed crimes 1995; example: [85677, 2159]
+    `A16` INTEGER, -- no. of committed crimes 1996; example: [99107, 2674]
+    PRIMARY KEY (`district_id`)
+);
+
+CREATE TABLE `loan` (
+    `loan_id` INTEGER, -- the id number identifying the loan data; example: [4959, 4961]
+    `account_id` INTEGER, -- the id number identifying the account; example: [2, 19]
+    `date` DATE, -- the date when the loan is approved; example: ['1994-01-05', '1996-04-29']
+    `amount` INTEGER, -- approved amount; example: [80952, 30276]
+    `duration` INTEGER, -- loan duration; example: [24, 12]
+    `payments` REAL, -- monthly payments; example: [3373.0, 2523.0]
+    `status` TEXT, -- repayment status; example: ['A', 'B']
+    PRIMARY KEY (`loan_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+CREATE TABLE `order` (
+    `order_id` INTEGER, -- identifying the unique order; example: [29401, 29402]
+    `account_id` INTEGER, -- id number of account; example: [1, 2]
+    `bank_to` TEXT, -- bank of the recipient; example: ['YZ', 'ST']
+    `account_to` INTEGER, -- account of the recipient; example: [87144583, 89597016]
+    `amount` REAL, -- debited amount; example: [2452.0, 3372.7]
+    `k_symbol` TEXT, -- purpose of the payment; example: ['SIPO', 'UVER']
+    PRIMARY KEY (`order_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+CREATE TABLE `trans` (
+    `trans_id` INTEGER, -- transaction id; example: [1, 5]
+    `account_id` INTEGER, -- example: [1]
+    `date` DATE, -- date of transaction; example: ['1995-03-24', '1995-04-13']
+    `type` TEXT, -- +/- transaction; example: ['PRIJEM']
+    `operation` TEXT, -- mode of transaction; example: ['VKLAD', 'PREVOD Z UCTU']
+    `amount` INTEGER, -- amount of money; example: [1000, 3679]
+    `balance` INTEGER, -- balance after transaction; example: [1000, 4679]
+    `k_symbol` TEXT, -- characterization of the transaction; example: []
+    `bank` TEXT, -- bank of the partner; example: ['AB']
+    `account` INTEGER, -- account of the partner; example: [41403269]
+    PRIMARY KEY (`trans_id`),
+    FOREIGN KEY (`account_id`) REFERENCES `account` (`account_id`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

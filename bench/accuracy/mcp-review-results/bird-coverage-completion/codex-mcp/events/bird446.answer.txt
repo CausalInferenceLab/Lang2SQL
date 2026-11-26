@@ -1,0 +1,14 @@
+```sql
+WITH latest_visit AS (
+    SELECT ID, MAX("Date") AS visit_date
+    FROM main.Laboratory
+    GROUP BY ID
+)
+SELECT COUNT(CASE WHEN p.SEX = 'F' THEN 1 END)
+     - COUNT(CASE WHEN p.SEX = 'M' THEN 1 END) AS female_minus_male
+FROM latest_visit AS v
+JOIN main.Laboratory AS l ON l.ID = v.ID AND l."Date" = v.visit_date
+JOIN main.Patient AS p ON p.ID = v.ID
+WHERE CAST(l.RNP AS REAL) >= 32
+LIMIT 1
+```

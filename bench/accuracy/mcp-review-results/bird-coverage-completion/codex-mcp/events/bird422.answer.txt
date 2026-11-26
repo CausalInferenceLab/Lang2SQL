@@ -1,0 +1,16 @@
+```sql
+WITH latest_dates AS (
+    SELECT ID, MAX(CASE WHEN SC170 IS NOT NULL THEN "Date" END) AS latest_sc170_date
+    FROM main.Laboratory
+    GROUP BY ID
+    HAVING MAX("Date") > '1997-01-01'
+)
+SELECT lab.ID
+FROM latest_dates AS d
+JOIN main.Laboratory AS lab
+  ON lab.ID = d.ID
+ AND lab."Date" = d.latest_sc170_date
+WHERE lab.SC170 IN ('negative', '0')
+ORDER BY lab.ID
+LIMIT 1000
+```

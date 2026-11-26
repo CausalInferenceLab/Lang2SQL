@@ -1,0 +1,60 @@
+WITH eligible_accounts AS (
+    SELECT a.account_id, a.date AS opened_date
+    FROM account AS a
+    JOIN district AS d ON d.district_id = a.district_id
+    WHERE d.A2 = 'Tabor'
+      AND a.date < '1997-01-01'
+),
+cards AS (
+    SELECT p.account_id, COUNT(*) AS card_count
+    FROM eligible_accounts AS a
+    JOIN disp AS p ON p.account_id = a.account_id
+    JOIN card AS c ON c.disp_id = p.disp_id
+    WHERE c.issued < '1997-01-01'
+    GROUP BY p.account_id
+),
+loans AS (
+    SELECT l.account_id,
+           COUNT(*) AS loan_count,
+           CASE
+               WHEN MAX(l.status = 'B') = 1 THEN 'defaulted'
+               WHEN MAX(l.status IN ('C', 'D')) = 1 THEN 'repaying'
+               ELSE 'paid off'
+           END AS loan_standing
+    FROM eligible_accounts AS a
+    JOIN loan AS l ON l.account_id = a.account_id
+    WHERE l.date < '1997-01-01'
+    GROUP BY l.account_id
+),
+activity AS (
+    SELECT t.account_id,
+           COUNT(*) AS transaction_count,
+           SUM(CASE WHEN t.type = 'PRIJEM' THEN t.amount ELSE 0 END) AS money_in,
+           SUM(CASE WHEN t.type IN ('VYDAJ', 'VYBER') THEN t.amount ELSE 0 END) AS money_out,
+           MAX(t.balance) AS peak_balance
+    FROM eligible_accounts AS a
+    JOIN trans AS t ON t.account_id = a.account_id
+    WHERE t.date >= '1997-01-01'
+      AND t.date < '1998-01-01'
+    GROUP BY t.account_id
+)
+SELECT a.account_id,
+       a.opened_date,
+       owner.gender AS owner_gender,
+       1996 - CAST(strftime('%Y', owner.birth_date) AS INTEGER) AS owner_age,
+       COALESCE(cards.card_count, 0) AS card_count,
+       COALESCE(loans.loan_count, 0) AS loan_count,
+       COALESCE(loans.loan_standing, 'no loan') AS loan_standing,
+       COALESCE(activity.transaction_count, 0) AS transaction_count,
+       COALESCE(activity.money_in, 0) AS money_in,
+       COALESCE(activity.money_out, 0) AS money_out,
+       COALESCE(activity.peak_balance, 0) AS peak_balance,
+       RANK() OVER (ORDER BY COALESCE(activity.peak_balance, 0) DESC) AS peak_balance_rank
+FROM eligible_accounts AS a
+JOIN disp AS p ON p.account_id = a.account_id AND p.type = 'OWNER'
+JOIN client AS owner ON owner.client_id = p.client_id
+LEFT JOIN cards ON cards.account_id = a.account_id
+LEFT JOIN loans ON loans.account_id = a.account_id
+LEFT JOIN activity ON activity.account_id = a.account_id
+ORDER BY peak_balance_rank, a.account_id
+LIMIT 1000

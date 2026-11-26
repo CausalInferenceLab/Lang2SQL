@@ -1,0 +1,15 @@
+```sql
+WITH region_totals AS (
+    SELECT d.A3 AS region, SUM(l.amount) AS total_approved_amount
+    FROM main.loan AS l
+    JOIN main.account AS a ON a.account_id = l.account_id
+    JOIN main.district AS d ON d.district_id = a.district_id
+    WHERE '1995-12-31' BETWEEN l.date AND date(l.date, '+' || l.duration || ' months')
+    GROUP BY d.A3
+)
+SELECT region, total_approved_amount
+FROM region_totals
+WHERE total_approved_amount = (SELECT MAX(total_approved_amount) FROM region_totals)
+ORDER BY region
+LIMIT -1
+```

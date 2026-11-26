@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird196",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "12df2a88014d4de42e8c4b6e90129d5ba62991cb81368046c5a7bf1af123075a",
+  "events_sha256": "12f0a619b0354d4e8fd1db51ed0b69686e48f835c808314874bd10859ddf5660",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 166496,
+      "cached_input_tokens": 155008,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 623,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8mC3zZGr9gbaizUR7d2KgPkxvAIa1SonPcmvwfCZYfU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "client"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "client (table)\n- client_id: INTEGER NOT NULL\n- gender: TEXT NOT NULL\n- birth_date: DATE NOT NULL\n- district_id: INTEGER NOT NULL\nPRIMARY KEY (client_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8mC3zZGr9gbaizUR7d2KgPkxvAIa1SonPcmvwfCZYfU",
+        "sql": "SELECT d.district_id, d.A4, c.gender, COUNT(*) AS client_count\nFROM main.district AS d\nJOIN main.client AS c ON c.district_id = d.district_id\nWHERE d.A3 = 'south Bohemia'\nGROUP BY d.district_id, d.A4, c.gender"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "16 row(s):\nResult coverage: fetched_rows=16; displayed_rows=16; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): district_id=int; A4=str; gender=str; client_count=int\ndistrict_id | A4 | gender | client_count\n--- | --- | --- | ---\n14 | 177686 | F | 27\n14 | 177686 | M | 18\n15 | 58796 | F | 30\n15 | 58796 | M | 33\n16 | 93931 | F | 34\n16 | 93931 | M | 27\n17 | 74062 | F | 28\n17 | 74062 | M | 26\n18 | 70699 | F | 28\n18 | 70699 | M | 32\n19 | 51428 | F | 32\n19 | 51428 | M | 34\n20 | 70646 | F | 21\n20 | 70646 | M | 22\n21 | 103347 | F | 31\n21 | 103347 | M | 26\nSQL: SELECT d.district_id, d.A4, c.gender, COUNT(*) AS client_count\nFROM main.district AS d\nJOIN main.client AS c ON c.district_id = d.district_id\nWHERE d.A3 = 'south Bohemia'\nGROUP BY d.district_id, d.A4, c.gender\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"SFa7rahdEHxY0yVzShAmmTPAXKIblbe1-eHXAE7yujQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "SFa7rahdEHxY0yVzShAmmTPAXKIblbe1-eHXAE7yujQ",
+        "expected_columns": [
+          "male_percentage"
+        ],
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.gender = 'M') / NULLIF(COUNT(*), 0),\n    2\n) AS male_percentage\nFROM main.client AS c\nWHERE c.district_id = (\n    SELECT d.district_id\n    FROM main.district AS d\n    WHERE d.A3 = 'south Bohemia'\n    ORDER BY CAST(d.A4 AS INTEGER) DESC\n    LIMIT 1\n)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): male_percentage=float\nmale_percentage\n---\n40.0\nSQL: SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.gender = 'M') / NULLIF(COUNT(*), 0),\n    2\n) AS male_percentage\nFROM main.client AS c\nWHERE c.district_id = (\n    SELECT d.district_id\n    FROM main.district AS d\n    WHERE d.A3 = 'south Bohemia'\n    ORDER BY CAST(d.A4 AS INTEGER) DESC\n    LIMIT 1\n)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.gender = 'M') / NULLIF(COUNT(*), 0),\n    2\n) AS male_percentage\nFROM main.client AS c\nWHERE c.district_id = (\n    SELECT d.district_id\n    FROM main.district AS d\n    WHERE d.A3 = 'south Bohemia'\n    ORDER BY CAST(d.A4 AS INTEGER) DESC\n    LIMIT 1\n)\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.gender = 'M') / NULLIF(COUNT(*), 0),\n    2\n) AS male_percentage\nFROM main.client AS c\nWHERE c.district_id = (\n    SELECT d.district_id\n    FROM main.district AS d\n    WHERE d.A3 = 'south Bohemia'\n    ORDER BY CAST(d.A4 AS INTEGER) DESC\n    LIMIT 1\n)\nLIMIT 1000",
+  "seconds": 28.590765416971408
+}

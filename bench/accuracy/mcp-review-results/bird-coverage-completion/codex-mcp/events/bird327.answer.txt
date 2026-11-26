@@ -1,0 +1,28 @@
+```sql
+WITH RECURSIVE items(expense_id, category, cost, item_name, remaining) AS (
+    SELECT e.expense_id, b.category, e.cost, NULL, e.expense_description || ','
+    FROM expense AS e
+    JOIN budget AS b ON b.budget_id = e.link_to_budget
+    JOIN event AS v ON v.event_id = b.link_to_event
+    WHERE v.event_name = 'October Meeting'
+      AND e.approved = 'true'
+
+    UNION ALL
+
+    SELECT expense_id, category, cost,
+           trim(substr(remaining, 1, instr(remaining, ',') - 1)),
+           substr(remaining, instr(remaining, ',') + 1)
+    FROM items
+    WHERE remaining <> ''
+),
+purchase_items AS (
+    SELECT DISTINCT expense_id, category, cost, item_name
+    FROM items
+    WHERE item_name <> ''
+)
+SELECT item_name, category, SUM(cost) AS total_cost_usd
+FROM purchase_items
+GROUP BY category, item_name
+ORDER BY category, item_name
+LIMIT -1
+```

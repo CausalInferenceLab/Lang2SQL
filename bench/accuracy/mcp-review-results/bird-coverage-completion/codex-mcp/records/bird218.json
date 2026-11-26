@@ -1,0 +1,193 @@
+{
+  "instance_id": "bird218",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "ea488842017e4813aa6ab639abddabae58a44e21a1c2bb8607bfc0dfdbe7d8a8",
+  "events_sha256": "5ebbd418e917d3744e6668319c38324a924c4d0d3021203fde6923ff8df604a8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167911,
+      "cached_input_tokens": 155904,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 915,
+      "reasoning_output_tokens": 17
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_JsV9jzZL-xNtJMsA2lR5uk6Yf4STVGdXws4MpOtpTw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "disp"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "disp (table)\n- disp_id: INTEGER NOT NULL\n- client_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- type: TEXT NOT NULL\nPRIMARY KEY (disp_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)\nFOREIGN KEY (client_id) REFERENCES client (client_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "card"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "card (table)\n- card_id: INTEGER NOT NULL\n- disp_id: INTEGER NOT NULL\n- type: TEXT NOT NULL\n- issued: DATE NOT NULL\nPRIMARY KEY (card_id)\nFOREIGN KEY (disp_id) REFERENCES disp (disp_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "client"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "client (table)\n- client_id: INTEGER NOT NULL\n- gender: TEXT NOT NULL\n- birth_date: DATE NOT NULL\n- district_id: INTEGER NOT NULL\nPRIMARY KEY (client_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_JsV9jzZL-xNtJMsA2lR5uk6Yf4STVGdXws4MpOtpTw",
+        "sql": "SELECT c.type, COUNT(*) AS cards, COUNT(d.district_id) AS matched_cards,\n       COUNT(DISTINCT d.district_id) AS districts,\n       SUM(CASE WHEN d.A4 = '' OR d.A4 GLOB '*[^0-9]*' THEN 1 ELSE 0 END) AS nonnumeric_populations\nFROM main.card AS c\nLEFT JOIN main.disp AS p ON p.disp_id = c.disp_id\nLEFT JOIN main.client AS h ON h.client_id = p.client_id\nLEFT JOIN main.district AS d ON d.district_id = h.district_id\nGROUP BY c.type"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): type=str; cards=int; matched_cards=int; districts=int; nonnumeric_populations=int\ntype | cards | matched_cards | districts | nonnumeric_populations\n--- | --- | --- | --- | ---\nclassic | 659 | 659 | 77 | 0\ngold | 88 | 88 | 48 | 0\njunior | 145 | 145 | 65 | 0\nSQL: SELECT c.type, COUNT(*) AS cards, COUNT(d.district_id) AS matched_cards,\n       COUNT(DISTINCT d.district_id) AS districts,\n       SUM(CASE WHEN d.A4 = '' OR d.A4 GLOB '*[^0-9]*' THEN 1 ELSE 0 END) AS nonnumeric_populations\nFROM main.card AS c\nLEFT JOIN main.disp AS p ON p.disp_id = c.disp_id\nLEFT JOIN main.client AS h ON h.client_id = p.client_id\nLEFT JOIN main.district AS d ON d.district_id = h.district_id\nGROUP BY c.type\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"UoaqdYM1lyaAO65SsMDZxxGv544qRlgD1_Z4OGjkTzM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "UoaqdYM1lyaAO65SsMDZxxGv544qRlgD1_Z4OGjkTzM",
+        "expected_columns": [
+          "card_type",
+          "home_district",
+          "inhabitants"
+        ],
+        "sql": "WITH card_districts AS (\n    SELECT DISTINCT c.type AS card_type, h.district_id\n    FROM main.card AS c\n    JOIN main.disp AS p ON p.disp_id = c.disp_id\n    JOIN main.client AS h ON h.client_id = p.client_id\n    WHERE c.type IN ('gold', 'classic', 'junior')\n),\nranked_districts AS (\n    SELECT cd.card_type,\n           d.A2 AS home_district,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           RANK() OVER (\n               PARTITION BY cd.card_type\n               ORDER BY CAST(d.A4 AS INTEGER)\n           ) AS population_rank\n    FROM card_districts AS cd\n    JOIN main.district AS d ON d.district_id = cd.district_id\n)\nSELECT card_type, home_district, inhabitants\nFROM ranked_districts\nWHERE population_rank = 1\nORDER BY card_type, home_district\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): card_type=str; home_district=str; inhabitants=int\ncard_type | home_district | inhabitants\n--- | --- | ---\nclassic | Jesenik | 42821\ngold | Jesenik | 42821\njunior | Jesenik | 42821\nSQL: WITH card_districts AS (\n    SELECT DISTINCT c.type AS card_type, h.district_id\n    FROM main.card AS c\n    JOIN main.disp AS p ON p.disp_id = c.disp_id\n    JOIN main.client AS h ON h.client_id = p.client_id\n    WHERE c.type IN ('gold', 'classic', 'junior')\n),\nranked_districts AS (\n    SELECT cd.card_type,\n           d.A2 AS home_district,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           RANK() OVER (\n               PARTITION BY cd.card_type\n               ORDER BY CAST(d.A4 AS INTEGER)\n           ) AS population_rank\n    FROM card_districts AS cd\n    JOIN main.district AS d ON d.district_id = cd.district_id\n)\nSELECT card_type, home_district, inhabitants\nFROM ranked_districts\nWHERE population_rank = 1\nORDER BY card_type, home_district\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH card_districts AS (\n    SELECT DISTINCT c.type AS card_type, h.district_id\n    FROM main.card AS c\n    JOIN main.disp AS p ON p.disp_id = c.disp_id\n    JOIN main.client AS h ON h.client_id = p.client_id\n    WHERE c.type IN ('gold', 'classic', 'junior')\n),\nranked_districts AS (\n    SELECT cd.card_type,\n           d.A2 AS home_district,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           RANK() OVER (\n               PARTITION BY cd.card_type\n               ORDER BY CAST(d.A4 AS INTEGER)\n           ) AS population_rank\n    FROM card_districts AS cd\n    JOIN main.district AS d ON d.district_id = cd.district_id\n)\nSELECT card_type, home_district, inhabitants\nFROM ranked_districts\nWHERE population_rank = 1\nORDER BY card_type, home_district\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "WITH card_districts AS (\n    SELECT DISTINCT c.type AS card_type, h.district_id\n    FROM main.card AS c\n    JOIN main.disp AS p ON p.disp_id = c.disp_id\n    JOIN main.client AS h ON h.client_id = p.client_id\n    WHERE c.type IN ('gold', 'classic', 'junior')\n),\nranked_districts AS (\n    SELECT cd.card_type,\n           d.A2 AS home_district,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           RANK() OVER (\n               PARTITION BY cd.card_type\n               ORDER BY CAST(d.A4 AS INTEGER)\n           ) AS population_rank\n    FROM card_districts AS cd\n    JOIN main.district AS d ON d.district_id = cd.district_id\n)\nSELECT card_type, home_district, inhabitants\nFROM ranked_districts\nWHERE population_rank = 1\nORDER BY card_type, home_district\nLIMIT -1",
+  "seconds": 32.7472410419723
+}

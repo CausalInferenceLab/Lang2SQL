@@ -1,0 +1,18 @@
+```sql
+WITH loans_per_account AS (
+    SELECT a.account_id, COUNT(l.loan_id) AS loan_count
+    FROM main.account AS a
+    LEFT JOIN main.loan AS l ON l.account_id = a.account_id
+    WHERE a.account_id IN (
+        SELECT d.account_id
+        FROM main.disp AS d
+        JOIN main.client AS c ON c.client_id = d.client_id
+        WHERE d.type = 'OWNER'
+          AND c.birth_date < '1950-01-01'
+    )
+    GROUP BY a.account_id
+)
+SELECT ROUND(AVG(loan_count), 2) AS average_loans_per_account
+FROM loans_per_account
+LIMIT 1
+```

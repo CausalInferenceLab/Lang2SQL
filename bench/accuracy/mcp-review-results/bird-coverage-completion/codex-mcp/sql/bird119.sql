@@ -1,0 +1,8 @@
+SELECT DISTINCT h.UserId
+FROM postHistory AS h
+JOIN posts AS p ON p.Id = h.PostId
+WHERE p.ViewCount >= 1000
+  AND h.UserId IS NOT NULL
+GROUP BY h.UserId, h.PostId
+HAVING COUNT(*) = 1
+LIMIT -1

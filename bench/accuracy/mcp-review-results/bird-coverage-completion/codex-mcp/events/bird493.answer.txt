@@ -1,0 +1,13 @@
+```sql
+WITH atom_bond_counts AS (
+    SELECT a.atom_id, COUNT(DISTINCT c.bond_id) AS bond_count
+    FROM main.atom AS a
+    LEFT JOIN main.connected AS c
+        ON a.atom_id IN (c.atom_id, c.atom_id2)
+    WHERE a.molecule_id = 'TR397'
+    GROUP BY a.atom_id
+)
+SELECT ROUND(AVG(bond_count), 2) AS average_bonds_per_atom
+FROM atom_bond_counts
+LIMIT 1000
+```

@@ -1,0 +1,154 @@
+{
+  "instance_id": "bird227",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "36b04e475b68086aeb1c07aa66bad20ecc9dd7b677db48983346f211668e30e0",
+  "events_sha256": "40964e9166414f03b7878252af915ce05253a78c8a2d159aa2b8a10f11981112",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167441,
+      "cached_input_tokens": 155776,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 791,
+      "reasoning_output_tokens": 68
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"h0uPGsl-ReUd7QlZ0Dl7_FKuQP0-y_vDdyGt0Z-WauA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "trans"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "trans (table)\n- trans_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- type: TEXT NOT NULL\n- operation: TEXT\n- amount: INTEGER NOT NULL\n- balance: INTEGER NOT NULL\n- k_symbol: TEXT\n- bank: TEXT\n- account: INTEGER\nPRIMARY KEY (trans_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "loan"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "loan (table)\n- loan_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- amount: INTEGER NOT NULL\n- duration: INTEGER NOT NULL\n- payments: REAL NOT NULL\n- status: TEXT NOT NULL\nPRIMARY KEY (loan_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "h0uPGsl-ReUd7QlZ0Dl7_FKuQP0-y_vDdyGt0Z-WauA",
+        "sql": "SELECT l.account_id, l.date, t.bank, t.account, COUNT(*) AS rows_found\nFROM main.loan AS l\nJOIN main.trans AS t ON t.account_id = l.account_id\nWHERE l.amount = 98832 AND l.date = '1996-01-03' AND t.date < l.date AND t.type = 'VYDAJ'\nGROUP BY l.account_id, l.date, t.bank, t.account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nResult coverage: fetched_rows=5; displayed_rows=5; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): account_id=int; date=str; bank=NoneType,str; account=NoneType,int; rows_found=int\naccount_id | date | bank | account | rows_found\n--- | --- | --- | --- | ---\n4907 | 1996-01-03 | None | None | 54\n4907 | 1996-01-03 | None | 0 | 18\n4907 | 1996-01-03 | AB | 5604631 | 18\n4907 | 1996-01-03 | QR | 82890259 | 19\n4907 | 1996-01-03 | YZ | 25638538 | 18\nSQL: SELECT l.account_id, l.date, t.bank, t.account, COUNT(*) AS rows_found\nFROM main.loan AS l\nJOIN main.trans AS t ON t.account_id = l.account_id\nWHERE l.amount = 98832 AND l.date = '1996-01-03' AND t.date < l.date AND t.type = 'VYDAJ'\nGROUP BY l.account_id, l.date, t.bank, t.account\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NZ-_yY2byXwBQdZd2aIxLAXfU2D4fTs_iF4qEpRmdtE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NZ-_yY2byXwBQdZd2aIxLAXfU2D4fTs_iF4qEpRmdtE",
+        "expected_columns": [
+          "bank_code",
+          "account_number",
+          "payment_count",
+          "total_amount_paid"
+        ],
+        "sql": "SELECT\n    t.bank AS bank_code,\n    t.account AS account_number,\n    COUNT(*) AS payment_count,\n    SUM(t.amount) AS total_amount_paid\nFROM main.trans AS t\nWHERE t.account_id IN (\n    SELECT l.account_id\n    FROM main.loan AS l\n    WHERE l.amount = 98832\n      AND l.date = '1996-01-03'\n)\n  AND t.date < '1996-01-03'\n  AND t.type = 'VYDAJ'\n  AND t.bank IS NOT NULL\n  AND t.account IS NOT NULL\nGROUP BY t.bank, t.account\nORDER BY total_amount_paid DESC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bank_code=str; account_number=int; payment_count=int; total_amount_paid=int\nbank_code | account_number | payment_count | total_amount_paid\n--- | --- | --- | ---\nYZ | 25638538 | 18 | 70884\nAB | 5604631 | 18 | 22554\nQR | 82890259 | 19 | 6175\nSQL: SELECT\n    t.bank AS bank_code,\n    t.account AS account_number,\n    COUNT(*) AS payment_count,\n    SUM(t.amount) AS total_amount_paid\nFROM main.trans AS t\nWHERE t.account_id IN (\n    SELECT l.account_id\n    FROM main.loan AS l\n    WHERE l.amount = 98832\n      AND l.date = '1996-01-03'\n)\n  AND t.date < '1996-01-03'\n  AND t.type = 'VYDAJ'\n  AND t.bank IS NOT NULL\n  AND t.account IS NOT NULL\nGROUP BY t.bank, t.account\nORDER BY total_amount_paid DESC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    t.bank AS bank_code,\n    t.account AS account_number,\n    COUNT(*) AS payment_count,\n    SUM(t.amount) AS total_amount_paid\nFROM main.trans AS t\nWHERE t.account_id IN (\n    SELECT l.account_id\n    FROM main.loan AS l\n    WHERE l.amount = 98832\n      AND l.date = '1996-01-03'\n)\n  AND t.date < '1996-01-03'\n  AND t.type = 'VYDAJ'\n  AND t.bank IS NOT NULL\n  AND t.account IS NOT NULL\nGROUP BY t.bank, t.account\nORDER BY total_amount_paid DESC\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "SELECT\n    t.bank AS bank_code,\n    t.account AS account_number,\n    COUNT(*) AS payment_count,\n    SUM(t.amount) AS total_amount_paid\nFROM main.trans AS t\nWHERE t.account_id IN (\n    SELECT l.account_id\n    FROM main.loan AS l\n    WHERE l.amount = 98832\n      AND l.date = '1996-01-03'\n)\n  AND t.date < '1996-01-03'\n  AND t.type = 'VYDAJ'\n  AND t.bank IS NOT NULL\n  AND t.account IS NOT NULL\nGROUP BY t.bank, t.account\nORDER BY total_amount_paid DESC\nLIMIT 1000",
+  "seconds": 33.76212124992162
+}

@@ -1,0 +1,16 @@
+WITH openings_by_district AS (
+    SELECT a.district_id, COUNT(*) AS account_count
+    FROM main.account AS a
+    WHERE a.frequency = 'POPLATEK MESICNE'
+      AND a.date >= '1997-01-01'
+      AND a.date < '1998-01-01'
+    GROUP BY a.district_id
+)
+SELECT
+    SUM(o.account_count) AS monthly_statement_accounts,
+    COUNT(*) AS qualifying_districts,
+    ROUND(AVG(d.A11), 2) AS average_salary
+FROM openings_by_district AS o
+JOIN main.district AS d ON d.district_id = o.district_id
+WHERE CAST(d.A4 AS INTEGER) >= 100000
+LIMIT 1

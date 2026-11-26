@@ -1,0 +1,9 @@
+SELECT COUNT(DISTINCT p.ID) AS patient_count
+FROM main.Patient AS p
+JOIN main.Laboratory AS l ON l.ID = p.ID
+WHERE p.SEX = 'F'
+  AND l.WBC > 3.5
+  AND l.WBC < 9.0
+  AND (l.FG <= 150 OR l.FG >= 450)
+  AND CAST(l.RNP AS REAL) > 15
+LIMIT 1

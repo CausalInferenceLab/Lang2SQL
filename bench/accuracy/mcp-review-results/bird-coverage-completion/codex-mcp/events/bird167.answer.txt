@@ -1,0 +1,17 @@
+```sql
+WITH height_limits AS (
+    SELECT MIN(height) AS shortest, MAX(height) AS tallest
+    FROM Player
+),
+player_averages AS (
+    SELECT p.player_name, AVG(a.finishing) AS average_finishing
+    FROM Player AS p
+    JOIN height_limits AS h ON p.height IN (h.shortest, h.tallest)
+    JOIN Player_Attributes AS a ON a.player_api_id = p.player_api_id
+    GROUP BY p.player_api_id, p.player_name
+)
+SELECT player_name
+FROM player_averages
+WHERE average_finishing = (SELECT MAX(average_finishing) FROM player_averages)
+LIMIT 1000
+```

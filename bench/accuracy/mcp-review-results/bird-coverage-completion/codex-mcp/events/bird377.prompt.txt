@@ -1,0 +1,86 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'm looking at how designers pair hair and eye colours. For every eye colour that appears on at least one brown-haired hero, how many heroes have that eye colour while their hair is NOT brown? Just give me each eye colour and that count, listing the eye colour with the highest count first. If two eye colours have the same count, the one whose name comes first alphabetically should come first.
+Provided evidence:
+By a brown-haired hero I mean a hero whose hair colour is Brown.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `alignment` (
+    `id` INTEGER, -- the unique identifier of the alignment; example: [1, 2]
+    `alignment` TEXT, -- the alignment of the superhero; example: ['Good', 'Bad']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `attribute` (
+    `id` INTEGER, -- the unique identifier of the attribute; example: [1, 2]
+    `attribute_name` TEXT, -- the attribute; example: ['Intelligence', 'Strength']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `colour` (
+    `id` INTEGER, -- the unique identifier of the color; example: [1, 2]
+    `colour` TEXT, -- the color of the superhero's skin/eye/hair/etc; example: ['No Colour', 'Amber']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `gender` (
+    `id` INTEGER, -- the unique identifier of the gender; example: [1, 2]
+    `gender` TEXT, -- the gender of the superhero; example: ['Male', 'Female']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `publisher` (
+    `id` INTEGER, -- the unique identifier of the publisher; example: [1, 2]
+    `publisher_name` TEXT, -- the name of the publisher; example: ['', 'ABC Studios']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `race` (
+    `id` INTEGER, -- the unique identifier of the race; example: [1, 2]
+    `race` TEXT, -- the race of the superhero; example: ['-', 'Alien']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `superhero` (
+    `id` INTEGER, -- the unique identifier of the superhero; example: [1, 2]
+    `superhero_name` TEXT, -- the name of the superhero; example: ['3-D Man', 'A-Bomb']
+    `full_name` TEXT, -- the full name of the superhero; example: ['Charles Chandler', 'Richard Milhouse Jones']
+    `gender_id` INTEGER, -- the id of the superhero's gender; example: [1]
+    `eye_colour_id` INTEGER, -- the id of the superhero's eye color; example: [9, 33]
+    `hair_colour_id` INTEGER, -- the id of the superhero's hair color; example: [13, 1]
+    `skin_colour_id` INTEGER, -- the id of the superhero's skin color; example: [1, 7]
+    `race_id` INTEGER, -- the id of the superhero's race; example: [1, 24]
+    `publisher_id` INTEGER, -- the id of the publisher; example: [13, 3]
+    `alignment_id` INTEGER, -- the id of the superhero's alignment; example: [1, 2]
+    `height_cm` INTEGER, -- the height of the superhero; example: [188, 203]
+    `weight_kg` INTEGER, -- the weight of the superhero; example: [90, 441]
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`skin_colour_id`) REFERENCES `colour` (`id`),
+    FOREIGN KEY (`race_id`) REFERENCES `race` (`id`),
+    FOREIGN KEY (`publisher_id`) REFERENCES `publisher` (`id`),
+    FOREIGN KEY (`hair_colour_id`) REFERENCES `colour` (`id`),
+    FOREIGN KEY (`gender_id`) REFERENCES `gender` (`id`),
+    FOREIGN KEY (`eye_colour_id`) REFERENCES `colour` (`id`),
+    FOREIGN KEY (`alignment_id`) REFERENCES `alignment` (`id`)
+);
+
+CREATE TABLE `hero_attribute` (
+    `hero_id` INTEGER, -- the id of the hero Maps to superhero(id); example: [1, 2]
+    `attribute_id` INTEGER, -- the id of the attribute Maps to attribute(id); example: [1]
+    `attribute_value` INTEGER, -- the attribute value; example: [80, 75]
+    FOREIGN KEY (`hero_id`) REFERENCES `superhero` (`id`),
+    FOREIGN KEY (`attribute_id`) REFERENCES `attribute` (`id`)
+);
+
+CREATE TABLE `superpower` (
+    `id` INTEGER, -- the unique identifier of the superpower; example: [1, 2]
+    `power_name` TEXT, -- the superpower name; example: ['Agility', 'Accelerated Healing']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `hero_power` (
+    `hero_id` INTEGER, -- the id of the hero Maps to superhero(id); example: [1, 2]
+    `power_id` INTEGER, -- the id of the power Maps to superpower(id); example: [1, 18]
+    FOREIGN KEY (`power_id`) REFERENCES `superpower` (`id`),
+    FOREIGN KEY (`hero_id`) REFERENCES `superhero` (`id`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

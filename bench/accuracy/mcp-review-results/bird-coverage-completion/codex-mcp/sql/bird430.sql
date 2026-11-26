@@ -1,0 +1,13 @@
+SELECT
+    CASE p.Admission
+        WHEN '+' THEN 'admitted to the hospital'
+        WHEN '-' THEN 'followed at the outpatient clinic'
+    END AS patient_group,
+    COUNT(l.LDH) AS normal_ldh_measurements
+FROM main.Patient AS p
+LEFT JOIN main.Laboratory AS l
+    ON l.ID = p.ID AND l.LDH < 500
+WHERE p.Admission IN ('+', '-')
+GROUP BY p.Admission
+ORDER BY CASE p.Admission WHEN '+' THEN 1 WHEN '-' THEN 2 END
+LIMIT 1000

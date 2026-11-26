@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird309",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "ecc6f0819a8b703512a5770b61b9fc3c47ca7ff1eeefabf0a0eb62cc3a39c766",
+  "events_sha256": "23d04034c8105a01d01c8f1c6c950ff46b5e9800a0233b9a19c611fdb345a0a8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169247,
+      "cached_input_tokens": 157312,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 647,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"bFm6cZ_afvNUHAnVPJOoJxy967-hYx0to4oJ1hMwl6Q\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attendance"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attendance (table)\n- link_to_event: TEXT\n- link_to_member: TEXT\nPRIMARY KEY (link_to_event, link_to_member)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "bFm6cZ_afvNUHAnVPJOoJxy967-hYx0to4oJ1hMwl6Q",
+        "sql": "SELECT b.category, COUNT(DISTINCT e.event_id) AS events,\n       COUNT(DISTINCT a.link_to_event) AS events_with_attendance\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nGROUP BY b.category;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "5 row(s):\nResult coverage: fetched_rows=5; displayed_rows=5; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): category=str; events=int; events_with_attendance=int\ncategory | events | events_with_attendance\n--- | --- | ---\nAdvertisement | 15 | 7\nClub T-Shirts | 1 | 1\nFood | 22 | 8\nParking | 7 | 3\nSpeaker Gifts | 7 | 3\nSQL: SELECT b.category, COUNT(DISTINCT e.event_id) AS events,\n       COUNT(DISTINCT a.link_to_event) AS events_with_attendance\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nGROUP BY b.category\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rsdHshXjdZhc1yId8TJ_rp8AnQ6NS1xQ5k7TZegqLeg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rsdHshXjdZhc1yId8TJ_rp8AnQ6NS1xQ5k7TZegqLeg",
+        "sql": "WITH event_attendance AS (\n    SELECT e.event_id, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_id IN (\n        SELECT b.link_to_event\n        FROM main.budget AS b\n        WHERE b.category = 'Advertisement'\n    )\n    GROUP BY e.event_id\n)\nSELECT ROUND(AVG(attendees), 2) AS average_attendance\nFROM event_attendance\nLIMIT 1",
+        "expected_columns": [
+          "average_attendance"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_attendance=float\naverage_attendance\n---\n12.53\nSQL: WITH event_attendance AS (\n    SELECT e.event_id, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_id IN (\n        SELECT b.link_to_event\n        FROM main.budget AS b\n        WHERE b.category = 'Advertisement'\n    )\n    GROUP BY e.event_id\n)\nSELECT ROUND(AVG(attendees), 2) AS average_attendance\nFROM event_attendance\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH event_attendance AS (\n    SELECT e.event_id, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_id IN (\n        SELECT b.link_to_event\n        FROM main.budget AS b\n        WHERE b.category = 'Advertisement'\n    )\n    GROUP BY e.event_id\n)\nSELECT ROUND(AVG(attendees), 2) AS average_attendance\nFROM event_attendance\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH event_attendance AS (\n    SELECT e.event_id, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_id IN (\n        SELECT b.link_to_event\n        FROM main.budget AS b\n        WHERE b.category = 'Advertisement'\n    )\n    GROUP BY e.event_id\n)\nSELECT ROUND(AVG(attendees), 2) AS average_attendance\nFROM event_attendance\nLIMIT 1",
+  "seconds": 29.590762000065297
+}

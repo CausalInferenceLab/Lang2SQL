@@ -1,0 +1,42 @@
+```sql
+WITH eligible_owners AS (
+    SELECT DISTINCT a.district_id, a.account_id, o.client_id
+    FROM main.disp AS o
+    JOIN main.card AS c ON c.disp_id = o.disp_id
+    JOIN main.account AS a ON a.account_id = o.account_id
+    WHERE o.type = 'OWNER' AND c.type = 'classic'
+),
+owner_counts AS (
+    SELECT district_id, COUNT(DISTINCT client_id) AS client_count
+    FROM eligible_owners
+    GROUP BY district_id
+),
+eligible_accounts AS (
+    SELECT DISTINCT district_id, account_id
+    FROM eligible_owners
+),
+recipient_totals AS (
+    SELECT a.district_id, t.bank, t.account, SUM(t.amount) AS amount_paid
+    FROM eligible_accounts AS a
+    JOIN main.trans AS t ON t.account_id = a.account_id
+    WHERE t.type = 'VYDAJ'
+      AND t.bank IS NOT NULL
+      AND t.account IS NOT NULL
+    GROUP BY a.district_id, t.bank, t.account
+),
+payment_totals AS (
+    SELECT district_id, COUNT(*) AS external_account_count,
+           SUM(amount_paid) AS total_amount_paid
+    FROM recipient_totals
+    GROUP BY district_id
+)
+SELECT d.A2 AS district_name,
+       COALESCE(o.client_count, 0) AS client_count,
+       COALESCE(p.external_account_count, 0) AS external_account_count,
+       COALESCE(p.total_amount_paid, 0) AS total_amount_paid
+FROM main.district AS d
+LEFT JOIN owner_counts AS o ON o.district_id = d.district_id
+LEFT JOIN payment_totals AS p ON p.district_id = d.district_id
+ORDER BY total_amount_paid DESC, district_name ASC
+LIMIT 1000
+```

@@ -1,0 +1,9 @@
+SELECT h.superhero_name, p.publisher_name
+FROM superhero AS h
+JOIN colour AS c ON c.id = h.eye_colour_id
+LEFT JOIN publisher AS p ON p.id = h.publisher_id
+WHERE h.hair_colour_id = c.id
+  AND h.skin_colour_id = c.id
+  AND c.colour <> 'No Colour'
+ORDER BY h.superhero_name
+LIMIT 1000

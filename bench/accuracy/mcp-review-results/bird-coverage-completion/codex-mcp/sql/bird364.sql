@@ -1,0 +1,12 @@
+SELECT ROUND(AVG(ha.attribute_value), 1) AS average_intelligence
+FROM hero_attribute AS ha
+JOIN attribute AS a ON a.id = ha.attribute_id
+WHERE a.attribute_name = 'Intelligence'
+  AND ha.attribute_value IS NOT NULL
+  AND ha.hero_id IN (
+      SELECT hp.hero_id
+      FROM hero_power AS hp
+      JOIN superpower AS sp ON sp.id = hp.power_id
+      WHERE sp.power_name IN ('Super Speed', 'Death Touch')
+  )
+LIMIT 1

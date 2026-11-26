@@ -1,0 +1,131 @@
+{
+  "instance_id": "bird158",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "9aea092fe45ae3a5279635b642e7815fc13b7076de113cb20e60785e08f36941",
+  "events_sha256": "f7e08cd1f7356dc287a112f35a5e49a4dc6822bbea256b5a4ab2f845c8ef3b94",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 159506,
+      "cached_input_tokens": 147456,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 618,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NjwaexE3CzK7cwI3L-SL4CRgBHlx8x0gDiEVFfRDIpM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NjwaexE3CzK7cwI3L-SL4CRgBHlx8x0gDiEVFfRDIpM",
+        "sql": "SELECT ym.Date, SUM(ym.Consumption) AS total_consumption\nFROM main.yearmonth AS ym\nWHERE ym.Date >= '201201' AND ym.Date < '201401'\nGROUP BY ym.Date\nORDER BY ym.Date;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "20 row(s):\nResult coverage: fetched_rows=20; displayed_rows=20; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Date=str; total_consumption=float\nDate | total_consumption\n--- | ---\n201201 | 44080288.84\n201202 | 48513403.09\n201203 | 51787161.74\n201204 | 47084875.02\n201205 | 48466054.68\n201206 | 50027223.19\n201207 | 46390232.88\n201208 | 50475554.14\n201209 | 20084604.21\n201301 | 18059.48\n201302 | 14361348.75\n201303 | 257836152.83\n201304 | 372745904.43\n201305 | 377484053.43\n201306 | 365365927.8\n201307 | 385512827.59\n201308 | 369660356.89\n201309 | 387635179.45\n201310 | 390532826.93\n201311 | 87413917.7\nSQL: SELECT ym.Date, SUM(ym.Consumption) AS total_consumption\nFROM main.yearmonth AS ym\nWHERE ym.Date >= '201201' AND ym.Date < '201401'\nGROUP BY ym.Date\nORDER BY ym.Date\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"zPkLtZ_PYsrAKCm8HSPiRTjEykJldDgX5--BX8_T0FU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "zPkLtZ_PYsrAKCm8HSPiRTjEykJldDgX5--BX8_T0FU",
+        "expected_columns": [
+          "peak_consumption_difference"
+        ],
+        "sql": "WITH monthly_totals AS (\n    SELECT\n        SUBSTR(ym.Date, 1, 4) AS calendar_year,\n        SUM(ym.Consumption) AS total_consumption\n    FROM main.yearmonth AS ym\n    WHERE ym.Date >= '201201' AND ym.Date < '201401'\n    GROUP BY ym.Date\n)\nSELECT CAST(ROUND(\n    MAX(CASE WHEN calendar_year = '2013' THEN total_consumption END)\n    - MAX(CASE WHEN calendar_year = '2012' THEN total_consumption END)\n) AS INTEGER) AS peak_consumption_difference\nFROM monthly_totals\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): peak_consumption_difference=int\npeak_consumption_difference\n---\n338745665\nSQL: WITH monthly_totals AS (\n    SELECT\n        SUBSTR(ym.Date, 1, 4) AS calendar_year,\n        SUM(ym.Consumption) AS total_consumption\n    FROM main.yearmonth AS ym\n    WHERE ym.Date >= '201201' AND ym.Date < '201401'\n    GROUP BY ym.Date\n)\nSELECT CAST(ROUND(\n    MAX(CASE WHEN calendar_year = '2013' THEN total_consumption END)\n    - MAX(CASE WHEN calendar_year = '2012' THEN total_consumption END)\n) AS INTEGER) AS peak_consumption_difference\nFROM monthly_totals\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH monthly_totals AS (\n    SELECT\n        SUBSTR(ym.Date, 1, 4) AS calendar_year,\n        SUM(ym.Consumption) AS total_consumption\n    FROM main.yearmonth AS ym\n    WHERE ym.Date >= '201201' AND ym.Date < '201401'\n    GROUP BY ym.Date\n)\nSELECT CAST(ROUND(\n    MAX(CASE WHEN calendar_year = '2013' THEN total_consumption END)\n    - MAX(CASE WHEN calendar_year = '2012' THEN total_consumption END)\n) AS INTEGER) AS peak_consumption_difference\nFROM monthly_totals\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH monthly_totals AS (\n    SELECT\n        SUBSTR(ym.Date, 1, 4) AS calendar_year,\n        SUM(ym.Consumption) AS total_consumption\n    FROM main.yearmonth AS ym\n    WHERE ym.Date >= '201201' AND ym.Date < '201401'\n    GROUP BY ym.Date\n)\nSELECT CAST(ROUND(\n    MAX(CASE WHEN calendar_year = '2013' THEN total_consumption END)\n    - MAX(CASE WHEN calendar_year = '2012' THEN total_consumption END)\n) AS INTEGER) AS peak_consumption_difference\nFROM monthly_totals\nLIMIT 1",
+  "seconds": 29.110163083998486
+}

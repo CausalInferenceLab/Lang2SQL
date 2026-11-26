@@ -1,0 +1,18 @@
+```sql
+WITH power_counts AS (
+    SELECT s.power_name, COUNT(DISTINCT h.id) AS hero_count
+    FROM main.superhero AS h
+    JOIN main.publisher AS p ON p.id = h.publisher_id
+    JOIN main.hero_power AS hp ON hp.hero_id = h.id
+    JOIN main.superpower AS s ON s.id = hp.power_id
+    WHERE p.publisher_name = 'Marvel Comics'
+      AND TRIM(h.full_name) NOT IN ('', '-')
+      AND h.full_name NOT LIKE '%(Last name unrevealed)%'
+    GROUP BY s.id, s.power_name
+)
+SELECT power_name, hero_count
+FROM power_counts
+WHERE hero_count = (SELECT MAX(hero_count) FROM power_counts)
+ORDER BY power_name
+LIMIT 1000
+```

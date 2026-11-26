@@ -1,0 +1,15 @@
+SELECT
+    COUNT(*) FILTER (WHERE t.k_symbol = 'SIPO') AS household_payments,
+    COUNT(*) FILTER (WHERE t.k_symbol <> 'SIPO') AS other_purpose_payments
+FROM main.trans AS t
+WHERE t.amount > 4000
+  AND TRIM(t.k_symbol) <> ''
+  AND t.account_id IN (
+      SELECT d.account_id
+      FROM main.disp AS d
+      JOIN main.client AS c ON c.client_id = d.client_id
+      WHERE c.gender = 'M'
+        AND c.birth_date >= '1974-01-01'
+        AND c.birth_date < '1977-01-01'
+  )
+LIMIT 1

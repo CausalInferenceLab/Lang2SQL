@@ -1,0 +1,192 @@
+{
+  "instance_id": "bird130",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "58d2be828544b42e3da740c2caa5f29036c9b1ba60753487f44d6852a6579f8d",
+  "events_sha256": "973b728dd2035c4caea392e23265ee61ab89000db78d992a7070744ff5209eab",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 229534,
+      "cached_input_tokens": 204416,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1027,
+      "reasoning_output_tokens": 242
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Sp0xyVmWDMW16ODgwpbp7k1vaa5je2BeCYh39TuyWSI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Sp0xyVmWDMW16ODgwpbp7k1vaa5je2BeCYh39TuyWSI",
+        "sql": "SELECT u.Location, COUNT(*) AS users_at_location\nFROM main.users AS u\nWHERE u.Location LIKE '%india%'\nGROUP BY u.Location\nORDER BY users_at_location DESC, u.Location"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "85 row(s):\nResult coverage: fetched_rows=85; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Location=str; users_at_location=int\nLocation | users_at_location\n--- | ---\nIndia | 206\nBangalore, India | 130\nMumbai, India | 52\nPune, India | 39\nChennai, India | 37\nHyderabad, India | 25\nNew Delhi, India | 18\nKolkata, India | 16\nIndiana | 12\nAhmadabad, India | 11\nDelhi, India | 11\nIndianapolis, IN | 9\nGurgaon, India | 7\nKochi, India | 6\nAhmedabad, India | 5\nKanpur, India | 4\nMadurai, India | 4\nKerala, India | 3\nMysore, India | 3\nNavi Mumbai, India | 3\nNoida, India | 3\nThiruvananthapuram, India | 3\nVadodara, India | 3\nVisakhapatnam, India | 3\nBhubaneswar, India | 2\nChandigarh, India | 2\nCoimbatore, India | 2\nGandhinagar, India | 2\nGuwahati, India | 2\nINDIA | 2\nIndianapolis | 2\nKharagpur, India | 2\nKota, India | 2\n$\\\\\\\\psi'(x\\\\\\\\in   \\\\\\\\text{India},0)=0$ | 1\n(Haryana) India | 1\nAHMEDABD,INDIA | 1\nAhmedabad,Gujarat,India | 1\nAllahabad, India | 1\nAmritsar, India | 1\nAurangabad, India | 1\nBhavnagar, India | 1\nBhilai Nagar, India | 1\nBhimavaram, India | 1\nBikaner, India | 1\nChandannagar, India | 1\nChennai , India | 1\nChennai,India | 1\nCoimbatore,India | 1\nDelhi,  India | 1\nDurgapur, India | 1\nSQL: SELECT u.Location, COUNT(*) AS users_at_location\nFROM main.users AS u\nWHERE u.Location LIKE '%india%'\nGROUP BY u.Location\nORDER BY users_at_location DESC, u.Location\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8IKADFRuaweC8-2a4L0JR5CI3OIyQRPqZP6SkZqq_ec\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8IKADFRuaweC8-2a4L0JR5CI3OIyQRPqZP6SkZqq_ec",
+        "sql": "SELECT u.Location, MIN(p.CreaionDate) AS earliest_seen\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.Location LIKE '%india%'\nGROUP BY u.Location\nHAVING MIN(p.CreaionDate) < '2011-01-01'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Location=str; earliest_seen=str\nLocation | earliest_seen\n--- | ---\nBangalore, India | 2010-07-27 13:14:54.0\nDelhi, India | 2010-08-26 04:45:31.0\nGurgaon, India | 2010-10-26 07:28:19.0\nIndia | 2010-07-20 17:31:49.0\nIndiana | 2010-12-22 17:44:21.0\nMumbai, India | 2010-12-31 06:38:50.0\nSQL: SELECT u.Location, MIN(p.CreaionDate) AS earliest_seen\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.Location LIKE '%india%'\nGROUP BY u.Location\nHAVING MIN(p.CreaionDate) < '2011-01-01'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"fNnIasnqzcJEup8KhnuhuiFXMt8HauaqH3EcwucP9wM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "fNnIasnqzcJEup8KhnuhuiFXMt8HauaqH3EcwucP9wM",
+        "expected_columns": [
+          "user_count"
+        ],
+        "sql": "WITH first_posts AS (\n    SELECT p.OwnerUserId, MIN(p.CreaionDate) AS first_post_date\n    FROM main.posts AS p\n    GROUP BY p.OwnerUserId\n)\nSELECT COUNT(*) AS user_count\nFROM first_posts AS f\nJOIN main.users AS u ON u.Id = f.OwnerUserId\nWHERE f.first_post_date >= '2010-01-01'\n  AND f.first_post_date < '2011-01-01'\n  AND (' ' || REPLACE(TRIM(u.Location), ',', ' ')) LIKE '% India'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): user_count=int\nuser_count\n---\n12\nSQL: WITH first_posts AS (\n    SELECT p.OwnerUserId, MIN(p.CreaionDate) AS first_post_date\n    FROM main.posts AS p\n    GROUP BY p.OwnerUserId\n)\nSELECT COUNT(*) AS user_count\nFROM first_posts AS f\nJOIN main.users AS u ON u.Id = f.OwnerUserId\nWHERE f.first_post_date >= '2010-01-01'\n  AND f.first_post_date < '2011-01-01'\n  AND (' ' || REPLACE(TRIM(u.Location), ',', ' ')) LIKE '% India'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH first_posts AS (\n    SELECT p.OwnerUserId, MIN(p.CreaionDate) AS first_post_date\n    FROM main.posts AS p\n    GROUP BY p.OwnerUserId\n)\nSELECT COUNT(*) AS user_count\nFROM first_posts AS f\nJOIN main.users AS u ON u.Id = f.OwnerUserId\nWHERE f.first_post_date >= '2010-01-01'\n  AND f.first_post_date < '2011-01-01'\n  AND (' ' || REPLACE(TRIM(u.Location), ',', ' ')) LIKE '% India'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH first_posts AS (\n    SELECT p.OwnerUserId, MIN(p.CreaionDate) AS first_post_date\n    FROM main.posts AS p\n    GROUP BY p.OwnerUserId\n)\nSELECT COUNT(*) AS user_count\nFROM first_posts AS f\nJOIN main.users AS u ON u.Id = f.OwnerUserId\nWHERE f.first_post_date >= '2010-01-01'\n  AND f.first_post_date < '2011-01-01'\n  AND (' ' || REPLACE(TRIM(u.Location), ',', ' ')) LIKE '% India'\nLIMIT 1",
+  "seconds": 40.54258237499744
+}

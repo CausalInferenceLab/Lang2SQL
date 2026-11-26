@@ -1,0 +1,9 @@
+SELECT
+    CAST(SUM(b.amount) FILTER (WHERE e.event_name = 'Yearly Kickoff') AS REAL)
+    / NULLIF(SUM(b.amount) FILTER (WHERE e.event_name = 'October Meeting'), 0)
+    AS advertisement_budget_ratio
+FROM budget AS b
+JOIN event AS e ON e.event_id = b.link_to_event
+WHERE b.category = 'Advertisement'
+  AND e.event_name IN ('Yearly Kickoff', 'October Meeting')
+LIMIT 1

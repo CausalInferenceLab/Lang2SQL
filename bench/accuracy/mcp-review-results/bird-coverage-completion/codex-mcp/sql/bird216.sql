@@ -1,0 +1,31 @@
+WITH eligible_districts AS (
+    SELECT DISTINCT c.district_id
+    FROM main.client AS c
+    JOIN main.disp AS d ON d.client_id = c.client_id
+    WHERE c.gender = 'F'
+      AND d.type = 'OWNER'
+      AND d.disp_id IN (SELECT disp_id FROM main.card)
+      AND d.account_id IN (SELECT account_id FROM main.loan)
+),
+ranked_districts AS (
+    SELECT
+        d.A3 AS region,
+        d.A2 AS district_name,
+        d.A11 AS salary,
+        d.A13 AS unemployment_rate,
+        ROW_NUMBER() OVER (
+            PARTITION BY d.A3
+            ORDER BY CAST(d.A4 AS INTEGER) DESC, d.A2 ASC
+        ) AS population_rank
+    FROM main.district AS d
+    JOIN eligible_districts AS e ON e.district_id = d.district_id
+)
+SELECT
+    region,
+    ROUND(AVG(salary), 2) AS avg_district_salary,
+    ROUND(AVG(ROUND(unemployment_rate * 100))) / 100.0 AS avg_unemployment_rate_1996,
+    MAX(CASE WHEN population_rank = 1 THEN district_name END) AS most_populous_district
+FROM ranked_districts
+GROUP BY region
+ORDER BY region
+LIMIT 1000

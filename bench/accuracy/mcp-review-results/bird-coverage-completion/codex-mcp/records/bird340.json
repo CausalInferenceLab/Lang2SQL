@@ -1,0 +1,168 @@
+{
+  "instance_id": "bird340",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "bd8c94c9b331211ac5392737dc408543dbd7f89251a5fd965db1497868a0efa9",
+  "events_sha256": "97aa01710a28fac3d9b0f93046dc3212c876c8fc3ae9ad2fd2fcb51dc7422fa7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 162725,
+      "cached_input_tokens": 141312,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 559,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "gender"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "gender (table)\n- id: INTEGER NOT NULL\n- gender: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "colour (table)\n- id: INTEGER NOT NULL\n- colour: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_X7qRqq3YbeJUWxpBOCLz6Zk3Vvk7p6w3nrhrNO9JdA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_X7qRqq3YbeJUWxpBOCLz6Zk3Vvk7p6w3nrhrNO9JdA",
+        "sql": "SELECT c.colour, COUNT(*) AS heroes\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nLEFT JOIN colour AS c ON c.id = s.skin_colour_id\nWHERE g.gender = 'Female'\nGROUP BY c.colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "8 row(s):\nResult coverage: fetched_rows=8; displayed_rows=8; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): colour=str; heroes=int\ncolour | heroes\n--- | ---\nBlue | 5\nGold | 1\nGreen | 3\nNo Colour | 190\nOrange | 1\nPink | 1\nSilver | 1\nWhite | 1\nSQL: SELECT c.colour, COUNT(*) AS heroes\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nLEFT JOIN colour AS c ON c.id = s.skin_colour_id\nWHERE g.gender = 'Female'\nGROUP BY c.colour\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lkIh0W0lUvzp9eqNo-20cLBtAtQYqB9i2qzpV445jLc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lkIh0W0lUvzp9eqNo-20cLBtAtQYqB9i2qzpV445jLc",
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.colour = 'Blue') / NULLIF(COUNT(*), 0),\n    2\n) AS blue_skin_percentage\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nLEFT JOIN colour AS c ON c.id = s.skin_colour_id\nWHERE g.gender = 'Female'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): blue_skin_percentage=float\nblue_skin_percentage\n---\n2.46\nSQL: SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.colour = 'Blue') / NULLIF(COUNT(*), 0),\n    2\n) AS blue_skin_percentage\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nLEFT JOIN colour AS c ON c.id = s.skin_colour_id\nWHERE g.gender = 'Female'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.colour = 'Blue') / NULLIF(COUNT(*), 0),\n    2\n) AS blue_skin_percentage\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nLEFT JOIN colour AS c ON c.id = s.skin_colour_id\nWHERE g.gender = 'Female'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE c.colour = 'Blue') / NULLIF(COUNT(*), 0),\n    2\n) AS blue_skin_percentage\nFROM superhero AS s\nJOIN gender AS g ON g.id = s.gender_id\nLEFT JOIN colour AS c ON c.id = s.skin_colour_id\nWHERE g.gender = 'Female'\nLIMIT 1",
+  "seconds": 28.775410666014068
+}

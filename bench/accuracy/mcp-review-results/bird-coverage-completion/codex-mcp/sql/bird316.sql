@@ -1,0 +1,8 @@
+SELECT
+    COUNT(major.major_id) AS members_in_college,
+    COUNT(*) - COUNT(major.major_id) AS members_outside_college
+FROM main.member
+LEFT JOIN main.major
+    ON major.major_id = member.link_to_major
+   AND major.college = 'College of Humanities and Social Sciences'
+LIMIT 1

@@ -1,0 +1,27 @@
+WITH season_standings AS (
+    SELECT cs.constructorId, cs.points,
+           ROW_NUMBER() OVER (
+               PARTITION BY cs.constructorId, r.year
+               ORDER BY r.round DESC
+           ) AS latest
+    FROM constructorStandings AS cs
+    JOIN races AS r ON r.raceId = cs.raceId
+),
+career_totals AS (
+    SELECT c.name, c.url, COALESCE(SUM(s.points), 0) AS career_points
+    FROM constructors AS c
+    LEFT JOIN season_standings AS s
+        ON s.constructorId = c.constructorId AND s.latest = 1
+    WHERE c.nationality = 'Italian'
+    GROUP BY c.constructorId, c.name, c.url
+),
+ranked AS (
+    SELECT name, career_points, url,
+           RANK() OVER (ORDER BY career_points DESC) AS career_rank
+    FROM career_totals
+)
+SELECT name, career_points, url
+FROM ranked
+WHERE career_rank <= 3
+ORDER BY career_rank, name
+LIMIT 1000

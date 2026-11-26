@@ -1,0 +1,110 @@
+{
+  "instance_id": "bird140",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "c5f7fe4c0e4fc410a635b6f1890c082e4c2f73e55d7578eccb5b3576b3d473a2",
+  "events_sha256": "c19a06b5f8ce8418c39d92c9d9a80829fea186e91be366ed487e3649e2e81fb1",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 119451,
+      "cached_input_tokens": 107776,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 366,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "badges"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "badges (table)\n- Id: INTEGER NOT NULL\n- UserId: INTEGER\n- Name: TEXT\n- Date: DATETIME\nPRIMARY KEY (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"aozSmq4mauSNB12GR5XrXshSv9VistLwlHwRmKBX9Lg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "aozSmq4mauSNB12GR5XrXshSv9VistLwlHwRmKBX9Lg",
+        "sql": "SELECT COUNT(DISTINCT u.DisplayName) AS distinct_display_names\nFROM users AS u\nJOIN badges AS b ON b.UserId = u.Id\nWHERE b.Name = 'Supporter'\n  AND u.Age BETWEEN 19 AND 65\n  AND u.DisplayName <> 'NaN';",
+        "expected_columns": [
+          "distinct_display_names"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): distinct_display_names=int\ndistinct_display_names\n---\n2939\nSQL: SELECT COUNT(DISTINCT u.DisplayName) AS distinct_display_names\nFROM users AS u\nJOIN badges AS b ON b.UserId = u.Id\nWHERE b.Name = 'Supporter'\n  AND u.Age BETWEEN 19 AND 65\n  AND u.DisplayName <> 'NaN'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(DISTINCT u.DisplayName) AS distinct_display_names\nFROM users AS u\nJOIN badges AS b ON b.UserId = u.Id\nWHERE b.Name = 'Supporter'\n  AND u.Age BETWEEN 19 AND 65\n  AND u.DisplayName <> 'NaN'\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(DISTINCT u.DisplayName) AS distinct_display_names\nFROM users AS u\nJOIN badges AS b ON b.UserId = u.Id\nWHERE b.Name = 'Supporter'\n  AND u.Age BETWEEN 19 AND 65\n  AND u.DisplayName <> 'NaN'\nLIMIT 1000",
+  "seconds": 19.243778083939105
+}

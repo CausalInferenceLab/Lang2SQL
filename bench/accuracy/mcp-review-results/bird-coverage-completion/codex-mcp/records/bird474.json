@@ -1,0 +1,191 @@
+{
+  "instance_id": "bird474",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "0f4bd2b48bfc0ad72ed7ee3ad25646a6b54f06dc3c26068106a34c8fad075c2b",
+  "events_sha256": "1148b92b228c826dbd9cceaee08202ebcbfd56d5502f25acfa7c4db276c6f234",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 159124,
+      "cached_input_tokens": 139008,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 566,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"axqZRveJUnQvAhvs5fugoAEffy86aa9CBZOEreZnhSo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "element"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "element (table)\n- element_id: TEXT NOT NULL\n- element_name: TEXT NOT NULL\nPRIMARY KEY (element_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "connected"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "connected (table)\n- atom_id: TEXT NOT NULL\n- atom_id2: TEXT NOT NULL\n- bond_id: TEXT\nPRIMARY KEY (atom_id, atom_id2)\nFOREIGN KEY (bond_id) REFERENCES bond (bond_id)\nFOREIGN KEY (atom_id2) REFERENCES atom (atom_id)\nFOREIGN KEY (atom_id) REFERENCES atom (atom_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "axqZRveJUnQvAhvs5fugoAEffy86aa9CBZOEreZnhSo",
+        "sql": "SELECT a.element, e.element_name, COUNT(*) AS atom_count\nFROM main.atom AS a\nLEFT JOIN main.element AS e ON e.element_id = a.element\nGROUP BY a.element, e.element_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "18 row(s):\nResult coverage: fetched_rows=18; displayed_rows=18; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): element=str; element_name=NoneType; atom_count=int\nelement | element_name | atom_count\n--- | --- | ---\nbr | None | 46\nc | None | 3433\nca | None | 1\ncl | None | 317\ncu | None | 2\nf | None | 10\nh | None | 4034\ni | None | 3\nk | None | 1\nn | None | 373\nna | None | 32\no | None | 737\np | None | 23\npb | None | 1\ns | None | 94\nsn | None | 2\ny | None | 1\nzn | None | 1\nSQL: SELECT a.element, e.element_name, COUNT(*) AS atom_count\nFROM main.atom AS a\nLEFT JOIN main.element AS e ON e.element_id = a.element\nGROUP BY a.element, e.element_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"x0wdUhwxMOL81yDjLxOU9Jv4wRlS8ciDwSVOD93qQxc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "x0wdUhwxMOL81yDjLxOU9Jv4wRlS8ciDwSVOD93qQxc",
+        "expected_columns": [
+          "bond_id"
+        ],
+        "sql": "SELECT DISTINCT c.bond_id\nFROM main.connected AS c\nJOIN main.atom AS a1 ON a1.atom_id = c.atom_id\nJOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\nWHERE (a1.element = 'p' AND a2.element = 'n')\n   OR (a1.element = 'n' AND a2.element = 'p')\nORDER BY c.bond_id\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bond_id=str\nbond_id\n---\nTR032_2_3\nTR032_3_5\nTR058_1_3\nTR058_1_4\nTR058_1_5\nTR298_1_5\nSQL: SELECT DISTINCT c.bond_id\nFROM main.connected AS c\nJOIN main.atom AS a1 ON a1.atom_id = c.atom_id\nJOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\nWHERE (a1.element = 'p' AND a2.element = 'n')\n   OR (a1.element = 'n' AND a2.element = 'p')\nORDER BY c.bond_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT DISTINCT c.bond_id\nFROM main.connected AS c\nJOIN main.atom AS a1 ON a1.atom_id = c.atom_id\nJOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\nWHERE (a1.element = 'p' AND a2.element = 'n')\n   OR (a1.element = 'n' AND a2.element = 'p')\nORDER BY c.bond_id\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 6,
+  "sql": "SELECT DISTINCT c.bond_id\nFROM main.connected AS c\nJOIN main.atom AS a1 ON a1.atom_id = c.atom_id\nJOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\nWHERE (a1.element = 'p' AND a2.element = 'n')\n   OR (a1.element = 'n' AND a2.element = 'p')\nORDER BY c.bond_id\nLIMIT -1",
+  "seconds": 27.519029833958484
+}

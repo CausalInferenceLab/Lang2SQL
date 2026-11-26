@@ -1,0 +1,10 @@
+WITH first_examination AS (
+    SELECT e.ID, MIN(julianday(e."Examination Date")) AS first_exam_day
+    FROM Examination AS e
+    GROUP BY e.ID
+)
+SELECT CAST(ROUND(AVG(f.first_exam_day - julianday(p."First Date"))) AS INTEGER) AS average_delay_days
+FROM Patient AS p
+JOIN first_examination AS f ON f.ID = p.ID
+WHERE instr(p.Admission, '+') > 0
+LIMIT 1

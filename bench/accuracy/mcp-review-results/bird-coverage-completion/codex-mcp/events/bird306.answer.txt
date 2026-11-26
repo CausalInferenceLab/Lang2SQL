@@ -1,0 +1,17 @@
+```sql
+WITH qualifying_lines AS (
+    SELECT DISTINCT e.link_to_member, e.link_to_budget
+    FROM main.expense AS e
+    WHERE e.cost > 50
+)
+SELECT
+    m.first_name,
+    m.last_name,
+    ROUND(SUM(b.remaining), 2) AS total_remaining_dollars
+FROM qualifying_lines AS q
+JOIN main.member AS m ON m.member_id = q.link_to_member
+JOIN main.budget AS b ON b.budget_id = q.link_to_budget
+GROUP BY m.member_id, m.first_name, m.last_name
+ORDER BY total_remaining_dollars DESC, m.last_name ASC, m.first_name ASC
+LIMIT 1000
+```

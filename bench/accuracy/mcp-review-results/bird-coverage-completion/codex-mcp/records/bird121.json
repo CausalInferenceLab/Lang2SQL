@@ -1,0 +1,168 @@
+{
+  "instance_id": "bird121",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "3eb6068d6cf7e6719faaf702a78411467d848635fee6c6a2f7fc5aa35c11aa31",
+  "events_sha256": "344969f977bdaa069831d3fd6aa1d1a74896f8eedb4cc30324882d4156f2a8b0",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 172402,
+      "cached_input_tokens": 159872,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 544,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "tags"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "tags (table)\n- Id: INTEGER NOT NULL\n- TagName: TEXT\n- Count: INTEGER\n- ExcerptPostId: INTEGER\n- WikiPostId: INTEGER\nPRIMARY KEY (Id)\nFOREIGN KEY (ExcerptPostId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"69NTg7pjAWsQLJ3U9ktQL7liJ7scRZoFMtN53Nyz8fE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "69NTg7pjAWsQLJ3U9ktQL7liJ7scRZoFMtN53Nyz8fE",
+        "sql": "SELECT t.TagName, p.Body\nFROM main.tags AS t\nLEFT JOIN main.posts AS p ON p.Id = t.ExcerptPostId\nWHERE t.TagName IN ('r', 'r-language')"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): TagName=str; Body=str\nTagName | Body\n--- | ---\nr | Use this tag for any *on-topic* question that (a) involves `R` either as a critical part of the question or expected answer (b) is not *just* about how to program in `R`.\nSQL: SELECT t.TagName, p.Body\nFROM main.tags AS t\nLEFT JOIN main.posts AS p ON p.Id = t.ExcerptPostId\nWHERE t.TagName IN ('r', 'r-language')\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"LERuSot3pRKz7ycf4n2_6nZTkHHrhl9gdgBB2KYA1Ck\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "LERuSot3pRKz7ycf4n2_6nZTkHHrhl9gdgBB2KYA1Ck",
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(CASE WHEN instr(p.Tags, '<r>') > 0 THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    2\n) AS r_tag_percentage\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.DisplayName = 'Community'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): r_tag_percentage=float\nr_tag_percentage\n---\n0.0\nSQL: SELECT ROUND(\n    100.0 * COUNT(CASE WHEN instr(p.Tags, '<r>') > 0 THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    2\n) AS r_tag_percentage\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.DisplayName = 'Community'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(CASE WHEN instr(p.Tags, '<r>') > 0 THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    2\n) AS r_tag_percentage\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.DisplayName = 'Community'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(CASE WHEN instr(p.Tags, '<r>') > 0 THEN 1 END)\n    / NULLIF(COUNT(*), 0),\n    2\n) AS r_tag_percentage\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.DisplayName = 'Community'\nLIMIT 1",
+  "seconds": 25.083910000044852
+}

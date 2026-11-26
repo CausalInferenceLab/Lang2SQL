@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird308",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1337ecc90f489af1ed467fddcca1d0be4999f24de2eb814b60c9e0517def0568",
+  "events_sha256": "d15fdb43cd99167dd32000525b46100b66dca31c9d8f2cb1f60c6e49eca21cf2",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169188,
+      "cached_input_tokens": 157312,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 790,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "member"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "member (table)\n- member_id: TEXT\n- first_name: TEXT\n- last_name: TEXT\n- email: TEXT\n- position: TEXT\n- t_shirt_size: TEXT\n- phone: TEXT\n- zip: INTEGER\n- link_to_major: TEXT\nPRIMARY KEY (member_id)\nFOREIGN KEY (link_to_major) REFERENCES major (major_id)\nFOREIGN KEY (zip) REFERENCES zip_code (zip_code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"nlZQ4HpzfTGdOvH0nBcV48RXRrp3GourHXzp94fbl3s\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "major"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "major (table)\n- major_id: TEXT\n- major_name: TEXT\n- department: TEXT\n- college: TEXT\nPRIMARY KEY (major_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "nlZQ4HpzfTGdOvH0nBcV48RXRrp3GourHXzp94fbl3s",
+        "sql": "WITH target_college AS (\n    SELECT m.college\n    FROM main.major AS m\n    JOIN main.member AS t ON t.link_to_major = m.major_id\n    WHERE t.first_name = 'Tyler' AND t.last_name = 'Hewitt'\n)\nSELECT m.college, COUNT(DISTINCT m.major_name) AS offered_names,\n       COUNT(DISTINCT CASE WHEN c.member_id IS NOT NULL THEN m.major_name END) AS represented_names\nFROM main.major AS m\nLEFT JOIN main.member AS c ON c.link_to_major = m.major_id\nWHERE m.college IN (SELECT college FROM target_college)\nGROUP BY m.college"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): college=str; offered_names=int; represented_names=int\ncollege | offered_names | represented_names\n--- | --- | ---\nCollege of Engineering | 6 | 4\nSQL: WITH target_college AS (\n    SELECT m.college\n    FROM main.major AS m\n    JOIN main.member AS t ON t.link_to_major = m.major_id\n    WHERE t.first_name = 'Tyler' AND t.last_name = 'Hewitt'\n)\nSELECT m.college, COUNT(DISTINCT m.major_name) AS offered_names,\n       COUNT(DISTINCT CASE WHEN c.member_id IS NOT NULL THEN m.major_name END) AS represented_names\nFROM main.major AS m\nLEFT JOIN main.member AS c ON c.link_to_major = m.major_id\nWHERE m.college IN (SELECT college FROM target_college)\nGROUP BY m.college\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NeNERDEXw5G_jhfcUi6DVBvvRtZFNQwpddaaquhTFgM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NeNERDEXw5G_jhfcUi6DVBvvRtZFNQwpddaaquhTFgM",
+        "expected_columns": [
+          "majors_without_members"
+        ],
+        "sql": "WITH tylers_college AS (\n    SELECT m.college\n    FROM main.member AS t\n    JOIN main.major AS m ON m.major_id = t.link_to_major\n    WHERE t.first_name = 'Tyler' AND t.last_name = 'Hewitt'\n),\nunrepresented_majors AS (\n    SELECT m.major_name\n    FROM main.major AS m\n    LEFT JOIN main.member AS c ON c.link_to_major = m.major_id\n    WHERE m.college IN (SELECT college FROM tylers_college)\n    GROUP BY m.major_name\n    HAVING COUNT(c.link_to_major) = 0\n)\nSELECT COUNT(major_name) AS majors_without_members\nFROM unrepresented_majors\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): majors_without_members=int\nmajors_without_members\n---\n2\nSQL: WITH tylers_college AS (\n    SELECT m.college\n    FROM main.member AS t\n    JOIN main.major AS m ON m.major_id = t.link_to_major\n    WHERE t.first_name = 'Tyler' AND t.last_name = 'Hewitt'\n),\nunrepresented_majors AS (\n    SELECT m.major_name\n    FROM main.major AS m\n    LEFT JOIN main.member AS c ON c.link_to_major = m.major_id\n    WHERE m.college IN (SELECT college FROM tylers_college)\n    GROUP BY m.major_name\n    HAVING COUNT(c.link_to_major) = 0\n)\nSELECT COUNT(major_name) AS majors_without_members\nFROM unrepresented_majors\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH tylers_college AS (\n    SELECT m.college\n    FROM main.member AS t\n    JOIN main.major AS m ON m.major_id = t.link_to_major\n    WHERE t.first_name = 'Tyler' AND t.last_name = 'Hewitt'\n),\nunrepresented_majors AS (\n    SELECT m.major_name\n    FROM main.major AS m\n    LEFT JOIN main.member AS c ON c.link_to_major = m.major_id\n    WHERE m.college IN (SELECT college FROM tylers_college)\n    GROUP BY m.major_name\n    HAVING COUNT(c.link_to_major) = 0\n)\nSELECT COUNT(major_name) AS majors_without_members\nFROM unrepresented_majors\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH tylers_college AS (\n    SELECT m.college\n    FROM main.member AS t\n    JOIN main.major AS m ON m.major_id = t.link_to_major\n    WHERE t.first_name = 'Tyler' AND t.last_name = 'Hewitt'\n),\nunrepresented_majors AS (\n    SELECT m.major_name\n    FROM main.major AS m\n    LEFT JOIN main.member AS c ON c.link_to_major = m.major_id\n    WHERE m.college IN (SELECT college FROM tylers_college)\n    GROUP BY m.major_name\n    HAVING COUNT(c.link_to_major) = 0\n)\nSELECT COUNT(major_name) AS majors_without_members\nFROM unrepresented_majors\nLIMIT 1",
+  "seconds": 33.40218474995345
+}

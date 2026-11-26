@@ -1,0 +1,42 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+What fraction of all atoms in molecule TR006 are hydrogen? Give the fraction and the molecule's recorded carcinogenicity label.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `atom` (
+    `atom_id` TEXT, -- the unique id of atoms; example: ['TR000_1', 'TR000_2']
+    `molecule_id` TEXT, -- identifying the molecule to which the atom belongs; example: ['TR000']
+    `element` TEXT, -- the element of the toxicology; example: ['cl', 'c']
+    PRIMARY KEY (`atom_id`),
+    FOREIGN KEY (`molecule_id`) REFERENCES `molecule` (`molecule_id`)
+);
+
+CREATE TABLE `bond` (
+    `bond_id` TEXT, -- unique id representing bonds; example: ['TR000_1_2', 'TR000_2_3']
+    `molecule_id` TEXT, -- identifying the molecule in which the bond appears; example: ['TR000', 'TR001']
+    `bond_type` TEXT, -- type of the bond; example: ['-', '=']
+    PRIMARY KEY (`bond_id`),
+    FOREIGN KEY (`molecule_id`) REFERENCES `molecule` (`molecule_id`)
+);
+
+CREATE TABLE `connected` (
+    `atom_id` TEXT, -- id of the first atom; example: ['TR000_1', 'TR000_2']
+    `atom_id2` TEXT, -- id of the second atom; example: ['TR000_2', 'TR000_1']
+    `bond_id` TEXT, -- bond id representing bond between two atoms; example: ['TR000_1_2', 'TR000_2_3']
+    PRIMARY KEY (`atom_id`, `atom_id2`),
+    FOREIGN KEY (`bond_id`) REFERENCES `bond` (`bond_id`),
+    FOREIGN KEY (`atom_id2`) REFERENCES `atom` (`atom_id`),
+    FOREIGN KEY (`atom_id`) REFERENCES `atom` (`atom_id`)
+);
+
+CREATE TABLE `molecule` (
+    `molecule_id` TEXT, -- unique id of molecule; example: ['TR000', 'TR001']
+    `label` TEXT, -- whether this molecule is carcinogenic or not; example: ['+', '-']
+    PRIMARY KEY (`molecule_id`)
+);
+
+CREATE TABLE `element` (
+    `element_id` TEXT, -- example: []
+    `element_name` TEXT, -- example: []
+    PRIMARY KEY (`element_id`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

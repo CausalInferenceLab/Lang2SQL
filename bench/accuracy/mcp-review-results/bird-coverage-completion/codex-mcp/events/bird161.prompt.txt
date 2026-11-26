@@ -1,0 +1,48 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'm sizing a premium offer for our heaviest corporate fuel buyers ahead of renewals. How many KAM-segment customers paying in CZK had total fuel consumption above 1 million (1,000,000) in calendar year 2013? I just need that number of customers.
+Provided evidence:
+KAM is one of our client segments.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `customers` (
+    `CustomerID` INTEGER, -- identification of the customer; example: [3, 5]
+    `Segment` TEXT, -- client segment; example: ['SME', 'LAM']
+    `Currency` TEXT, -- Currency; example: ['EUR']
+    PRIMARY KEY (`CustomerID`)
+);
+
+CREATE TABLE `gasstations` (
+    `GasStationID` INTEGER, -- Gas Station ID; example: [44, 45]
+    `ChainID` INTEGER, -- Chain ID; example: [13, 6]
+    `Country` TEXT, -- example: ['CZE']
+    `Segment` TEXT, -- chain segment; example: ['Value for money', 'Premium']
+    PRIMARY KEY (`GasStationID`)
+);
+
+CREATE TABLE `products` (
+    `ProductID` INTEGER, -- Product ID; example: [1, 2]
+    `Description` TEXT, -- Description; example: ['Rucní zadání', 'Nafta']
+    PRIMARY KEY (`ProductID`)
+);
+
+CREATE TABLE `transactions_1k` (
+    `TransactionID` INTEGER, -- Transaction ID; example: [1, 2]
+    `Date` DATE, -- Date; example: ['2012-08-24']
+    `Time` TEXT, -- Time; example: ['09:41:00', '10:03:00']
+    `CustomerID` INTEGER, -- Customer ID; example: [31543, 46707]
+    `CardID` INTEGER, -- Card ID; example: [486621, 550134]
+    `GasStationID` INTEGER, -- Gas Station ID; example: [3704, 656]
+    `ProductID` INTEGER, -- Product ID; example: [2, 23]
+    `Amount` INTEGER, -- Amount; example: [28, 18]
+    `Price` REAL, -- Price; example: [672.64, 430.72]
+    PRIMARY KEY (`TransactionID`)
+);
+
+CREATE TABLE `yearmonth` (
+    `CustomerID` INTEGER, -- Customer ID; example: [5, 6]
+    `Date` TEXT, -- Date; example: ['201207', '201302']
+    `Consumption` REAL, -- consumption; example: [528.3, 1598.28]
+    PRIMARY KEY (`CustomerID`, `Date`),
+    FOREIGN KEY (`CustomerID`) REFERENCES `customers` (`CustomerID`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

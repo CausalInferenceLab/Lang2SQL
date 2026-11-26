@@ -1,0 +1,12 @@
+SELECT ROUND(
+    100.0 * COUNT(CASE WHEN entry.laps = winner.laps THEN 1 END)
+    / NULLIF(COUNT(*), 0),
+    2
+) AS matched_lap_percentage
+FROM results AS entry
+JOIN drivers AS d ON d.driverId = entry.driverId
+JOIN races AS r ON r.raceId = entry.raceId
+JOIN results AS winner ON winner.raceId = entry.raceId AND winner.position = 1
+WHERE d.nationality = 'Japanese'
+  AND r.year BETWEEN 2007 AND 2009
+LIMIT 1

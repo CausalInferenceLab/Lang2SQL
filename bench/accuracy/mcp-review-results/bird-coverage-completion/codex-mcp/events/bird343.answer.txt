@@ -1,0 +1,22 @@
+```sql
+WITH unmatched_powers AS (
+    SELECT id FROM main.superpower
+    EXCEPT
+    SELECT hp.power_id
+    FROM main.hero_power AS hp
+    JOIN main.superhero AS dc ON dc.id = hp.hero_id
+    JOIN main.publisher AS p ON p.id = dc.publisher_id
+    WHERE p.publisher_name = 'DC Comics'
+)
+SELECT AVG(m.height_cm) AS average_height_cm
+FROM main.superhero AS m
+JOIN main.publisher AS p ON p.id = m.publisher_id
+WHERE p.publisher_name = 'Marvel Comics'
+  AND m.height_cm > 0
+  AND m.id IN (
+      SELECT hp.hero_id
+      FROM main.hero_power AS hp
+      JOIN unmatched_powers AS u ON u.id = hp.power_id
+  )
+LIMIT 1
+```

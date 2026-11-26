@@ -1,0 +1,28 @@
+```sql
+WITH ranked_updates AS (
+    SELECT a.player_api_id,
+           a.overall_rating,
+           a.defensive_work_rate,
+           RANK() OVER (
+               PARTITION BY a.player_api_id
+               ORDER BY a.date DESC
+           ) AS recency
+    FROM main.Player_Attributes AS a
+    WHERE a.date < '2013-07-13'
+),
+ratings AS (
+    SELECT MAX(CASE WHEN p.player_name = 'Landon Donovan'
+                    THEN u.overall_rating END) AS donovan_rating,
+           AVG(u.overall_rating) AS average_rating
+    FROM ranked_updates AS u
+    JOIN main.Player AS p ON p.player_api_id = u.player_api_id
+    WHERE u.recency = 1
+      AND u.defensive_work_rate IN ('low', 'medium', 'high')
+)
+SELECT ROUND(
+           100.0 * (donovan_rating - average_rating) / NULLIF(average_rating, 0),
+           2
+       ) AS percentage_higher
+FROM ratings
+LIMIT 1
+```

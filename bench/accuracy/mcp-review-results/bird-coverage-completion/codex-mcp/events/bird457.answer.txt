@@ -1,0 +1,24 @@
+```sql
+WITH eligible_patients AS (
+    SELECT
+        p.Admission AS care_setting,
+        CAST(strftime('%Y', '2026-10-09') AS INTEGER)
+            - CAST(strftime('%Y', p.Birthday) AS INTEGER)
+            - (strftime('%m-%d', p.Birthday) > strftime('%m-%d', '2026-10-09')) AS completed_age
+    FROM main.Patient AS p
+    WHERE p.Admission IN ('+', '-')
+      AND p.ID IN (
+          SELECT l.ID
+          FROM main.Laboratory AS l
+          WHERE l.RBC < 3.5
+      )
+)
+SELECT
+    care_setting,
+    COUNT(*) AS patient_count,
+    ROUND(AVG(completed_age), 1) AS average_completed_age
+FROM eligible_patients
+GROUP BY care_setting
+ORDER BY care_setting
+LIMIT 2
+```

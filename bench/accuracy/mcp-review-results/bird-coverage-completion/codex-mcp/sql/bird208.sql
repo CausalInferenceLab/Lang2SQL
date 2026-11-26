@@ -1,0 +1,15 @@
+SELECT
+    ROUND(AVG(d.A11), 2) AS average_district_salary,
+    COUNT(*) AS district_count
+FROM main.district AS d
+WHERE d.A3 = 'east Bohemia'
+  AND d.district_id IN (
+      SELECT a.district_id
+      FROM main.account AS a
+      JOIN main.disp AS dp ON dp.account_id = a.account_id
+      JOIN main.client AS c ON c.client_id = dp.client_id
+      WHERE dp.type = 'OWNER'
+        AND c.birth_date >= '1980-01-01'
+        AND c.birth_date < '1990-01-01'
+  )
+LIMIT 1

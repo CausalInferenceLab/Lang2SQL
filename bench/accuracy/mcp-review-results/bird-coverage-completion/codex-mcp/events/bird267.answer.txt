@@ -1,0 +1,24 @@
+```sql
+WITH editions AS (
+    SELECT raceId, date
+    FROM main.races
+    WHERE name = 'French Grand Prix' AND year >= 1990
+),
+fastest_laps AS (
+    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS fastest_ms
+    FROM main.lapTimes AS l
+    JOIN editions AS e ON e.raceId = l.raceId
+    GROUP BY l.raceId, l.driverId
+    HAVING MIN(l.milliseconds) > 90000
+)
+SELECT e.date, d.forename, d.surname,
+       CASE WHEN f.fastest_ms IS NOT NULL THEN
+           printf('%d:%02d.%03d', f.fastest_ms / 60000,
+                  (f.fastest_ms / 1000) % 60, f.fastest_ms % 1000)
+       END AS fastest_lap_time
+FROM editions AS e
+LEFT JOIN fastest_laps AS f ON f.raceId = e.raceId
+LEFT JOIN main.drivers AS d ON d.driverId = f.driverId
+ORDER BY e.date, d.surname, d.forename
+LIMIT 1000
+```

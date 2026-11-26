@@ -1,0 +1,154 @@
+{
+  "instance_id": "bird119",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "97c84b6c20c890cd0ef22f0aff46ac36a244b10bdd79b5dd168f7b5b44e25c9f",
+  "events_sha256": "f74b669fd4a1a97af412120416891ea2f01367893a952b046e46f19ada8d4383",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 146264,
+      "cached_input_tokens": 134016,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 688,
+      "reasoning_output_tokens": 125
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "postHistory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "postHistory (table)\n- Id: INTEGER NOT NULL\n- PostHistoryTypeId: INTEGER\n- PostId: INTEGER\n- RevisionGUID: TEXT\n- CreationDate: DATETIME\n- UserId: INTEGER\n- Text: TEXT\n- Comment: TEXT\n- UserDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"bbQoneVT7ug8IIETTqLDzDAklgdy3LP4fSuSxSL297Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "bbQoneVT7ug8IIETTqLDzDAklgdy3LP4fSuSxSL297Y",
+        "expected_columns": [
+          "UserId"
+        ],
+        "sql": "SELECT DISTINCT h.UserId\nFROM postHistory AS h\nJOIN posts AS p ON p.Id = h.PostId\nWHERE p.ViewCount >= 1000\n  AND h.UserId IS NOT NULL\nGROUP BY h.UserId, h.PostId\nHAVING COUNT(*) = 1;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "270 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=270; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): UserId=int\nUserId\n---\n-1\n5\n8\n18\n22\n24\n25\n26\n57\n61\n62\n69\n71\n77\n80\n88\n103\n123\n124\n127\n139\n144\n159\n174\n179\n183\n190\n196\n217\n223\n253\n264\n307\n334\n442\n449\n486\n495\n509\n521\n556\n561\n582\n601\n603\n615\n660\n686\n696\n770\nSQL: SELECT DISTINCT h.UserId\nFROM postHistory AS h\nJOIN posts AS p ON p.Id = h.PostId\nWHERE p.ViewCount >= 1000\n  AND h.UserId IS NOT NULL\nGROUP BY h.UserId, h.PostId\nHAVING COUNT(*) = 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"xlKUzxZhi25lSHZ7q4Zt8-zAnS94JS85RS3V6V4JrGQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "xlKUzxZhi25lSHZ7q4Zt8-zAnS94JS85RS3V6V4JrGQ",
+        "sql": "SELECT DISTINCT h.UserId\nFROM postHistory AS h\nJOIN posts AS p ON p.Id = h.PostId\nWHERE p.ViewCount >= 1000\n  AND h.UserId IS NOT NULL\nGROUP BY h.UserId, h.PostId\nHAVING COUNT(*) = 1\nLIMIT -1",
+        "expected_columns": [
+          "UserId"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "270 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=270; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): UserId=int\nUserId\n---\n-1\n5\n8\n18\n22\n24\n25\n26\n57\n61\n62\n69\n71\n77\n80\n88\n103\n123\n124\n127\n139\n144\n159\n174\n179\n183\n190\n196\n217\n223\n253\n264\n307\n334\n442\n449\n486\n495\n509\n521\n556\n561\n582\n601\n603\n615\n660\n686\n696\n770\nSQL: SELECT DISTINCT h.UserId\nFROM postHistory AS h\nJOIN posts AS p ON p.Id = h.PostId\nWHERE p.ViewCount >= 1000\n  AND h.UserId IS NOT NULL\nGROUP BY h.UserId, h.PostId\nHAVING COUNT(*) = 1\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT DISTINCT h.UserId\nFROM postHistory AS h\nJOIN posts AS p ON p.Id = h.PostId\nWHERE p.ViewCount >= 1000\n  AND h.UserId IS NOT NULL\nGROUP BY h.UserId, h.PostId\nHAVING COUNT(*) = 1\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 270,
+  "sql": "SELECT DISTINCT h.UserId\nFROM postHistory AS h\nJOIN posts AS p ON p.Id = h.PostId\nWHERE p.ViewCount >= 1000\n  AND h.UserId IS NOT NULL\nGROUP BY h.UserId, h.PostId\nHAVING COUNT(*) = 1\nLIMIT -1",
+  "seconds": 29.24971462506801
+}

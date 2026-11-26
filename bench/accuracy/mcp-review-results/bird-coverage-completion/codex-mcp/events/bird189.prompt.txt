@@ -1,0 +1,264 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+What percentage of left-footed players currently has a low attacking work rate? Use each player's most recent attribute record. Only count left-footed players whose current record includes an attacking work rate rating - those without one should be left out of the share. Give me a single percentage, rounded to one decimal place.
+Provided evidence:
+Attacking work rate: how much effort a player puts into attacking plays, rated low, medium or high.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `Player_Attributes` (
+    `id` INTEGER, -- the unique id for players; example: [1, 2]
+    `player_fifa_api_id` INTEGER, -- the id of the player fifa api; example: [218353]
+    `player_api_id` INTEGER, -- the id of the player api; example: [505942]
+    `date` TEXT, -- date; example: ['2016-02-18 00:00:00', '2015-11-19 00:00:00']
+    `overall_rating` INTEGER, -- the overall rating of the player; example: [67, 62]
+    `potential` INTEGER, -- potential of the player; example: [71, 66]
+    `preferred_foot` TEXT, -- the player's preferred foot when attacking; example: ['right']
+    `attacking_work_rate` TEXT, -- the player's attacking work rate; example: ['medium']
+    `defensive_work_rate` TEXT, -- the player's defensive work rate; example: ['medium']
+    `crossing` INTEGER, -- the player's crossing score; example: [49, 48]
+    `finishing` INTEGER, -- the player's finishing rate; example: [44, 43]
+    `heading_accuracy` INTEGER, -- the player's heading accuracy; example: [71, 70]
+    `short_passing` INTEGER, -- the player's short passing score; example: [61, 60]
+    `volleys` INTEGER, -- the player's volley score; example: [44, 43]
+    `dribbling` INTEGER, -- the player's dribbling score; example: [51, 50]
+    `curve` INTEGER, -- the player's curve score; example: [45, 44]
+    `free_kick_accuracy` INTEGER, -- the player's free kick accuracy; example: [39, 38]
+    `long_passing` INTEGER, -- the player's long passing score; example: [64, 63]
+    `ball_control` INTEGER, -- the player's ball control score; example: [49, 48]
+    `acceleration` INTEGER, -- the player's acceleration score; example: [60]
+    `sprint_speed` INTEGER, -- the player's sprint speed; example: [64]
+    `agility` INTEGER, -- the player's agility; example: [59]
+    `reactions` INTEGER, -- the player's reactions score; example: [47, 46]
+    `balance` INTEGER, -- the player's balance score; example: [65]
+    `shot_power` INTEGER, -- the player's shot power; example: [55, 54]
+    `jumping` INTEGER, -- the player's jumping score; example: [58]
+    `stamina` INTEGER, -- the player's stamina score; example: [54]
+    `strength` INTEGER, -- the player's strength score; example: [76]
+    `long_shots` INTEGER, -- the player's long shots score; example: [35, 34]
+    `aggression` INTEGER, -- the player's aggression score; example: [71, 63]
+    `interceptions` INTEGER, -- the player's interceptions score; example: [70, 41]
+    `positioning` INTEGER, -- the player's positioning score; example: [45, 44]
+    `vision` INTEGER, -- the player's vision score; example: [54, 53]
+    `penalties` INTEGER, -- the player's penalties score; example: [48, 47]
+    `marking` INTEGER, -- the player's markingscore; example: [65, 62]
+    `standing_tackle` INTEGER, -- the player's standing tackle score; example: [69, 66]
+    `sliding_tackle` INTEGER, -- the player's sliding tackle score; example: [69, 66]
+    `gk_diving` INTEGER, -- the player's goalkeep diving score; example: [6, 5]
+    `gk_handling` INTEGER, -- the player's goalkeep diving score; example: [11, 10]
+    `gk_kicking` INTEGER, -- the player's goalkeep kicking score; example: [10, 9]
+    `gk_positioning` INTEGER, -- the player's goalkeep positioning score; example: [8, 7]
+    `gk_reflexes` INTEGER, -- the player's goalkeep reflexes score; example: [8, 7]
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`player_api_id`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`player_fifa_api_id`) REFERENCES `Player` (`player_fifa_api_id`)
+);
+
+CREATE TABLE `Player` (
+    `id` INTEGER, -- the unique id for players; example: [1, 2]
+    `player_api_id` INTEGER, -- the id of the player api; example: [505942, 155782]
+    `player_name` TEXT, -- player name; example: ['Aaron Appindangoye', 'Aaron Cresswell']
+    `player_fifa_api_id` INTEGER, -- the id of the player fifa api; example: [218353, 189615]
+    `birthday` TEXT, -- the player's birthday; example: ['1992-02-29 00:00:00', '1989-12-15 00:00:00']
+    `height` INTEGER, -- the player's height; example: [182, 170]
+    `weight` INTEGER, -- the player's weight; example: [187, 146]
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `League` (
+    `id` INTEGER, -- the unique id for leagues; example: [1, 1729]
+    `country_id` INTEGER, -- the unique id for countries; example: [1, 1729]
+    `name` TEXT, -- league name; example: ['Belgium Jupiler League', 'England Premier League']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`country_id`) REFERENCES `Country` (`id`)
+);
+
+CREATE TABLE `Country` (
+    `id` INTEGER, -- the unique id for countries; example: [1, 1729]
+    `name` TEXT, -- country name; example: ['Belgium', 'England']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `Team` (
+    `id` INTEGER, -- the unique id for teams; example: [1, 2]
+    `team_api_id` INTEGER, -- the id of the team api; example: [9987, 9993]
+    `team_fifa_api_id` INTEGER, -- the id of the team fifa api; example: [673, 675]
+    `team_long_name` TEXT, -- the team's long name; example: ['KRC Genk', 'Beerschot AC']
+    `team_short_name` TEXT, -- the team's short name; example: ['GEN', 'BAC']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `Team_Attributes` (
+    `id` INTEGER, -- the unique id for teams; example: [1, 2]
+    `team_fifa_api_id` INTEGER, -- the id of the team fifa api; example: [434, 77]
+    `team_api_id` INTEGER, -- the id of the team api; example: [9930, 8485]
+    `date` TEXT, -- Date; example: ['2010-02-22 00:00:00', '2014-09-19 00:00:00']
+    `buildUpPlaySpeed` INTEGER, -- the speed in which attacks are put together; example: [60, 52]
+    `buildUpPlaySpeedClass` TEXT, -- the speed class; example: ['Balanced', 'Fast']
+    `buildUpPlayDribbling` INTEGER, -- the tendency/ frequency of dribbling; example: [48, 41]
+    `buildUpPlayDribblingClass` TEXT, -- the dribbling class; example: ['Little', 'Normal']
+    `buildUpPlayPassing` INTEGER, -- affects passing distance and support from teammates; example: [50, 56]
+    `buildUpPlayPassingClass` TEXT, -- the passing class; example: ['Mixed', 'Long']
+    `buildUpPlayPositioningClass` TEXT, -- A team's freedom of movement in the 1st two thirds of the pitch; example: ['Organised']
+    `chanceCreationPassing` INTEGER, -- Amount of risk in pass decision and run support; example: [60, 54]
+    `chanceCreationPassingClass` TEXT, -- the chance creation passing class; example: ['Normal', 'Risky']
+    `chanceCreationCrossing` INTEGER, -- The tendency / frequency of crosses into the box; example: [65, 63]
+    `chanceCreationCrossingClass` TEXT, -- the chance creation crossing class; example: ['Normal', 'Lots']
+    `chanceCreationShooting` INTEGER, -- The tendency / frequency of shots taken; example: [55, 64]
+    `chanceCreationShootingClass` TEXT, -- the chance creation shooting class; example: ['Normal', 'Lots']
+    `chanceCreationPositioningClass` TEXT, -- A team�s freedom of movement in the final third of the pitch; example: ['Organised']
+    `defencePressure` INTEGER, -- Affects how high up the pitch the team will start pressuring; example: [50, 47]
+    `defencePressureClass` TEXT, -- the defence pressure class; example: ['Medium']
+    `defenceAggression` INTEGER, -- Affect the team�s approach to tackling the ball possessor; example: [55, 44]
+    `defenceAggressionClass` TEXT, -- the defence aggression class; example: ['Press', 'Double']
+    `defenceTeamWidth` INTEGER, -- Affects how much the team will shift to the ball side; example: [45, 54]
+    `defenceTeamWidthClass` TEXT, -- the defence team width class; example: ['Normal', 'Wide']
+    `defenceDefenderLineClass` TEXT, -- Affects the shape and strategy of the defence; example: ['Cover']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`team_api_id`) REFERENCES `Team` (`team_api_id`),
+    FOREIGN KEY (`team_fifa_api_id`) REFERENCES `Team` (`team_fifa_api_id`)
+);
+
+CREATE TABLE `Match` (
+    `id` INTEGER, -- the unique id for matches; example: [1, 2]
+    `country_id` INTEGER, -- country id; example: [1]
+    `league_id` INTEGER, -- league id; example: [1]
+    `season` TEXT, -- the season of the match; example: ['2008/2009']
+    `stage` INTEGER, -- the stage of the match; example: [1]
+    `date` TEXT, -- the date of the match; example: ['2008-08-17 00:00:00', '2008-08-16 00:00:00']
+    `match_api_id` INTEGER, -- the id of the match api; example: [492473, 492474]
+    `home_team_api_id` INTEGER, -- the id of the home team api; example: [9987, 10000]
+    `away_team_api_id` INTEGER, -- the id of the away team api; example: [9993, 9994]
+    `home_team_goal` INTEGER, -- the goal of the home team; example: [1, 0]
+    `away_team_goal` INTEGER, -- the goal of the away team; example: [1, 0]
+    `home_player_X1` INTEGER, -- example: []
+    `home_player_X2` INTEGER, -- example: []
+    `home_player_X3` INTEGER, -- example: []
+    `home_player_X4` INTEGER, -- example: []
+    `home_player_X5` INTEGER, -- example: []
+    `home_player_X6` INTEGER, -- example: []
+    `home_player_X7` INTEGER, -- example: []
+    `home_player_X8` INTEGER, -- example: []
+    `home_player_X9` INTEGER, -- example: []
+    `home_player_X10` INTEGER, -- example: []
+    `home_player_X11` INTEGER, -- example: []
+    `away_player_X1` INTEGER, -- example: []
+    `away_player_X2` INTEGER, -- example: []
+    `away_player_X3` INTEGER, -- example: []
+    `away_player_X4` INTEGER, -- example: []
+    `away_player_X5` INTEGER, -- example: []
+    `away_player_X6` INTEGER, -- example: []
+    `away_player_X7` INTEGER, -- example: []
+    `away_player_X8` INTEGER, -- example: []
+    `away_player_X9` INTEGER, -- example: []
+    `away_player_X10` INTEGER, -- example: []
+    `away_player_X11` INTEGER, -- example: []
+    `home_player_Y1` INTEGER, -- example: []
+    `home_player_Y2` INTEGER, -- example: []
+    `home_player_Y3` INTEGER, -- example: []
+    `home_player_Y4` INTEGER, -- example: []
+    `home_player_Y5` INTEGER, -- example: []
+    `home_player_Y6` INTEGER, -- example: []
+    `home_player_Y7` INTEGER, -- example: []
+    `home_player_Y8` INTEGER, -- example: []
+    `home_player_Y9` INTEGER, -- example: []
+    `home_player_Y10` INTEGER, -- example: []
+    `home_player_Y11` INTEGER, -- example: []
+    `away_player_Y1` INTEGER, -- example: []
+    `away_player_Y2` INTEGER, -- example: []
+    `away_player_Y3` INTEGER, -- example: []
+    `away_player_Y4` INTEGER, -- example: []
+    `away_player_Y5` INTEGER, -- example: []
+    `away_player_Y6` INTEGER, -- example: []
+    `away_player_Y7` INTEGER, -- example: []
+    `away_player_Y8` INTEGER, -- example: []
+    `away_player_Y9` INTEGER, -- example: []
+    `away_player_Y10` INTEGER, -- example: []
+    `away_player_Y11` INTEGER, -- example: []
+    `home_player_1` INTEGER, -- example: []
+    `home_player_2` INTEGER, -- example: []
+    `home_player_3` INTEGER, -- example: []
+    `home_player_4` INTEGER, -- example: []
+    `home_player_5` INTEGER, -- example: []
+    `home_player_6` INTEGER, -- example: []
+    `home_player_7` INTEGER, -- example: []
+    `home_player_8` INTEGER, -- example: []
+    `home_player_9` INTEGER, -- example: []
+    `home_player_10` INTEGER, -- example: []
+    `home_player_11` INTEGER, -- example: []
+    `away_player_1` INTEGER, -- example: []
+    `away_player_2` INTEGER, -- example: []
+    `away_player_3` INTEGER, -- example: []
+    `away_player_4` INTEGER, -- example: []
+    `away_player_5` INTEGER, -- example: []
+    `away_player_6` INTEGER, -- example: []
+    `away_player_7` INTEGER, -- example: []
+    `away_player_8` INTEGER, -- example: []
+    `away_player_9` INTEGER, -- example: []
+    `away_player_10` INTEGER, -- example: []
+    `away_player_11` INTEGER, -- example: []
+    `goal` TEXT, -- the goal of the match; example: []
+    `shoton` TEXT, -- the shot on goal of the match; example: []
+    `shotoff` TEXT, -- the shot off goal of the match, which is the opposite of shot on; example: []
+    `foulcommit` TEXT, -- the fouls occurred in the match; example: []
+    `card` TEXT, -- the cards given in the match; example: []
+    `cross` TEXT, -- Balls sent into the opposition team's area from a wide position in the match; example: []
+    `corner` TEXT, -- Ball goes out of play for a corner kick in the match; example: []
+    `possession` TEXT, -- The duration from a player taking over the ball in the match; example: []
+    `B365H` REAL, -- example: [1.73, 1.95]
+    `B365D` REAL, -- example: [3.4, 3.2]
+    `B365A` REAL, -- example: [5.0, 3.6]
+    `BWH` REAL, -- example: [1.75, 1.8]
+    `BWD` REAL, -- example: [3.35, 3.3]
+    `BWA` REAL, -- example: [4.2, 3.95]
+    `IWH` REAL, -- example: [1.85, 1.9]
+    `IWD` REAL, -- example: [3.2, 3.1]
+    `IWA` REAL, -- example: [3.5, 2.3]
+    `LBH` REAL, -- example: [1.8, 1.9]
+    `LBD` REAL, -- example: [3.3, 3.2]
+    `LBA` REAL, -- example: [3.75, 3.5]
+    `PSH` REAL, -- example: []
+    `PSD` REAL, -- example: []
+    `PSA` REAL, -- example: []
+    `WHH` REAL, -- example: [1.7, 1.83]
+    `WHD` REAL, -- example: [3.3, 3.25]
+    `WHA` REAL, -- example: [4.33, 3.6]
+    `SJH` REAL, -- example: [1.9, 1.95]
+    `SJD` REAL, -- example: [3.3, 4.0]
+    `SJA` REAL, -- example: [4.0, 3.8]
+    `VCH` REAL, -- example: [1.65, 2.0]
+    `VCD` REAL, -- example: [3.4, 3.25]
+    `VCA` REAL, -- example: [4.5, 3.25]
+    `GBH` REAL, -- example: [1.78, 1.85]
+    `GBD` REAL, -- example: [3.25, 3.2]
+    `GBA` REAL, -- example: [4.0, 3.75]
+    `BSH` REAL, -- example: [1.73, 1.91]
+    `BSD` REAL, -- example: [3.4, 3.25]
+    `BSA` REAL, -- example: [4.2, 3.6]
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`away_player_11`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_10`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_9`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_8`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_7`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_6`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_5`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_4`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_3`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_2`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_player_1`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_11`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_10`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_9`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_8`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_7`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_6`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_5`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_4`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_3`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_2`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`home_player_1`) REFERENCES `Player` (`player_api_id`),
+    FOREIGN KEY (`away_team_api_id`) REFERENCES `Team` (`team_api_id`),
+    FOREIGN KEY (`home_team_api_id`) REFERENCES `Team` (`team_api_id`),
+    FOREIGN KEY (`country_id`) REFERENCES `Country` (`id`),
+    FOREIGN KEY (`league_id`) REFERENCES `League` (`id`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

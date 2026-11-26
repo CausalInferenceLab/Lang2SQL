@@ -1,0 +1,128 @@
+{
+  "instance_id": "bird495",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "7334354b2a5c2ef8bcf59180b0dc97629cb7fb3aad7acf5a4a8334e5e91e51d1",
+  "events_sha256": "d9a795b8a637700c839a3ed2a5c3337580cb4641a83be152d7bb9e5d6d38e94a",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 110269,
+      "cached_input_tokens": 100480,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 477,
+      "reasoning_output_tokens": 232
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "connected"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "connected (table)\n- atom_id: TEXT NOT NULL\n- atom_id2: TEXT NOT NULL\n- bond_id: TEXT\nPRIMARY KEY (atom_id, atom_id2)\nFOREIGN KEY (bond_id) REFERENCES bond (bond_id)\nFOREIGN KEY (atom_id2) REFERENCES atom (atom_id)\nFOREIGN KEY (atom_id) REFERENCES atom (atom_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "element pairs"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"element pairs\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "molecule"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "molecule (table)\n- molecule_id: TEXT NOT NULL\n- label: TEXT\nPRIMARY KEY (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "Should each bond kind count distinct unordered element pairs, so every carbon–oxygen bond contributes to the bond count, but carbon–oxygen counts only once toward the element-pair count?",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 28.63834737497382
+}

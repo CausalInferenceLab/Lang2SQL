@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird326",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "0e54c03589d8aaa4a6cbb6c4bb32f5c8b216e929cf922db48285dcfd6140f3ad",
+  "events_sha256": "aa2de4e8c23f2fd066371a44cd57caa29e1481db3f5450904b6d689d3a1ec394",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169500,
+      "cached_input_tokens": 157568,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 869,
+      "reasoning_output_tokens": 83
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"45XIEqRaLf6Zsc2Fxpsdac5YZIwe-hHAw9x7rzqp49o\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "expense"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "expense (table)\n- expense_id: TEXT\n- expense_description: TEXT\n- expense_date: TEXT\n- cost: REAL\n- approved: TEXT\n- link_to_member: TEXT\n- link_to_budget: TEXT\nPRIMARY KEY (expense_id)\nFOREIGN KEY (link_to_budget) REFERENCES budget (budget_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "45XIEqRaLf6Zsc2Fxpsdac5YZIwe-hHAw9x7rzqp49o",
+        "sql": "SELECT e.expense_description, COUNT(*) AS records\nFROM main.expense AS e\nJOIN main.budget AS b ON b.budget_id = e.link_to_budget\nWHERE b.category = 'Food'\nGROUP BY e.expense_description\nORDER BY records DESC, e.expense_description"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): expense_description=str; records=int\nexpense_description | records\n--- | ---\nPizza | 7\nWater, chips, cookies | 5\nWater, Cookies | 3\nBakery - Donuts, muffins | 1\nWater, Veggie tray, supplies | 1\nWater, cookies, chips | 1\nSQL: SELECT e.expense_description, COUNT(*) AS records\nFROM main.expense AS e\nJOIN main.budget AS b ON b.budget_id = e.link_to_budget\nWHERE b.category = 'Food'\nGROUP BY e.expense_description\nORDER BY records DESC, e.expense_description\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ZeX41CkOOjfHfCwLWf4X752jJJ2cjxxUrAC2-dTwmVc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ZeX41CkOOjfHfCwLWf4X752jJJ2cjxxUrAC2-dTwmVc",
+        "expected_columns": [
+          "item_name",
+          "record_count"
+        ],
+        "sql": "WITH RECURSIVE items(expense_id, item, remaining) AS (\n    SELECT e.expense_id, '', replace(e.expense_description, 'Bakery - ', '') || ','\n    FROM main.expense AS e\n    JOIN main.budget AS b ON b.budget_id = e.link_to_budget\n    WHERE b.category = 'Food'\n\n    UNION ALL\n\n    SELECT expense_id,\n           trim(substr(remaining, 1, instr(remaining, ',') - 1)),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n)\nSELECT min(item) AS item_name,\n       count(DISTINCT expense_id) AS record_count\nFROM items\nWHERE item <> '' AND lower(item) <> 'supplies'\nGROUP BY item COLLATE NOCASE\nORDER BY record_count DESC, item_name COLLATE NOCASE ASC\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): item_name=str; record_count=int\nitem_name | record_count\n--- | ---\nWater | 10\nSQL: WITH RECURSIVE items(expense_id, item, remaining) AS (\n    SELECT e.expense_id, '', replace(e.expense_description, 'Bakery - ', '') || ','\n    FROM main.expense AS e\n    JOIN main.budget AS b ON b.budget_id = e.link_to_budget\n    WHERE b.category = 'Food'\n\n    UNION ALL\n\n    SELECT expense_id,\n           trim(substr(remaining, 1, instr(remaining, ',') - 1)),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n)\nSELECT min(item) AS item_name,\n       count(DISTINCT expense_id) AS record_count\nFROM items\nWHERE item <> '' AND lower(item) <> 'supplies'\nGROUP BY item COLLATE NOCASE\nORDER BY record_count DESC, item_name COLLATE NOCASE ASC\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH RECURSIVE items(expense_id, item, remaining) AS (\n    SELECT e.expense_id, '', replace(e.expense_description, 'Bakery - ', '') || ','\n    FROM main.expense AS e\n    JOIN main.budget AS b ON b.budget_id = e.link_to_budget\n    WHERE b.category = 'Food'\n\n    UNION ALL\n\n    SELECT expense_id,\n           trim(substr(remaining, 1, instr(remaining, ',') - 1)),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n)\nSELECT min(item) AS item_name,\n       count(DISTINCT expense_id) AS record_count\nFROM items\nWHERE item <> '' AND lower(item) <> 'supplies'\nGROUP BY item COLLATE NOCASE\nORDER BY record_count DESC, item_name COLLATE NOCASE ASC\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH RECURSIVE items(expense_id, item, remaining) AS (\n    SELECT e.expense_id, '', replace(e.expense_description, 'Bakery - ', '') || ','\n    FROM main.expense AS e\n    JOIN main.budget AS b ON b.budget_id = e.link_to_budget\n    WHERE b.category = 'Food'\n\n    UNION ALL\n\n    SELECT expense_id,\n           trim(substr(remaining, 1, instr(remaining, ',') - 1)),\n           substr(remaining, instr(remaining, ',') + 1)\n    FROM items\n    WHERE remaining <> ''\n)\nSELECT min(item) AS item_name,\n       count(DISTINCT expense_id) AS record_count\nFROM items\nWHERE item <> '' AND lower(item) <> 'supplies'\nGROUP BY item COLLATE NOCASE\nORDER BY record_count DESC, item_name COLLATE NOCASE ASC\nLIMIT 1",
+  "seconds": 36.194126416929066
+}

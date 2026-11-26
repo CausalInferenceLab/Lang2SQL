@@ -1,0 +1,16 @@
+```sql
+WITH session_times AS (
+    SELECT q.driverId, q.q3
+    FROM qualifying AS q
+    JOIN races AS r ON r.raceId = q.raceId
+    WHERE r.year = 2017
+      AND r.name = 'Italian Grand Prix'
+      AND q.q3 <> ''
+)
+SELECT d.code, s.q3
+FROM session_times AS s
+JOIN drivers AS d ON d.driverId = s.driverId
+WHERE s.q3 = (SELECT MIN(q3) FROM session_times)
+ORDER BY d.code
+LIMIT 1000
+```

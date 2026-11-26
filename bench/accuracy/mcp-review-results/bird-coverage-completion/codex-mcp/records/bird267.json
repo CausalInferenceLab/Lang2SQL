@@ -1,0 +1,194 @@
+{
+  "instance_id": "bird267",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "9ff4b04832df5e91f4f59dcac18543de62ad2e28e51c4114e391a1330c8349b8",
+  "events_sha256": "fdc68cfd680cf5ff1c42e9c44fc93b2afb76dde9881b96167ac58bf0d45d121d",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 179901,
+      "cached_input_tokens": 165760,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1161,
+      "reasoning_output_tokens": 93
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"KUfm0G4KxohaqfjZ-ss36lx_YkCbEEsplWqvMGX0bg4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "lapTimes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "lapTimes (table)\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- lap: INTEGER NOT NULL\n- position: INTEGER\n- time: TEXT\n- milliseconds: INTEGER\nPRIMARY KEY (raceId, driverId, lap)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "KUfm0G4KxohaqfjZ-ss36lx_YkCbEEsplWqvMGX0bg4",
+        "sql": "WITH editions AS (\n    SELECT raceId, date FROM main.races WHERE name = 'French Grand Prix' AND year >= 1990\n), best AS (\n    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS ms, MAX(typeof(l.milliseconds)) AS ms_type\n    FROM main.lapTimes AS l JOIN editions AS e ON e.raceId = l.raceId\n    GROUP BY l.raceId, l.driverId\n)\nSELECT e.date, COUNT(b.ms) AS lap_drivers, MAX(b.ms_type) AS storage,\n       COUNT(r.fastestLapTime) AS summaries, MIN(r.fastestLapTime) AS sample,\n       SUM(CASE WHEN r.fastestLapTime IS NOT NULL AND b.ms IS NULL THEN 1 ELSE 0 END) AS summary_only\nFROM editions AS e LEFT JOIN main.results AS r ON r.raceId = e.raceId\nLEFT JOIN best AS b ON b.raceId = r.raceId AND b.driverId = r.driverId\nGROUP BY e.raceId ORDER BY e.date"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "19 row(s):\nResult coverage: fetched_rows=19; displayed_rows=19; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; lap_drivers=int; storage=NoneType,str; summaries=int; sample=NoneType,str; summary_only=int\ndate | lap_drivers | storage | summaries | sample | summary_only\n--- | --- | --- | --- | --- | ---\n1990-07-08 | 0 | None | 0 | None | 0\n1991-07-07 | 0 | None | 0 | None | 0\n1992-07-05 | 0 | None | 0 | None | 0\n1993-07-04 | 0 | None | 0 | None | 0\n1994-07-03 | 0 | None | 0 | None | 0\n1995-07-02 | 0 | None | 0 | None | 0\n1996-06-30 | 21 | integer | 0 | None | 0\n1997-06-29 | 22 | integer | 0 | None | 0\n1998-06-28 | 22 | integer | 0 | None | 0\n1999-06-27 | 22 | integer | 0 | None | 0\n2000-07-02 | 22 | integer | 0 | None | 0\n2001-07-01 | 21 | integer | 0 | None | 0\n2002-07-21 | 18 | integer | 0 | None | 0\n2003-07-06 | 20 | integer | 0 | None | 0\n2004-07-04 | 20 | integer | 20 | 1:15.377 | 0\n2005-07-03 | 20 | integer | 19 | 1:16.423 | 0\n2006-07-16 | 21 | integer | 21 | 1:17.111 | 0\n2007-07-01 | 21 | integer | 19 | 1:16.099 | 0\n2008-06-22 | 20 | integer | 20 | 1:16.630 | 0\nSQL: WITH editions AS (\n    SELECT raceId, date FROM main.races WHERE name = 'French Grand Prix' AND year >= 1990\n), best AS (\n    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS ms, MAX(typeof(l.milliseconds)) AS ms_type\n    FROM main.lapTimes AS l JOIN editions AS e ON e.raceId = l.raceId\n    GROUP BY l.raceId, l.driverId\n)\nSELECT e.date, COUNT(b.ms) AS lap_drivers, MAX(b.ms_type) AS storage,\n       COUNT(r.fastestLapTime) AS summaries, MIN(r.fastestLapTime) AS sample,\n       SUM(CASE WHEN r.fastestLapTime IS NOT NULL AND b.ms IS NULL THEN 1 ELSE 0 END) AS summary_only\nFROM editions AS e LEFT JOIN main.results AS r ON r.raceId = e.raceId\nLEFT JOIN best AS b ON b.raceId = r.raceId AND b.driverId = r.driverId\nGROUP BY e.raceId ORDER BY e.date\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"r7mnW-GAowmbvRB8f78yXd7HOf-7z_QHAMJTVBZ_lqE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "r7mnW-GAowmbvRB8f78yXd7HOf-7z_QHAMJTVBZ_lqE",
+        "expected_columns": [
+          "date",
+          "forename",
+          "surname",
+          "fastest_lap_time"
+        ],
+        "sql": "WITH editions AS (\n    SELECT raceId, date\n    FROM main.races\n    WHERE name = 'French Grand Prix' AND year >= 1990\n),\nfastest_laps AS (\n    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS fastest_ms\n    FROM main.lapTimes AS l\n    JOIN editions AS e ON e.raceId = l.raceId\n    GROUP BY l.raceId, l.driverId\n    HAVING MIN(l.milliseconds) > 90000\n)\nSELECT e.date, d.forename, d.surname,\n       CASE WHEN f.fastest_ms IS NOT NULL THEN\n           printf('%d:%02d.%03d', f.fastest_ms / 60000,\n                  (f.fastest_ms / 1000) % 60, f.fastest_ms % 1000)\n       END AS fastest_lap_time\nFROM editions AS e\nLEFT JOIN fastest_laps AS f ON f.raceId = e.raceId\nLEFT JOIN main.drivers AS d ON d.driverId = f.driverId\nORDER BY e.date, d.surname, d.forename"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "20 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=20; displayed_rows=20; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; forename=NoneType,str; surname=NoneType,str; fastest_lap_time=NoneType,str\ndate | forename | surname | fastest_lap_time\n--- | --- | --- | ---\n1990-07-08 | None | None | None\n1991-07-07 | None | None | None\n1992-07-05 | None | None | None\n1993-07-04 | None | None | None\n1994-07-03 | None | None | None\n1995-07-02 | None | None | None\n1996-06-30 | None | None | None\n1997-06-29 | None | None | None\n1998-06-28 | None | None | None\n1999-06-27 | None | None | None\n2000-07-02 | None | None | None\n2001-07-01 | None | None | None\n2002-07-21 | None | None | None\n2003-07-06 | None | None | None\n2004-07-04 | None | None | None\n2005-07-03 | None | None | None\n2006-07-16 | None | None | None\n2007-07-01 | Anthony | Davidson | 1:44.767\n2007-07-01 | Jarno | Trulli | 2:19.632\n2008-06-22 | None | None | None\nSQL: WITH editions AS (\n    SELECT raceId, date\n    FROM main.races\n    WHERE name = 'French Grand Prix' AND year >= 1990\n),\nfastest_laps AS (\n    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS fastest_ms\n    FROM main.lapTimes AS l\n    JOIN editions AS e ON e.raceId = l.raceId\n    GROUP BY l.raceId, l.driverId\n    HAVING MIN(l.milliseconds) > 90000\n)\nSELECT e.date, d.forename, d.surname,\n       CASE WHEN f.fastest_ms IS NOT NULL THEN\n           printf('%d:%02d.%03d', f.fastest_ms / 60000,\n                  (f.fastest_ms / 1000) % 60, f.fastest_ms % 1000)\n       END AS fastest_lap_time\nFROM editions AS e\nLEFT JOIN fastest_laps AS f ON f.raceId = e.raceId\nLEFT JOIN main.drivers AS d ON d.driverId = f.driverId\nORDER BY e.date, d.surname, d.forename\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH editions AS (\n    SELECT raceId, date\n    FROM main.races\n    WHERE name = 'French Grand Prix' AND year >= 1990\n),\nfastest_laps AS (\n    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS fastest_ms\n    FROM main.lapTimes AS l\n    JOIN editions AS e ON e.raceId = l.raceId\n    GROUP BY l.raceId, l.driverId\n    HAVING MIN(l.milliseconds) > 90000\n)\nSELECT e.date, d.forename, d.surname,\n       CASE WHEN f.fastest_ms IS NOT NULL THEN\n           printf('%d:%02d.%03d', f.fastest_ms / 60000,\n                  (f.fastest_ms / 1000) % 60, f.fastest_ms % 1000)\n       END AS fastest_lap_time\nFROM editions AS e\nLEFT JOIN fastest_laps AS f ON f.raceId = e.raceId\nLEFT JOIN main.drivers AS d ON d.driverId = f.driverId\nORDER BY e.date, d.surname, d.forename\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 20,
+  "sql": "WITH editions AS (\n    SELECT raceId, date\n    FROM main.races\n    WHERE name = 'French Grand Prix' AND year >= 1990\n),\nfastest_laps AS (\n    SELECT l.raceId, l.driverId, MIN(l.milliseconds) AS fastest_ms\n    FROM main.lapTimes AS l\n    JOIN editions AS e ON e.raceId = l.raceId\n    GROUP BY l.raceId, l.driverId\n    HAVING MIN(l.milliseconds) > 90000\n)\nSELECT e.date, d.forename, d.surname,\n       CASE WHEN f.fastest_ms IS NOT NULL THEN\n           printf('%d:%02d.%03d', f.fastest_ms / 60000,\n                  (f.fastest_ms / 1000) % 60, f.fastest_ms % 1000)\n       END AS fastest_lap_time\nFROM editions AS e\nLEFT JOIN fastest_laps AS f ON f.raceId = e.raceId\nLEFT JOIN main.drivers AS d ON d.driverId = f.driverId\nORDER BY e.date, d.surname, d.forename\nLIMIT 1000",
+  "seconds": 39.00955966592301
+}

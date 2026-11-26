@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird143",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "646799d86423dcd45662f202b0fde9691bf46c4b72a8f076fea49ae0835d8278",
+  "events_sha256": "60acaef6ecc912a3d5560756ac65e077cd5146706b502af33fd11be2fb603c49",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 173978,
+      "cached_input_tokens": 147200,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 719,
+      "reasoning_output_tokens": 25
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"V9MogXbNvStYU6s0KXsCJ2gUvk3crpZvUKZ9EJt9198\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "votes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "votes (table)\n- Id: INTEGER NOT NULL\n- PostId: INTEGER\n- VoteTypeId: INTEGER\n- CreationDate: DATE\n- UserId: INTEGER\n- BountyAmount: INTEGER\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "V9MogXbNvStYU6s0KXsCJ2gUvk3crpZvUKZ9EJt9198",
+        "sql": "SELECT v.VoteTypeId, typeof(v.BountyAmount) AS amount_type, MIN(v.CreationDate) AS first_date, MAX(v.CreationDate) AS last_date, typeof(p.OwnerUserId) AS owner_type, COUNT(*) AS records, COUNT(p.Id) AS matched_posts, COUNT(NULLIF(p.OwnerDisplayName, '')) AS with_name\nFROM main.votes AS v\nLEFT JOIN main.posts AS p ON p.Id = v.PostId\nWHERE v.BountyAmount >= 30\n  AND v.CreationDate >= '2010-01-01'\n  AND v.CreationDate < '2011-01-01'\nGROUP BY v.VoteTypeId, typeof(v.BountyAmount), typeof(p.OwnerUserId)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): VoteTypeId=int; amount_type=str; first_date=str; last_date=str; owner_type=str; records=int; matched_posts=int; with_name=int\nVoteTypeId | amount_type | first_date | last_date | owner_type | records | matched_posts | with_name\n--- | --- | --- | --- | --- | --- | --- | ---\n8 | integer | 2010-07-24 | 2010-12-29 | integer | 31 | 31 | 0\n8 | integer | 2010-12-04 | 2010-12-04 | null | 1 | 1 | 1\n9 | integer | 2010-08-25 | 2010-12-20 | integer | 15 | 15 | 0\n9 | integer | 2010-10-08 | 2010-10-08 | null | 1 | 1 | 1\nSQL: SELECT v.VoteTypeId, typeof(v.BountyAmount) AS amount_type, MIN(v.CreationDate) AS first_date, MAX(v.CreationDate) AS last_date, typeof(p.OwnerUserId) AS owner_type, COUNT(*) AS records, COUNT(p.Id) AS matched_posts, COUNT(NULLIF(p.OwnerDisplayName, '')) AS with_name\nFROM main.votes AS v\nLEFT JOIN main.posts AS p ON p.Id = v.PostId\nWHERE v.BountyAmount >= 30\n  AND v.CreationDate >= '2010-01-01'\n  AND v.CreationDate < '2011-01-01'\nGROUP BY v.VoteTypeId, typeof(v.BountyAmount), typeof(p.OwnerUserId)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lT7ABnEVsSd3iOa5hqTfk0Q_UHOstUrEzcBh6SoQuVQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lT7ABnEVsSd3iOa5hqTfk0Q_UHOstUrEzcBh6SoQuVQ",
+        "expected_columns": [
+          "user_count"
+        ],
+        "sql": "SELECT COUNT(DISTINCT COALESCE(p.OwnerUserId, NULLIF(p.OwnerDisplayName, ''))) AS user_count\nFROM main.votes AS v\nJOIN main.posts AS p ON p.Id = v.PostId\nWHERE v.BountyAmount >= 30\n  AND v.CreationDate >= '2010-01-01'\n  AND v.CreationDate < '2011-01-01'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): user_count=int\nuser_count\n---\n32\nSQL: SELECT COUNT(DISTINCT COALESCE(p.OwnerUserId, NULLIF(p.OwnerDisplayName, ''))) AS user_count\nFROM main.votes AS v\nJOIN main.posts AS p ON p.Id = v.PostId\nWHERE v.BountyAmount >= 30\n  AND v.CreationDate >= '2010-01-01'\n  AND v.CreationDate < '2011-01-01'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(DISTINCT COALESCE(p.OwnerUserId, NULLIF(p.OwnerDisplayName, ''))) AS user_count\nFROM main.votes AS v\nJOIN main.posts AS p ON p.Id = v.PostId\nWHERE v.BountyAmount >= 30\n  AND v.CreationDate >= '2010-01-01'\n  AND v.CreationDate < '2011-01-01'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(DISTINCT COALESCE(p.OwnerUserId, NULLIF(p.OwnerDisplayName, ''))) AS user_count\nFROM main.votes AS v\nJOIN main.posts AS p ON p.Id = v.PostId\nWHERE v.BountyAmount >= 30\n  AND v.CreationDate >= '2010-01-01'\n  AND v.CreationDate < '2011-01-01'\nLIMIT 1",
+  "seconds": 31.720382292056456
+}

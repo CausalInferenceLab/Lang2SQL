@@ -1,0 +1,10 @@
+SELECT COUNT(*) AS patient_count
+FROM main.Patient AS p
+WHERE p.Admission = '-'
+  AND EXISTS (
+      SELECT 1
+      FROM main.Laboratory AS l
+      WHERE l.ID = p.ID
+        AND l.RNP IN ('negative', '0')
+  )
+LIMIT 1

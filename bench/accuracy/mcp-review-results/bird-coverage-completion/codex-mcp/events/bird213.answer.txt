@@ -1,0 +1,38 @@
+```sql
+WITH qualifying_accounts AS (
+    SELECT t.account_id
+    FROM main.trans AS t
+    GROUP BY t.account_id
+    HAVING AVG(t.balance) > 1000
+),
+eligible_districts AS (
+    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,
+           CAST(d.A4 AS INTEGER) AS inhabitants,
+           d.A11 AS salary, d.A10 AS urban_ratio
+    FROM main.card AS c
+    JOIN main.disp AS dp ON dp.disp_id = c.disp_id
+    JOIN main.client AS cl ON cl.client_id = dp.client_id
+    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id
+    JOIN main.account AS a ON a.account_id = q.account_id
+    JOIN main.district AS d ON d.district_id = a.district_id
+    WHERE c.type = 'gold'
+      AND dp.type = 'OWNER'
+      AND cl.gender IN ('F', 'M')
+      AND CAST(d.A4 AS INTEGER) > 100000
+),
+district_profiles AS (
+    SELECT gender, district_name, inhabitants,
+           COUNT(*) OVER g AS district_count,
+           MAX(inhabitants) OVER g AS max_inhabitants,
+           ROUND(AVG(salary) OVER g, 2) AS average_salary,
+           ROUND(AVG(urban_ratio) OVER g, 2) AS average_urban_ratio
+    FROM eligible_districts
+    WINDOW g AS (PARTITION BY gender)
+)
+SELECT gender, district_count, district_name, inhabitants,
+       average_salary, average_urban_ratio
+FROM district_profiles
+WHERE inhabitants = max_inhabitants
+ORDER BY gender, district_name
+LIMIT -1
+```

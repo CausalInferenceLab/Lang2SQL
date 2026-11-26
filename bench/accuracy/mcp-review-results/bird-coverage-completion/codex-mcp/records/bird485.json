@@ -1,0 +1,150 @@
+{
+  "instance_id": "bird485",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "821cef496180e0f605c008d452af381bee49982396d9796e36565341f395f1c0",
+  "events_sha256": "b4612d9558efe1c9e7f6d3f029dd9004db7e80ab8a8ed926cd0d7cebd0acef1e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 110370,
+      "cached_input_tokens": 100352,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 523,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "molecule"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "molecule (table)\n- molecule_id: TEXT NOT NULL\n- label: TEXT\nPRIMARY KEY (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "connected"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "connected (table)\n- atom_id: TEXT NOT NULL\n- atom_id2: TEXT NOT NULL\n- bond_id: TEXT\nPRIMARY KEY (atom_id, atom_id2)\nFOREIGN KEY (bond_id) REFERENCES bond (bond_id)\nFOREIGN KEY (atom_id2) REFERENCES atom (atom_id)\nFOREIGN KEY (atom_id) REFERENCES atom (atom_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"LBcjiZK3UOvzCDhDHRtv9c1laPAxes-z1etfhtVKLTo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "LBcjiZK3UOvzCDhDHRtv9c1laPAxes-z1etfhtVKLTo",
+        "sql": "WITH sulfur_atoms AS (\n    SELECT a.atom_id\n    FROM main.atom AS a\n    JOIN main.molecule AS m ON m.molecule_id = a.molecule_id\n    WHERE a.element = 's' AND m.label = '+'\n),\nbonded_atoms AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id\n    UNION\n    SELECT c.atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id2\n)\nSELECT COUNT(*) AS bonded_atom_count\nFROM bonded_atoms;",
+        "expected_columns": [
+          "bonded_atom_count"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bonded_atom_count=int\nbonded_atom_count\n---\n81\nSQL: WITH sulfur_atoms AS (\n    SELECT a.atom_id\n    FROM main.atom AS a\n    JOIN main.molecule AS m ON m.molecule_id = a.molecule_id\n    WHERE a.element = 's' AND m.label = '+'\n),\nbonded_atoms AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id\n    UNION\n    SELECT c.atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id2\n)\nSELECT COUNT(*) AS bonded_atom_count\nFROM bonded_atoms\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH sulfur_atoms AS (\n    SELECT a.atom_id\n    FROM main.atom AS a\n    JOIN main.molecule AS m ON m.molecule_id = a.molecule_id\n    WHERE a.element = 's' AND m.label = '+'\n),\nbonded_atoms AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id\n    UNION\n    SELECT c.atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id2\n)\nSELECT COUNT(*) AS bonded_atom_count\nFROM bonded_atoms\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH sulfur_atoms AS (\n    SELECT a.atom_id\n    FROM main.atom AS a\n    JOIN main.molecule AS m ON m.molecule_id = a.molecule_id\n    WHERE a.element = 's' AND m.label = '+'\n),\nbonded_atoms AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id\n    UNION\n    SELECT c.atom_id\n    FROM main.connected AS c\n    JOIN sulfur_atoms AS s ON s.atom_id = c.atom_id2\n)\nSELECT COUNT(*) AS bonded_atom_count\nFROM bonded_atoms\nLIMIT 1000",
+  "seconds": 22.47190254193265
+}

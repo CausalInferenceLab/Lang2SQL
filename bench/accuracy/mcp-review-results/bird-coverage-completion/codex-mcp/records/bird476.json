@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird476",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "58a804a775793628880ef21a4b1e3d53d2887a3482e0f057b1bb08729b39d077",
+  "events_sha256": "c82d9fcf7ca6870d7111b08f683eedc7b81ba82735b05bfe9ab7f60bca109ff7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 158261,
+      "cached_input_tokens": 147968,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 526,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"nwMGik1S3keoxopjjsT5YyEHVElgbf0CJnf7w9faCjA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "nwMGik1S3keoxopjjsT5YyEHVElgbf0CJnf7w9faCjA",
+        "sql": "SELECT DISTINCT element FROM main.atom ORDER BY element;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "18 row(s):\nResult coverage: fetched_rows=18; displayed_rows=18; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): element=str\nelement\n---\nbr\nc\nca\ncl\ncu\nf\nh\ni\nk\nn\nna\no\np\npb\ns\nsn\ny\nzn\nSQL: SELECT DISTINCT element FROM main.atom ORDER BY element\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"9IBWCgOcjKxInCPTU_5TNH0jT-W8qDFdYqf6C6lDQG0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "9IBWCgOcjKxInCPTU_5TNH0jT-W8qDFdYqf6C6lDQG0",
+        "expected_columns": [
+          "atom_count"
+        ],
+        "sql": "SELECT COUNT(*) AS atom_count\nFROM main.atom AS a\nWHERE a.molecule_id IN (\n    SELECT b.molecule_id\n    FROM main.bond AS b\n    WHERE b.bond_type = '#'\n    INTERSECT\n    SELECT p.molecule_id\n    FROM main.atom AS p\n    WHERE p.element IN ('p', 'br')\n)\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): atom_count=int\natom_count\n---\n4\nSQL: SELECT COUNT(*) AS atom_count\nFROM main.atom AS a\nWHERE a.molecule_id IN (\n    SELECT b.molecule_id\n    FROM main.bond AS b\n    WHERE b.bond_type = '#'\n    INTERSECT\n    SELECT p.molecule_id\n    FROM main.atom AS p\n    WHERE p.element IN ('p', 'br')\n)\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS atom_count\nFROM main.atom AS a\nWHERE a.molecule_id IN (\n    SELECT b.molecule_id\n    FROM main.bond AS b\n    WHERE b.bond_type = '#'\n    INTERSECT\n    SELECT p.molecule_id\n    FROM main.atom AS p\n    WHERE p.element IN ('p', 'br')\n)\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS atom_count\nFROM main.atom AS a\nWHERE a.molecule_id IN (\n    SELECT b.molecule_id\n    FROM main.bond AS b\n    WHERE b.bond_type = '#'\n    INTERSECT\n    SELECT p.molecule_id\n    FROM main.atom AS p\n    WHERE p.element IN ('p', 'br')\n)\nLIMIT 1",
+  "seconds": 30.158114250050858
+}

@@ -1,0 +1,12 @@
+SELECT SUM(b.amount) AS total_budgeted
+FROM main.budget AS b
+JOIN main.event AS e ON e.event_id = b.link_to_event
+WHERE e.event_date >= '2019-09-01'
+  AND e.event_date < '2019-10-01'
+  AND e.event_id IN (
+      SELECT pb.link_to_event
+      FROM main.expense AS x
+      JOIN main.budget AS pb ON pb.budget_id = x.link_to_budget
+      WHERE x.expense_description = 'Pizza'
+  )
+LIMIT 1000

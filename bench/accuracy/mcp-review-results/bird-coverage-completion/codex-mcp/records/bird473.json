@@ -1,0 +1,111 @@
+{
+  "instance_id": "bird473",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "59916e00adc11cbc2fb798ba9033089039f454a20687969e7cebd99b9a4fc45a",
+  "events_sha256": "477377fefb364f510d78a64280dab10b90ae6c83e5a504787795209baa372499",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 109954,
+      "cached_input_tokens": 84480,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 497,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "molecule"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "molecule (table)\n- molecule_id: TEXT NOT NULL\n- label: TEXT\nPRIMARY KEY (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"3yZqn48A2ZQBX0Ynikq2EVZhQ1mLiH0q1ygUgmU-sp0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "3yZqn48A2ZQBX0Ynikq2EVZhQ1mLiH0q1ygUgmU-sp0",
+        "expected_columns": [
+          "bond_type",
+          "carcinogenic"
+        ],
+        "sql": "WITH ranked_bonds AS (\n    SELECT b.bond_type, m.label,\n           RANK() OVER (ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    WHERE b.molecule_id = 'TR010'\n    GROUP BY b.bond_type, m.label\n)\nSELECT bond_type,\n       CASE label WHEN '+' THEN 'YES' WHEN '-' THEN 'NO' END AS carcinogenic\nFROM ranked_bonds\nWHERE frequency_rank = 1;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bond_type=str; carcinogenic=str\nbond_type | carcinogenic\n--- | ---\n- | NO\nSQL: WITH ranked_bonds AS (\n    SELECT b.bond_type, m.label,\n           RANK() OVER (ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    WHERE b.molecule_id = 'TR010'\n    GROUP BY b.bond_type, m.label\n)\nSELECT bond_type,\n       CASE label WHEN '+' THEN 'YES' WHEN '-' THEN 'NO' END AS carcinogenic\nFROM ranked_bonds\nWHERE frequency_rank = 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH ranked_bonds AS (\n    SELECT b.bond_type, m.label,\n           RANK() OVER (ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    WHERE b.molecule_id = 'TR010'\n    GROUP BY b.bond_type, m.label\n)\nSELECT bond_type,\n       CASE label WHEN '+' THEN 'YES' WHEN '-' THEN 'NO' END AS carcinogenic\nFROM ranked_bonds\nWHERE frequency_rank = 1\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH ranked_bonds AS (\n    SELECT b.bond_type, m.label,\n           RANK() OVER (ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    WHERE b.molecule_id = 'TR010'\n    GROUP BY b.bond_type, m.label\n)\nSELECT bond_type,\n       CASE label WHEN '+' THEN 'YES' WHEN '-' THEN 'NO' END AS carcinogenic\nFROM ranked_bonds\nWHERE frequency_rank = 1\nLIMIT 1000",
+  "seconds": 22.770934249972925
+}

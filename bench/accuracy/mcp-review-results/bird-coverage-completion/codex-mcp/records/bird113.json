@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird113",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "67283428c270b39c08138f7840a20d21a2f2873a4946944d007e44a944c1972f",
+  "events_sha256": "561e53b012600495f7cabf909dfb3a1c1209172d4b0d31ffbd0641f0a30cbbdc",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 182555,
+      "cached_input_tokens": 168704,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 571,
+      "reasoning_output_tokens": 11
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"73GkXsmtMzS1faII9qCAsSheOLVIhSpHAOl8cQzzKjo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "foreign_data"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "foreign_data (table)\n- id: INTEGER NOT NULL\n- flavorText: TEXT\n- language: TEXT\n- multiverseid: INTEGER\n- name: TEXT\n- text: TEXT\n- type: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "set_translations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "set_translations (table)\n- id: INTEGER NOT NULL\n- language: TEXT\n- setCode: TEXT\n- translation: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (setCode) REFERENCES sets (code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "73GkXsmtMzS1faII9qCAsSheOLVIhSpHAOl8cQzzKjo",
+        "sql": "SELECT 'foreign_data' AS source, language, COUNT(*) AS row_count, COUNT(DISTINCT uuid) AS identifier_count\nFROM main.foreign_data\nGROUP BY language\nUNION ALL\nSELECT 'set_translations', language, COUNT(*), COUNT(translation)\nFROM main.set_translations\nGROUP BY language"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "26 row(s):\nResult coverage: fetched_rows=26; displayed_rows=26; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): source=str; language=str; row_count=int; identifier_count=int\nsource | language | row_count | identifier_count\n--- | --- | --- | ---\nforeign_data | Ancient Greek | 1 | 1\nforeign_data | Arabic | 1 | 1\nforeign_data | Chinese Simplified | 20106 | 20106\nforeign_data | Chinese Traditional | 11106 | 11106\nforeign_data | French | 29301 | 29301\nforeign_data | German | 28891 | 28891\nforeign_data | Hebrew | 1 | 1\nforeign_data | Italian | 28698 | 28698\nforeign_data | Japanese | 31226 | 31226\nforeign_data | Korean | 9692 | 9692\nforeign_data | Latin | 1 | 1\nforeign_data | Phyrexian | 3 | 3\nforeign_data | Portuguese (Brazil) | 25641 | 25641\nforeign_data | Russian | 15878 | 15878\nforeign_data | Sanskrit | 1 | 1\nforeign_data | Spanish | 28639 | 28639\nset_translations | Chinese Simplified | 121 | 95\nset_translations | Chinese Traditional | 121 | 95\nset_translations | French | 121 | 121\nset_translations | German | 121 | 98\nset_translations | Italian | 121 | 95\nset_translations | Japanese | 121 | 93\nset_translations | Korean | 121 | 95\nset_translations | Portuguese (Brazil) | 121 | 95\nset_translations | Russian | 121 | 95\nset_translations | Spanish | 121 | 97\nSQL: SELECT 'foreign_data' AS source, language, COUNT(*) AS row_count, COUNT(DISTINCT uuid) AS identifier_count\nFROM main.foreign_data\nGROUP BY language\nUNION ALL\nSELECT 'set_translations', language, COUNT(*), COUNT(translation)\nFROM main.set_translations\nGROUP BY language\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Dc-vHKvysT7kotNNhemWkK_bEFv2s9ydJRROgpHdPGg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Dc-vHKvysT7kotNNhemWkK_bEFv2s9ydJRROgpHdPGg",
+        "expected_columns": [
+          "language",
+          "printing_count"
+        ],
+        "sql": "WITH language_counts AS (\n    SELECT language, COUNT(*) AS printing_count\n    FROM main.foreign_data\n    WHERE language IN (SELECT language FROM main.set_translations)\n    GROUP BY language\n)\nSELECT language, printing_count\nFROM language_counts\nWHERE printing_count = (SELECT MIN(printing_count) FROM language_counts)\nORDER BY language"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): language=str; printing_count=int\nlanguage | printing_count\n--- | ---\nKorean | 9692\nSQL: WITH language_counts AS (\n    SELECT language, COUNT(*) AS printing_count\n    FROM main.foreign_data\n    WHERE language IN (SELECT language FROM main.set_translations)\n    GROUP BY language\n)\nSELECT language, printing_count\nFROM language_counts\nWHERE printing_count = (SELECT MIN(printing_count) FROM language_counts)\nORDER BY language\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH language_counts AS (\n    SELECT language, COUNT(*) AS printing_count\n    FROM main.foreign_data\n    WHERE language IN (SELECT language FROM main.set_translations)\n    GROUP BY language\n)\nSELECT language, printing_count\nFROM language_counts\nWHERE printing_count = (SELECT MIN(printing_count) FROM language_counts)\nORDER BY language\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH language_counts AS (\n    SELECT language, COUNT(*) AS printing_count\n    FROM main.foreign_data\n    WHERE language IN (SELECT language FROM main.set_translations)\n    GROUP BY language\n)\nSELECT language, printing_count\nFROM language_counts\nWHERE printing_count = (SELECT MIN(printing_count) FROM language_counts)\nORDER BY language\nLIMIT 1000",
+  "seconds": 27.20264445792418
+}

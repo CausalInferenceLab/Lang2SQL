@@ -1,0 +1,338 @@
+{
+  "instance_id": "bird213",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "fc9cfdba42cee8cf2bc5692281d8e77c2eb50fa8320b0ada242f5429f70d5fe1",
+  "events_sha256": "376f27ee9bb30bcd549c5bb65249733869960b74792185dcd0ca08b148299b17",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 234067,
+      "cached_input_tokens": 218752,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1543,
+      "reasoning_output_tokens": 69
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "client"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "client (table)\n- client_id: INTEGER NOT NULL\n- gender: TEXT NOT NULL\n- birth_date: DATE NOT NULL\n- district_id: INTEGER NOT NULL\nPRIMARY KEY (client_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "account (table)\n- account_id: INTEGER NOT NULL\n- district_id: INTEGER NOT NULL\n- frequency: TEXT NOT NULL\n- date: DATE NOT NULL\nPRIMARY KEY (account_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "disp"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "disp (table)\n- disp_id: INTEGER NOT NULL\n- client_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- type: TEXT NOT NULL\nPRIMARY KEY (disp_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)\nFOREIGN KEY (client_id) REFERENCES client (client_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ezPb13pV8zvEAaXfSNRgclinxwaOLDdp3zMjvORS8PI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "trans"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "trans (table)\n- trans_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- type: TEXT NOT NULL\n- operation: TEXT\n- amount: INTEGER NOT NULL\n- balance: INTEGER NOT NULL\n- k_symbol: TEXT\n- bank: TEXT\n- account: INTEGER\nPRIMARY KEY (trans_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "card"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "card (table)\n- card_id: INTEGER NOT NULL\n- disp_id: INTEGER NOT NULL\n- type: TEXT NOT NULL\n- issued: DATE NOT NULL\nPRIMARY KEY (card_id)\nFOREIGN KEY (disp_id) REFERENCES disp (disp_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ezPb13pV8zvEAaXfSNRgclinxwaOLDdp3zMjvORS8PI",
+        "sql": "SELECT COUNT(*) AS districts,\n       SUM(A4 = '' OR A4 GLOB '*[^0-9]*') AS noninteger_populations,\n       SUM(A10 <> ROUND(A10, 1)) AS ratios_beyond_tenths,\n       SUM(typeof(A11) <> 'integer') AS noninteger_salaries,\n       (SELECT GROUP_CONCAT(DISTINCT dp.type) FROM main.card AS c JOIN main.disp AS dp ON dp.disp_id = c.disp_id WHERE c.type = 'gold') AS gold_dispositions\nFROM main.district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): districts=int; noninteger_populations=int; ratios_beyond_tenths=int; noninteger_salaries=int; gold_dispositions=str\ndistricts | noninteger_populations | ratios_beyond_tenths | noninteger_salaries | gold_dispositions\n--- | --- | --- | --- | ---\n77 | 0 | 0 | 0 | OWNER\nSQL: SELECT COUNT(*) AS districts,\n       SUM(A4 = '' OR A4 GLOB '*[^0-9]*') AS noninteger_populations,\n       SUM(A10 <> ROUND(A10, 1)) AS ratios_beyond_tenths,\n       SUM(typeof(A11) <> 'integer') AS noninteger_salaries,\n       (SELECT GROUP_CONCAT(DISTINCT dp.type) FROM main.card AS c JOIN main.disp AS dp ON dp.disp_id = c.disp_id WHERE c.type = 'gold') AS gold_dispositions\nFROM main.district\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "aggregate": "avg",
+        "dialect": "sqlite",
+        "input_scale": 1,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ZD9RACGWsSTsEFMnYRljIrndqkF9qDQZDz_h1x_Je4Q\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "aggregate": "avg",
+        "dialect": "sqlite",
+        "input_scale": 0,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 9007199254740991 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 9007199254740991\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 1 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "aggregate": "avg",
+        "dialect": "sqlite",
+        "input_scale": 1,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_13",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ZD9RACGWsSTsEFMnYRljIrndqkF9qDQZDz_h1x_Je4Q",
+        "sql": "WITH qualifying_accounts AS (\n    SELECT t.account_id\n    FROM main.trans AS t\n    GROUP BY t.account_id\n    HAVING AVG(t.balance) > 1000\n),\neligible_districts AS (\n    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           d.A11 AS salary, d.A10 AS urban_ratio\n    FROM main.card AS c\n    JOIN main.disp AS dp ON dp.disp_id = c.disp_id\n    JOIN main.client AS cl ON cl.client_id = dp.client_id\n    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id\n    JOIN main.account AS a ON a.account_id = q.account_id\n    JOIN main.district AS d ON d.district_id = a.district_id\n    WHERE c.type = 'gold'\n      AND dp.type = 'OWNER'\n      AND cl.gender IN ('F', 'M')\n      AND CAST(d.A4 AS INTEGER) > 100000\n), decimal_input AS (\nSELECT gender || '_salary' AS group_id, salary * 10 AS scaled_value FROM eligible_districts\nUNION ALL\nSELECT gender || '_urban', CAST(ROUND(urban_ratio * 10) AS INTEGER) FROM eligible_districts\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)\nSELECT group_id, n, invalid_count, status, rounded_value FROM decimal_result ORDER BY group_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): group_id=str; n=int; invalid_count=int; status=str; rounded_value=float\ngroup_id | n | invalid_count | status | rounded_value\n--- | --- | --- | --- | ---\nF_salary | 16 | 0 | ok | 9245.44\nF_urban | 16 | 0 | ok | 69.16\nM_salary | 22 | 0 | ok | 9347.86\nM_urban | 22 | 0 | ok | 71.03\nSQL: WITH qualifying_accounts AS (\n    SELECT t.account_id\n    FROM main.trans AS t\n    GROUP BY t.account_id\n    HAVING AVG(t.balance) > 1000\n),\neligible_districts AS (\n    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           d.A11 AS salary, d.A10 AS urban_ratio\n    FROM main.card AS c\n    JOIN main.disp AS dp ON dp.disp_id = c.disp_id\n    JOIN main.client AS cl ON cl.client_id = dp.client_id\n    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id\n    JOIN main.account AS a ON a.account_id = q.account_id\n    JOIN main.district AS d ON d.district_id = a.district_id\n    WHERE c.type = 'gold'\n      AND dp.type = 'OWNER'\n      AND cl.gender IN ('F', 'M')\n      AND CAST(d.A4 AS INTEGER) > 100000\n), decimal_input AS (\nSELECT gender || '_salary' AS group_id, salary * 10 AS scaled_value FROM eligible_districts\nUNION ALL\nSELECT gender || '_urban', CAST(ROUND(urban_ratio * 10) AS INTEGER) FROM eligible_districts\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)\nSELECT group_id, n, invalid_count, status, rounded_value FROM decimal_result ORDER BY group_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_14",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"09R-bpP6I-rNbEfbUzehVQc0qiXEn3LOzyEoLAj1yrk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_15",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "09R-bpP6I-rNbEfbUzehVQc0qiXEn3LOzyEoLAj1yrk",
+        "sql": "WITH qualifying_accounts AS (\n    SELECT t.account_id\n    FROM main.trans AS t\n    GROUP BY t.account_id\n    HAVING AVG(t.balance) > 1000\n),\neligible_districts AS (\n    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           d.A11 AS salary, d.A10 AS urban_ratio\n    FROM main.card AS c\n    JOIN main.disp AS dp ON dp.disp_id = c.disp_id\n    JOIN main.client AS cl ON cl.client_id = dp.client_id\n    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id\n    JOIN main.account AS a ON a.account_id = q.account_id\n    JOIN main.district AS d ON d.district_id = a.district_id\n    WHERE c.type = 'gold'\n      AND dp.type = 'OWNER'\n      AND cl.gender IN ('F', 'M')\n      AND CAST(d.A4 AS INTEGER) > 100000\n),\ndistrict_profiles AS (\n    SELECT gender, district_name, inhabitants,\n           COUNT(*) OVER g AS district_count,\n           MAX(inhabitants) OVER g AS max_inhabitants,\n           ROUND(AVG(salary) OVER g, 2) AS average_salary,\n           ROUND(AVG(urban_ratio) OVER g, 2) AS average_urban_ratio\n    FROM eligible_districts\n    WINDOW g AS (PARTITION BY gender)\n)\nSELECT gender, district_count, district_name, inhabitants,\n       average_salary, average_urban_ratio\nFROM district_profiles\nWHERE inhabitants = max_inhabitants\nORDER BY gender, district_name\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): gender=str; district_count=int; district_name=str; inhabitants=int; average_salary=float; average_urban_ratio=float\ngender | district_count | district_name | inhabitants | average_salary | average_urban_ratio\n--- | --- | --- | --- | --- | ---\nF | 16 | Hl.m. Praha | 1204953 | 9245.44 | 69.16\nM | 22 | Hl.m. Praha | 1204953 | 9347.86 | 71.03\nSQL: WITH qualifying_accounts AS (\n    SELECT t.account_id\n    FROM main.trans AS t\n    GROUP BY t.account_id\n    HAVING AVG(t.balance) > 1000\n),\neligible_districts AS (\n    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           d.A11 AS salary, d.A10 AS urban_ratio\n    FROM main.card AS c\n    JOIN main.disp AS dp ON dp.disp_id = c.disp_id\n    JOIN main.client AS cl ON cl.client_id = dp.client_id\n    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id\n    JOIN main.account AS a ON a.account_id = q.account_id\n    JOIN main.district AS d ON d.district_id = a.district_id\n    WHERE c.type = 'gold'\n      AND dp.type = 'OWNER'\n      AND cl.gender IN ('F', 'M')\n      AND CAST(d.A4 AS INTEGER) > 100000\n),\ndistrict_profiles AS (\n    SELECT gender, district_name, inhabitants,\n           COUNT(*) OVER g AS district_count,\n           MAX(inhabitants) OVER g AS max_inhabitants,\n           ROUND(AVG(salary) OVER g, 2) AS average_salary,\n           ROUND(AVG(urban_ratio) OVER g, 2) AS average_urban_ratio\n    FROM eligible_districts\n    WINDOW g AS (PARTITION BY gender)\n)\nSELECT gender, district_count, district_name, inhabitants,\n       average_salary, average_urban_ratio\nFROM district_profiles\nWHERE inhabitants = max_inhabitants\nORDER BY gender, district_name\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH qualifying_accounts AS (\n    SELECT t.account_id\n    FROM main.trans AS t\n    GROUP BY t.account_id\n    HAVING AVG(t.balance) > 1000\n),\neligible_districts AS (\n    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           d.A11 AS salary, d.A10 AS urban_ratio\n    FROM main.card AS c\n    JOIN main.disp AS dp ON dp.disp_id = c.disp_id\n    JOIN main.client AS cl ON cl.client_id = dp.client_id\n    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id\n    JOIN main.account AS a ON a.account_id = q.account_id\n    JOIN main.district AS d ON d.district_id = a.district_id\n    WHERE c.type = 'gold'\n      AND dp.type = 'OWNER'\n      AND cl.gender IN ('F', 'M')\n      AND CAST(d.A4 AS INTEGER) > 100000\n),\ndistrict_profiles AS (\n    SELECT gender, district_name, inhabitants,\n           COUNT(*) OVER g AS district_count,\n           MAX(inhabitants) OVER g AS max_inhabitants,\n           ROUND(AVG(salary) OVER g, 2) AS average_salary,\n           ROUND(AVG(urban_ratio) OVER g, 2) AS average_urban_ratio\n    FROM eligible_districts\n    WINDOW g AS (PARTITION BY gender)\n)\nSELECT gender, district_count, district_name, inhabitants,\n       average_salary, average_urban_ratio\nFROM district_profiles\nWHERE inhabitants = max_inhabitants\nORDER BY gender, district_name\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 2,
+  "sql": "WITH qualifying_accounts AS (\n    SELECT t.account_id\n    FROM main.trans AS t\n    GROUP BY t.account_id\n    HAVING AVG(t.balance) > 1000\n),\neligible_districts AS (\n    SELECT DISTINCT cl.gender, d.district_id, d.A2 AS district_name,\n           CAST(d.A4 AS INTEGER) AS inhabitants,\n           d.A11 AS salary, d.A10 AS urban_ratio\n    FROM main.card AS c\n    JOIN main.disp AS dp ON dp.disp_id = c.disp_id\n    JOIN main.client AS cl ON cl.client_id = dp.client_id\n    JOIN qualifying_accounts AS q ON q.account_id = dp.account_id\n    JOIN main.account AS a ON a.account_id = q.account_id\n    JOIN main.district AS d ON d.district_id = a.district_id\n    WHERE c.type = 'gold'\n      AND dp.type = 'OWNER'\n      AND cl.gender IN ('F', 'M')\n      AND CAST(d.A4 AS INTEGER) > 100000\n),\ndistrict_profiles AS (\n    SELECT gender, district_name, inhabitants,\n           COUNT(*) OVER g AS district_count,\n           MAX(inhabitants) OVER g AS max_inhabitants,\n           ROUND(AVG(salary) OVER g, 2) AS average_salary,\n           ROUND(AVG(urban_ratio) OVER g, 2) AS average_urban_ratio\n    FROM eligible_districts\n    WINDOW g AS (PARTITION BY gender)\n)\nSELECT gender, district_count, district_name, inhabitants,\n       average_salary, average_urban_ratio\nFROM district_profiles\nWHERE inhabitants = max_inhabitants\nORDER BY gender, district_name\nLIMIT -1",
+  "seconds": 57.189515749923885
+}

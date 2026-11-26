@@ -1,0 +1,8 @@
+SELECT ROUND(
+    100.0 * COUNT(CASE WHEN p.Birthday >= '1960-01-01' THEN 1 END)
+    / NULLIF(COUNT(*), 0),
+    1
+) AS percentage
+FROM main.Patient AS p
+WHERE p.Diagnosis IN ('Psoriatic Arthritis', 'Psoriatic arthritis')
+LIMIT 1

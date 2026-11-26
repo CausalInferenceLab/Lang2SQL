@@ -1,0 +1,131 @@
+{
+  "instance_id": "bird453",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "cf25f426d96078a39fa3e37f8c331ef9cac08770445579faf20664dcd5d608db",
+  "events_sha256": "30f9bfc888957c3406f4e3cd984015508e2b37183cd9346649ee142a5138d212",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165510,
+      "cached_input_tokens": 154112,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 549,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"xRC1l2bor2m3yIH4zS9VaB6Y5gl6KjureZSVk2NyJoM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "xRC1l2bor2m3yIH4zS9VaB6Y5gl6KjureZSVk2NyJoM",
+        "sql": "SELECT p.Admission, COUNT(*) AS patients, MIN(p.\"First Date\") AS earliest_visit, MAX(p.\"First Date\") AS latest_visit, MIN(p.Birthday) AS earliest_birth\nFROM main.Patient AS p\nGROUP BY p.Admission"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Admission=str; patients=int; earliest_visit=str; latest_visit=str; earliest_birth=str\nAdmission | patients | earliest_visit | latest_visit | earliest_birth\n--- | --- | --- | --- | ---\n | 34 | 1979-07-03 | 1998-02-13 | 1919-02-13\n+ | 488 | 1972-08-02 | 1998-08-28 | 1912-08-28\n+( | 3 | 1998-01-23 | 1998-02-27 | 1938-01-05\n- | 713 | 1973-04-08 | 1998-08-10 | 1918-03-20\nSQL: SELECT p.Admission, COUNT(*) AS patients, MIN(p.\"First Date\") AS earliest_visit, MAX(p.\"First Date\") AS latest_visit, MIN(p.Birthday) AS earliest_birth\nFROM main.Patient AS p\nGROUP BY p.Admission\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"O4rf7HvRajo6clOqQ-AbnOnOaWu030l_KlgFy_e-TsU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "O4rf7HvRajo6clOqQ-AbnOnOaWu030l_KlgFy_e-TsU",
+        "expected_columns": [
+          "Diagnosis"
+        ],
+        "sql": "SELECT p.Diagnosis\nFROM main.Patient AS p\nWHERE p.\"First Date\" >= '1998-02-15'\n  AND p.\"First Date\" < '1998-03-01'\n  AND p.Admission LIKE '+%'\n  AND p.Birthday IS NOT NULL\nORDER BY julianday(p.\"First Date\") - julianday(p.Birthday) DESC, p.ID ASC\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Diagnosis=str\nDiagnosis\n---\nWG\u001dSJS\nSQL: SELECT p.Diagnosis\nFROM main.Patient AS p\nWHERE p.\"First Date\" >= '1998-02-15'\n  AND p.\"First Date\" < '1998-03-01'\n  AND p.Admission LIKE '+%'\n  AND p.Birthday IS NOT NULL\nORDER BY julianday(p.\"First Date\") - julianday(p.Birthday) DESC, p.ID ASC\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT p.Diagnosis\nFROM main.Patient AS p\nWHERE p.\"First Date\" >= '1998-02-15'\n  AND p.\"First Date\" < '1998-03-01'\n  AND p.Admission LIKE '+%'\n  AND p.Birthday IS NOT NULL\nORDER BY julianday(p.\"First Date\") - julianday(p.Birthday) DESC, p.ID ASC\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT p.Diagnosis\nFROM main.Patient AS p\nWHERE p.\"First Date\" >= '1998-02-15'\n  AND p.\"First Date\" < '1998-03-01'\n  AND p.Admission LIKE '+%'\n  AND p.Birthday IS NOT NULL\nORDER BY julianday(p.\"First Date\") - julianday(p.Birthday) DESC, p.ID ASC\nLIMIT 1",
+  "seconds": 25.265517332940362
+}

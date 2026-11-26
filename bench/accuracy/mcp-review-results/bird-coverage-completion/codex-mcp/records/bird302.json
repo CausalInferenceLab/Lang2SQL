@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird302",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "bad837cf61a63cf9f6b151abee4d04f134534e6bd317552897a03311ae2dbe96",
+  "events_sha256": "4c82447fd9321733c51c15bcd56ef493299b7e92e6654ebdca4fafa54fae11d3",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 171202,
+      "cached_input_tokens": 158848,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 840,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Ng8YPOwCM549X_pIVwXzE_h86FG5Hzx4AUlBRp3YQ3Q\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attendance"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attendance (table)\n- link_to_event: TEXT\n- link_to_member: TEXT\nPRIMARY KEY (link_to_event, link_to_member)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Ng8YPOwCM549X_pIVwXzE_h86FG5Hzx4AUlBRp3YQ3Q",
+        "sql": "SELECT e.event_name, e.event_date, COUNT(a.link_to_member) AS attendees\nFROM main.event AS e\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nWHERE e.event_date >= '2019-09-01' AND e.event_date < '2019-12-01'\nGROUP BY e.event_id, e.event_name, e.event_date\nORDER BY e.event_date"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "20 row(s):\nResult coverage: fetched_rows=20; displayed_rows=20; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_name=str; event_date=str; attendees=int\nevent_name | event_date | attendees\n--- | --- | ---\nRegistration | 2019-09-01T07:00:00 | 30\nYearly Kickoff | 2019-09-03T12:00:00 | 30\nFall Budget Review | 2019-09-07T03:00:00 | 5\nOfficers meeting - September | 2019-09-10T09:30:00 | 0\nSeptember Meeting | 2019-09-10T12:00:00 | 27\nFootball game | 2019-09-12T06:00:00 | 14\nKid's Care | 2019-09-19T02:00:00 | 8\nSeptember Speaker | 2019-09-24T12:00:00 | 27\nWomen's Soccer | 2019-10-05T12:00:00 | 17\nOfficers meeting - October | 2019-10-08T09:30:00 | 0\nOctober Meeting | 2019-10-08T12:00:00 | 23\nFootball game | 2019-10-10T06:00:00 | 12\nCommunity Theater | 2019-10-12T06:00:00 | 17\nOctober Speaker | 2019-10-22T12:00:00 | 29\nLaugh Out Loud | 2019-10-24T13:00:00 | 20\nOfficers meeting - November | 2019-11-05T09:30:00 | 0\nNovember Meeting | 2019-11-05T12:00:00 | 25\nNovember Speaker | 2019-11-19T12:00:00 | 27\nFood Bank | 2019-11-21T02:00:00 | 11\nSpring Elections | 2019-11-24T09:00:00 | 0\nSQL: SELECT e.event_name, e.event_date, COUNT(a.link_to_member) AS attendees\nFROM main.event AS e\nLEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\nWHERE e.event_date >= '2019-09-01' AND e.event_date < '2019-12-01'\nGROUP BY e.event_id, e.event_name, e.event_date\nORDER BY e.event_date\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"MLTxlF1atIJFRfvBu7tiAq3pHeNs8RKGmZPuLHMlIi4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "MLTxlF1atIJFRfvBu7tiAq3pHeNs8RKGmZPuLHMlIi4",
+        "expected_columns": [
+          "womens_soccer_attendance",
+          "fall_average_attendance",
+          "verdict"
+        ],
+        "sql": "WITH fall_events AS (\n    SELECT e.event_name, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_date >= '2019-09-01'\n      AND e.event_date < '2019-12-01'\n    GROUP BY e.event_id, e.event_name\n),\nfall_average AS (\n    SELECT ROUND(AVG(attendees), 1) AS fall_average_attendance\n    FROM fall_events\n)\nSELECT f.attendees AS womens_soccer_attendance,\n       av.fall_average_attendance,\n       CASE\n           WHEN f.attendees > av.fall_average_attendance THEN 'more'\n           WHEN f.attendees < av.fall_average_attendance THEN 'fewer'\n           ELSE 'equal'\n       END AS verdict\nFROM fall_events AS f\nCROSS JOIN fall_average AS av\nWHERE f.event_name = 'Women''s Soccer'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): womens_soccer_attendance=int; fall_average_attendance=float; verdict=str\nwomens_soccer_attendance | fall_average_attendance | verdict\n--- | --- | ---\n17 | 16.1 | more\nSQL: WITH fall_events AS (\n    SELECT e.event_name, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_date >= '2019-09-01'\n      AND e.event_date < '2019-12-01'\n    GROUP BY e.event_id, e.event_name\n),\nfall_average AS (\n    SELECT ROUND(AVG(attendees), 1) AS fall_average_attendance\n    FROM fall_events\n)\nSELECT f.attendees AS womens_soccer_attendance,\n       av.fall_average_attendance,\n       CASE\n           WHEN f.attendees > av.fall_average_attendance THEN 'more'\n           WHEN f.attendees < av.fall_average_attendance THEN 'fewer'\n           ELSE 'equal'\n       END AS verdict\nFROM fall_events AS f\nCROSS JOIN fall_average AS av\nWHERE f.event_name = 'Women''s Soccer'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH fall_events AS (\n    SELECT e.event_name, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_date >= '2019-09-01'\n      AND e.event_date < '2019-12-01'\n    GROUP BY e.event_id, e.event_name\n),\nfall_average AS (\n    SELECT ROUND(AVG(attendees), 1) AS fall_average_attendance\n    FROM fall_events\n)\nSELECT f.attendees AS womens_soccer_attendance,\n       av.fall_average_attendance,\n       CASE\n           WHEN f.attendees > av.fall_average_attendance THEN 'more'\n           WHEN f.attendees < av.fall_average_attendance THEN 'fewer'\n           ELSE 'equal'\n       END AS verdict\nFROM fall_events AS f\nCROSS JOIN fall_average AS av\nWHERE f.event_name = 'Women''s Soccer'\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH fall_events AS (\n    SELECT e.event_name, COUNT(a.link_to_member) AS attendees\n    FROM main.event AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    WHERE e.event_date >= '2019-09-01'\n      AND e.event_date < '2019-12-01'\n    GROUP BY e.event_id, e.event_name\n),\nfall_average AS (\n    SELECT ROUND(AVG(attendees), 1) AS fall_average_attendance\n    FROM fall_events\n)\nSELECT f.attendees AS womens_soccer_attendance,\n       av.fall_average_attendance,\n       CASE\n           WHEN f.attendees > av.fall_average_attendance THEN 'more'\n           WHEN f.attendees < av.fall_average_attendance THEN 'fewer'\n           ELSE 'equal'\n       END AS verdict\nFROM fall_events AS f\nCROSS JOIN fall_average AS av\nWHERE f.event_name = 'Women''s Soccer'\nLIMIT 1000",
+  "seconds": 33.133947458001785
+}

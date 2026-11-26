@@ -1,0 +1,18 @@
+```sql
+WITH eligible AS (
+    SELECT d.forename || ' ' || d.surname AS driver_name,
+           r.name AS race_name,
+           r.year AS race_year,
+           q.q3 AS q3_time
+    FROM qualifying AS q
+    JOIN drivers AS d ON d.driverId = q.driverId
+    JOIN races AS r ON r.raceId = q.raceId
+    WHERE d.nationality = 'British'
+      AND d.dob >= '1981-01-01'
+      AND q.q3 <> ''
+)
+SELECT driver_name, race_name, race_year, q3_time
+FROM eligible
+WHERE q3_time = (SELECT MIN(q3_time) FROM eligible)
+LIMIT -1
+```

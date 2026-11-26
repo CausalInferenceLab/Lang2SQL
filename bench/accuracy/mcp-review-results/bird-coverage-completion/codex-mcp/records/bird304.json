@@ -1,0 +1,173 @@
+{
+  "instance_id": "bird304",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "64d54683ff3f4555af08b05525e378be13930481d65e84b38957d2a87aa478d8",
+  "events_sha256": "6cfe13ebf8263b5b6ba035a96f6515e2c22a2014b1717b5867348c1eb235c4d0",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 170304,
+      "cached_input_tokens": 158208,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 972,
+      "reasoning_output_tokens": 82
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"WhYgty3yEAFl7_mggkTAqGRUpootcJ0fgNxVeqSODhY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attendance"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attendance (table)\n- link_to_event: TEXT\n- link_to_member: TEXT\nPRIMARY KEY (link_to_event, link_to_member)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "WhYgty3yEAFl7_mggkTAqGRUpootcJ0fgNxVeqSODhY",
+        "sql": "SELECT e.status, MIN(e.event_date) AS first_date, MAX(e.event_date) AS last_date,\n       COUNT(*) AS event_count, COUNT(DISTINCT e.type) AS types, COUNT(e.type) AS typed_events\nFROM main.event AS e\nWHERE e.event_date >= '2019-01-01' AND e.event_date < '2020-01-01'\nGROUP BY e.status"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): status=str; first_date=str; last_date=str; event_count=int; types=int; typed_events=int\nstatus | first_date | last_date | event_count | types | typed_events\n--- | --- | --- | --- | --- | ---\nClosed | 2019-09-01T07:00:00 | 2019-11-21T02:00:00 | 18 | 7 | 18\nOpen | 2019-11-05T12:00:00 | 2019-11-24T09:00:00 | 2 | 2 | 2\nSQL: SELECT e.status, MIN(e.event_date) AS first_date, MAX(e.event_date) AS last_date,\n       COUNT(*) AS event_count, COUNT(DISTINCT e.type) AS types, COUNT(e.type) AS typed_events\nFROM main.event AS e\nWHERE e.event_date >= '2019-01-01' AND e.event_date < '2020-01-01'\nGROUP BY e.status\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"uvjOLa38gurW-xOHBVwsw9dPyyqI8bnuc9tQQitznws\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "uvjOLa38gurW-xOHBVwsw9dPyyqI8bnuc9tQQitznws",
+        "sql": "WITH events_2019 AS (\n    SELECT e.event_id, e.type AS event_type\n    FROM main.event AS e\n    WHERE e.event_date >= '2019-01-01'\n      AND e.event_date < '2020-01-01'\n),\nattendance_by_type AS (\n    SELECT e.event_type, COUNT(DISTINCT a.link_to_member) AS members_attended\n    FROM events_2019 AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    GROUP BY e.event_type\n),\nbudget_by_type AS (\n    SELECT e.event_type, COALESCE(SUM(b.amount), 0) AS budgeted_dollars\n    FROM events_2019 AS e\n    LEFT JOIN main.budget AS b ON b.link_to_event = e.event_id\n    GROUP BY e.event_type\n)\nSELECT a.event_type, a.members_attended, b.budgeted_dollars\nFROM attendance_by_type AS a\nJOIN budget_by_type AS b ON b.event_type IS a.event_type\nORDER BY a.event_type\nLIMIT -1",
+        "expected_columns": [
+          "event_type",
+          "members_attended",
+          "budgeted_dollars"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "8 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=8; displayed_rows=8; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_type=str; members_attended=int; budgeted_dollars=int\nevent_type | members_attended | budgeted_dollars\n--- | --- | ---\nBudget | 5 | 0\nCommunity Service | 13 | 0\nElection | 0 | 0\nGame | 24 | 0\nGuest Speaker | 29 | 785\nMeeting | 30 | 1175\nRegistration | 30 | 300\nSocial | 24 | 0\nSQL: WITH events_2019 AS (\n    SELECT e.event_id, e.type AS event_type\n    FROM main.event AS e\n    WHERE e.event_date >= '2019-01-01'\n      AND e.event_date < '2020-01-01'\n),\nattendance_by_type AS (\n    SELECT e.event_type, COUNT(DISTINCT a.link_to_member) AS members_attended\n    FROM events_2019 AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    GROUP BY e.event_type\n),\nbudget_by_type AS (\n    SELECT e.event_type, COALESCE(SUM(b.amount), 0) AS budgeted_dollars\n    FROM events_2019 AS e\n    LEFT JOIN main.budget AS b ON b.link_to_event = e.event_id\n    GROUP BY e.event_type\n)\nSELECT a.event_type, a.members_attended, b.budgeted_dollars\nFROM attendance_by_type AS a\nJOIN budget_by_type AS b ON b.event_type IS a.event_type\nORDER BY a.event_type\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH events_2019 AS (\n    SELECT e.event_id, e.type AS event_type\n    FROM main.event AS e\n    WHERE e.event_date >= '2019-01-01'\n      AND e.event_date < '2020-01-01'\n),\nattendance_by_type AS (\n    SELECT e.event_type, COUNT(DISTINCT a.link_to_member) AS members_attended\n    FROM events_2019 AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    GROUP BY e.event_type\n),\nbudget_by_type AS (\n    SELECT e.event_type, COALESCE(SUM(b.amount), 0) AS budgeted_dollars\n    FROM events_2019 AS e\n    LEFT JOIN main.budget AS b ON b.link_to_event = e.event_id\n    GROUP BY e.event_type\n)\nSELECT a.event_type, a.members_attended, b.budgeted_dollars\nFROM attendance_by_type AS a\nJOIN budget_by_type AS b ON b.event_type IS a.event_type\nORDER BY a.event_type\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 8,
+  "sql": "WITH events_2019 AS (\n    SELECT e.event_id, e.type AS event_type\n    FROM main.event AS e\n    WHERE e.event_date >= '2019-01-01'\n      AND e.event_date < '2020-01-01'\n),\nattendance_by_type AS (\n    SELECT e.event_type, COUNT(DISTINCT a.link_to_member) AS members_attended\n    FROM events_2019 AS e\n    LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id\n    GROUP BY e.event_type\n),\nbudget_by_type AS (\n    SELECT e.event_type, COALESCE(SUM(b.amount), 0) AS budgeted_dollars\n    FROM events_2019 AS e\n    LEFT JOIN main.budget AS b ON b.link_to_event = e.event_id\n    GROUP BY e.event_type\n)\nSELECT a.event_type, a.members_attended, b.budgeted_dollars\nFROM attendance_by_type AS a\nJOIN budget_by_type AS b ON b.event_type IS a.event_type\nORDER BY a.event_type\nLIMIT -1",
+  "seconds": 37.827111165970564
+}

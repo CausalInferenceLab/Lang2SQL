@@ -1,0 +1,56 @@
+```sql
+WITH gold_accounts AS (
+    SELECT DISTINCT d.account_id
+    FROM main.card AS c
+    JOIN main.disp AS d ON d.disp_id = c.disp_id
+    WHERE c.type = 'gold'
+),
+gold_transactions AS (
+    SELECT t.account_id, t.type, t.amount, t.operation, t.bank, t.account
+    FROM main.trans AS t
+    JOIN gold_accounts AS g ON g.account_id = t.account_id
+),
+amounts AS (
+    SELECT account_id,
+           SUM(CASE WHEN type = 'PRIJEM' THEN amount ELSE 0 END) AS total_received,
+           SUM(CASE WHEN type = 'VYDAJ' THEN amount ELSE 0 END) AS total_withdrawn
+    FROM gold_transactions
+    GROUP BY account_id
+),
+external_accounts AS (
+    SELECT DISTINCT account_id, bank, account
+    FROM gold_transactions
+    WHERE operation IN ('PREVOD NA UCET', 'PREVOD Z UCTU')
+      AND bank <> ''
+      AND account IS NOT NULL
+),
+counterparty_counts AS (
+    SELECT account_id, COUNT(*) AS external_counterparties
+    FROM external_accounts
+    GROUP BY account_id
+),
+loan_counts AS (
+    SELECT l.account_id, COUNT(*) AS loans_taken
+    FROM main.loan AS l
+    JOIN gold_accounts AS g ON g.account_id = l.account_id
+    GROUP BY l.account_id
+)
+SELECT g.account_id,
+       d.A2 AS district_name,
+       d.A3 AS region,
+       COALESCE(m.total_received, 0) AS total_received,
+       COALESCE(m.total_withdrawn, 0) AS total_withdrawn,
+       COALESCE(l.loans_taken, 0) AS loans_taken,
+       COALESCE(c.external_counterparties, 0) AS external_counterparties,
+       DENSE_RANK() OVER (
+           ORDER BY COALESCE(c.external_counterparties, 0) DESC
+       ) AS counterparty_rank
+FROM gold_accounts AS g
+JOIN main.account AS a ON a.account_id = g.account_id
+JOIN main.district AS d ON d.district_id = a.district_id
+LEFT JOIN amounts AS m ON m.account_id = g.account_id
+LEFT JOIN loan_counts AS l ON l.account_id = g.account_id
+LEFT JOIN counterparty_counts AS c ON c.account_id = g.account_id
+ORDER BY counterparty_rank, g.account_id
+LIMIT 1000
+```

@@ -1,0 +1,94 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+For our department report, I need to know how many different fields of study our club members from the Political Science Department represent. Only count members of the Political Science Department - members from other departments don't count. Just give me the number of different majors studied by those members.
+Provided evidence:
+A major is a field of study offered by a department.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `event` (
+    `event_id` TEXT, -- A unique identifier for the event; example: ['rec0Si5cQ4rJRVzd6', 'rec0akZnLLpGUloLH']
+    `event_name` TEXT, -- event name; example: ['March Meeting', 'Officers meeting - January']
+    `event_date` TEXT, -- The date the event took place or is scheduled to take place; example: ['2020-03-10T12:00:00', '2020-01-14T09:30:00']
+    `type` TEXT, -- The kind of event, such as game, social, election; example: ['Meeting', 'Election']
+    `notes` TEXT, -- A free text field for any notes about the event; example: ['All active members can vote for new officers between 4pm-8pm.', "Attend Women's soccer game as a group."]
+    `location` TEXT, -- Address where the event was held or is to be held or the name of such a location; example: ['MU 215', 'Campus Soccer/Lacrosse stadium']
+    `status` TEXT, -- One of three values indicating if the event is in planning, is opened, or is closed; example: ['Open', 'Planning']
+    PRIMARY KEY (`event_id`)
+);
+
+CREATE TABLE `major` (
+    `major_id` TEXT, -- A unique identifier for each major; example: ['rec06DF6vZ1CyPKpc', 'rec09LedkREyskCNv']
+    `major_name` TEXT, -- major name; example: ['Outdoor Product Design and Development', 'Agricultural Communication']
+    `department` TEXT, -- The name of the department that offers the major; example: ['School of Applied Sciences, Technology and Education', 'Watershed Sciences Department']
+    `college` TEXT, -- The name college that houses the department that offers the major; example: ['College of Agriculture and Applied Sciences', 'College of Natural Resources']
+    PRIMARY KEY (`major_id`)
+);
+
+CREATE TABLE `zip_code` (
+    `zip_code` INTEGER, -- The ZIP code itself. A five-digit number identifying a US post office.; example: [501, 544]
+    `type` TEXT, -- The kind of ZIP code; example: ['Unique', 'Standard']
+    `city` TEXT, -- The city to which the ZIP pertains; example: ['Holtsville', 'Adjuntas']
+    `county` TEXT, -- The county to which the ZIP pertains; example: ['Suffolk County', 'Adjuntas Municipio']
+    `state` TEXT, -- The name of the state to which the ZIP pertains; example: ['New York', 'Puerto Rico']
+    `short_state` TEXT, -- The abbreviation of the state to which the ZIP pertains; example: ['NY', 'PR']
+    PRIMARY KEY (`zip_code`)
+);
+
+CREATE TABLE `attendance` (
+    `link_to_event` TEXT, -- The unique identifier of the event which was attended; example: ['rec2N69DMcrqN9PJC']
+    `link_to_member` TEXT, -- The unique identifier of the member who attended the event; example: ['recD078PnS3x2doBe', 'recP6DJPyi5donvXL']
+    PRIMARY KEY (`link_to_event`, `link_to_member`),
+    FOREIGN KEY (`link_to_member`) REFERENCES `member` (`member_id`),
+    FOREIGN KEY (`link_to_event`) REFERENCES `event` (`event_id`)
+);
+
+CREATE TABLE `budget` (
+    `budget_id` TEXT, -- A unique identifier for the budget entry; example: ['rec0QmEc3cSQFQ6V2', 'rec1bG6HSft7XIvTP']
+    `category` TEXT, -- The area for which the amount is budgeted, such as, advertisement, food, parking; example: ['Advertisement', 'Food']
+    `spent` REAL, -- The total amount spent in the budgeted category for an event.; example: [67.81, 121.14]
+    `remaining` REAL, -- A value calculated as the amount budgeted minus the amount spent; example: [7.19, 28.86]
+    `amount` INTEGER, -- The amount budgeted for the specified category and event; example: [75, 150]
+    `event_status` TEXT, -- the status of the event; example: ['Closed', 'Open']
+    `link_to_event` TEXT, -- The unique identifier of the event to which the budget line applies.; example: ['recI43CzsZ0Q625ma', 'recggMW2eyCYceNcy']
+    PRIMARY KEY (`budget_id`),
+    FOREIGN KEY (`link_to_event`) REFERENCES `event` (`event_id`)
+);
+
+CREATE TABLE `expense` (
+    `expense_id` TEXT, -- unique id of income; example: ['rec017x6R3hQqkLAo', 'rec1nIjoZKTYayqZ6']
+    `expense_description` TEXT, -- A textual description of what the money was spend for; example: ['Post Cards, Posters', 'Water, Cookies']
+    `expense_date` TEXT, -- The date the expense was incurred; example: ['2019-08-20', '2019-10-08']
+    `cost` REAL, -- The dollar amount of the expense; example: [122.06, 20.2]
+    `approved` TEXT, -- A true or false value indicating if the expense was approved; example: ['true']
+    `link_to_member` TEXT, -- The member who incurred the expense; example: ['rec4BLdZHS2Blfp4v', 'recro8T1MPMwRadVH']
+    `link_to_budget` TEXT, -- The unique identifier of the record in the Budget table that indicates the expected total expenditure for a given catego; example: ['recvKTAWAFKkVNnXQ', 'recy8KY5bUdzF81vv']
+    PRIMARY KEY (`expense_id`),
+    FOREIGN KEY (`link_to_member`) REFERENCES `member` (`member_id`),
+    FOREIGN KEY (`link_to_budget`) REFERENCES `budget` (`budget_id`)
+);
+
+CREATE TABLE `income` (
+    `income_id` TEXT, -- A unique identifier for each record of income; example: ['rec0s9ZrO15zhzUeE', 'rec7f5XMQZexgtQJo']
+    `date_received` TEXT, -- the date that the fund received; example: ['2019-10-17', '2019-09-04']
+    `amount` INTEGER, -- amount of funds; example: [50]
+    `source` TEXT, -- A value indicating where the funds come from such as dues, or the annual university allocation; example: ['Dues']
+    `notes` TEXT, -- A free-text value giving any needed details about the receipt of funds; example: []
+    `link_to_member` TEXT, -- link to member; example: ['reccW7q1KkhSKZsea', 'recTjHY5xXhvkCdVT']
+    PRIMARY KEY (`income_id`),
+    FOREIGN KEY (`link_to_member`) REFERENCES `member` (`member_id`)
+);
+
+CREATE TABLE `member` (
+    `member_id` TEXT, -- unique id of member; example: ['rec1x5zBFIqoOuPW8', 'rec280Sk7o31iG0Tx']
+    `first_name` TEXT, -- member's first name; example: ['Angela', 'Grant']
+    `last_name` TEXT, -- member's last name; example: ['Sanders', 'Gilmour']
+    `email` TEXT, -- member's email; example: ['angela.sanders@lpu.edu', 'grant.gilmour@lpu.edu']
+    `position` TEXT, -- The position the member holds in the club; example: ['Member', 'Inactive']
+    `t_shirt_size` TEXT, -- The size of tee shirt that member wants when shirts are ordered; example: ['Medium', 'X-Large']
+    `phone` TEXT, -- The best telephone at which to contact the member; example: ['(651) 928-4507', '403-555-1310']
+    `zip` INTEGER, -- the zip code of the member's hometown; example: [55108, 29440]
+    `link_to_major` TEXT, -- The unique identifier of the major of the member. References the Major table; example: ['recxK3MHQFbR9J5uO', 'rec7BxKpjJ7bNph3O']
+    PRIMARY KEY (`member_id`),
+    FOREIGN KEY (`zip`) REFERENCES `zip_code` (`zip_code`),
+    FOREIGN KEY (`link_to_major`) REFERENCES `major` (`major_id`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

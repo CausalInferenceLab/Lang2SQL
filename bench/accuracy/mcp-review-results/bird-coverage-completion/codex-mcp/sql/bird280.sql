@@ -1,0 +1,7 @@
+SELECT COUNT(DISTINCT r.raceId) AS runnings
+FROM main.races AS r
+JOIN main.results AS res ON res.raceId = r.raceId
+JOIN main.status AS s ON s.statusId = res.statusId
+WHERE r.name = 'Canadian Grand Prix'
+  AND s.status = 'Accident'
+LIMIT 1

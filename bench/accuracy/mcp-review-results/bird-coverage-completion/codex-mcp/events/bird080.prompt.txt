@@ -1,0 +1,147 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I've already looked at the heavy hitters in duel deck B (the 'b' deck). Now I want to check the light end: how many cards in duel deck B are not available in foil and have attack power below 3? Note that 'below 3' means strictly below 3 — a power of exactly 3 doesn't count.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `cards` (
+    `id` INTEGER, -- unique id number identifying the cards; example: [1, 2]
+    `artist` TEXT, -- The name of the artist that illustrated the card art.; example: ['Pete Venters', 'Volkan Baǵa']
+    `asciiName` TEXT, -- The ASCII(opens new window) (Basic/128) code formatted card name with no special unicode characters.; example: []
+    `availability` TEXT, -- A list of the card's available printing types.; example: ['mtgo,paper']
+    `borderColor` TEXT, -- The color of the card border.; example: ['black']
+    `cardKingdomFoilId` TEXT, -- card Kingdom Foil Id; example: ['123094', '123095']
+    `cardKingdomId` TEXT, -- card Kingdom Id; example: ['122719', '122720']
+    `colorIdentity` TEXT, -- A list of all the colors found in manaCost, colorIndicator, and text; example: ['W']
+    `colorIndicator` TEXT, -- A list of all the colors in the color indicator (The symbol prefixed to a card's types).; example: []
+    `colors` TEXT, -- A list of all the colors in manaCost and colorIndicator.; example: ['W']
+    `convertedManaCost` REAL, -- The converted mana cost of the card. Use the manaValue property.; example: [7.0, 5.0]
+    `duelDeck` TEXT, -- The indicator for which duel deck the card is in.; example: []
+    `edhrecRank` INTEGER, -- The card rank on EDHRec; example: [15650, 12702]
+    `faceConvertedManaCost` REAL, -- The converted mana cost or mana value for the face for either half or part of the card.; example: []
+    `faceName` TEXT, -- The name on the face of the card.; example: []
+    `flavorName` TEXT, -- The promotional card name printed above the true card name on special cards that has no game function.; example: []
+    `flavorText` TEXT, -- The italicized text found below the rules text that has no game function.; example: ['Every tear shed is a drop of immortality.', 'The perfect antidote for a tightly packed formation.']
+    `frameEffects` TEXT, -- The visual frame effects.; example: []
+    `frameVersion` TEXT, -- The version of the card frame style.; example: ['2003']
+    `hand` TEXT, -- The starting maximum hand size total modifier.; example: []
+    `hasAlternativeDeckLimit` INTEGER, -- If the card allows a value other than 4 copies in a deck.; example: [0]
+    `hasContentWarning` INTEGER, -- If the card marked by Wizards of the Coast (opens new window) for having sensitive content. See this official article (o; example: [0]
+    `hasFoil` INTEGER, -- If the card can be found in foil; example: [0, 1]
+    `hasNonFoil` INTEGER, -- If the card can be found in non-foil; example: [1]
+    `isAlternative` INTEGER, -- If the card is an alternate variation to an original printing; example: [0]
+    `isFullArt` INTEGER, -- If the card has full artwork.; example: [0]
+    `isOnlineOnly` INTEGER, -- If the card is only available in online game variations.; example: [0]
+    `isOversized` INTEGER, -- If the card is oversized.; example: [0]
+    `isPromo` INTEGER, -- If the card is a promotional printing.; example: [0]
+    `isReprint` INTEGER, -- If the card has been reprinted.; example: [1]
+    `isReserved` INTEGER, -- If the card is on the Magic: The Gathering Reserved List (opens new window); example: [0]
+    `isStarter` INTEGER, -- If the card is found in a starter deck such as Planeswalker/Brawl decks.; example: [0]
+    `isStorySpotlight` INTEGER, -- If the card is a Story Spotlight card.; example: [0]
+    `isTextless` INTEGER, -- If the card does not have a text box.; example: [0]
+    `isTimeshifted` INTEGER, -- If the card is time shifted; example: [0]
+    `keywords` TEXT, -- A list of keywords found on the card.; example: ['First strike', 'Flying']
+    `layout` TEXT, -- The type of card layout. For a token card, this will be "token"; example: ['normal']
+    `leadershipSkills` TEXT, -- A list of formats the card is legal to be a commander in; example: []
+    `life` TEXT, -- The starting life total modifier. A plus or minus character precedes an integer.; example: []
+    `loyalty` TEXT, -- The starting loyalty value of the card.; example: []
+    `manaCost` TEXT, -- The mana cost of the card wrapped in brackets for each value.; example: ['{5}{W}{W}', '{4}{W}']
+    `mcmId` TEXT, -- example: ['16165', '16166']
+    `mcmMetaId` TEXT, -- example: ['156', '176']
+    `mtgArenaId` TEXT, -- example: []
+    `mtgjsonV4Id` TEXT, -- example: ['ad41be73-582f-58ed-abd4-a88c1f616ac3', '9eb2e54c-a12b-5e88-a9c0-d8c84c52d59c']
+    `mtgoFoilId` TEXT, -- example: ['27501', '26993']
+    `mtgoId` TEXT, -- example: ['27500', '26992']
+    `multiverseId` TEXT, -- example: ['130550', '129465']
+    `name` TEXT, -- The name of the card.; example: ["Ancestor's Chosen", 'Angel of Mercy']
+    `number` TEXT, -- The number of the card; example: ['1', '2']
+    `originalReleaseDate` TEXT, -- original Release Date; example: []
+    `originalText` TEXT, -- original Text; example: ['First strike (This creature deals combat damage before creatures without first s', "Flying (This creature can't be blocked except by creatures with flying or reach."]
+    `originalType` TEXT, -- original Type; example: ['Creature - Human Cleric', 'Creature - Angel']
+    `otherFaceIds` TEXT, -- other Face Ids; example: []
+    `power` TEXT, -- The power of the card.; example: ['4', '3']
+    `printings` TEXT, -- A list of set printing codes the card was printed in, formatted in uppercase.; example: ['10E,JUD,UMA', '10E,8ED,9ED,DDC,DVD,IMA,INV,JMP,MB1,P02,PS11,PSAL,S99']
+    `promoTypes` TEXT, -- A list of promotional types for a card.; example: []
+    `purchaseUrls` TEXT, -- Links that navigate to websites where the card can be purchased.; example: ["{'cardKingdom': 'https://mtgjson.com/links/9fb51af0ad6f0736', 'cardmarket': 'htt", "{'cardKingdom': 'https://mtgjson.com/links/027095d094e58f5b', 'cardmarket': 'htt"]
+    `rarity` TEXT, -- The card printing rarity.; example: ['uncommon', 'common']
+    `scryfallId` TEXT, -- example: ['7a5cd03c-4227-4551-aa4b-7d119f0468b5', '8f7980d4-da43-4d6d-ad16-14b8a34ae91d']
+    `scryfallIllustrationId` TEXT, -- example: ['be2f7173-c8b7-4172-a388-9b2c6b3c16e5', 'e4d6c53f-e936-4be8-8b70-47c2be863b20']
+    `scryfallOracleId` TEXT, -- example: ['fc2ccab7-cab1-4463-b73d-898070136d74', 'a2daaf32-dbfe-4618-892e-0da24f63a44a']
+    `setCode` TEXT, -- The set printing code that the card is from.; example: ['10E']
+    `side` TEXT, -- The identifier of the card side.; example: []
+    `subtypes` TEXT, -- A list of card subtypes found after em-dash.; example: ['Human,Cleric', 'Angel']
+    `supertypes` TEXT, -- A list of card supertypes found before em-dash.; example: []
+    `tcgplayerProductId` TEXT, -- tcg player ProductId; example: ['15032', '15033']
+    `text` TEXT, -- The rules text of the card.; example: ['First strike (This creature deals combat damage before creatures without first s', 'Flying When Angel of Mercy enters the battlefield, you gain 3 life.']
+    `toughness` TEXT, -- The toughness of the card.; example: ['4', '3']
+    `type` TEXT, -- The type of the card as visible, including any supertypes and subtypes.; example: ['Creature — Human Cleric', 'Creature — Angel']
+    `types` TEXT, -- A list of all card types of the card, including Un‑sets and gameplay variants.; example: ['Creature', 'Instant']
+    `uuid` TEXT, -- The universal unique identifier (v5) generated by MTGJSON. Each entry is unique.; example: ['5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c', '57aaebc1-850c-503d-9f6e-bb8d00d8bf7c']
+    `variations` TEXT, -- example: ['b7c19924-b4bf-56fc-aa73-f586e940bd42', '8fd4e2eb-3eb4-50ea-856b-ef638fa47f8a']
+    `watermark` TEXT, -- The name of the watermark on the card.; example: []
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `foreign_data` (
+    `id` INTEGER, -- unique id number identifying this row of data; example: [1, 2]
+    `flavorText` TEXT, -- The foreign flavor text of the card.; example: ['„Es ist der Wille aller, und meine Hand, die ihn ausführt."', '"La voluntad de todos, realizada por mi mano."']
+    `language` TEXT, -- The foreign language of card.; example: ['German', 'Spanish']
+    `multiverseid` INTEGER, -- The foreign multiverse identifier of the card.; example: [148411, 150317]
+    `name` TEXT, -- The foreign name of the card.; example: ['Ausgewählter der Ahnfrau', 'Elegido de la Antepasada']
+    `text` TEXT, -- The foreign text ruling of the card.; example: ['Erstschlag (Diese Kreatur fügt Kampfschaden vor Kreaturen ohne Erstschlag zu.) W', 'Daña primero. (Esta criatura hace daño de combate antes que las criaturas sin la']
+    `type` TEXT, -- The foreign type of the card. Includes any supertypes and subtypes.; example: ['Kreatur — Mensch, Kleriker', 'Criatura — Clérigo humano']
+    `uuid` TEXT, -- example: ['5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`uuid`) REFERENCES `cards` (`uuid`)
+);
+
+CREATE TABLE `legalities` (
+    `id` INTEGER, -- unique id identifying this legality; example: [1, 2]
+    `format` TEXT, -- format of play; example: ['commander', 'duel']
+    `status` TEXT, -- example: ['Legal']
+    `uuid` TEXT, -- example: ['5f8287b1-5bb6-5f4c-ad17-316a40d5bb0c']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`uuid`) REFERENCES `cards` (`uuid`)
+);
+
+CREATE TABLE `sets` (
+    `id` INTEGER, -- unique id identifying this set; example: [1, 2]
+    `baseSetSize` INTEGER, -- The number of cards in the set.; example: [383, 302]
+    `block` TEXT, -- The block name the set was in.; example: ['Core Set']
+    `booster` TEXT, -- A breakdown of possibilities and weights of cards in a booster pack.; example: ["{'default': {'boosters': [{'contents': {'basic': 1, 'common': 10, 'rare': 1, 'un", "{'default': {'boosters': [{'contents': {'common': 11, 'rare': 1, 'uncommon': 3},"]
+    `code` TEXT, -- The set code for the set.; example: ['10E', '2ED']
+    `isFoilOnly` INTEGER, -- If the set is only available in foil.; example: [0]
+    `isForeignOnly` INTEGER, -- If the set is available only outside the United States of America.; example: [0, 1]
+    `isNonFoilOnly` INTEGER, -- If the set is only available in non-foil.; example: [0, 1]
+    `isOnlineOnly` INTEGER, -- If the set is only available in online game variations.; example: [0]
+    `isPartialPreview` INTEGER, -- If the set is still in preview (spoiled). Preview sets do not have complete data.; example: [0]
+    `keyruneCode` TEXT, -- The matching Keyrune code for set image icons.; example: ['10E', '2ED']
+    `mcmId` INTEGER, -- The Magic Card Marketset identifier.; example: [74, 3204]
+    `mcmIdExtras` INTEGER, -- The split Magic Card Market set identifier if a set is printed in two sets. This identifier represents the second set's ; example: [3209]
+    `mcmName` TEXT, -- magic card market name; example: ['Tenth Edition', 'Double Masters']
+    `mtgoCode` TEXT, -- The set code for the set as it appears on Magic: The Gathering Online; example: ['10E', '2XM']
+    `name` TEXT, -- The name of the set.; example: ['Tenth Edition', 'Unlimited Edition']
+    `parentCode` TEXT, -- The parent set code for set variations like promotions, guild kits, etc.; example: []
+    `releaseDate` DATE, -- The release date in ISO 8601 format for the set.; example: ['2007-07-13', '1993-12-01']
+    `tcgplayerGroupId` INTEGER, -- The group identifier of the set on TCGplayer; example: [1, 115]
+    `totalSetSize` INTEGER, -- The total number of cards in the set, including promotional and related supplemental products but excluding Alchemy modi; example: [508, 302]
+    `type` TEXT, -- The expansion type of the set.; example: ['core', 'masters']
+    PRIMARY KEY (`id`)
+);
+
+CREATE TABLE `set_translations` (
+    `id` INTEGER, -- unique id identifying this set; example: [1, 2]
+    `language` TEXT, -- language of this card; example: ['Chinese Simplified', 'Chinese Traditional']
+    `setCode` TEXT, -- the set code for this set; example: ['10E']
+    `translation` TEXT, -- translation of this card; example: ['核心系列第十版', 'Dixième édition']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`setCode`) REFERENCES `sets` (`code`)
+);
+
+CREATE TABLE `rulings` (
+    `id` INTEGER, -- unique id identifying this ruling; example: [1, 2]
+    `date` DATE, -- date; example: ['2007-07-15', '2007-02-01']
+    `text` TEXT, -- description about this ruling; example: ['You draw the card when Bandage resolves, not when the damage is actually prevent', 'If you double a negative life total, you do the real math. A life total of -10 b']
+    `uuid` TEXT, -- example: ['6d268c95-c176-5766-9a46-c14f739aba1c', '56f4935b-f6c5-59b9-88bf-9bcce20247ce']
+    PRIMARY KEY (`id`),
+    FOREIGN KEY (`uuid`) REFERENCES `cards` (`uuid`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

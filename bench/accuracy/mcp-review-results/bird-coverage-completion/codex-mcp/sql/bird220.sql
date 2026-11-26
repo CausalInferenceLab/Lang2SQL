@@ -1,0 +1,16 @@
+WITH top_loans AS (
+    SELECT a.district_id
+    FROM loan AS l
+    JOIN account AS a ON a.account_id = l.account_id
+    WHERE l.duration = 24
+      AND a.frequency = 'POPLATEK TYDNE'
+    ORDER BY l.amount DESC, l.loan_id ASC
+    LIMIT 10
+)
+SELECT d.A2 AS district_name,
+       CAST(d.A4 AS INTEGER) AS inhabitants,
+       ROUND(AVG(d.A11) OVER (), 2) AS average_yearly_salary
+FROM district AS d
+WHERE d.district_id IN (SELECT district_id FROM top_loans)
+ORDER BY inhabitants DESC, d.district_id ASC
+LIMIT 1;

@@ -1,0 +1,10 @@
+WITH driver_counts AS (
+    SELECT d.driverId, COUNT(NULLIF(q.q3, '')) AS q3_times
+    FROM main.drivers AS d
+    LEFT JOIN main.qualifying AS q ON q.driverId = d.driverId
+    WHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'
+    GROUP BY d.driverId
+)
+SELECT ROUND(AVG(q3_times), 2) AS average_q3_times_per_driver
+FROM driver_counts
+LIMIT 1

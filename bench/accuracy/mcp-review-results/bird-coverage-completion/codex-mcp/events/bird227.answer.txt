@@ -1,0 +1,21 @@
+```sql
+SELECT
+    t.bank AS bank_code,
+    t.account AS account_number,
+    COUNT(*) AS payment_count,
+    SUM(t.amount) AS total_amount_paid
+FROM main.trans AS t
+WHERE t.account_id IN (
+    SELECT l.account_id
+    FROM main.loan AS l
+    WHERE l.amount = 98832
+      AND l.date = '1996-01-03'
+)
+  AND t.date < '1996-01-03'
+  AND t.type = 'VYDAJ'
+  AND t.bank IS NOT NULL
+  AND t.account IS NOT NULL
+GROUP BY t.bank, t.account
+ORDER BY total_amount_paid DESC
+LIMIT 1000
+```

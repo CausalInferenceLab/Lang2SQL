@@ -1,0 +1,172 @@
+{
+  "instance_id": "bird376",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "966680408039903b6aa71ca08488a843caf6c0e00490d341d9401bd625addded",
+  "events_sha256": "9120950890cfa8e2f3b109bc2e5780cdaf494de76bc6cf4b93f6670a546a01e8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 165753,
+      "cached_input_tokens": 151808,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 791,
+      "reasoning_output_tokens": 98
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hero_attribute"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hero_attribute (table)\n- hero_id: INTEGER\n- attribute_id: INTEGER\n- attribute_value: INTEGER\nFOREIGN KEY (attribute_id) REFERENCES attribute (id)\nFOREIGN KEY (hero_id) REFERENCES superhero (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wfczv0xOFqCYXQYCD99qhLUU11VWM-B3tG-7ur3ycrs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attribute"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attribute (table)\n- id: INTEGER NOT NULL\n- attribute_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wfczv0xOFqCYXQYCD99qhLUU11VWM-B3tG-7ur3ycrs",
+        "sql": "WITH speeds AS (\n    SELECT ha.hero_id, ha.attribute_value\n    FROM main.hero_attribute AS ha\n    JOIN main.attribute AS a ON a.id = ha.attribute_id\n    WHERE a.attribute_name = 'Speed'\n)\nSELECT s.id, s.superhero_name, quote(s.full_name) AS stored_name, speeds.attribute_value\nFROM speeds\nJOIN main.superhero AS s ON s.id = speeds.hero_id\nWHERE speeds.attribute_value = (SELECT MAX(attribute_value) FROM speeds)\nORDER BY s.id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "40 row(s):\nResult coverage: fetched_rows=40; displayed_rows=40; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): id=int; superhero_name=str; stored_name=str; attribute_value=int\nid | superhero_name | stored_name | attribute_value\n--- | --- | --- | ---\n13 | Air-Walker | 'Gabriel Lan' | 100\n28 | Angela | '-' | 100\n43 | Ardina | '-' | 100\n59 | Aurora | 'Jeanne-Marie Beaubier' | 100\n82 | Ben 10 | 'Benjamin Kirby Tennyson' | 100\n84 | Beyonder | '-' | 100\n91 | Binary | 'Carol Susan Jane Danvers' | 100\n98 | Bizarro | 'Bizarro' | 100\n101 | Black Bolt | 'Blackagar Boltagon' | 100\n105 | Black Flash | '-' | 100\n269 | Flash | 'Jason Peter Garrick' | 100\n271 | Flash II | 'Bartholomew Henry Allen' | 100\n272 | Flash III | 'Wallace Rudolph West' | 100\n273 | Flash IV | 'Bartholomew Allen II' | 100\n284 | General Zod | 'Dru-Zod' | 100\n291 | Gladiator | 'Kallark' | 100\n348 | Hyperion | '-' | 100\n350 | Impulse | 'Bartholomew Allen II' | 100\n360 | Jack of Hearts | 'Jonathan Hart' | 100\n371 | Jesse Quick | 'Jessica Belle Chambers' | 100\n398 | Kid Flash II | 'Bartholomew Allen II' | 100\n410 | Krypto | 'Krypto the Superdog' | 100\n424 | Living Tribunal | '-' | 100\n441 | Man of Miracles | '-' | 100\n474 | Mister Mxyzptlk | 'Mr. Mxyzptlk' | 100\n484 | Monarch | 'Nathaniel Christopher Adam' | 100\n518 | One-Above-All | '-' | 100\n530 | Peter Petrelli | 'Peter Petrelli' | 100\n541 | Power Girl | 'Kara Zor-L' | 100\n545 | Professor Zoom | 'Eobard Thawne' | 100\n555 | Quicksilver | 'Pietro Django Maximoff' | 100\n604 | Sentry | 'Robert Reynolds' | 100\n622 | Silver Surfer | 'Norrin Radd' | 100\n637 | Spectre | '-' | 100\n654 | Stardust | '-' | 100\n665 | Superboy-Prime | 'Kal-El' | 100\n666 | Supergirl | 'Kara Zor-El' | 100\n667 | Superman | 'Clark Joseph Kent (Kal-El)' | 100\n683 | The Presence | '-' | 100\n756 | Zoom | 'Hunter Zolomon' | 100\nSQL: WITH speeds AS (\n    SELECT ha.hero_id, ha.attribute_value\n    FROM main.hero_attribute AS ha\n    JOIN main.attribute AS a ON a.id = ha.attribute_id\n    WHERE a.attribute_name = 'Speed'\n)\nSELECT s.id, s.superhero_name, quote(s.full_name) AS stored_name, speeds.attribute_value\nFROM speeds\nJOIN main.superhero AS s ON s.id = speeds.hero_id\nWHERE speeds.attribute_value = (SELECT MAX(attribute_value) FROM speeds)\nORDER BY s.id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_wnsspgf6DMeRdO2w1Rr8SQOKUXbuKGbymTqc-dzzr0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_wnsspgf6DMeRdO2w1Rr8SQOKUXbuKGbymTqc-dzzr0",
+        "expected_columns": [
+          "superhero_name",
+          "full_name"
+        ],
+        "sql": "WITH speeds AS (\n    SELECT ha.hero_id, ha.attribute_value\n    FROM main.hero_attribute AS ha\n    JOIN main.attribute AS a ON a.id = ha.attribute_id\n    WHERE a.attribute_name = 'Speed'\n)\nSELECT s.superhero_name, s.full_name\nFROM main.superhero AS s\nWHERE s.id IN (\n    SELECT hero_id\n    FROM speeds\n    WHERE attribute_value = (SELECT MAX(attribute_value) FROM speeds)\n)\nAND TRIM(s.full_name) NOT IN ('', '-')\nORDER BY s.superhero_name, s.full_name\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "29 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=29; displayed_rows=29; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): superhero_name=str; full_name=str\nsuperhero_name | full_name\n--- | ---\nAir-Walker | Gabriel Lan\nAurora | Jeanne-Marie Beaubier\nBen 10 | Benjamin Kirby Tennyson\nBinary | Carol Susan Jane Danvers\nBizarro | Bizarro\nBlack Bolt | Blackagar Boltagon\nFlash | Jason Peter Garrick\nFlash II | Bartholomew Henry Allen\nFlash III | Wallace Rudolph West\nFlash IV | Bartholomew Allen II\nGeneral Zod | Dru-Zod\nGladiator | Kallark\nImpulse | Bartholomew Allen II\nJack of Hearts | Jonathan Hart\nJesse Quick | Jessica Belle Chambers\nKid Flash II | Bartholomew Allen II\nKrypto | Krypto the Superdog\nMister Mxyzptlk | Mr. Mxyzptlk\nMonarch | Nathaniel Christopher Adam\nPeter Petrelli | Peter Petrelli\nPower Girl | Kara Zor-L\nProfessor Zoom | Eobard Thawne\nQuicksilver | Pietro Django Maximoff\nSentry | Robert Reynolds\nSilver Surfer | Norrin Radd\nSuperboy-Prime | Kal-El\nSupergirl | Kara Zor-El\nSuperman | Clark Joseph Kent (Kal-El)\nZoom | Hunter Zolomon\nSQL: WITH speeds AS (\n    SELECT ha.hero_id, ha.attribute_value\n    FROM main.hero_attribute AS ha\n    JOIN main.attribute AS a ON a.id = ha.attribute_id\n    WHERE a.attribute_name = 'Speed'\n)\nSELECT s.superhero_name, s.full_name\nFROM main.superhero AS s\nWHERE s.id IN (\n    SELECT hero_id\n    FROM speeds\n    WHERE attribute_value = (SELECT MAX(attribute_value) FROM speeds)\n)\nAND TRIM(s.full_name) NOT IN ('', '-')\nORDER BY s.superhero_name, s.full_name\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH speeds AS (\n    SELECT ha.hero_id, ha.attribute_value\n    FROM main.hero_attribute AS ha\n    JOIN main.attribute AS a ON a.id = ha.attribute_id\n    WHERE a.attribute_name = 'Speed'\n)\nSELECT s.superhero_name, s.full_name\nFROM main.superhero AS s\nWHERE s.id IN (\n    SELECT hero_id\n    FROM speeds\n    WHERE attribute_value = (SELECT MAX(attribute_value) FROM speeds)\n)\nAND TRIM(s.full_name) NOT IN ('', '-')\nORDER BY s.superhero_name, s.full_name\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 29,
+  "sql": "WITH speeds AS (\n    SELECT ha.hero_id, ha.attribute_value\n    FROM main.hero_attribute AS ha\n    JOIN main.attribute AS a ON a.id = ha.attribute_id\n    WHERE a.attribute_name = 'Speed'\n)\nSELECT s.superhero_name, s.full_name\nFROM main.superhero AS s\nWHERE s.id IN (\n    SELECT hero_id\n    FROM speeds\n    WHERE attribute_value = (SELECT MAX(attribute_value) FROM speeds)\n)\nAND TRIM(s.full_name) NOT IN ('', '-')\nORDER BY s.superhero_name, s.full_name\nLIMIT -1",
+  "seconds": 31.380555958021432
+}

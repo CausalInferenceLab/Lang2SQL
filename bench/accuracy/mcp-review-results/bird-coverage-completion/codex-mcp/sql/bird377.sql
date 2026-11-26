@@ -1,0 +1,10 @@
+SELECT
+    eye.colour AS eye_colour,
+    COUNT(*) FILTER (WHERE hair.colour <> 'Brown') AS hero_count
+FROM superhero AS hero
+JOIN colour AS eye ON eye.id = hero.eye_colour_id
+JOIN colour AS hair ON hair.id = hero.hair_colour_id
+GROUP BY eye.colour
+HAVING COUNT(*) FILTER (WHERE hair.colour = 'Brown') > 0
+ORDER BY hero_count DESC, eye_colour ASC
+LIMIT 1000

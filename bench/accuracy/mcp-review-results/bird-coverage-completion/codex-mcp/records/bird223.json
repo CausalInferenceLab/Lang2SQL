@@ -1,0 +1,168 @@
+{
+  "instance_id": "bird223",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "76002373f5fafb664a8683cb04efb470452b27b6bfae5ce6c24765ccb2584d88",
+  "events_sha256": "9e47b0c2aff949fce20bb8f23992185c70afa96901c4ce872f8d3e4a47cde7ee",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167891,
+      "cached_input_tokens": 156032,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 996,
+      "reasoning_output_tokens": 64
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "loan"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "loan (table)\n- loan_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- amount: INTEGER NOT NULL\n- duration: INTEGER NOT NULL\n- payments: REAL NOT NULL\n- status: TEXT NOT NULL\nPRIMARY KEY (loan_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "account (table)\n- account_id: INTEGER NOT NULL\n- district_id: INTEGER NOT NULL\n- frequency: TEXT NOT NULL\n- date: DATE NOT NULL\nPRIMARY KEY (account_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"-0cteKTRjoJwW84kmq4gKgDRV74fNZhhVtV_qEiyhcw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "-0cteKTRjoJwW84kmq4gKgDRV74fNZhhVtV_qEiyhcw",
+        "sql": "SELECT MIN(a.date) AS first_opening, MAX(a.date) AS last_opening,\n       COUNT(DISTINCT a.account_id) AS opened_accounts,\n       COUNT(DISTINCT l.account_id) AS borrowing_accounts,\n       SUM(l.amount) AS lent\nFROM main.account AS a\nJOIN main.district AS d ON d.district_id = a.district_id\nLEFT JOIN main.loan AS l ON l.account_id = a.account_id\nWHERE d.A3 = 'central Bohemia' AND a.date >= '1996-01-01'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_opening=str; last_opening=str; opened_accounts=int; borrowing_accounts=int; lent=int\nfirst_opening | last_opening | opened_accounts | borrowing_accounts | lent\n--- | --- | --- | --- | ---\n1996-01-01 | 1997-12-23 | 305 | 47 | 6858492\nSQL: SELECT MIN(a.date) AS first_opening, MAX(a.date) AS last_opening,\n       COUNT(DISTINCT a.account_id) AS opened_accounts,\n       COUNT(DISTINCT l.account_id) AS borrowing_accounts,\n       SUM(l.amount) AS lent\nFROM main.account AS a\nJOIN main.district AS d ON d.district_id = a.district_id\nLEFT JOIN main.loan AS l ON l.account_id = a.account_id\nWHERE d.A3 = 'central Bohemia' AND a.date >= '1996-01-01'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"tDmXxOc0ZLpyV-XOKShXgDay56Miw9sY7ku1Svl2fOk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "tDmXxOc0ZLpyV-XOKShXgDay56Miw9sY7ku1Svl2fOk",
+        "sql": "WITH loan_totals AS (\n    SELECT account_id, SUM(amount) AS amount_lent\n    FROM main.loan\n    GROUP BY account_id\n),\ndistrict_year AS (\n    SELECT\n        strftime('%Y', a.date) AS opening_year,\n        a.district_id,\n        COUNT(*) AS accounts_opened,\n        SUM(COALESCE(l.amount_lent, 0)) AS amount_lent\n    FROM main.account AS a\n    JOIN main.district AS d ON d.district_id = a.district_id\n    LEFT JOIN loan_totals AS l ON l.account_id = a.account_id\n    WHERE d.A3 = 'central Bohemia'\n      AND a.date >= '1996-01-01'\n    GROUP BY opening_year, a.district_id\n)\nSELECT\n    opening_year,\n    SUM(accounts_opened) AS accounts_opened,\n    SUM(amount_lent) AS total_amount_lent,\n    ROUND(AVG(CAST(amount_lent AS REAL) / accounts_opened), 2) AS avg_district_lending_per_account\nFROM district_year\nGROUP BY opening_year\nORDER BY opening_year\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): opening_year=str; accounts_opened=int; total_amount_lent=int; avg_district_lending_per_account=float\nopening_year | accounts_opened | total_amount_lent | avg_district_lending_per_account\n--- | --- | --- | ---\n1996 | 191 | 4887024 | 23639.03\n1997 | 114 | 1971468 | 19809.53\nSQL: WITH loan_totals AS (\n    SELECT account_id, SUM(amount) AS amount_lent\n    FROM main.loan\n    GROUP BY account_id\n),\ndistrict_year AS (\n    SELECT\n        strftime('%Y', a.date) AS opening_year,\n        a.district_id,\n        COUNT(*) AS accounts_opened,\n        SUM(COALESCE(l.amount_lent, 0)) AS amount_lent\n    FROM main.account AS a\n    JOIN main.district AS d ON d.district_id = a.district_id\n    LEFT JOIN loan_totals AS l ON l.account_id = a.account_id\n    WHERE d.A3 = 'central Bohemia'\n      AND a.date >= '1996-01-01'\n    GROUP BY opening_year, a.district_id\n)\nSELECT\n    opening_year,\n    SUM(accounts_opened) AS accounts_opened,\n    SUM(amount_lent) AS total_amount_lent,\n    ROUND(AVG(CAST(amount_lent AS REAL) / accounts_opened), 2) AS avg_district_lending_per_account\nFROM district_year\nGROUP BY opening_year\nORDER BY opening_year\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH loan_totals AS (\n    SELECT account_id, SUM(amount) AS amount_lent\n    FROM main.loan\n    GROUP BY account_id\n),\ndistrict_year AS (\n    SELECT\n        strftime('%Y', a.date) AS opening_year,\n        a.district_id,\n        COUNT(*) AS accounts_opened,\n        SUM(COALESCE(l.amount_lent, 0)) AS amount_lent\n    FROM main.account AS a\n    JOIN main.district AS d ON d.district_id = a.district_id\n    LEFT JOIN loan_totals AS l ON l.account_id = a.account_id\n    WHERE d.A3 = 'central Bohemia'\n      AND a.date >= '1996-01-01'\n    GROUP BY opening_year, a.district_id\n)\nSELECT\n    opening_year,\n    SUM(accounts_opened) AS accounts_opened,\n    SUM(amount_lent) AS total_amount_lent,\n    ROUND(AVG(CAST(amount_lent AS REAL) / accounts_opened), 2) AS avg_district_lending_per_account\nFROM district_year\nGROUP BY opening_year\nORDER BY opening_year\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 2,
+  "sql": "WITH loan_totals AS (\n    SELECT account_id, SUM(amount) AS amount_lent\n    FROM main.loan\n    GROUP BY account_id\n),\ndistrict_year AS (\n    SELECT\n        strftime('%Y', a.date) AS opening_year,\n        a.district_id,\n        COUNT(*) AS accounts_opened,\n        SUM(COALESCE(l.amount_lent, 0)) AS amount_lent\n    FROM main.account AS a\n    JOIN main.district AS d ON d.district_id = a.district_id\n    LEFT JOIN loan_totals AS l ON l.account_id = a.account_id\n    WHERE d.A3 = 'central Bohemia'\n      AND a.date >= '1996-01-01'\n    GROUP BY opening_year, a.district_id\n)\nSELECT\n    opening_year,\n    SUM(accounts_opened) AS accounts_opened,\n    SUM(amount_lent) AS total_amount_lent,\n    ROUND(AVG(CAST(amount_lent AS REAL) / accounts_opened), 2) AS avg_district_lending_per_account\nFROM district_year\nGROUP BY opening_year\nORDER BY opening_year\nLIMIT -1",
+  "seconds": 37.452868625056
+}

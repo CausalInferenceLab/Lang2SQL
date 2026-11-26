@@ -1,0 +1,11 @@
+WITH player_totals AS (
+    SELECT
+        p.player_api_id,
+        COALESCE(SUM(m.home_team_goal), 0) AS total_home_goals
+    FROM main.Player AS p
+    LEFT JOIN main."Match" AS m ON m.home_player_3 = p.player_api_id
+    GROUP BY p.player_api_id
+)
+SELECT ROUND(AVG(total_home_goals), 2) AS average_total_home_goals
+FROM player_totals
+LIMIT 1

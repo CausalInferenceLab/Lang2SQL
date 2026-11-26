@@ -1,0 +1,15 @@
+WITH annual_totals AS (
+    SELECT
+        SUM(CASE WHEN substr(y.Date, 1, 4) = '2012' THEN y.Consumption END) AS total_2012,
+        SUM(CASE WHEN substr(y.Date, 1, 4) = '2013' THEN y.Consumption END) AS total_2013
+    FROM main.yearmonth AS y
+    WHERE y.CustomerID IN (
+        SELECT t.CustomerID
+        FROM main.transactions_1k AS t
+        WHERE t.Date = '2012-08-25' AND t.Price = 634.8
+    )
+    GROUP BY y.CustomerID
+)
+SELECT ROUND(1.0 * (total_2013 - total_2012) / NULLIF(total_2012, 0), 4) AS relative_change
+FROM annual_totals
+LIMIT 1000

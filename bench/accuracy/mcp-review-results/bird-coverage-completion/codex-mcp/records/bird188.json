@@ -1,0 +1,131 @@
+{
+  "instance_id": "bird188",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "529cdcfc22afab6be7c3ed2cf0ab34b5da44148fd84eb9d261403be75efeef15",
+  "events_sha256": "6d1998402371f4168b9ae9b42d950e8434e10210692fa0cba099c610f38d48bc",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 189318,
+      "cached_input_tokens": 174464,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 772,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"6d_tu0_wGcVlp1br0_uoVv9rlw8AU6ikerQtHBthM70\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Player_Attributes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Player_Attributes (table)\n- id: INTEGER\n- player_fifa_api_id: INTEGER\n- player_api_id: INTEGER\n- date: TEXT\n- overall_rating: INTEGER\n- potential: INTEGER\n- preferred_foot: TEXT\n- attacking_work_rate: TEXT\n- defensive_work_rate: TEXT\n- crossing: INTEGER\n- finishing: INTEGER\n- heading_accuracy: INTEGER\n- short_passing: INTEGER\n- volleys: INTEGER\n- dribbling: INTEGER\n- curve: INTEGER\n- free_kick_accuracy: INTEGER\n- long_passing: INTEGER\n- ball_control: INTEGER\n- acceleration: INTEGER\n- sprint_speed: INTEGER\n- agility: INTEGER\n- reactions: INTEGER\n- balance: INTEGER\n- shot_power: INTEGER\n- jumping: INTEGER\n- stamina: INTEGER\n- strength: INTEGER\n- long_shots: INTEGER\n- aggression: INTEGER\n- interceptions: INTEGER\n- positioning: INTEGER\n- vision: INTEGER\n- penalties: INTEGER\n- marking: INTEGER\n- standing_tackle: INTEGER\n- sliding_tackle: INTEGER\n- gk_diving: INTEGER\n- gk_handling: INTEGER\n- gk_kicking: INTEGER\n- gk_positioning: INTEGER\n- gk_reflexes: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (player_api_id) REFERENCES Player (player_api_id)\nFOREIGN KEY (player_fifa_api_id) REFERENCES Player (player_fifa_api_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "6d_tu0_wGcVlp1br0_uoVv9rlw8AU6ikerQtHBthM70",
+        "sql": "WITH snapshots AS (\n    SELECT player_api_id, date, preferred_foot, attacking_work_rate,\n           RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes\n    WHERE date < '2015-01-02'\n), latest AS (\n    SELECT player_api_id, COUNT(*) AS snapshot_count, MAX(date) AS snapshot_date,\n           MIN(CASE WHEN preferred_foot = 'left' AND attacking_work_rate IN ('low', 'medium') THEN 1 ELSE 0 END) AS min_match,\n           MAX(CASE WHEN preferred_foot = 'left' AND attacking_work_rate IN ('low', 'medium') THEN 1 ELSE 0 END) AS max_match\n    FROM snapshots\n    WHERE recency = 1\n    GROUP BY player_api_id\n)\nSELECT MAX(snapshot_date) AS last_date, SUM(snapshot_count > 1) AS tied_players,\n       SUM(min_match <> max_match) AS conflicting_players, SUM(player_api_id IS NULL) AS missing_ids\nFROM latest"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): last_date=str; tied_players=int; conflicting_players=int; missing_ids=int\nlast_date | tied_players | conflicting_players | missing_ids\n--- | --- | --- | ---\n2014-12-27 00:00:00 | 5 | 0 | 0\nSQL: WITH snapshots AS (\n    SELECT player_api_id, date, preferred_foot, attacking_work_rate,\n           RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes\n    WHERE date < '2015-01-02'\n), latest AS (\n    SELECT player_api_id, COUNT(*) AS snapshot_count, MAX(date) AS snapshot_date,\n           MIN(CASE WHEN preferred_foot = 'left' AND attacking_work_rate IN ('low', 'medium') THEN 1 ELSE 0 END) AS min_match,\n           MAX(CASE WHEN preferred_foot = 'left' AND attacking_work_rate IN ('low', 'medium') THEN 1 ELSE 0 END) AS max_match\n    FROM snapshots\n    WHERE recency = 1\n    GROUP BY player_api_id\n)\nSELECT MAX(snapshot_date) AS last_date, SUM(snapshot_count > 1) AS tied_players,\n       SUM(min_match <> max_match) AS conflicting_players, SUM(player_api_id IS NULL) AS missing_ids\nFROM latest\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"K1ykeRc7KD8EdbslSXbuEWM2iZlVdI5YF74wV7ukoqE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "K1ykeRc7KD8EdbslSXbuEWM2iZlVdI5YF74wV7ukoqE",
+        "expected_columns": [
+          "player_count"
+        ],
+        "sql": "WITH ranked_attributes AS (\n    SELECT player_api_id, preferred_foot, attacking_work_rate,\n           RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes\n    WHERE date < '2015-01-02'\n)\nSELECT COUNT(DISTINCT player_api_id) AS player_count\nFROM ranked_attributes\nWHERE recency = 1\n  AND preferred_foot = 'left'\n  AND attacking_work_rate IN ('low', 'medium')\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): player_count=int\nplayer_count\n---\n1795\nSQL: WITH ranked_attributes AS (\n    SELECT player_api_id, preferred_foot, attacking_work_rate,\n           RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes\n    WHERE date < '2015-01-02'\n)\nSELECT COUNT(DISTINCT player_api_id) AS player_count\nFROM ranked_attributes\nWHERE recency = 1\n  AND preferred_foot = 'left'\n  AND attacking_work_rate IN ('low', 'medium')\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH ranked_attributes AS (\n    SELECT player_api_id, preferred_foot, attacking_work_rate,\n           RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes\n    WHERE date < '2015-01-02'\n)\nSELECT COUNT(DISTINCT player_api_id) AS player_count\nFROM ranked_attributes\nWHERE recency = 1\n  AND preferred_foot = 'left'\n  AND attacking_work_rate IN ('low', 'medium')\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH ranked_attributes AS (\n    SELECT player_api_id, preferred_foot, attacking_work_rate,\n           RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes\n    WHERE date < '2015-01-02'\n)\nSELECT COUNT(DISTINCT player_api_id) AS player_count\nFROM ranked_attributes\nWHERE recency = 1\n  AND preferred_foot = 'left'\n  AND attacking_work_rate IN ('low', 'medium')\nLIMIT 1",
+  "seconds": 32.89987312501762
+}

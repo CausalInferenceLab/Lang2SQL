@@ -1,0 +1,5 @@
+SELECT COUNT(DISTINCT major.major_id) AS major_count
+FROM member
+JOIN major ON member.link_to_major = major.major_id
+WHERE major.department = 'Political Science Department'
+LIMIT 1000

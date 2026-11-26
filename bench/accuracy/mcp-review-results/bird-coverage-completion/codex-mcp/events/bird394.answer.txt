@@ -1,0 +1,24 @@
+```sql
+WITH diagnoses AS (
+    SELECT ID, NULLIF(TRIM(Diagnosis), '') AS diagnosis FROM main.Patient
+    UNION ALL
+    SELECT ID, NULLIF(TRIM(Diagnosis), '') AS diagnosis FROM main.Examination
+),
+mctd_only AS (
+    SELECT ID
+    FROM diagnoses
+    GROUP BY ID
+    HAVING MIN(diagnosis) = 'MCTD' AND MAX(diagnosis) = 'MCTD'
+)
+SELECT COUNT(*) AS patient_count
+FROM mctd_only AS m
+WHERE EXISTS (
+    SELECT 1 FROM main.Laboratory AS l
+    WHERE l.ID = m.ID AND l.PLT BETWEEN 100 AND 400
+)
+AND EXISTS (
+    SELECT 1 FROM main.Laboratory AS l
+    WHERE l.ID = m.ID AND CAST(l.RNP AS REAL) > 5
+)
+LIMIT 1
+```

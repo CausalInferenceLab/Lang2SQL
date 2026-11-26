@@ -1,0 +1,12 @@
+SELECT COUNT(*) AS patient_count
+FROM Patient AS p
+WHERE p.SEX = 'F'
+  AND p.Admission LIKE '+%'
+  AND p.Birthday >= '1945-01-01'
+  AND p.Birthday < '1990-01-01'
+  AND p.ID IN (
+      SELECT e.ID
+      FROM Examination AS e
+      WHERE e."ANA Pattern" = 'P'
+  )
+LIMIT 1000

@@ -1,0 +1,110 @@
+{
+  "instance_id": "bird312",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "cbcd829b70560d62c8989a3e18d1d6d640e8d88a4060a388106f01471a0a3d7d",
+  "events_sha256": "b2f04f485d982e733cb809442836b6c402d8967810bd0ecc80dd71334b82e67e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 117189,
+      "cached_input_tokens": 105984,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 401,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "member"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "member (table)\n- member_id: TEXT\n- first_name: TEXT\n- last_name: TEXT\n- email: TEXT\n- position: TEXT\n- t_shirt_size: TEXT\n- phone: TEXT\n- zip: INTEGER\n- link_to_major: TEXT\nPRIMARY KEY (member_id)\nFOREIGN KEY (link_to_major) REFERENCES major (major_id)\nFOREIGN KEY (zip) REFERENCES zip_code (zip_code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "major"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "major (table)\n- major_id: TEXT\n- major_name: TEXT\n- department: TEXT\n- college: TEXT\nPRIMARY KEY (major_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"UOQWdzCXAhZKpskyWxpKOQQhsYYqSHRSPLRJj9QYBww\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "UOQWdzCXAhZKpskyWxpKOQQhsYYqSHRSPLRJj9QYBww",
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (\n        WHERE major.major_id NOT IN (\n            SELECT member.link_to_major\n            FROM member\n            WHERE member.link_to_major IS NOT NULL\n        )\n    ) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_without_members\nFROM major;",
+        "expected_columns": [
+          "percentage_without_members"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage_without_members=float\npercentage_without_members\n---\n76.99\nSQL: SELECT ROUND(\n    100.0 * COUNT(*) FILTER (\n        WHERE major.major_id NOT IN (\n            SELECT member.link_to_major\n            FROM member\n            WHERE member.link_to_major IS NOT NULL\n        )\n    ) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_without_members\nFROM major\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(*) FILTER (\n        WHERE major.major_id NOT IN (\n            SELECT member.link_to_major\n            FROM member\n            WHERE member.link_to_major IS NOT NULL\n        )\n    ) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_without_members\nFROM major\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (\n        WHERE major.major_id NOT IN (\n            SELECT member.link_to_major\n            FROM member\n            WHERE member.link_to_major IS NOT NULL\n        )\n    ) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_without_members\nFROM major\nLIMIT 1000",
+  "seconds": 23.58175091596786
+}

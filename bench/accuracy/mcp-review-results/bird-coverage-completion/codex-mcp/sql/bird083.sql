@@ -1,0 +1,14 @@
+SELECT
+    s.type AS expansion_type,
+    COUNT(*) FILTER (
+        WHERE s.code IN (
+            SELECT t.setCode
+            FROM main.set_translations AS t
+            WHERE t.language = 'Japanese'
+              AND TRIM(t.translation) <> ''
+        )
+    ) AS japanese_name_count
+FROM main.sets AS s
+GROUP BY s.type
+ORDER BY s.type
+LIMIT -1

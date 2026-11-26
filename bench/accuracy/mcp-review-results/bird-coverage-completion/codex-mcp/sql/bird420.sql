@@ -1,0 +1,31 @@
+WITH diagnosis_history AS (
+    SELECT p.ID, NULLIF(TRIM(p.Diagnosis), '') AS diagnosis
+    FROM main.Patient AS p
+    UNION ALL
+    SELECT e.ID, NULLIF(TRIM(e.Diagnosis), '')
+    FROM main.Examination AS e
+),
+sle_only AS (
+    SELECT ID
+    FROM diagnosis_history
+    GROUP BY ID
+    HAVING COUNT(DISTINCT diagnosis) = 1
+       AND MAX(diagnosis) = 'SLE'
+)
+SELECT COUNT(CASE WHEN p.Admission = '+' THEN 1 END) AS admitted_patients,
+       COUNT(CASE WHEN p.Admission = '-' THEN 1 END) AS outpatient_patients
+FROM main.Patient AS p
+JOIN sle_only AS s ON s.ID = p.ID
+WHERE EXISTS (
+    SELECT 1
+    FROM main.Laboratory AS l
+    WHERE l.ID = p.ID
+      AND CAST(
+          CASE
+              WHEN l."U-PRO" LIKE '>=%' THEN SUBSTR(l."U-PRO", 3)
+              WHEN l."U-PRO" LIKE '+%(%)' THEN SUBSTR(l."U-PRO", INSTR(l."U-PRO", '(') + 1)
+              ELSE l."U-PRO"
+          END AS REAL
+      ) >= 30
+)
+LIMIT 1000

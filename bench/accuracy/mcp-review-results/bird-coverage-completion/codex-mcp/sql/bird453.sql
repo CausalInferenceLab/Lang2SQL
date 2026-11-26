@@ -1,0 +1,8 @@
+SELECT p.Diagnosis
+FROM main.Patient AS p
+WHERE p."First Date" >= '1998-02-15'
+  AND p."First Date" < '1998-03-01'
+  AND p.Admission LIKE '+%'
+  AND p.Birthday IS NOT NULL
+ORDER BY julianday(p."First Date") - julianday(p.Birthday) DESC, p.ID ASC
+LIMIT 1

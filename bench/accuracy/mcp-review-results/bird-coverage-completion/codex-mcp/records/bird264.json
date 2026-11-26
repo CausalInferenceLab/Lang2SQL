@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird264",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "7351cf8b6de40e996a821b6ccb8698100be49c20e613b7e393181b654cb93cf6",
+  "events_sha256": "05200ebc5708ce6f1ad045e4fc7c7fcc9d37fc82af9602668591fc8981708ce6",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 175937,
+      "cached_input_tokens": 163072,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 729,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "qualifying"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "qualifying (table)\n- qualifyId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER NOT NULL\n- position: INTEGER\n- q1: TEXT\n- q2: TEXT\n- q3: TEXT\nPRIMARY KEY (qualifyId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"AF8m1I7q1T1JZbSkjdGqfea8mMMd9xLTuhLgoGQQk8M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "AF8m1I7q1T1JZbSkjdGqfea8mMMd9xLTuhLgoGQQk8M",
+        "sql": "SELECT CASE WHEN q.q3 GLOB '*:[0-9][0-9].[0-9][0-9][0-9]' THEN 'timed' ELSE quote(q.q3) END AS stored_value, COUNT(q.qualifyId) AS records, COUNT(DISTINCT d.driverId) AS drivers, MIN(d.dob) AS first_birth, MAX(d.dob) AS last_birth\nFROM main.drivers AS d\nLEFT JOIN main.qualifying AS q ON q.driverId = d.driverId\nWHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'\nGROUP BY stored_value"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): stored_value=str; records=int; drivers=int; first_birth=str; last_birth=str\nstored_value | records | drivers | first_birth | last_birth\n--- | --- | --- | --- | ---\n'' | 6 | 5 | 1981-07-29 | 1991-01-20\nNULL | 1745 | 44 | 1981-01-01 | 1991-09-25\ntimed | 1284 | 29 | 1981-04-25 | 1991-08-05\nSQL: SELECT CASE WHEN q.q3 GLOB '*:[0-9][0-9].[0-9][0-9][0-9]' THEN 'timed' ELSE quote(q.q3) END AS stored_value, COUNT(q.qualifyId) AS records, COUNT(DISTINCT d.driverId) AS drivers, MIN(d.dob) AS first_birth, MAX(d.dob) AS last_birth\nFROM main.drivers AS d\nLEFT JOIN main.qualifying AS q ON q.driverId = d.driverId\nWHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'\nGROUP BY stored_value\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"OLhlXzA7MGiQMe274rnAMiRcn1eemrzAd11YvZILzdQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "OLhlXzA7MGiQMe274rnAMiRcn1eemrzAd11YvZILzdQ",
+        "expected_columns": [
+          "average_q3_times_per_driver"
+        ],
+        "sql": "WITH driver_counts AS (\n    SELECT d.driverId, COUNT(NULLIF(q.q3, '')) AS q3_times\n    FROM main.drivers AS d\n    LEFT JOIN main.qualifying AS q ON q.driverId = d.driverId\n    WHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'\n    GROUP BY d.driverId\n)\nSELECT ROUND(AVG(q3_times), 2) AS average_q3_times_per_driver\nFROM driver_counts\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_q3_times_per_driver=float\naverage_q3_times_per_driver\n---\n29.18\nSQL: WITH driver_counts AS (\n    SELECT d.driverId, COUNT(NULLIF(q.q3, '')) AS q3_times\n    FROM main.drivers AS d\n    LEFT JOIN main.qualifying AS q ON q.driverId = d.driverId\n    WHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'\n    GROUP BY d.driverId\n)\nSELECT ROUND(AVG(q3_times), 2) AS average_q3_times_per_driver\nFROM driver_counts\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH driver_counts AS (\n    SELECT d.driverId, COUNT(NULLIF(q.q3, '')) AS q3_times\n    FROM main.drivers AS d\n    LEFT JOIN main.qualifying AS q ON q.driverId = d.driverId\n    WHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'\n    GROUP BY d.driverId\n)\nSELECT ROUND(AVG(q3_times), 2) AS average_q3_times_per_driver\nFROM driver_counts\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH driver_counts AS (\n    SELECT d.driverId, COUNT(NULLIF(q.q3, '')) AS q3_times\n    FROM main.drivers AS d\n    LEFT JOIN main.qualifying AS q ON q.driverId = d.driverId\n    WHERE d.dob >= '1981-01-01' AND d.dob < '1992-01-01'\n    GROUP BY d.driverId\n)\nSELECT ROUND(AVG(q3_times), 2) AS average_q3_times_per_driver\nFROM driver_counts\nLIMIT 1",
+  "seconds": 29.16456000006292
+}
