@@ -110,6 +110,8 @@ async def test_responses_path_uses_shared_measurement_budget(monkeypatch):
     )
     result = await llm.complete([Message(Role.USER, "hello")])
     assert result.content == "done" and len(llm.calls) == 1
+    assert llm.calls[0]["usage"]["prompt_tokens"] == 10
+    assert llm.calls[0]["usage"]["completion_tokens"] == 2
     assert requests[0]["store"] is False
     assert requests[0]["include"] == ["reasoning.encrypted_content"]
     assert requests[0]["reasoning"] == {"effort": "max"}

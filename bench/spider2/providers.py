@@ -101,6 +101,13 @@ class MeasuredLLM:
                     status="ok", usage=raw.get("usage"), response_model=raw.get("model")
                 )
                 if self.profile.get("api") == "responses":
+                    if entry["usage"] is not None:
+                        for source, target in (
+                            ("input_tokens", "prompt_tokens"),
+                            ("output_tokens", "completion_tokens"),
+                        ):
+                            if source in entry["usage"]:
+                                entry["usage"][target] = entry["usage"][source]
                     entry["response_status"] = raw.get("status")
                     entry["reasoning_items_returned"] = sum(
                         item.get("type") == "reasoning"
