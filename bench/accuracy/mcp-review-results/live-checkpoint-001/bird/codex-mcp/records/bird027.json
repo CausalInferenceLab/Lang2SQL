@@ -1,0 +1,154 @@
+{
+  "instance_id": "bird027",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "552f19cbcc14f204ab2f4f3a9560641eb722094c4c27d53134bd0e63f1f5126c",
+  "events_sha256": "018b0f4831c1ea6e989fcf4d9d43265e1f9e44436a6ba6bcb136931fce66a07e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 175878,
+      "cached_input_tokens": 162688,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 800,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"KWPKZRGQTI66z9THr2UHKQsrhqF8sExD_YlsUYf8qpI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "KWPKZRGQTI66z9THr2UHKQsrhqF8sExD_YlsUYf8qpI",
+        "sql": "SELECT f.\"District Type\", f.\"School Type\", f.\"School Name\", f.\"Low Grade\", f.\"Enrollment (K-12)\", s.NumTstTakr\nFROM main.frpm AS f\nLEFT JOIN main.satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND (f.\"District Type\" LIKE '%state special%' OR f.\"School Type\" LIKE '%state special%')"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): District Type=str; School Type=str; School Name=str; Low Grade=str; Enrollment (K-12)=float; NumTstTakr=NoneType,int\nDistrict Type | School Type | School Name | Low Grade | Enrollment (K-12) | NumTstTakr\n--- | --- | --- | --- | --- | ---\nState Special Schools | State Special Schools | California School for the Blind | 1 | 60.0 | None\nState Special Schools | State Special Schools | California School for the Deaf-Fremont | P | 410.0 | None\nState Special Schools | State Special Schools | California School for the Deaf-Riverside | K | 355.0 | 1\nSQL: SELECT f.\"District Type\", f.\"School Type\", f.\"School Name\", f.\"Low Grade\", f.\"Enrollment (K-12)\", s.NumTstTakr\nFROM main.frpm AS f\nLEFT JOIN main.satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND (f.\"District Type\" LIKE '%state special%' OR f.\"School Type\" LIKE '%state special%')\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"effjXIO6uL4gG0vhFo2mYKqblT_vBI-0PTLvXhfbL9M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "effjXIO6uL4gG0vhFo2mYKqblT_vBI-0PTLvXhfbL9M",
+        "sql": "SELECT\n    f.\"School Name\",\n    f.\"Low Grade\",\n    f.\"Enrollment (K-12)\",\n    COALESCE(s.NumTstTakr, 0) AS \"SAT Test Takers\"\nFROM main.frpm AS f\nLEFT JOIN main.satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND f.\"School Type\" = 'State Special Schools'\nORDER BY\n    CASE f.\"Low Grade\"\n        WHEN 'P' THEN -1\n        WHEN 'K' THEN 0\n        ELSE CAST(f.\"Low Grade\" AS INTEGER)\n    END DESC,\n    f.\"Enrollment (K-12)\" DESC,\n    f.\"School Name\" ASC\nLIMIT 1",
+        "expected_columns": [
+          "School Name",
+          "Low Grade",
+          "Enrollment (K-12)",
+          "SAT Test Takers"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): School Name=str; Low Grade=str; Enrollment (K-12)=float; SAT Test Takers=int\nSchool Name | Low Grade | Enrollment (K-12) | SAT Test Takers\n--- | --- | --- | ---\nCalifornia School for the Blind | 1 | 60.0 | 0\nSQL: SELECT\n    f.\"School Name\",\n    f.\"Low Grade\",\n    f.\"Enrollment (K-12)\",\n    COALESCE(s.NumTstTakr, 0) AS \"SAT Test Takers\"\nFROM main.frpm AS f\nLEFT JOIN main.satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND f.\"School Type\" = 'State Special Schools'\nORDER BY\n    CASE f.\"Low Grade\"\n        WHEN 'P' THEN -1\n        WHEN 'K' THEN 0\n        ELSE CAST(f.\"Low Grade\" AS INTEGER)\n    END DESC,\n    f.\"Enrollment (K-12)\" DESC,\n    f.\"School Name\" ASC\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    f.\"School Name\",\n    f.\"Low Grade\",\n    f.\"Enrollment (K-12)\",\n    COALESCE(s.NumTstTakr, 0) AS \"SAT Test Takers\"\nFROM main.frpm AS f\nLEFT JOIN main.satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND f.\"School Type\" = 'State Special Schools'\nORDER BY\n    CASE f.\"Low Grade\"\n        WHEN 'P' THEN -1\n        WHEN 'K' THEN 0\n        ELSE CAST(f.\"Low Grade\" AS INTEGER)\n    END DESC,\n    f.\"Enrollment (K-12)\" DESC,\n    f.\"School Name\" ASC\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    f.\"School Name\",\n    f.\"Low Grade\",\n    f.\"Enrollment (K-12)\",\n    COALESCE(s.NumTstTakr, 0) AS \"SAT Test Takers\"\nFROM main.frpm AS f\nLEFT JOIN main.satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND f.\"School Type\" = 'State Special Schools'\nORDER BY\n    CASE f.\"Low Grade\"\n        WHEN 'P' THEN -1\n        WHEN 'K' THEN 0\n        ELSE CAST(f.\"Low Grade\" AS INTEGER)\n    END DESC,\n    f.\"Enrollment (K-12)\" DESC,\n    f.\"School Name\" ASC\nLIMIT 1",
+  "seconds": 30.304419625084847
+}

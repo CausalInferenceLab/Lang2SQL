@@ -1,0 +1,20 @@
+```sql
+SELECT p.player_name
+FROM main.player AS p
+WHERE p.player_id IN (
+    SELECT b.striker
+    FROM main.ball_by_ball AS b
+    JOIN main.batsman_scored AS s
+      ON s.match_id = b.match_id
+     AND s.innings_no = b.innings_no
+     AND s.over_id = b.over_id
+     AND s.ball_id = b.ball_id
+    JOIN main."match" AS m
+      ON m.match_id = b.match_id
+    WHERE b.team_bowling = m.match_winner
+    GROUP BY b.match_id, b.striker
+    HAVING SUM(s.runs_scored) >= 100
+)
+ORDER BY p.player_name
+LIMIT 1000
+```

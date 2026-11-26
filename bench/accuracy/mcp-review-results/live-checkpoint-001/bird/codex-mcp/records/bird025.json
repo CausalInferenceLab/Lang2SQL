@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird025",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "6a44f0f2cd3aae5090c40bd218876ccbea8e42058f8cfc8448b2f097bcafa8bb",
+  "events_sha256": "2bb45291249a594d65fc62f5edf86717f8dd2a9b2d3fa596ac40fa81edc9a55d",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 176380,
+      "cached_input_tokens": 159232,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 803,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Ge_t8kS2-IfnzBZ05q93bffh-mn8TU-w-1eWTzajBLs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "schools"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "schools (table)\n- CDSCode: TEXT NOT NULL\n- NCESDist: TEXT\n- NCESSchool: TEXT\n- StatusType: TEXT NOT NULL\n- County: TEXT NOT NULL\n- District: TEXT NOT NULL\n- School: TEXT\n- Street: TEXT\n- StreetAbr: TEXT\n- City: TEXT\n- Zip: TEXT\n- State: TEXT\n- MailStreet: TEXT\n- MailStrAbr: TEXT\n- MailCity: TEXT\n- MailZip: TEXT\n- MailState: TEXT\n- Phone: TEXT\n- Ext: TEXT\n- Website: TEXT\n- OpenDate: DATE\n- ClosedDate: DATE\n- Charter: INTEGER\n- CharterNum: TEXT\n- FundingType: TEXT\n- DOC: TEXT NOT NULL\n- DOCType: TEXT NOT NULL\n- SOC: TEXT\n- SOCType: TEXT\n- EdOpsCode: TEXT\n- EdOpsName: TEXT\n- EILCode: TEXT\n- EILName: TEXT\n- GSoffered: TEXT\n- GSserved: TEXT\n- Virtual: TEXT\n- Magnet: INTEGER\n- Latitude: REAL\n- Longitude: REAL\n- AdmFName1: TEXT\n- AdmLName1: TEXT\n- AdmEmail1: TEXT\n- AdmFName2: TEXT\n- AdmLName2: TEXT\n- AdmEmail2: TEXT\n- AdmFName3: TEXT\n- AdmLName3: TEXT\n- AdmEmail3: TEXT\n- LastUpdate: DATE NOT NULL\nPRIMARY KEY (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Ge_t8kS2-IfnzBZ05q93bffh-mn8TU-w-1eWTzajBLs",
+        "sql": "SELECT s.DOCType, s.FundingType, t.rtype, typeof(t.NumTstTakr) AS count_type, COUNT(*) AS row_count, COUNT(s.School) AS school_names, MIN(s.OpenDate) AS first_opening, MAX(s.OpenDate) AS last_opening\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t ON t.cds = s.CDSCode\nWHERE s.County = 'Los Angeles' AND s.OpenDate >= '2007-01-01' AND s.OpenDate < '2008-01-01'\nGROUP BY s.DOCType, s.FundingType, t.rtype, typeof(t.NumTstTakr)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DOCType=str; FundingType=NoneType,str; rtype=NoneType,str; count_type=str; row_count=int; school_names=int; first_opening=str; last_opening=str\nDOCType | FundingType | rtype | count_type | row_count | school_names | first_opening | last_opening\n--- | --- | --- | --- | --- | --- | --- | ---\nElementary School District | None | None | null | 1 | 1 | 2007-08-20 | 2007-08-20\nHigh School District | None | None | null | 1 | 1 | 2007-08-20 | 2007-08-20\nHigh School District | Directly funded | S | integer | 2 | 2 | 2007-08-01 | 2007-09-04\nState Board of Education | Directly funded | S | integer | 1 | 1 | 2007-09-27 | 2007-09-27\nUnified School District | None | None | null | 10 | 10 | 2007-08-05 | 2007-09-10\nUnified School District | None | S | integer | 3 | 3 | 2007-02-15 | 2007-09-05\nUnified School District | Directly funded | None | null | 23 | 23 | 2007-08-14 | 2007-09-24\nUnified School District | Directly funded | S | integer | 6 | 6 | 2007-07-01 | 2007-09-06\nUnified School District | Locally funded | S | integer | 1 | 1 | 2007-08-29 | 2007-08-29\nSQL: SELECT s.DOCType, s.FundingType, t.rtype, typeof(t.NumTstTakr) AS count_type, COUNT(*) AS row_count, COUNT(s.School) AS school_names, MIN(s.OpenDate) AS first_opening, MAX(s.OpenDate) AS last_opening\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t ON t.cds = s.CDSCode\nWHERE s.County = 'Los Angeles' AND s.OpenDate >= '2007-01-01' AND s.OpenDate < '2008-01-01'\nGROUP BY s.DOCType, s.FundingType, t.rtype, typeof(t.NumTstTakr)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rnjoqLdLnCib-OdMmHbDrHzC0bFIGjljhRHtJfYZncE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rnjoqLdLnCib-OdMmHbDrHzC0bFIGjljhRHtJfYZncE",
+        "expected_columns": [
+          "average_sat_test_takers"
+        ],
+        "sql": "SELECT ROUND(AVG(COALESCE(t.NumTstTakr, 0)), 2) AS average_sat_test_takers\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t\n    ON t.cds = s.CDSCode AND t.rtype = 'S'\nWHERE s.County = 'Los Angeles'\n  AND s.School IS NOT NULL\n  AND s.OpenDate >= '2007-01-01'\n  AND s.OpenDate < '2008-01-01'\n  AND s.DOCType IN (\n      'Elementary School District',\n      'High School District',\n      'Unified School District',\n      'County Office of Education (COE)'\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_sat_test_takers=float\naverage_sat_test_takers\n---\n14.57\nSQL: SELECT ROUND(AVG(COALESCE(t.NumTstTakr, 0)), 2) AS average_sat_test_takers\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t\n    ON t.cds = s.CDSCode AND t.rtype = 'S'\nWHERE s.County = 'Los Angeles'\n  AND s.School IS NOT NULL\n  AND s.OpenDate >= '2007-01-01'\n  AND s.OpenDate < '2008-01-01'\n  AND s.DOCType IN (\n      'Elementary School District',\n      'High School District',\n      'Unified School District',\n      'County Office of Education (COE)'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(AVG(COALESCE(t.NumTstTakr, 0)), 2) AS average_sat_test_takers\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t\n    ON t.cds = s.CDSCode AND t.rtype = 'S'\nWHERE s.County = 'Los Angeles'\n  AND s.School IS NOT NULL\n  AND s.OpenDate >= '2007-01-01'\n  AND s.OpenDate < '2008-01-01'\n  AND s.DOCType IN (\n      'Elementary School District',\n      'High School District',\n      'Unified School District',\n      'County Office of Education (COE)'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(AVG(COALESCE(t.NumTstTakr, 0)), 2) AS average_sat_test_takers\nFROM main.schools AS s\nLEFT JOIN main.satscores AS t\n    ON t.cds = s.CDSCode AND t.rtype = 'S'\nWHERE s.County = 'Los Angeles'\n  AND s.School IS NOT NULL\n  AND s.OpenDate >= '2007-01-01'\n  AND s.OpenDate < '2008-01-01'\n  AND s.DOCType IN (\n      'Elementary School District',\n      'High School District',\n      'Unified School District',\n      'County Office of Education (COE)'\n  )\nLIMIT 1",
+  "seconds": 34.335775166982785
+}

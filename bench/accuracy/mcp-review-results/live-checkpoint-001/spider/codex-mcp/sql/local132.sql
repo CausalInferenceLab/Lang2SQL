@@ -1,0 +1,24 @@
+WITH strengths AS (
+    SELECT EntertainerID,
+           MAX(CASE WHEN StyleStrength = 1 THEN StyleID END) AS first_style,
+           MAX(CASE WHEN StyleStrength = 2 THEN StyleID END) AS second_style
+    FROM main.Entertainer_Styles
+    GROUP BY EntertainerID
+    HAVING COUNT(*) <= 3
+),
+preferences AS (
+    SELECT CustomerID,
+           MAX(CASE WHEN PreferenceSeq = 1 THEN StyleID END) AS first_style,
+           MAX(CASE WHEN PreferenceSeq = 2 THEN StyleID END) AS second_style
+    FROM main.Musical_Preferences
+    GROUP BY CustomerID
+    HAVING COUNT(*) <= 3
+)
+SELECT e.EntStageName, c.CustLastName
+FROM strengths AS s
+JOIN preferences AS p
+  ON (p.first_style = s.first_style AND p.second_style = s.second_style)
+  OR (p.first_style = s.second_style AND p.second_style = s.first_style)
+JOIN main.Entertainers AS e ON e.EntertainerID = s.EntertainerID
+JOIN main.Customers AS c ON c.CustomerID = p.CustomerID
+LIMIT -1

@@ -1,0 +1,7 @@
+SELECT sat.AvgScrMath, sat.NumTstTakr
+FROM main.satscores AS sat
+JOIN main.schools AS s ON s.CDSCode = sat.cds
+WHERE s.CDSCode = '01611190130609'
+  AND s.Charter = 1
+  AND s.FundingType = 'Directly funded'
+LIMIT 1

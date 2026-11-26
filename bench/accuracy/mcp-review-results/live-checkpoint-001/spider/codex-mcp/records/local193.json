@@ -1,0 +1,133 @@
+{
+  "instance_id": "local193",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "0311567f011461fef9000cf57d7ef29d3d5514bab4d82b3a554f5b3a9e0f4c26",
+  "events_sha256": "36987a4b62dfe03d7ed6193d9d760aca74344c872ded4f56e288308d2da3d206",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 193670,
+      "cached_input_tokens": 174464,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 860,
+      "reasoning_output_tokens": 28
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"c3tvhCq3u88WNiN2iLjssegKmpjZ6jm6mulmmYeVO0A\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "payment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "payment (table)\n- payment_id: INTEGER NOT NULL\n- customer_id: INTEGER NOT NULL\n- staff_id: SMALLINT NOT NULL\n- rental_id: INTEGER\n- amount: DECIMAL(5, 2) NOT NULL\n- payment_date: TIMESTAMP NOT NULL\n- last_update: TIMESTAMP NOT NULL\nPRIMARY KEY (payment_id)\nFOREIGN KEY (rental_id) REFERENCES rental (rental_id)\nFOREIGN KEY (customer_id) REFERENCES customer (customer_id)\nFOREIGN KEY (staff_id) REFERENCES staff (staff_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "c3tvhCq3u88WNiN2iLjssegKmpjZ6jm6mulmmYeVO0A",
+        "sql": "SELECT MIN(payment_date) AS earliest, MAX(payment_date) AS latest,\n       COUNT(*) - COUNT(julianday(payment_date)) AS invalid_dates,\n       MIN(amount) AS min_amount, MAX(amount) AS max_amount\nFROM main.payment;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): earliest=str; latest=str; invalid_dates=int; min_amount=int; max_amount=float\nearliest | latest | invalid_dates | min_amount | max_amount\n--- | --- | --- | --- | ---\n2005-05-24 22:53:30.000 | 2006-02-14 15:16:03.000 | 0 | 0 | 11.99\nSQL: SELECT MIN(payment_date) AS earliest, MAX(payment_date) AS latest,\n       COUNT(*) - COUNT(julianday(payment_date)) AS invalid_dates,\n       MIN(amount) AS min_amount, MAX(amount) AS max_amount\nFROM main.payment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"qjPZ6pMgELpFve1uEZovkM42oSJnmSv6wes7-iWVc3M\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "qjPZ6pMgELpFve1uEZovkM42oSJnmSv6wes7-iWVc3M",
+        "expected_columns": [
+          "avg_ltv_pct_7_days",
+          "avg_ltv_pct_30_days",
+          "avg_ltv"
+        ],
+        "sql": "WITH payment_timing AS (\n    SELECT customer_id,\n           amount,\n           julianday(payment_date) AS payment_time,\n           MIN(julianday(payment_date)) OVER (PARTITION BY customer_id) AS first_purchase_time\n    FROM main.payment\n),\ncustomer_sales AS (\n    SELECT customer_id,\n           SUM(CASE WHEN payment_time < first_purchase_time + 7 THEN amount ELSE 0 END) AS sales_7_days,\n           SUM(CASE WHEN payment_time < first_purchase_time + 30 THEN amount ELSE 0 END) AS sales_30_days,\n           SUM(amount) AS ltv\n    FROM payment_timing\n    GROUP BY customer_id\n    HAVING SUM(amount) <> 0\n)\nSELECT AVG(100.0 * sales_7_days / ltv) AS avg_ltv_pct_7_days,\n       AVG(100.0 * sales_30_days / ltv) AS avg_ltv_pct_30_days,\n       AVG(ltv) AS avg_ltv\nFROM customer_sales\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): avg_ltv_pct_7_days=float; avg_ltv_pct_30_days=float; avg_ltv=float\navg_ltv_pct_7_days | avg_ltv_pct_30_days | avg_ltv\n--- | --- | ---\n9.379642980279428 | 24.75879625951153 | 112.54843071786313\nSQL: WITH payment_timing AS (\n    SELECT customer_id,\n           amount,\n           julianday(payment_date) AS payment_time,\n           MIN(julianday(payment_date)) OVER (PARTITION BY customer_id) AS first_purchase_time\n    FROM main.payment\n),\ncustomer_sales AS (\n    SELECT customer_id,\n           SUM(CASE WHEN payment_time < first_purchase_time + 7 THEN amount ELSE 0 END) AS sales_7_days,\n           SUM(CASE WHEN payment_time < first_purchase_time + 30 THEN amount ELSE 0 END) AS sales_30_days,\n           SUM(amount) AS ltv\n    FROM payment_timing\n    GROUP BY customer_id\n    HAVING SUM(amount) <> 0\n)\nSELECT AVG(100.0 * sales_7_days / ltv) AS avg_ltv_pct_7_days,\n       AVG(100.0 * sales_30_days / ltv) AS avg_ltv_pct_30_days,\n       AVG(ltv) AS avg_ltv\nFROM customer_sales\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH payment_timing AS (\n    SELECT customer_id,\n           amount,\n           julianday(payment_date) AS payment_time,\n           MIN(julianday(payment_date)) OVER (PARTITION BY customer_id) AS first_purchase_time\n    FROM main.payment\n),\ncustomer_sales AS (\n    SELECT customer_id,\n           SUM(CASE WHEN payment_time < first_purchase_time + 7 THEN amount ELSE 0 END) AS sales_7_days,\n           SUM(CASE WHEN payment_time < first_purchase_time + 30 THEN amount ELSE 0 END) AS sales_30_days,\n           SUM(amount) AS ltv\n    FROM payment_timing\n    GROUP BY customer_id\n    HAVING SUM(amount) <> 0\n)\nSELECT AVG(100.0 * sales_7_days / ltv) AS avg_ltv_pct_7_days,\n       AVG(100.0 * sales_30_days / ltv) AS avg_ltv_pct_30_days,\n       AVG(ltv) AS avg_ltv\nFROM customer_sales\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH payment_timing AS (\n    SELECT customer_id,\n           amount,\n           julianday(payment_date) AS payment_time,\n           MIN(julianday(payment_date)) OVER (PARTITION BY customer_id) AS first_purchase_time\n    FROM main.payment\n),\ncustomer_sales AS (\n    SELECT customer_id,\n           SUM(CASE WHEN payment_time < first_purchase_time + 7 THEN amount ELSE 0 END) AS sales_7_days,\n           SUM(CASE WHEN payment_time < first_purchase_time + 30 THEN amount ELSE 0 END) AS sales_30_days,\n           SUM(amount) AS ltv\n    FROM payment_timing\n    GROUP BY customer_id\n    HAVING SUM(amount) <> 0\n)\nSELECT AVG(100.0 * sales_7_days / ltv) AS avg_ltv_pct_7_days,\n       AVG(100.0 * sales_30_days / ltv) AS avg_ltv_pct_30_days,\n       AVG(ltv) AS avg_ltv\nFROM customer_sales\nLIMIT 1",
+  "seconds": 34.90999945800286
+}
