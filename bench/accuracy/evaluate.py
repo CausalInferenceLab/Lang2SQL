@@ -31,7 +31,10 @@ from bench.spider2.evaluate import (
 logger = logging.getLogger(__name__)
 BIRD_REVISION = "5b256b5a9c17478f06ed6912612e9a14d17065c8"
 BIRD_QUESTIONS_SHA = "926af2a0d1b47e5d0d15a7aa8a34d4721007f4550a881555b6a89496b54a2606"
-BIRD_SCHEMA_SHA = "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b"
+SCHEMA_SHA = {
+    "bird": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+    "spider2": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+}
 SEED = 20261126
 INPUT_KEYS = {
     "instance_id",
@@ -102,8 +105,8 @@ def load_schema_documents(path, suite):
     """Only the pinned official schema map is accepted, never annotated SQL rows."""
     if path is None:
         return {}
-    if suite != "bird" or digest(path) != BIRD_SCHEMA_SHA:
-        raise ValueError("Schema documentation must match the pinned BIRD release")
+    if digest(path) != SCHEMA_SHA.get(suite):
+        raise ValueError("Schema documentation must match the pinned benchmark release")
     documents = json.loads(path.read_text())
     if not isinstance(documents, dict) or not all(
         isinstance(db, str) and isinstance(doc, str) for db, doc in documents.items()

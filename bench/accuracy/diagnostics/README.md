@@ -82,3 +82,15 @@ The file retains the BIRD CC BY-SA 4.0 attribution in the parent README. Optiona
 changed file, annotated answer input or cross-suite use is rejected. The setting
 and source hash are recorded. This changes supplied context, so results must
 identify it and not attribute all change to the product prompt or memory.
+
+
+Spider's published per-table schema/sample JSONs were also absent from the
+initial prompt. `../spider2-schema.json` is a deterministic database-to-text map
+of the upstream `table_name`, `column_names`, `column_types`, `description`, and
+`sample_rows` fields, taken with `git show` at the pinned upstream revision.
+`spider-schema-sources.json` records every original file hash and the map hash.
+No evaluation directory, gold SQL, task-specific selected table list or previous
+answer is read. Examples are explicitly marked non-exhaustive. Database folder
+matching only normalizes case and hyphens to underscores. Spider's upstream MIT
+notice is retained in the parent directory. Both schema maps are optional and
+hash-validated, and both will be tested under the same pilot protocol.

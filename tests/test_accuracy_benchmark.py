@@ -235,6 +235,10 @@ def test_schema_input_is_pinned_and_separate_from_gold(tmp_path):
 
     docs = load_schema_documents(Path("bench/accuracy/bird-schema.json"), "bird")
     assert len(docs) == 11 and "CREATE TABLE" in docs["financial"]
+    spider = load_schema_documents(
+        Path("bench/accuracy/spider2-schema.json"), "spider2"
+    )
+    assert "sample_rows" in spider["Baseball"]
     assert load_schema_documents(None, "bird") == {}
     annotated = tmp_path / "gold.json"
     annotated.write_text('{"SQL": "SELECT 42"}')
