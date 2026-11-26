@@ -17,6 +17,7 @@ from .calendar_interval_sql import CalendarIntervalSQL
 from .confirm_ingest import ConfirmIngest
 from .enrich_schema import EnrichSchema
 from .explore_schema import ExploreSchema
+from .fixed_decimal_sql import FixedDecimalSQL
 from .ingest_doc import IngestDoc
 from .org_setup import OrgSetupTool
 from .remember import Remember
@@ -29,6 +30,7 @@ __all__ = [
     "ConfirmIngest",
     "EnrichSchema",
     "ExploreSchema",
+    "FixedDecimalSQL",
     "IngestDoc",
     "OrgSetupTool",
     "Remember",
@@ -49,6 +51,7 @@ def build_default_tools(
     return [
         RunSQL(),
         CalendarIntervalSQL(),
+        FixedDecimalSQL(),
         ExploreSchema(),
         EnrichSchema(),
         SemanticFederationTool(),

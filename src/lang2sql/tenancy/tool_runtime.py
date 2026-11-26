@@ -16,6 +16,7 @@ from ..safety.pipeline import SafetyPipeline
 from ..tools.calendar_interval_sql import CalendarIntervalSQL
 from ..tools.context_candidates import ContextCandidates
 from ..tools.explore_schema import ExploreSchema
+from ..tools.fixed_decimal_sql import FixedDecimalSQL
 from ..tools.recall_memory import RecallMemory
 from ..tools.remember import Remember
 from ..tools.run_sql import RunSQL
@@ -55,6 +56,7 @@ def build_tool_context(
         [
             RunSQL(),
             CalendarIntervalSQL(),
+            FixedDecimalSQL(),
             ContextCandidates(),
             ExploreSchema(),
             SemanticFederationTool(),
