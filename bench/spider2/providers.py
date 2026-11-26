@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import time
 from collections.abc import Sequence
@@ -26,7 +27,7 @@ class MeasuredLLM:
     async def complete(
         self, messages: Sequence[Message], tools: Sequence[ToolSpec] = ()
     ):
-        from litellm import acompletion
+        from litellm import APIConnectionError, RateLimitError, Timeout, acompletion
 
         if len(self.calls) >= self.max_calls:
             raise RuntimeError(
@@ -54,28 +55,55 @@ class MeasuredLLM:
             kwargs["api_base"] = self.profile["api_base"]
         if tools:
             kwargs["tools"] = [_encode_tool(t) for t in tools]
-        entry = {"seconds": 0.0, "usage": None, "status": "started"}
-        self.calls.append(entry)
-        start = time.monotonic()
-        try:
-            response = await acompletion(**kwargs)
-            raw = response.model_dump()
-            entry.update(
-                status="ok", usage=raw.get("usage"), response_model=raw.get("model")
-            )
-            msg = raw["choices"][0]["message"]
-            for call in msg.get("tool_calls") or []:
-                self.provider_messages[call["id"]] = {
-                    k: v for k, v in msg.items() if v is not None
-                }
-            return _decode_completion(raw)
-        except Exception as exc:
-            entry.update(status="error", error_type=type(exc).__name__)
-            logger.error(
-                "API failed profile=%s error=%s",
-                self.profile["name"],
-                type(exc).__name__,
-            )
-            raise
-        finally:
-            entry["seconds"] = time.monotonic() - start
+        retries = self.profile.get("transport_retries", 0)
+        for attempt in range(retries + 1):
+            if len(self.calls) >= self.max_calls:
+                raise RuntimeError(
+                    "Total model-call budget exhausted, including transport retries"
+                )
+            entry = {
+                "seconds": 0.0,
+                "usage": None,
+                "status": "started",
+                "attempt": attempt + 1,
+            }
+            self.calls.append(entry)
+            start = time.monotonic()
+            try:
+                response = await acompletion(**kwargs)
+                raw = response.model_dump()
+                entry.update(
+                    status="ok", usage=raw.get("usage"), response_model=raw.get("model")
+                )
+                msg = raw["choices"][0]["message"]
+                for call in msg.get("tool_calls") or []:
+                    self.provider_messages[call["id"]] = {
+                        k: v for k, v in msg.items() if v is not None
+                    }
+                return _decode_completion(raw)
+            except Exception as exc:
+                entry.update(status="error", error_type=type(exc).__name__)
+                retry = (
+                    isinstance(exc, (Timeout, APIConnectionError, RateLimitError))
+                    and attempt < retries
+                )
+                # Provider exception text may contain credentials; record type, never raw text.
+                if retry:
+                    logger.warning(
+                        "API transport retry profile=%s attempt=%d error=%s",
+                        self.profile["name"],
+                        attempt + 1,
+                        type(exc).__name__,
+                    )
+                    entry["retry_scheduled"] = True
+                    await asyncio.sleep(self.profile.get("retry_delay_seconds", 1.0))
+                else:
+                    logger.error(
+                        "API failed profile=%s error=%s",
+                        self.profile["name"],
+                        type(exc).__name__,
+                    )
+                    raise
+            finally:
+                entry["seconds"] = time.monotonic() - start
+        raise AssertionError("Unreachable retry loop")

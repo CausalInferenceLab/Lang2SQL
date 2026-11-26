@@ -110,3 +110,48 @@ def test_failed_predictions_stay_in_denominator(tmp_path):
                 max_rows=10,
             )
         )
+
+
+@pytest.mark.asyncio
+async def test_transport_retry_is_logged_bounded_and_does_not_retry_answers(
+    monkeypatch,
+):
+    import litellm
+
+    from bench.spider2.providers import MeasuredLLM
+    from lang2sql.core.types import Message, Role
+
+    attempts = []
+
+    async def api(**kwargs):
+        attempts.append(kwargs)
+        if len(attempts) == 1:
+            raise litellm.Timeout(
+                message="redacted", model="test", llm_provider="openai"
+            )
+
+        class Response:
+            def model_dump(self):
+                return {
+                    "model": "test",
+                    "choices": [{"message": {"content": "answer"}}],
+                    "usage": {},
+                }
+
+        return Response()
+
+    monkeypatch.setattr(litellm, "acompletion", api)
+    profile = {
+        "name": "test",
+        "model": "openai/test",
+        "transport_retries": 1,
+        "retry_delay_seconds": 0,
+    }
+    llm = MeasuredLLM(profile, "not-a-key", 1, 2)
+    answer = await llm.complete([Message(role=Role.USER, content="question")])
+    assert answer.content == "answer"
+    assert [c["status"] for c in llm.calls] == ["error", "ok"]
+    assert attempts[0]["messages"] == attempts[1]["messages"]
+    with pytest.raises(RuntimeError, match="budget"):
+        await llm.complete([])
+    assert len(attempts) == 2
