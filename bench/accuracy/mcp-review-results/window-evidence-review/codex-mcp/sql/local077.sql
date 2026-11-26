@@ -1,0 +1,39 @@
+WITH interest_scores AS (
+    SELECT
+        printf('%04d-%02d-01', m._year, m._month) AS month_start,
+        m.interest_id,
+        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition
+    FROM main.interest_metrics AS m
+    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)
+    GROUP BY m._year, m._month, m.interest_id
+),
+ranked_interests AS (
+    SELECT
+        s.*,
+        RANK() OVER (
+            PARTITION BY month_start ORDER BY average_composition DESC
+        ) AS monthly_rank
+    FROM interest_scores AS s
+),
+winner_history AS (
+    SELECT
+        r.month_start AS date,
+        i.interest_name,
+        r.average_composition AS max_index_composition,
+        AVG(r.average_composition) OVER (
+            months ROWS BETWEEN 2 PRECEDING AND CURRENT ROW
+        ) AS three_month_rolling_average,
+        LAG(i.interest_name, 1) OVER months AS interest_one_month_ago,
+        LAG(r.average_composition, 1) OVER months AS max_index_composition_one_month_ago,
+        LAG(i.interest_name, 2) OVER months AS interest_two_months_ago,
+        LAG(r.average_composition, 2) OVER months AS max_index_composition_two_months_ago
+    FROM ranked_interests AS r
+    JOIN main.interest_map AS i ON i.id = r.interest_id
+    WHERE r.monthly_rank = 1
+    WINDOW months AS (ORDER BY r.month_start)
+)
+SELECT *
+FROM winner_history
+WHERE date BETWEEN '2018-09-01' AND '2019-08-01'
+ORDER BY date
+LIMIT 12

@@ -1,0 +1,112 @@
+{
+  "scope": "Offline projection audit only, NOT alternative benchmark grades. Official scores/config/denominator are unchanged. No reference field names or values supplied to model inference.",
+  "cases": [
+    {
+      "id": "local130",
+      "question": "Could you provide a list of last names for all students who have completed English courses (where completion is defined as having a ClassStatus of 2), along with their quintile ranks based on their individual grades in those courses? The quintile should be determined by calculating how many students have grades greater than or equal to each student's grade, then dividing this ranking by the total number of students who completed English courses. The quintiles should be labeled as \"First\" (top 20%), \"Second\" (top 21-40%), \"Third\" (top 41-60%), \"Fourth\" (top 61-80%), and \"Fifth\" (bottom 20%). Please sort the results from highest performing quintile to lowest (First to Fifth).",
+      "official_config": {
+        "instance_id": "local130",
+        "condition_cols": [
+          0,
+          1
+        ],
+        "ignore_order": true,
+        "toks": "152"
+      },
+      "official_score_retained": 0,
+      "prediction_columns": [
+        "StudLastName",
+        "Quintile"
+      ],
+      "reference_columns": [
+        "StudLastName",
+        "Grade",
+        "QUINTILE"
+      ],
+      "diagnostic_reference_projection_indices": [
+        0,
+        2
+      ],
+      "requested_projection_rows_equal_as_csv_strings": true,
+      "row_count": 18,
+      "difference": "Grade: official condition_cols selects [0,1], so it scores Grade instead of the requested quintile.",
+      "prediction_sha256": "248e7302dec11c1447f6c4cf3746e7efb13d3555f5061f1118a68ee2917cc004",
+      "reference_sha256": "6694afd62cbcfd4fba3f359e3e76af114f615c01606190c9787933728ee54daf"
+    },
+    {
+      "id": "local209",
+      "question": "In the dataset of orders joined with store information, which store has the highest total number of orders, and among that store\u2019s orders, what is the ratio of orders that appear in the deliveries table with a 'DELIVERED' status to the total orders for that store?",
+      "official_config": {
+        "instance_id": "local209",
+        "condition_cols": [],
+        "ignore_order": true,
+        "toks": "94"
+      },
+      "official_score_retained": 0,
+      "prediction_columns": [
+        "store_id",
+        "store_name",
+        "total_orders",
+        "delivered_ratio"
+      ],
+      "reference_columns": [
+        "store_id",
+        "store_name",
+        "TOTAL_ORDERS",
+        "DELIVERED_ORDERS",
+        "RATIO"
+      ],
+      "diagnostic_reference_projection_indices": [
+        0,
+        1,
+        2,
+        4
+      ],
+      "requested_projection_rows_equal_as_csv_strings": true,
+      "row_count": 1,
+      "difference": "DELIVERED_ORDERS: reference includes the numerator count, beyond the requested store and ratio.",
+      "prediction_sha256": "f803ca907b8276d379bb7003c10d97c055fa628c6544658cadc1292a8954ca83",
+      "reference_sha256": "deddc04c50a244e75de82f47ba6c3f54fbb6f97b988985f6993db03183b8778e"
+    },
+    {
+      "id": "local131",
+      "question": "Could you list each musical style with the number of times it appears as a 1st, 2nd, or 3rd preference in a single row per style?",
+      "official_config": {
+        "instance_id": "local131",
+        "condition_cols": [],
+        "ignore_order": true,
+        "toks": "91"
+      },
+      "official_score_retained": 0,
+      "prediction_columns": [
+        "StyleName",
+        "FirstPreferenceCount",
+        "SecondPreferenceCount",
+        "ThirdPreferenceCount"
+      ],
+      "reference_columns": [
+        "StyleID",
+        "StyleName",
+        "FirstPreferenceCount",
+        "SecondPreferenceCount",
+        "ThirdPreferenceCount"
+      ],
+      "diagnostic_reference_projection_indices": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "requested_projection_rows_equal_as_csv_strings": true,
+      "row_count": 25,
+      "difference": "StyleID: reference includes a separate identifier in addition to style name and three counts.",
+      "prediction_sha256": "f4da1061f3a733d29c649fd2eadc81b791ba3637d66a8f2028291ae995cc767d",
+      "reference_sha256": "99088095afe2b7e918cd1362c7bfc329d0769b29cbdca8d3a0db17c12cefa257"
+    }
+  ],
+  "limits": [
+    "CSV equality verifies displayed requested field values, not every native DB type or unseen distribution.",
+    "No automatic extra projection or grade-based SQL modification added to production.",
+    "Evidence of reference/output-contract mismatch on these cases does not excuse other genuine errors."
+  ]
+}

@@ -1,0 +1,22 @@
+WITH ranked AS (
+    SELECT s.StudLastName,
+           CUME_DIST() OVER (ORDER BY ss.Grade DESC) AS rank_share
+    FROM main.Student_Schedules AS ss
+    JOIN main.Students AS s ON s.StudentID = ss.StudentID
+    JOIN main.Classes AS c ON c.ClassID = ss.ClassID
+    JOIN main.Subjects AS sub ON sub.SubjectID = c.SubjectID
+    JOIN main.Categories AS cat ON cat.CategoryID = sub.CategoryID
+    WHERE ss.ClassStatus = 2
+      AND cat.CategoryDescription = 'English'
+)
+SELECT StudLastName,
+       CASE
+           WHEN rank_share <= 0.20 THEN 'First'
+           WHEN rank_share <= 0.40 THEN 'Second'
+           WHEN rank_share <= 0.60 THEN 'Third'
+           WHEN rank_share <= 0.80 THEN 'Fourth'
+           ELSE 'Fifth'
+       END AS Quintile
+FROM ranked
+ORDER BY rank_share, StudLastName
+LIMIT -1

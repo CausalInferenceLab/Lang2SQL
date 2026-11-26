@@ -1,0 +1,48 @@
+WITH RECURSIVE
+daily_changes AS (
+    SELECT customer_id, txn_date AS day,
+           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change
+    FROM main.customer_transactions
+    GROUP BY customer_id, txn_date
+),
+customer_days(customer_id, day, baseline_month) AS (
+    SELECT customer_id, MIN(day), strftime('%Y-%m', MIN(day))
+    FROM daily_changes
+    GROUP BY customer_id
+    UNION ALL
+    SELECT customer_id, date(day, '+1 day'), baseline_month
+    FROM customer_days
+    WHERE day < (SELECT MAX(day) FROM daily_changes)
+),
+daily_balances AS (
+    SELECT d.customer_id, d.day, d.baseline_month,
+           SUM(COALESCE(c.net_change, 0)) OVER (
+               PARTITION BY d.customer_id ORDER BY d.day
+               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+           ) AS balance
+    FROM customer_days AS d
+    LEFT JOIN daily_changes AS c
+      ON c.customer_id = d.customer_id AND c.day = d.day
+),
+rolling_balances AS (
+    SELECT customer_id, strftime('%Y-%m', day) AS month, baseline_month,
+           COUNT(*) OVER trailing_month AS days_in_window,
+           AVG(balance) OVER trailing_month AS average_balance
+    FROM daily_balances
+    WINDOW trailing_month AS (
+        PARTITION BY customer_id ORDER BY day
+        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW
+    )
+),
+monthly_maxima AS (
+    SELECT customer_id, month,
+           MAX(CASE WHEN average_balance < 0 THEN 0 ELSE average_balance END) AS max_average
+    FROM rolling_balances
+    WHERE days_in_window = 30 AND month > baseline_month
+    GROUP BY customer_id, month
+)
+SELECT month, SUM(max_average) AS total_max_30_day_average_balance
+FROM monthly_maxima
+GROUP BY month
+ORDER BY month
+LIMIT 1000

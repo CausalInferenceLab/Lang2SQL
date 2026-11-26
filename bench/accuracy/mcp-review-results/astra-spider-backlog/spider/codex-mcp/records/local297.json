@@ -1,0 +1,131 @@
+{
+  "instance_id": "local297",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "6974ce3bce9e38dbe47a3aea5a12cf82fa68d78f17f4081f238beab7cce59e2a",
+  "events_sha256": "3c73e77c9e20198b2091bdf46c2b613dcdc90d2bf40172ba2d65a58b5f1e6331",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 155318,
+      "cached_input_tokens": 141824,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1075,
+      "reasoning_output_tokens": 35
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_transactions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_transactions (table)\n- customer_id: INTEGER\n- txn_date: TEXT\n- txn_type: TEXT\n- txn_amount: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Tz3lroh80ZN0udeJ28LE-C9MUEfIxBGmg3XB-VTSyLc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Tz3lroh80ZN0udeJ28LE-C9MUEfIxBGmg3XB-VTSyLc",
+        "sql": "SELECT txn_type, COUNT(*) AS transactions, COUNT(DISTINCT customer_id) AS customers,\n       COUNT(DATE(txn_date, 'start of month')) AS parseable_dates,\n       COUNT(txn_amount) AS amounts, MIN(txn_amount) AS minimum_amount\nFROM main.customer_transactions\nGROUP BY txn_type"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): txn_type=str; transactions=int; customers=int; parseable_dates=int; amounts=int; minimum_amount=int\ntxn_type | transactions | customers | parseable_dates | amounts | minimum_amount\n--- | --- | --- | --- | --- | ---\ndeposit | 2671 | 500 | 2671 | 2671 | 0\npurchase | 1617 | 448 | 1617 | 1617 | 1\nwithdrawal | 1580 | 439 | 1580 | 1580 | 1\nSQL: SELECT txn_type, COUNT(*) AS transactions, COUNT(DISTINCT customer_id) AS customers,\n       COUNT(DATE(txn_date, 'start of month')) AS parseable_dates,\n       COUNT(txn_amount) AS amounts, MIN(txn_amount) AS minimum_amount\nFROM main.customer_transactions\nGROUP BY txn_type\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"sWTfcrip1WKJTeENCzvtMqk4g_qIJ3W4JppVqRRsqTo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "sWTfcrip1WKJTeENCzvtMqk4g_qIJ3W4JppVqRRsqTo",
+        "expected_columns": [
+          "percentage_of_customers"
+        ],
+        "sql": "WITH monthly_nets AS (\n    SELECT\n        customer_id,\n        DATE(txn_date, 'start of month') AS month_start,\n        SUM(CASE txn_type\n            WHEN 'deposit' THEN txn_amount\n            WHEN 'withdrawal' THEN -txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions\n    WHERE txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, month_start\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance\n    FROM monthly_nets\n),\nbalance_comparisons AS (\n    SELECT\n        closing_balance,\n        LAG(closing_balance, 1, 0) OVER (\n            PARTITION BY customer_id ORDER BY month_start\n        ) AS prior_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS recency\n    FROM monthly_balances\n),\nlatest_growth AS (\n    SELECT CASE\n        WHEN prior_balance = 0 THEN 100.0 * closing_balance\n        ELSE 100.0 * (closing_balance - prior_balance) / prior_balance\n    END AS growth_rate\n    FROM balance_comparisons\n    WHERE recency = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM latest_growth\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage_of_customers=float\npercentage_of_customers\n---\n54.2\nSQL: WITH monthly_nets AS (\n    SELECT\n        customer_id,\n        DATE(txn_date, 'start of month') AS month_start,\n        SUM(CASE txn_type\n            WHEN 'deposit' THEN txn_amount\n            WHEN 'withdrawal' THEN -txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions\n    WHERE txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, month_start\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance\n    FROM monthly_nets\n),\nbalance_comparisons AS (\n    SELECT\n        closing_balance,\n        LAG(closing_balance, 1, 0) OVER (\n            PARTITION BY customer_id ORDER BY month_start\n        ) AS prior_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS recency\n    FROM monthly_balances\n),\nlatest_growth AS (\n    SELECT CASE\n        WHEN prior_balance = 0 THEN 100.0 * closing_balance\n        ELSE 100.0 * (closing_balance - prior_balance) / prior_balance\n    END AS growth_rate\n    FROM balance_comparisons\n    WHERE recency = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM latest_growth\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH monthly_nets AS (\n    SELECT\n        customer_id,\n        DATE(txn_date, 'start of month') AS month_start,\n        SUM(CASE txn_type\n            WHEN 'deposit' THEN txn_amount\n            WHEN 'withdrawal' THEN -txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions\n    WHERE txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, month_start\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance\n    FROM monthly_nets\n),\nbalance_comparisons AS (\n    SELECT\n        closing_balance,\n        LAG(closing_balance, 1, 0) OVER (\n            PARTITION BY customer_id ORDER BY month_start\n        ) AS prior_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS recency\n    FROM monthly_balances\n),\nlatest_growth AS (\n    SELECT CASE\n        WHEN prior_balance = 0 THEN 100.0 * closing_balance\n        ELSE 100.0 * (closing_balance - prior_balance) / prior_balance\n    END AS growth_rate\n    FROM balance_comparisons\n    WHERE recency = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM latest_growth\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH monthly_nets AS (\n    SELECT\n        customer_id,\n        DATE(txn_date, 'start of month') AS month_start,\n        SUM(CASE txn_type\n            WHEN 'deposit' THEN txn_amount\n            WHEN 'withdrawal' THEN -txn_amount\n        END) AS net_amount\n    FROM main.customer_transactions\n    WHERE txn_type IN ('deposit', 'withdrawal')\n    GROUP BY customer_id, month_start\n),\nmonthly_balances AS (\n    SELECT\n        customer_id,\n        month_start,\n        SUM(net_amount) OVER (\n            PARTITION BY customer_id\n            ORDER BY month_start\n            ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n        ) AS closing_balance\n    FROM monthly_nets\n),\nbalance_comparisons AS (\n    SELECT\n        closing_balance,\n        LAG(closing_balance, 1, 0) OVER (\n            PARTITION BY customer_id ORDER BY month_start\n        ) AS prior_balance,\n        ROW_NUMBER() OVER (\n            PARTITION BY customer_id ORDER BY month_start DESC\n        ) AS recency\n    FROM monthly_balances\n),\nlatest_growth AS (\n    SELECT CASE\n        WHEN prior_balance = 0 THEN 100.0 * closing_balance\n        ELSE 100.0 * (closing_balance - prior_balance) / prior_balance\n    END AS growth_rate\n    FROM balance_comparisons\n    WHERE recency = 1\n)\nSELECT\n    100.0 * COUNT(CASE WHEN growth_rate > 5 THEN 1 END)\n        / NULLIF(COUNT(*), 0) AS percentage_of_customers\nFROM latest_growth\nLIMIT 1",
+  "seconds": 41.186003290931694
+}
