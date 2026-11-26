@@ -166,6 +166,7 @@ async def run(args):
         raise ValueError("--exclude-passed-from requires --failures-from; never use exclusions for full accuracy")
     repo = Path(__file__).resolve().parents[2]
     manifest = json.loads(args.manifest.read_text())
+    input_case_count = len(manifest["cases"])
     validate_inputs(manifest, args.db_dir)
     if manifest["suite"] == "spider2":
         validate_manifest(manifest, args.root, args.db_dir)
@@ -181,9 +182,19 @@ async def run(args):
             db_sha256=manifest["db_sha256"],
         )
         logger.info("Failed-case selection source=%s selected=%d", args.failures_from, len(manifest["cases"]))
-        if not manifest["cases"]:
-            logger.info("No failed cases remain in the source run; no model calls made")
-            return
+    selected_case_count = len(manifest["cases"])
+    logger.info("Case selection split=%s input=%d selected=%d expected=%s",
+                args.split, input_case_count, selected_case_count, args.expected_cases)
+    if args.expected_cases is not None and (
+        args.expected_cases < 0 or selected_case_count != args.expected_cases
+    ):
+        raise ValueError(
+            f"Selected {selected_case_count} cases, expected {args.expected_cases}; "
+            "check --split and failure/pass exclusions before starting inference"
+        )
+    if not manifest["cases"]:
+        logger.info("No cases remain after selection; no model calls made")
+        return
     if args.output.exists():
         raise ValueError("Use a fresh output directory; never overwrite attempts")
     args.output.mkdir(parents=True)
@@ -223,6 +234,12 @@ async def run(args):
                 ]
             },
             "schema_document_sha256": digest(args.schema_docs),
+            "case_selection": {
+                "split": args.split,
+                "input_cases": input_case_count,
+                "selected_cases": selected_case_count,
+                "expected_cases": args.expected_cases,
+            },
             "review_source": str(args.review_source) if args.review_source else None,
             "failure_selection": {
                 "source": str(args.failures_from),
@@ -425,6 +442,8 @@ def main():
     parser.add_argument(
         "--split", choices=["development", "all"], default="development"
     )
+    parser.add_argument("--expected-cases", type=int,
+                        help="Require this final selected count before any model call; includes split and failure/pass filtering")
     parser.add_argument("--review-source", type=Path, help="Prior run directory; pass only prior model answer/tool observations, never scores")
     parser.add_argument("--failures-from", type=Path, help="Run only score=0 cases from this completed run; grades select cases but never enter model prompts")
     parser.add_argument("--exclude-passed-from", type=Path, action="append", default=[],
