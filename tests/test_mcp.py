@@ -71,6 +71,7 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
         tools = (await client.list_tools()).tools
         assert {t.name for t in tools} == {
             "context_candidates",
+            "calendar_interval_sql",
             "run_sql",
             "explore_schema",
             "term_custom",
@@ -440,3 +441,25 @@ async def test_invalid_output_contract_never_executes(expected):
         assert result.is_error and 'NOT executed' in result.content
     finally:
         ctx.store.close()
+
+
+@pytest.mark.asyncio
+async def test_calendar_compiler_through_stdio_and_sql_guard(tmp_path):
+    from lang2sql.tools.calendar_interval_sql import CALENDAR_CTES
+
+    async with connected(fixture_db(tmp_path), tmp_path / "meta.db") as client:
+        compiled = await client.call_tool("calendar_interval_sql", {"dialect": "sqlite"})
+        assert not compiled.isError
+        assert CALENDAR_CTES in compiled.content[0].text
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        token = json.loads(check.content[0].text)["definition_check_id"]
+        sql = (
+            "WITH calendar_input(row_id, start_date, end_date) AS "
+            "(VALUES (1, '2020-02-29', '2021-02-28')), " + CALENDAR_CTES
+            + " SELECT years, months, days FROM calendar_interval"
+        )
+        result = await client.call_tool("run_sql", {"sql": sql, "definition_check_id": token})
+        assert not result.isError
+        assert "1 | 0 | 0" in result.content[0].text
+        denied = await client.call_tool("run_sql", {"sql": sql})
+        assert denied.isError

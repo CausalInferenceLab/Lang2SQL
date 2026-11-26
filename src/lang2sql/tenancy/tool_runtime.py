@@ -13,6 +13,7 @@ from ..harness.session import Session
 from ..harness.tool_registry import ToolRegistry
 from ..memory import InjectAllRecall, ManualExtractor, MemoryService
 from ..safety.pipeline import SafetyPipeline
+from ..tools.calendar_interval_sql import CalendarIntervalSQL
 from ..tools.context_candidates import ContextCandidates
 from ..tools.explore_schema import ExploreSchema
 from ..tools.recall_memory import RecallMemory
@@ -53,6 +54,7 @@ def build_tool_context(
     registry = ToolRegistry(
         [
             RunSQL(),
+            CalendarIntervalSQL(),
             ContextCandidates(),
             ExploreSchema(),
             SemanticFederationTool(),

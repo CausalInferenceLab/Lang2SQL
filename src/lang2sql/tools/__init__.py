@@ -13,6 +13,7 @@ from ..core.ports.tool import ToolPort
 from ..ingestion.pipeline import IngestionPipeline
 from ..memory.service import MemoryService
 from .ask_user import AskUser
+from .calendar_interval_sql import CalendarIntervalSQL
 from .confirm_ingest import ConfirmIngest
 from .enrich_schema import EnrichSchema
 from .explore_schema import ExploreSchema
@@ -23,16 +24,17 @@ from .run_sql import RunSQL
 from .semantic_federation import SemanticFederationTool
 
 __all__ = [
-    "build_default_tools",
-    "RunSQL",
-    "ExploreSchema",
+    "AskUser",
+    "CalendarIntervalSQL",
+    "ConfirmIngest",
     "EnrichSchema",
-    "SemanticFederationTool",
+    "ExploreSchema",
+    "IngestDoc",
     "OrgSetupTool",
     "Remember",
-    "AskUser",
-    "IngestDoc",
-    "ConfirmIngest",
+    "RunSQL",
+    "SemanticFederationTool",
+    "build_default_tools",
 ]
 
 
@@ -46,6 +48,7 @@ def build_default_tools(
     """The V1 tools."""
     return [
         RunSQL(),
+        CalendarIntervalSQL(),
         ExploreSchema(),
         EnrichSchema(),
         SemanticFederationTool(),
