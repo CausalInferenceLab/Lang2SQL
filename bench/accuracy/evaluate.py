@@ -31,6 +31,7 @@ from bench.spider2.evaluate import (
 logger = logging.getLogger(__name__)
 BIRD_REVISION = "5b256b5a9c17478f06ed6912612e9a14d17065c8"
 BIRD_QUESTIONS_SHA = "926af2a0d1b47e5d0d15a7aa8a34d4721007f4550a881555b6a89496b54a2606"
+BIRD_SCHEMA_SHA = "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b"
 SEED = 20261126
 INPUT_KEYS = {
     "instance_id",
@@ -97,11 +98,30 @@ def validate_inputs(manifest, db_dir):
             raise ValueError("Database changed: " + db)
 
 
+def load_schema_documents(path, suite):
+    """Only the pinned official schema map is accepted, never annotated SQL rows."""
+    if path is None:
+        return {}
+    if suite != "bird" or digest(path) != BIRD_SCHEMA_SHA:
+        raise ValueError("Schema documentation must match the pinned BIRD release")
+    documents = json.loads(path.read_text())
+    if not isinstance(documents, dict) or not all(
+        isinstance(db, str) and isinstance(doc, str) for db, doc in documents.items()
+    ):
+        raise ValueError("Schema documentation must be a database-to-text map")
+    return documents
+
+
 async def run(args):
     from dotenv import dotenv_values
 
     manifest = json.loads(args.manifest.read_text())
     validate_inputs(manifest, args.db_dir)
+    args.schema_documents = load_schema_documents(args.schema_docs, manifest["suite"])
+    if args.schema_documents and any(
+        c["db"] not in args.schema_documents for c in manifest["cases"]
+    ):
+        raise ValueError("Missing database schema documentation")
     if manifest["suite"] == "spider2":
         validate_manifest(manifest, args.root, args.db_dir)
     if args.split != "all":
@@ -127,6 +147,9 @@ async def run(args):
         "split": args.split,
         "product_commit": args.product_commit,
         "manifest_sha256": digest(args.manifest),
+        "schema_document_sha256": digest(args.schema_docs)
+        if args.schema_docs
+        else None,
         "sources": {str(p): digest(p) for p in Path("bench").rglob("*.py")},
         "limits": {
             k: getattr(args, k)
@@ -269,6 +292,7 @@ def main():
         "env-file",
         "questions",
         "evaluator",
+        "schema-docs",
     ):
         parser.add_argument("--" + name, type=Path)
     parser.add_argument(

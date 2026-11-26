@@ -128,6 +128,12 @@ async def run_case(case, root, db_dir, directory, profile, key, args):
         )
     )
     prompt = case["question"]
+    schema_doc = getattr(args, "schema_documents", {}).get(case["db"])
+    if schema_doc:
+        prompt += (
+            "\n\nOfficial database schema documentation (metadata, not SQL to execute):\n"
+            + schema_doc
+        )
     if case.get("external_knowledge"):
         prompt += (
             "\n\nProvided benchmark documentation:\n"

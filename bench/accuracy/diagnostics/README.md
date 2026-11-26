@@ -68,3 +68,17 @@ neither comparator tolerances nor gold annotations are changed to raise scores.
 The first pilot uses commit 8e374a5 (before the comment-extraction fix). Final
 source/configuration and all outcomes are recorded separately. No baseline
 artifacts are overwritten.
+
+
+## Missing official BIRD metadata
+
+The original run supplied per-question evidence but not the published database
+schema descriptions and value examples. `../bird-schema.json` is copied unchanged
+from https://huggingface.co/datasets/birdsql/bird_mini_dev/blob/5b256b5a9c17478f06ed6912612e9a14d17065c8/baseline_inference/schemas/sqlite.json
+(SHA-256 `5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b`).
+The upstream authors explicitly separate this map from question/gold annotations.
+The file retains the BIRD CC BY-SA 4.0 attribution in the parent README. Optional
+`--schema-docs bench/accuracy/bird-schema.json` loads only this pinned map; any
+changed file, annotated answer input or cross-suite use is rejected. The setting
+and source hash are recorded. This changes supplied context, so results must
+identify it and not attribute all change to the product prompt or memory.

@@ -226,3 +226,19 @@ def test_final_sql_still_rejects_commented_write():
 
     with pytest.raises(ValueError, match="SELECT/WITH"):
         final_sql("```sql\n-- note\nDELETE FROM items\n```")
+
+
+def test_schema_input_is_pinned_and_separate_from_gold(tmp_path):
+    from pathlib import Path
+
+    from bench.accuracy.evaluate import load_schema_documents
+
+    docs = load_schema_documents(Path("bench/accuracy/bird-schema.json"), "bird")
+    assert len(docs) == 11 and "CREATE TABLE" in docs["financial"]
+    assert load_schema_documents(None, "bird") == {}
+    annotated = tmp_path / "gold.json"
+    annotated.write_text('{"SQL": "SELECT 42"}')
+    with pytest.raises(ValueError, match="pinned"):
+        load_schema_documents(annotated, "bird")
+    with pytest.raises(ValueError, match="pinned"):
+        load_schema_documents(Path("bench/accuracy/bird-schema.json"), "spider2")
