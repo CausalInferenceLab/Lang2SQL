@@ -1,0 +1,8 @@
+SELECT COUNT(*) AS publisher_count
+FROM main.publisher AS p
+WHERE p.id IN (
+    SELECT s.publisher_id
+    FROM main.superhero AS s
+    WHERE s.height_cm > 200
+)
+LIMIT 1

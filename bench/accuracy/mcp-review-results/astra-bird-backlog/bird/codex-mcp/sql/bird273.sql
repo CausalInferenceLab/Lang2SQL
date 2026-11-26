@@ -1,0 +1,7 @@
+SELECT
+    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'Peter') AS Peter,
+    COUNT(DISTINCT d.driverId) FILTER (WHERE d.forename = 'John') AS John
+FROM results AS r
+JOIN drivers AS d ON d.driverId = r.driverId
+WHERE r.position = 1
+LIMIT 1000

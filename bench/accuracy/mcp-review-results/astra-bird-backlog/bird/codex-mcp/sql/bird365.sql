@@ -1,0 +1,14 @@
+WITH hero_counts AS (
+    SELECT h.id, g.gender, COUNT(p.power_id) AS power_count
+    FROM main.superhero AS h
+    JOIN main.gender AS g ON g.id = h.gender_id
+    LEFT JOIN main.hero_power AS p ON p.hero_id = h.id
+    WHERE g.gender IN ('Male', 'Female')
+      AND INSTR(TRIM(h.full_name), ' ') > 0
+    GROUP BY h.id, g.gender
+)
+SELECT
+    ROUND(AVG(CASE WHEN gender = 'Male' THEN power_count END), 2) AS male_average,
+    ROUND(AVG(CASE WHEN gender = 'Female' THEN power_count END), 2) AS female_average
+FROM hero_counts
+LIMIT 1

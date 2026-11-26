@@ -1,0 +1,196 @@
+{
+  "instance_id": "bird483",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1bdea819bf963ae794df0768fe81181d1cfd82c680c1f3f5f01b886916072fe7",
+  "events_sha256": "ab2e40cc143947784efd8f710bd23b149e27058ef34816998d025d79f378d2d8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 129099,
+      "cached_input_tokens": 120064,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 908,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "connected"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "connected (table)\n- atom_id: TEXT NOT NULL\n- atom_id2: TEXT NOT NULL\n- bond_id: TEXT\nPRIMARY KEY (atom_id, atom_id2)\nFOREIGN KEY (bond_id) REFERENCES bond (bond_id)\nFOREIGN KEY (atom_id2) REFERENCES atom (atom_id)\nFOREIGN KEY (atom_id) REFERENCES atom (atom_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "molecule"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "molecule (table)\n- molecule_id: TEXT NOT NULL\n- label: TEXT\nPRIMARY KEY (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"8eDDnIEueVKqre0l_DkpVugnELOmE-_n8Xx6wV-5Cm0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "8eDDnIEueVKqre0l_DkpVugnELOmE-_n8Xx6wV-5Cm0",
+        "expected_columns": [
+          "bond_type",
+          "bond_count"
+        ],
+        "sql": "SELECT b.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count\nFROM main.bond AS b\nJOIN main.molecule AS m ON m.molecule_id = b.molecule_id\nJOIN main.connected AS c ON c.bond_id = b.bond_id\nJOIN main.atom AS a1 ON a1.atom_id = c.atom_id\nJOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\nWHERE m.label = '+'\n  AND a1.element = 'c'\n  AND a2.element = 'c'\n  AND b.bond_type IN ('-', '=', '#')\nGROUP BY b.bond_type\nORDER BY CASE b.bond_type WHEN '-' THEN 1 WHEN '=' THEN 2 WHEN '#' THEN 3 END;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bond_type=str; bond_count=int\nbond_type | bond_count\n--- | ---\n- | 843\n= | 478\nSQL: SELECT b.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count\nFROM main.bond AS b\nJOIN main.molecule AS m ON m.molecule_id = b.molecule_id\nJOIN main.connected AS c ON c.bond_id = b.bond_id\nJOIN main.atom AS a1 ON a1.atom_id = c.atom_id\nJOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\nWHERE m.label = '+'\n  AND a1.element = 'c'\n  AND a2.element = 'c'\n  AND b.bond_type IN ('-', '=', '#')\nGROUP BY b.bond_type\nORDER BY CASE b.bond_type WHEN '-' THEN 1 WHEN '=' THEN 2 WHEN '#' THEN 3 END\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"hzzah04qI6J07mSBEnHtOCseaXDUMRJHzi8_eKWhrFI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "hzzah04qI6J07mSBEnHtOCseaXDUMRJHzi8_eKWhrFI",
+        "expected_columns": [
+          "bond_type",
+          "bond_count"
+        ],
+        "sql": "WITH requested_types(bond_type, sort_order) AS (\n    VALUES ('-', 1), ('=', 2), ('#', 3)\n),\ncarbon_bonds AS (\n    SELECT b.bond_type, b.bond_id\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    JOIN main.connected AS c ON c.bond_id = b.bond_id\n    JOIN main.atom AS a1 ON a1.atom_id = c.atom_id\n    JOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\n    WHERE m.label = '+'\n      AND a1.element = 'c'\n      AND a2.element = 'c'\n)\nSELECT t.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count\nFROM requested_types AS t\nLEFT JOIN carbon_bonds AS b ON b.bond_type = t.bond_type\nGROUP BY t.sort_order, t.bond_type\nORDER BY t.sort_order\nLIMIT 3"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): bond_type=str; bond_count=int\nbond_type | bond_count\n--- | ---\n- | 843\n= | 478\n# | 0\nSQL: WITH requested_types(bond_type, sort_order) AS (\n    VALUES ('-', 1), ('=', 2), ('#', 3)\n),\ncarbon_bonds AS (\n    SELECT b.bond_type, b.bond_id\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    JOIN main.connected AS c ON c.bond_id = b.bond_id\n    JOIN main.atom AS a1 ON a1.atom_id = c.atom_id\n    JOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\n    WHERE m.label = '+'\n      AND a1.element = 'c'\n      AND a2.element = 'c'\n)\nSELECT t.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count\nFROM requested_types AS t\nLEFT JOIN carbon_bonds AS b ON b.bond_type = t.bond_type\nGROUP BY t.sort_order, t.bond_type\nORDER BY t.sort_order\nLIMIT 3"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH requested_types(bond_type, sort_order) AS (\n    VALUES ('-', 1), ('=', 2), ('#', 3)\n),\ncarbon_bonds AS (\n    SELECT b.bond_type, b.bond_id\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    JOIN main.connected AS c ON c.bond_id = b.bond_id\n    JOIN main.atom AS a1 ON a1.atom_id = c.atom_id\n    JOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\n    WHERE m.label = '+'\n      AND a1.element = 'c'\n      AND a2.element = 'c'\n)\nSELECT t.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count\nFROM requested_types AS t\nLEFT JOIN carbon_bonds AS b ON b.bond_type = t.bond_type\nGROUP BY t.sort_order, t.bond_type\nORDER BY t.sort_order\nLIMIT 3\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "WITH requested_types(bond_type, sort_order) AS (\n    VALUES ('-', 1), ('=', 2), ('#', 3)\n),\ncarbon_bonds AS (\n    SELECT b.bond_type, b.bond_id\n    FROM main.bond AS b\n    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id\n    JOIN main.connected AS c ON c.bond_id = b.bond_id\n    JOIN main.atom AS a1 ON a1.atom_id = c.atom_id\n    JOIN main.atom AS a2 ON a2.atom_id = c.atom_id2\n    WHERE m.label = '+'\n      AND a1.element = 'c'\n      AND a2.element = 'c'\n)\nSELECT t.bond_type, COUNT(DISTINCT b.bond_id) AS bond_count\nFROM requested_types AS t\nLEFT JOIN carbon_bonds AS b ON b.bond_type = t.bond_type\nGROUP BY t.sort_order, t.bond_type\nORDER BY t.sort_order\nLIMIT 3",
+  "seconds": 34.43782916700002
+}

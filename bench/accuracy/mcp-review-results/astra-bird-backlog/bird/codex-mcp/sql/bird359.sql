@@ -1,0 +1,7 @@
+SELECT COUNT(*) AS superhero_count
+FROM superhero AS s
+JOIN alignment AS a ON a.id = s.alignment_id
+JOIN publisher AS p ON p.id = s.publisher_id
+WHERE a.alignment = 'Good'
+  AND p.publisher_name <> 'DC Comics'
+LIMIT 1000

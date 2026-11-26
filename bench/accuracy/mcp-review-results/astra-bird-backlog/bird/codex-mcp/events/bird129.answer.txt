@@ -1,0 +1,21 @@
+```sql
+WITH organizers AS (
+    SELECT b.UserId, MIN(b.Date) AS organizer_date
+    FROM badges AS b
+    JOIN users AS u ON u.Id = b.UserId
+    WHERE b.Name = 'Organizer'
+      AND u.Location LIKE '%Germany%'
+    GROUP BY b.UserId
+),
+qualified_users AS (
+    SELECT o.UserId
+    FROM organizers AS o
+    JOIN badges AS prior ON prior.UserId = o.UserId
+                        AND prior.Date < o.organizer_date
+    GROUP BY o.UserId
+    HAVING COUNT(*) >= 5
+)
+SELECT COUNT(*) AS user_count
+FROM qualified_users
+LIMIT 1000
+```
