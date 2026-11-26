@@ -1,0 +1,13 @@
+```sql
+WITH ranked_tests AS (
+    SELECT ID, Date, RNP,
+           RANK() OVER (ORDER BY CAST(RNP AS REAL) DESC) AS reading_rank
+    FROM main.Laboratory
+    WHERE GOT >= 60 AND RNP GLOB '[0-9]*'
+)
+SELECT ID, Date, RNP
+FROM ranked_tests
+WHERE reading_rank = 1
+ORDER BY ID, Date
+LIMIT -1
+```

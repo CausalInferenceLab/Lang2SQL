@@ -1,0 +1,14 @@
+```sql
+SELECT ROUND(
+    100.0 * SUM(CASE WHEN t.k_symbol = 'SIPO' THEN t.amount ELSE 0 END)
+    / NULLIF(SUM(t.amount), 0),
+    2
+) AS sipo_percentage
+FROM trans AS t
+JOIN account AS a ON a.account_id = t.account_id
+JOIN district AS d ON d.district_id = a.district_id
+WHERE d.A2 = 'Pisek'
+  AND t.type = 'VYDAJ'
+  AND TRIM(t.k_symbol) <> ''
+LIMIT 1
+```

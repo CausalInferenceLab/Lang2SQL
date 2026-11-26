@@ -1,0 +1,6 @@
+SELECT COUNT(DISTINCT e.ID) AS patient_count
+FROM main.Examination AS e
+JOIN main.Laboratory AS l ON l.ID = e.ID
+WHERE e.Thrombosis = 0
+  AND CAST(l.RNP AS REAL) > 0
+LIMIT 1

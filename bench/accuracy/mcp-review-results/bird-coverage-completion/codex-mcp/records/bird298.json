@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird298",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "a914419660567479ce5f2d237928509bf0e463c6427c14c461f8febd1815bba1",
+  "events_sha256": "c676732fa7fb3a35085fa81640d9b521d43ceb05ee24eed4f5ba71bfe7c816a8",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 168584,
+      "cached_input_tokens": 156800,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 606,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"2_ZcbTl12MfKXpaOzI2KigOemGVkABTArTpQEVChBtE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "2_ZcbTl12MfKXpaOzI2KigOemGVkABTArTpQEVChBtE",
+        "sql": "SELECT e.event_name, e.event_id, b.category, b.amount FROM event AS e LEFT JOIN budget AS b ON b.link_to_event = e.event_id AND b.category = 'Advertisement' WHERE e.event_name LIKE '%kickoff%' OR e.event_name LIKE '%october%'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_name=str; event_id=str; category=NoneType,str; amount=NoneType,int\nevent_name | event_id | category | amount\n--- | --- | --- | ---\nOctober Speaker | recEVTik3MlqbvLFi | Advertisement | 75\nOfficers meeting - October | recc8dizaKrSz3GmH | None | None\nOctober Meeting | recggMW2eyCYceNcy | Advertisement | 55\nYearly Kickoff | recykdvf4LgsyA3wZ | Advertisement | 150\nSQL: SELECT e.event_name, e.event_id, b.category, b.amount FROM event AS e LEFT JOIN budget AS b ON b.link_to_event = e.event_id AND b.category = 'Advertisement' WHERE e.event_name LIKE '%kickoff%' OR e.event_name LIKE '%october%'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"r5FFgQnL82FAiRuMUL1fVy8pSpEbkX3cJ83X83JLDlo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "r5FFgQnL82FAiRuMUL1fVy8pSpEbkX3cJ83X83JLDlo",
+        "expected_columns": [
+          "advertisement_budget_ratio"
+        ],
+        "sql": "SELECT\n    CAST(SUM(b.amount) FILTER (WHERE e.event_name = 'Yearly Kickoff') AS REAL)\n    / NULLIF(SUM(b.amount) FILTER (WHERE e.event_name = 'October Meeting'), 0)\n    AS advertisement_budget_ratio\nFROM budget AS b\nJOIN event AS e ON e.event_id = b.link_to_event\nWHERE b.category = 'Advertisement'\n  AND e.event_name IN ('Yearly Kickoff', 'October Meeting')\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): advertisement_budget_ratio=float\nadvertisement_budget_ratio\n---\n2.727272727272727\nSQL: SELECT\n    CAST(SUM(b.amount) FILTER (WHERE e.event_name = 'Yearly Kickoff') AS REAL)\n    / NULLIF(SUM(b.amount) FILTER (WHERE e.event_name = 'October Meeting'), 0)\n    AS advertisement_budget_ratio\nFROM budget AS b\nJOIN event AS e ON e.event_id = b.link_to_event\nWHERE b.category = 'Advertisement'\n  AND e.event_name IN ('Yearly Kickoff', 'October Meeting')\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    CAST(SUM(b.amount) FILTER (WHERE e.event_name = 'Yearly Kickoff') AS REAL)\n    / NULLIF(SUM(b.amount) FILTER (WHERE e.event_name = 'October Meeting'), 0)\n    AS advertisement_budget_ratio\nFROM budget AS b\nJOIN event AS e ON e.event_id = b.link_to_event\nWHERE b.category = 'Advertisement'\n  AND e.event_name IN ('Yearly Kickoff', 'October Meeting')\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    CAST(SUM(b.amount) FILTER (WHERE e.event_name = 'Yearly Kickoff') AS REAL)\n    / NULLIF(SUM(b.amount) FILTER (WHERE e.event_name = 'October Meeting'), 0)\n    AS advertisement_budget_ratio\nFROM budget AS b\nJOIN event AS e ON e.event_id = b.link_to_event\nWHERE b.category = 'Advertisement'\n  AND e.event_name IN ('Yearly Kickoff', 'October Meeting')\nLIMIT 1",
+  "seconds": 31.73772487498354
+}

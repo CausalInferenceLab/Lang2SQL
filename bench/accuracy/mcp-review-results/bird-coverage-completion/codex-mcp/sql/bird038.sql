@@ -1,0 +1,24 @@
+WITH virtual_schools AS (
+    SELECT s.County, s.School, t.AvgScrRead
+    FROM main.schools AS s
+    LEFT JOIN main.satscores AS t ON t.cds = s.CDSCode
+    WHERE s.Virtual = 'F'
+),
+ranked_counties AS (
+    SELECT County,
+           COUNT(*) AS virtual_school_count,
+           MAX(AvgScrRead) AS highest_reading_score,
+           RANK() OVER (ORDER BY COUNT(*) DESC) AS county_rank
+    FROM virtual_schools
+    GROUP BY County
+)
+SELECT c.County AS county,
+       c.virtual_school_count,
+       COALESCE(v.School, 'None') AS school_name
+FROM ranked_counties AS c
+LEFT JOIN virtual_schools AS v
+    ON v.County = c.County
+   AND v.AvgScrRead = c.highest_reading_score
+WHERE c.county_rank <= 5
+ORDER BY c.virtual_school_count DESC, c.County, school_name
+LIMIT 1000

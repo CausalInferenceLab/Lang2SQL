@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird440",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "a3a38b89ec3c200f759ef20a7835340c902a3c213993d89f66b2a8a13da46b34",
+  "events_sha256": "fcbfa982bffd8bd133a05974ee99c95fb7d1cfa69fc4b30e6d4786c45b4fc134",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167815,
+      "cached_input_tokens": 149632,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 723,
+      "reasoning_output_tokens": 15
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"YZO7rLFI7qa3qhNTp6-VgSgRfwu4BI3Oo8YNgTndTZg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Laboratory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Laboratory (table)\n- ID: INTEGER NOT NULL\n- Date: DATE NOT NULL\n- GOT: INTEGER\n- GPT: INTEGER\n- LDH: INTEGER\n- ALP: INTEGER\n- TP: REAL\n- ALB: REAL\n- UA: REAL\n- UN: INTEGER\n- CRE: REAL\n- T-BIL: REAL\n- T-CHO: INTEGER\n- TG: INTEGER\n- CPK: INTEGER\n- GLU: INTEGER\n- WBC: REAL\n- RBC: REAL\n- HGB: REAL\n- HCT: REAL\n- PLT: INTEGER\n- PT: REAL\n- APTT: INTEGER\n- FG: REAL\n- PIC: INTEGER\n- TAT: INTEGER\n- TAT2: INTEGER\n- U-PRO: TEXT\n- IGG: INTEGER\n- IGA: INTEGER\n- IGM: INTEGER\n- CRP: TEXT\n- RA: TEXT\n- RF: TEXT\n- C3: INTEGER\n- C4: INTEGER\n- RNP: TEXT\n- SM: TEXT\n- SC170: TEXT\n- SSA: TEXT\n- SSB: TEXT\n- CENTROMEA: TEXT\n- DNA: TEXT\n- DNA-II: INTEGER\nPRIMARY KEY (ID, Date)\nFOREIGN KEY (ID) REFERENCES Patient (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "YZO7rLFI7qa3qhNTp6-VgSgRfwu4BI3Oo8YNgTndTZg",
+        "sql": "SELECT l.DNA, typeof(l.\"DNA-II\") AS level_type, MIN(l.\"DNA-II\") AS min_level, MAX(l.\"DNA-II\") AS max_level, MIN(l.Date) AS first_date, COUNT(*) AS tests\nFROM Laboratory AS l\nJOIN Patient AS p ON p.ID = l.ID\nWHERE p.Admission = '+' AND (l.DNA IS NOT NULL OR l.\"DNA-II\" IS NOT NULL)\nGROUP BY l.DNA, typeof(l.\"DNA-II\")\nORDER BY tests DESC\nLIMIT 30"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nResult coverage: fetched_rows=13; displayed_rows=13; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DNA=str; level_type=str; min_level=NoneType; max_level=NoneType; first_date=str; tests=int\nDNA | level_type | min_level | max_level | first_date | tests\n--- | --- | --- | --- | --- | ---\n100 | null | None | None | 1988-06-13 | 1\n13.3 | null | None | None | 1988-02-18 | 1\n15.6 | null | None | None | 1988-03-31 | 1\n16.03 | null | None | None | 1987-07-16 | 1\n16.5 | null | None | None | 1987-09-10 | 1\n16.6 | null | None | None | 1987-11-12 | 1\n18 | null | None | None | 1988-05-12 | 1\n185 | null | None | None | 1988-04-25 | 1\n24.8 | null | None | None | 1987-06-25 | 1\n25.3 | null | None | None | 1987-10-08 | 1\n28.1 | null | None | None | 1987-05-14 | 1\n29.3 | null | None | None | 1987-05-28 | 1\n9.56 | null | None | None | 1988-07-07 | 1\nSQL: SELECT l.DNA, typeof(l.\"DNA-II\") AS level_type, MIN(l.\"DNA-II\") AS min_level, MAX(l.\"DNA-II\") AS max_level, MIN(l.Date) AS first_date, COUNT(*) AS tests\nFROM Laboratory AS l\nJOIN Patient AS p ON p.ID = l.ID\nWHERE p.Admission = '+' AND (l.DNA IS NOT NULL OR l.\"DNA-II\" IS NOT NULL)\nGROUP BY l.DNA, typeof(l.\"DNA-II\")\nORDER BY tests DESC\nLIMIT 30"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"CIJ2fEI-G_TFjMeWC2PlWfqqpoe4nILOMF6tJaBw8Z0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "CIJ2fEI-G_TFjMeWC2PlWfqqpoe4nILOMF6tJaBw8Z0",
+        "expected_columns": [
+          "age_years",
+          "Diagnosis"
+        ],
+        "sql": "SELECT\n    CAST(strftime('%Y', l.\"Date\") AS INTEGER)\n        - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n        - (strftime('%m-%d', l.\"Date\") < strftime('%m-%d', p.Birthday)) AS age_years,\n    p.Diagnosis\nFROM Laboratory AS l\nJOIN Patient AS p ON p.ID = l.ID\nWHERE p.Admission = '+'\n  AND l.DNA IS NOT NULL\nORDER BY CAST(l.DNA AS REAL) DESC, l.\"Date\" ASC\nLIMIT 1;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): age_years=int; Diagnosis=str\nage_years | Diagnosis\n--- | ---\n20 | SLE\nSQL: SELECT\n    CAST(strftime('%Y', l.\"Date\") AS INTEGER)\n        - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n        - (strftime('%m-%d', l.\"Date\") < strftime('%m-%d', p.Birthday)) AS age_years,\n    p.Diagnosis\nFROM Laboratory AS l\nJOIN Patient AS p ON p.ID = l.ID\nWHERE p.Admission = '+'\n  AND l.DNA IS NOT NULL\nORDER BY CAST(l.DNA AS REAL) DESC, l.\"Date\" ASC\nLIMIT 1;"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    CAST(strftime('%Y', l.\"Date\") AS INTEGER)\n        - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n        - (strftime('%m-%d', l.\"Date\") < strftime('%m-%d', p.Birthday)) AS age_years,\n    p.Diagnosis\nFROM Laboratory AS l\nJOIN Patient AS p ON p.ID = l.ID\nWHERE p.Admission = '+'\n  AND l.DNA IS NOT NULL\nORDER BY CAST(l.DNA AS REAL) DESC, l.\"Date\" ASC\nLIMIT 1;\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    CAST(strftime('%Y', l.\"Date\") AS INTEGER)\n        - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n        - (strftime('%m-%d', l.\"Date\") < strftime('%m-%d', p.Birthday)) AS age_years,\n    p.Diagnosis\nFROM Laboratory AS l\nJOIN Patient AS p ON p.ID = l.ID\nWHERE p.Admission = '+'\n  AND l.DNA IS NOT NULL\nORDER BY CAST(l.DNA AS REAL) DESC, l.\"Date\" ASC\nLIMIT 1;",
+  "seconds": 29.242721499991603
+}

@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird246",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "b89895356ac96345a18ecfeda58316b1939fd7e0b5db063c32243a83e555aba0",
+  "events_sha256": "6f6df82e947856c6ec64bf9f5ba66c579e254cf02e8828ef69972d73596e5d96",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 175743,
+      "cached_input_tokens": 162816,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 661,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"B4g_eOFTE3HmduTLeAGDkbt60RZemFABZ9bepOTin84\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "results"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "results (table)\n- resultId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER\n- grid: INTEGER NOT NULL\n- position: INTEGER\n- positionText: TEXT NOT NULL\n- positionOrder: INTEGER NOT NULL\n- points: REAL NOT NULL\n- laps: INTEGER NOT NULL\n- time: TEXT\n- milliseconds: INTEGER\n- fastestLap: INTEGER\n- rank: INTEGER\n- fastestLapTime: TEXT\n- fastestLapSpeed: TEXT\n- statusId: INTEGER NOT NULL\nPRIMARY KEY (resultId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)\nFOREIGN KEY (statusId) REFERENCES status (statusId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "B4g_eOFTE3HmduTLeAGDkbt60RZemFABZ9bepOTin84",
+        "sql": "SELECT COUNT(*) AS period_results, COUNT(d.driverId) AS matched_results, MIN(d.dob) AS earliest_dob, MAX(d.dob) AS latest_dob, COUNT(CASE WHEN d.dob = date(d.dob) THEN 1 END) AS iso_dates, COUNT(CASE WHEN typeof(res.laps) = 'integer' THEN 1 END) AS integer_laps\nFROM results AS res\nJOIN races AS r ON r.raceId = res.raceId\nLEFT JOIN drivers AS d ON d.driverId = res.driverId\nWHERE r.year BETWEEN 2000 AND 2005;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): period_results=int; matched_results=int; earliest_dob=str; latest_dob=str; iso_dates=int; integer_laps=int\nperiod_results | matched_results | earliest_dob | latest_dob | iso_dates | integer_laps\n--- | --- | --- | --- | --- | ---\n2039 | 2039 | 1964-06-11 | 1983-02-07 | 2039 | 2039\nSQL: SELECT COUNT(*) AS period_results, COUNT(d.driverId) AS matched_results, MIN(d.dob) AS earliest_dob, MAX(d.dob) AS latest_dob, COUNT(CASE WHEN d.dob = date(d.dob) THEN 1 END) AS iso_dates, COUNT(CASE WHEN typeof(res.laps) = 'integer' THEN 1 END) AS integer_laps\nFROM results AS res\nJOIN races AS r ON r.raceId = res.raceId\nLEFT JOIN drivers AS d ON d.driverId = res.driverId\nWHERE r.year BETWEEN 2000 AND 2005\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"jsQhCH8N2QNr2RE6n6WJzNprlybsPlD6LMAb7Ca6vuI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "jsQhCH8N2QNr2RE6n6WJzNprlybsPlD6LMAb7Ca6vuI",
+        "expected_columns": [
+          "percentage"
+        ],
+        "sql": "SELECT\n    100.0 * COUNT(*) FILTER (WHERE d.dob < '1985-01-01' AND res.laps > 50)\n        / NULLIF(COUNT(*), 0) AS percentage\nFROM results AS res\nJOIN races AS r ON r.raceId = res.raceId\nJOIN drivers AS d ON d.driverId = res.driverId\nWHERE r.year BETWEEN 2000 AND 2005\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage=float\npercentage\n---\n64.88474742520843\nSQL: SELECT\n    100.0 * COUNT(*) FILTER (WHERE d.dob < '1985-01-01' AND res.laps > 50)\n        / NULLIF(COUNT(*), 0) AS percentage\nFROM results AS res\nJOIN races AS r ON r.raceId = res.raceId\nJOIN drivers AS d ON d.driverId = res.driverId\nWHERE r.year BETWEEN 2000 AND 2005\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    100.0 * COUNT(*) FILTER (WHERE d.dob < '1985-01-01' AND res.laps > 50)\n        / NULLIF(COUNT(*), 0) AS percentage\nFROM results AS res\nJOIN races AS r ON r.raceId = res.raceId\nJOIN drivers AS d ON d.driverId = res.driverId\nWHERE r.year BETWEEN 2000 AND 2005\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    100.0 * COUNT(*) FILTER (WHERE d.dob < '1985-01-01' AND res.laps > 50)\n        / NULLIF(COUNT(*), 0) AS percentage\nFROM results AS res\nJOIN races AS r ON r.raceId = res.raceId\nJOIN drivers AS d ON d.driverId = res.driverId\nWHERE r.year BETWEEN 2000 AND 2005\nLIMIT 1",
+  "seconds": 27.753192459000275
+}

@@ -1,0 +1,9 @@
+SELECT
+    e.type AS event_category,
+    COUNT(DISTINCT a.link_to_member) AS member_count
+FROM main.event AS e
+LEFT JOIN main.attendance AS a ON a.link_to_event = e.event_id
+WHERE e.location = 'MU 215'
+GROUP BY e.type
+ORDER BY e.type
+LIMIT 1000

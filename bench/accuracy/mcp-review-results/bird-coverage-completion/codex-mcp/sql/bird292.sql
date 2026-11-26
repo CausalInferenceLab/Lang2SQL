@@ -1,0 +1,9 @@
+SELECT d.driverRef
+FROM qualifying AS q
+JOIN races AS r ON r.raceId = q.raceId
+JOIN drivers AS d ON d.driverId = q.driverId
+WHERE r.year = 2017
+  AND r.name = 'Italian Grand Prix'
+  AND NULLIF(q.q2, '') IS NULL
+ORDER BY q.q1 DESC, d.driverId ASC
+LIMIT 1000

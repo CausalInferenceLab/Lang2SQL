@@ -1,0 +1,45 @@
+```sql
+WITH ranked_batsmen AS (
+    SELECT
+        m.season_id,
+        b.striker,
+        SUM(s.runs_scored) AS total_runs,
+        ROW_NUMBER() OVER (
+            PARTITION BY m.season_id
+            ORDER BY SUM(s.runs_scored) DESC, b.striker ASC
+        ) AS position
+    FROM main.batsman_scored AS s
+    JOIN main.ball_by_ball AS b USING (match_id, innings_no, over_id, ball_id)
+    JOIN main."match" AS m ON m.match_id = b.match_id
+    GROUP BY m.season_id, b.striker
+),
+ranked_bowlers AS (
+    SELECT
+        m.season_id,
+        b.bowler,
+        COUNT(*) AS total_wickets,
+        ROW_NUMBER() OVER (
+            PARTITION BY m.season_id
+            ORDER BY COUNT(*) DESC, b.bowler ASC
+        ) AS position
+    FROM main.wicket_taken AS w
+    JOIN main.ball_by_ball AS b USING (match_id, innings_no, over_id, ball_id)
+    JOIN main."match" AS m ON m.match_id = b.match_id
+    WHERE w.kind_out NOT IN ('run out', 'hit wicket', 'retired hurt')
+    GROUP BY m.season_id, b.bowler
+)
+SELECT
+    bat.season_id,
+    p.player_name AS batsman,
+    bat.total_runs,
+    q.player_name AS bowler,
+    bowl.total_wickets
+FROM ranked_batsmen AS bat
+JOIN ranked_bowlers AS bowl
+    ON bowl.season_id = bat.season_id AND bowl.position = bat.position
+JOIN main.player AS p ON p.player_id = bat.striker
+JOIN main.player AS q ON q.player_id = bowl.bowler
+WHERE bat.position <= 3
+ORDER BY bat.season_id ASC, bat.position ASC
+LIMIT 1000
+```

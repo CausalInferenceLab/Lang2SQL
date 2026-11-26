@@ -1,0 +1,30 @@
+WITH borrowers AS (
+    SELECT a.account_id, a.date AS opening_date, SUM(l.amount) AS total_borrowed
+    FROM account AS a
+    JOIN district AS branch ON branch.district_id = a.district_id
+    JOIN loan AS l ON l.account_id = a.account_id
+    WHERE branch.A2 = 'Prachatice'
+    GROUP BY a.account_id, a.date
+),
+counterparties AS (
+    SELECT b.account_id, COUNT(DISTINCT t.account) AS counterparty_count
+    FROM borrowers AS b
+    LEFT JOIN trans AS t
+        ON t.account_id = b.account_id
+       AND t.operation IN ('PREVOD NA UCET', 'PREVOD Z UCTU')
+    GROUP BY b.account_id
+)
+SELECT b.account_id AS account_number,
+       b.opening_date,
+       b.total_borrowed,
+       cp.counterparty_count,
+       home.A2 AS home_district,
+       CAST(home.A4 AS INTEGER) AS home_district_population,
+       RANK() OVER (ORDER BY CAST(home.A4 AS INTEGER) DESC) AS population_rank
+FROM borrowers AS b
+JOIN counterparties AS cp ON cp.account_id = b.account_id
+JOIN disp AS d ON d.account_id = b.account_id AND d.type = 'OWNER'
+JOIN client AS c ON c.client_id = d.client_id
+JOIN district AS home ON home.district_id = c.district_id
+ORDER BY home_district_population DESC, b.account_id ASC
+LIMIT -1

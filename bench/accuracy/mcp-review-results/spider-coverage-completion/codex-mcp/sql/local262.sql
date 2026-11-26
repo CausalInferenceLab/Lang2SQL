@@ -1,0 +1,25 @@
+WITH step_scores AS (
+    SELECT name, version, step,
+           MAX(CASE WHEN model <> 'Stack' THEN test_score END) AS best_non_stack_score,
+           MAX(CASE WHEN model = 'Stack' THEN test_score END) AS stack_score
+    FROM main.model_score
+    WHERE step IN (1, 2, 3)
+    GROUP BY name, version, step
+),
+winning_counts AS (
+    SELECT name, COUNT(*) AS winning_occurrences
+    FROM step_scores
+    WHERE best_non_stack_score < stack_score
+    GROUP BY name
+),
+solution_counts AS (
+    SELECT name, COUNT(*) AS solution_occurrences
+    FROM main.solution
+    GROUP BY name
+)
+SELECT w.name, w.winning_occurrences, s.solution_occurrences
+FROM winning_counts AS w
+JOIN solution_counts AS s ON s.name = w.name
+WHERE w.winning_occurrences > s.solution_occurrences
+ORDER BY w.name
+LIMIT 1000

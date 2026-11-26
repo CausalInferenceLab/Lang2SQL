@@ -1,0 +1,153 @@
+{
+  "instance_id": "bird310",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "8a6252de68d959db95223a28bfc1f754a990c005bb70dc4235c3cbd4cee6cdf7",
+  "events_sha256": "b26ef9b8b4122e0d1a1d6fd786441ab04f0606c7fa3fc5d576b26c8749605d0e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 168967,
+      "cached_input_tokens": 157184,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 660,
+      "reasoning_output_tokens": 84
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attendance"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attendance (table)\n- link_to_event: TEXT\n- link_to_member: TEXT\nPRIMARY KEY (link_to_event, link_to_member)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"w5EA9lXCsl21gjxzNvs3B6sFgwQ0mlcGFWkOux9tN9U\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "w5EA9lXCsl21gjxzNvs3B6sFgwQ0mlcGFWkOux9tN9U",
+        "sql": "SELECT e.event_name, e.event_date, e.status, EXISTS (SELECT 1 FROM main.attendance AS a WHERE a.link_to_event = e.event_id) AS has_attendance FROM main.event AS e WHERE e.type = 'Budget'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_name=str; event_date=str; status=str; has_attendance=int\nevent_name | event_date | status | has_attendance\n--- | --- | --- | ---\nFall Budget Review | 2019-09-07T03:00:00 | Closed | 1\nSpring Budget Review | 2020-01-12T03:00:00 | Open | 0\nSQL: SELECT e.event_name, e.event_date, e.status, EXISTS (SELECT 1 FROM main.attendance AS a WHERE a.link_to_event = e.event_id) AS has_attendance FROM main.event AS e WHERE e.type = 'Budget'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"EvSeOIczz-wxnzgqD3TXMv9BYD-JwjTTMam3gto8GTg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "EvSeOIczz-wxnzgqD3TXMv9BYD-JwjTTMam3gto8GTg",
+        "expected_columns": [
+          "event_name",
+          "location",
+          "members_attended"
+        ],
+        "sql": "SELECT\n    e.event_name,\n    e.location,\n    COUNT(a.link_to_member) AS members_attended\nFROM main.event AS e\nLEFT JOIN main.attendance AS a\n    ON a.link_to_event = e.event_id\nWHERE e.type = 'Budget'\nGROUP BY e.event_id, e.event_name, e.location\nORDER BY e.event_date, e.event_id\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_name=str; location=str; members_attended=int\nevent_name | location | members_attended\n--- | --- | ---\nFall Budget Review | Conference Room BA 452 | 5\nSpring Budget Review | Conference Room BA 452 | 0\nSQL: SELECT\n    e.event_name,\n    e.location,\n    COUNT(a.link_to_member) AS members_attended\nFROM main.event AS e\nLEFT JOIN main.attendance AS a\n    ON a.link_to_event = e.event_id\nWHERE e.type = 'Budget'\nGROUP BY e.event_id, e.event_name, e.location\nORDER BY e.event_date, e.event_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    e.event_name,\n    e.location,\n    COUNT(a.link_to_member) AS members_attended\nFROM main.event AS e\nLEFT JOIN main.attendance AS a\n    ON a.link_to_event = e.event_id\nWHERE e.type = 'Budget'\nGROUP BY e.event_id, e.event_name, e.location\nORDER BY e.event_date, e.event_id\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 2,
+  "sql": "SELECT\n    e.event_name,\n    e.location,\n    COUNT(a.link_to_member) AS members_attended\nFROM main.event AS e\nLEFT JOIN main.attendance AS a\n    ON a.link_to_event = e.event_id\nWHERE e.type = 'Budget'\nGROUP BY e.event_id, e.event_name, e.location\nORDER BY e.event_date, e.event_id\nLIMIT -1",
+  "seconds": 30.181207624962553
+}

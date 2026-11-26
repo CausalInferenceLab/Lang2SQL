@@ -1,0 +1,172 @@
+{
+  "instance_id": "bird282",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "e57eeffcac446acffbccc08187c623082269ae0d30c2b9fb25019ff3ae35793d",
+  "events_sha256": "966542f4b71f51eb4b0f2e00263ae12493f8df48c92e2e5c9740ee6e6d89f860",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 176080,
+      "cached_input_tokens": 145152,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 755,
+      "reasoning_output_tokens": 42
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"qoSrH05_gcqsc5C3K5NA2MFSrknaRI01aZYPbAd8wbw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "qualifying"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "qualifying (table)\n- qualifyId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER NOT NULL\n- position: INTEGER\n- q1: TEXT\n- q2: TEXT\n- q3: TEXT\nPRIMARY KEY (qualifyId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "qoSrH05_gcqsc5C3K5NA2MFSrknaRI01aZYPbAd8wbw",
+        "sql": "SELECT CASE WHEN q.q2 GLOB '[0-9]:[0-5][0-9].[0-9][0-9][0-9]' THEN 'm:ss.mmm' ELSE quote(q.q2) END AS time_format, COUNT(*) AS qualifying_rows, COUNT(d.driverId) AS driver_matches, MIN(q.q2) AS first_value, MAX(q.q2) AS last_value\nFROM qualifying AS q\nJOIN races AS r ON r.raceId = q.raceId\nLEFT JOIN drivers AS d ON d.driverId = q.driverId\nWHERE r.year = 2017\nGROUP BY time_format"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): time_format=str; qualifying_rows=int; driver_matches=int; first_value=NoneType,str; last_value=NoneType,str\ntime_format | qualifying_rows | driver_matches | first_value | last_value\n--- | --- | --- | --- | ---\n'' | 4 | 4 |  | \nNULL | 64 | 64 | None | None\nm:ss.mmm | 191 | 191 | 1:04.316 | 1:45.439\nSQL: SELECT CASE WHEN q.q2 GLOB '[0-9]:[0-5][0-9].[0-9][0-9][0-9]' THEN 'm:ss.mmm' ELSE quote(q.q2) END AS time_format, COUNT(*) AS qualifying_rows, COUNT(d.driverId) AS driver_matches, MIN(q.q2) AS first_value, MAX(q.q2) AS last_value\nFROM qualifying AS q\nJOIN races AS r ON r.raceId = q.raceId\nLEFT JOIN drivers AS d ON d.driverId = q.driverId\nWHERE r.year = 2017\nGROUP BY time_format\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ZnR2G8ZCAcgeEbRFcgMuvf523fHVwqxNVP9NTUJNJG0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ZnR2G8ZCAcgeEbRFcgMuvf523fHVwqxNVP9NTUJNJG0",
+        "expected_columns": [
+          "surname",
+          "race_name"
+        ],
+        "sql": "WITH season_q2 AS (\n    SELECT q.driverId, r.name AS race_name, q.q2\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 2017 AND q.q2 <> ''\n)\nSELECT d.surname, s.race_name\nFROM season_q2 AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nWHERE s.q2 = (SELECT MIN(q2) FROM season_q2)\nORDER BY d.surname, s.race_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): surname=str; race_name=str\nsurname | race_name\n--- | ---\nBottas | Austrian Grand Prix\nSQL: WITH season_q2 AS (\n    SELECT q.driverId, r.name AS race_name, q.q2\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 2017 AND q.q2 <> ''\n)\nSELECT d.surname, s.race_name\nFROM season_q2 AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nWHERE s.q2 = (SELECT MIN(q2) FROM season_q2)\nORDER BY d.surname, s.race_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH season_q2 AS (\n    SELECT q.driverId, r.name AS race_name, q.q2\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 2017 AND q.q2 <> ''\n)\nSELECT d.surname, s.race_name\nFROM season_q2 AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nWHERE s.q2 = (SELECT MIN(q2) FROM season_q2)\nORDER BY d.surname, s.race_name\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH season_q2 AS (\n    SELECT q.driverId, r.name AS race_name, q.q2\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 2017 AND q.q2 <> ''\n)\nSELECT d.surname, s.race_name\nFROM season_q2 AS s\nJOIN drivers AS d ON d.driverId = s.driverId\nWHERE s.q2 = (SELECT MIN(q2) FROM season_q2)\nORDER BY d.surname, s.race_name\nLIMIT 1000",
+  "seconds": 30.631389625021257
+}

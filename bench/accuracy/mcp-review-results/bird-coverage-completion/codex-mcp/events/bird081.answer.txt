@@ -1,0 +1,17 @@
+```sql
+WITH artist_counts AS (
+    SELECT artist, COUNT(*) AS card_count
+    FROM main.cards
+    WHERE borderColor = 'black'
+      AND instr(',' || availability || ',', ',arena,') > 0
+      AND power NOT GLOB '*[^0-9]*'
+      AND CAST(power AS INTEGER) >= 10
+      AND artist IS NOT NULL
+    GROUP BY artist
+)
+SELECT artist, card_count
+FROM artist_counts
+WHERE card_count = (SELECT MAX(card_count) FROM artist_counts)
+ORDER BY artist
+LIMIT 1000
+```

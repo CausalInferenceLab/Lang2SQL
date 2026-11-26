@@ -1,0 +1,17 @@
+```sql
+WITH rare_elements AS (
+    SELECT a.element
+    FROM main.atom AS a
+    GROUP BY a.element
+    HAVING COUNT(DISTINCT a.molecule_id) = 1
+)
+SELECT m.molecule_id, COUNT(DISTINCT c.bond_id) AS bond_count
+FROM rare_elements AS r
+JOIN main.atom AS a ON a.element = r.element
+JOIN main.molecule AS m ON m.molecule_id = a.molecule_id
+LEFT JOIN main.connected AS c ON a.atom_id IN (c.atom_id, c.atom_id2)
+WHERE m.label = '+'
+GROUP BY m.molecule_id
+ORDER BY m.molecule_id
+LIMIT 1000
+```

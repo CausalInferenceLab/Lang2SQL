@@ -1,0 +1,13 @@
+WITH shared_power_heroes AS (
+    SELECT peer.hero_id
+    FROM main.superhero AS target
+    JOIN main.hero_power AS own ON own.hero_id = target.id
+    JOIN main.hero_power AS peer ON peer.power_id = own.power_id
+    WHERE target.superhero_name = '3-D Man'
+      AND peer.hero_id <> target.id
+)
+SELECT ROUND(AVG(h.height_cm), 1) AS average_height_cm
+FROM main.superhero AS h
+WHERE h.height_cm > 0
+  AND h.id IN (SELECT hero_id FROM shared_power_heroes)
+LIMIT 1

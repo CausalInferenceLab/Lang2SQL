@@ -1,0 +1,168 @@
+{
+  "instance_id": "local054",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "failed",
+  "calls": [],
+  "prompt_sha256": "02ebf09704fb564d9d19dbe6f13432af03f94789faa1d7885a91623db4b95f2a",
+  "events_sha256": "bdd8990f717a242faec0d7a4ae225b8cbd2122cfc136ae8bc9f594ca6deaf6a9",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 96964,
+      "cached_input_tokens": 84352,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 228,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "best-selling artist"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"best-selling artist\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "invoice_items"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "invoice_items (table)\n- InvoiceLineId: INTEGER NOT NULL\n- InvoiceId: INTEGER NOT NULL\n- TrackId: INTEGER NOT NULL\n- UnitPrice: NUMERIC(10, 2) NOT NULL\n- Quantity: INTEGER NOT NULL\nPRIMARY KEY (InvoiceLineId)\nFOREIGN KEY (TrackId) REFERENCES tracks (TrackId)\nFOREIGN KEY (InvoiceId) REFERENCES invoices (InvoiceId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "invoices"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "invoices (table)\n- InvoiceId: INTEGER NOT NULL\n- CustomerId: INTEGER NOT NULL\n- InvoiceDate: DATETIME NOT NULL\n- BillingAddress: NVARCHAR(70)\n- BillingCity: NVARCHAR(40)\n- BillingState: NVARCHAR(40)\n- BillingCountry: NVARCHAR(40)\n- BillingPostalCode: NVARCHAR(10)\n- Total: NUMERIC(10, 2) NOT NULL\nPRIMARY KEY (InvoiceId)\nFOREIGN KEY (CustomerId) REFERENCES customers (CustomerId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "albums"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "albums (table)\n- AlbumId: INTEGER NOT NULL\n- Title: NVARCHAR(160) NOT NULL\n- ArtistId: INTEGER NOT NULL\nPRIMARY KEY (AlbumId)\nFOREIGN KEY (ArtistId) REFERENCES artists (ArtistId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "artists"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "artists (table)\n- ArtistId: INTEGER NOT NULL\n- Name: NVARCHAR(120)\nPRIMARY KEY (ArtistId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "tracks"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "tracks (table)\n- TrackId: INTEGER NOT NULL\n- Name: NVARCHAR(200) NOT NULL\n- AlbumId: INTEGER\n- MediaTypeId: INTEGER NOT NULL\n- GenreId: INTEGER\n- Composer: NVARCHAR(220)\n- Milliseconds: INTEGER NOT NULL\n- Bytes: INTEGER\n- UnitPrice: NUMERIC(10, 2) NOT NULL\nPRIMARY KEY (TrackId)\nFOREIGN KEY (MediaTypeId) REFERENCES media_types (MediaTypeId)\nFOREIGN KEY (GenreId) REFERENCES genres (GenreId)\nFOREIGN KEY (AlbumId) REFERENCES albums (AlbumId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerId: INTEGER NOT NULL\n- FirstName: NVARCHAR(40) NOT NULL\n- LastName: NVARCHAR(20) NOT NULL\n- Company: NVARCHAR(80)\n- Address: NVARCHAR(70)\n- City: NVARCHAR(40)\n- State: NVARCHAR(40)\n- Country: NVARCHAR(40)\n- PostalCode: NVARCHAR(10)\n- Phone: NVARCHAR(24)\n- Fax: NVARCHAR(24)\n- Email: NVARCHAR(60) NOT NULL\n- SupportRepId: INTEGER\nPRIMARY KEY (CustomerId)\nFOREIGN KEY (SupportRepId) REFERENCES employees (EmployeeId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "Should “best-selling artist” mean the artist with the highest total track revenue or the artist who sold the most track units? Lang2SQL has no confirmed definition for that ranking.",
+  "event_parse_errors": [],
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 15.427374624996446
+}

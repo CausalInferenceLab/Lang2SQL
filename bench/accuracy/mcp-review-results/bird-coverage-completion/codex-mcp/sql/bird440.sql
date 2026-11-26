@@ -1,0 +1,11 @@
+SELECT
+    CAST(strftime('%Y', l."Date") AS INTEGER)
+        - CAST(strftime('%Y', p.Birthday) AS INTEGER)
+        - (strftime('%m-%d', l."Date") < strftime('%m-%d', p.Birthday)) AS age_years,
+    p.Diagnosis
+FROM Laboratory AS l
+JOIN Patient AS p ON p.ID = l.ID
+WHERE p.Admission = '+'
+  AND l.DNA IS NOT NULL
+ORDER BY CAST(l.DNA AS REAL) DESC, l."Date" ASC
+LIMIT 1;

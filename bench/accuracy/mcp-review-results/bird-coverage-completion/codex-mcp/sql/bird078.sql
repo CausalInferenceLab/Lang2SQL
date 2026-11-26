@@ -1,0 +1,14 @@
+SELECT
+    s.name,
+    s.keyruneCode,
+    COUNT(DISTINCT t.language) AS language_count
+FROM sets AS s
+LEFT JOIN set_translations AS t
+    ON t.setCode = s.code
+    AND TRIM(t.translation) <> ''
+    AND t.language <> 'English'
+WHERE s.releaseDate >= '2020-01-01'
+  AND s.releaseDate < '2021-01-01'
+GROUP BY s.id, s.name, s.keyruneCode
+ORDER BY s.name
+LIMIT 1000

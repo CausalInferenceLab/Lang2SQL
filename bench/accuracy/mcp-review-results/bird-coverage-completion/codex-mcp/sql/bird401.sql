@@ -1,0 +1,14 @@
+SELECT ROUND(AVG(l.TP - 8.5), 3) AS average_tp_deviation
+FROM main.Laboratory AS l
+JOIN main.Patient AS p ON p.ID = l.ID
+WHERE p.SEX = 'F'
+  AND l.TP > 8.5
+  AND l.ID IN (
+      SELECT e.ID
+      FROM main.Examination AS e
+      WHERE instr(
+          ',' || replace(replace(replace(e.Diagnosis, ' ', ''), '+', ','), '->', ',') || ',',
+          ',SLE,'
+      ) > 0
+  )
+LIMIT 1;

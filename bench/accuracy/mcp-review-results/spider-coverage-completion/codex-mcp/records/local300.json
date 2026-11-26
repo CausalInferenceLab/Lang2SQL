@@ -1,0 +1,132 @@
+{
+  "instance_id": "local300",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "7e37912e3dc94812afa21ba58266c447fa01bcf66cd26f1ea7dccf3a0b39cab3",
+  "events_sha256": "7ccc7426bfcc9b4e209721960611e0e5e462fe4208c968565cf22cdb860f2738",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 191230,
+      "cached_input_tokens": 175872,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1098,
+      "reasoning_output_tokens": 67
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"d8niQ8xfwj5hKMWSN4aYC7saex2p4lgePwWCgiK3NAo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customer_transactions"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customer_transactions (table)\n- customer_id: INTEGER\n- txn_date: TEXT\n- txn_type: TEXT\n- txn_amount: INTEGER"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "d8niQ8xfwj5hKMWSN4aYC7saex2p4lgePwWCgiK3NAo",
+        "sql": "SELECT txn_type, MIN(txn_amount) AS min_amount, MAX(txn_amount) AS max_amount, MIN(txn_date) AS first_date, MAX(txn_date) AS last_date, COUNT(*) AS transactions, COUNT(txn_amount) AS counted_amounts, SUM(txn_date IS NOT DATE(txn_date)) AS non_iso_dates FROM main.customer_transactions GROUP BY txn_type"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): txn_type=str; min_amount=int; max_amount=int; first_date=str; last_date=str; transactions=int; counted_amounts=int; non_iso_dates=int\ntxn_type | min_amount | max_amount | first_date | last_date | transactions | counted_amounts | non_iso_dates\n--- | --- | --- | --- | --- | --- | --- | ---\ndeposit | 0 | 1000 | 2020-01-01 | 2020-04-26 | 2671 | 2671 | 0\npurchase | 1 | 999 | 2020-01-01 | 2020-04-28 | 1617 | 1617 | 0\nwithdrawal | 1 | 999 | 2020-01-02 | 2020-04-28 | 1580 | 1580 | 0\nSQL: SELECT txn_type, MIN(txn_amount) AS min_amount, MAX(txn_amount) AS max_amount, MIN(txn_date) AS first_date, MAX(txn_date) AS last_date, COUNT(*) AS transactions, COUNT(txn_amount) AS counted_amounts, SUM(txn_date IS NOT DATE(txn_date)) AS non_iso_dates FROM main.customer_transactions GROUP BY txn_type\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"UqPVDq_lWwAwycbdqhGRIW4ryjt6bdTjwgQfJ05aF1Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "UqPVDq_lWwAwycbdqhGRIW4ryjt6bdTjwgQfJ05aF1Y",
+        "expected_columns": [
+          "month",
+          "monthly_total"
+        ],
+        "sql": "WITH RECURSIVE daily_changes AS (\n    SELECT\n        customer_id,\n        txn_date,\n        SUM(CASE\n            WHEN txn_type = 'deposit' THEN txn_amount\n            WHEN txn_type IN ('purchase', 'withdrawal') THEN -txn_amount\n        END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ntransaction_balances AS (\n    SELECT\n        customer_id,\n        txn_date,\n        LEAD(txn_date) OVER customer_dates AS next_txn_date,\n        SUM(net_change) OVER customer_dates AS closing_balance\n    FROM daily_changes\n    WINDOW customer_dates AS (PARTITION BY customer_id ORDER BY txn_date)\n),\ndaily_balances(customer_id, balance_date, next_txn_date, balance) AS (\n    SELECT customer_id, txn_date, next_txn_date, MAX(0, closing_balance)\n    FROM transaction_balances\n\n    UNION ALL\n\n    SELECT customer_id, DATE(balance_date, '+1 day'), next_txn_date, balance\n    FROM daily_balances\n    WHERE DATE(balance_date, '+1 day') < next_txn_date\n),\ncustomer_monthly_peaks AS (\n    SELECT\n        customer_id,\n        STRFTIME('%Y-%m', balance_date) AS month,\n        MAX(balance) AS peak_balance\n    FROM daily_balances\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(peak_balance) AS monthly_total\nFROM customer_monthly_peaks\nGROUP BY month\nORDER BY month"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month=str; monthly_total=int\nmonth | monthly_total\n--- | ---\n2020-01 | 356618\n2020-02 | 409593\n2020-03 | 386903\n2020-04 | 206550\nSQL: WITH RECURSIVE daily_changes AS (\n    SELECT\n        customer_id,\n        txn_date,\n        SUM(CASE\n            WHEN txn_type = 'deposit' THEN txn_amount\n            WHEN txn_type IN ('purchase', 'withdrawal') THEN -txn_amount\n        END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ntransaction_balances AS (\n    SELECT\n        customer_id,\n        txn_date,\n        LEAD(txn_date) OVER customer_dates AS next_txn_date,\n        SUM(net_change) OVER customer_dates AS closing_balance\n    FROM daily_changes\n    WINDOW customer_dates AS (PARTITION BY customer_id ORDER BY txn_date)\n),\ndaily_balances(customer_id, balance_date, next_txn_date, balance) AS (\n    SELECT customer_id, txn_date, next_txn_date, MAX(0, closing_balance)\n    FROM transaction_balances\n\n    UNION ALL\n\n    SELECT customer_id, DATE(balance_date, '+1 day'), next_txn_date, balance\n    FROM daily_balances\n    WHERE DATE(balance_date, '+1 day') < next_txn_date\n),\ncustomer_monthly_peaks AS (\n    SELECT\n        customer_id,\n        STRFTIME('%Y-%m', balance_date) AS month,\n        MAX(balance) AS peak_balance\n    FROM daily_balances\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(peak_balance) AS monthly_total\nFROM customer_monthly_peaks\nGROUP BY month\nORDER BY month\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH RECURSIVE daily_changes AS (\n    SELECT\n        customer_id,\n        txn_date,\n        SUM(CASE\n            WHEN txn_type = 'deposit' THEN txn_amount\n            WHEN txn_type IN ('purchase', 'withdrawal') THEN -txn_amount\n        END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ntransaction_balances AS (\n    SELECT\n        customer_id,\n        txn_date,\n        LEAD(txn_date) OVER customer_dates AS next_txn_date,\n        SUM(net_change) OVER customer_dates AS closing_balance\n    FROM daily_changes\n    WINDOW customer_dates AS (PARTITION BY customer_id ORDER BY txn_date)\n),\ndaily_balances(customer_id, balance_date, next_txn_date, balance) AS (\n    SELECT customer_id, txn_date, next_txn_date, MAX(0, closing_balance)\n    FROM transaction_balances\n\n    UNION ALL\n\n    SELECT customer_id, DATE(balance_date, '+1 day'), next_txn_date, balance\n    FROM daily_balances\n    WHERE DATE(balance_date, '+1 day') < next_txn_date\n),\ncustomer_monthly_peaks AS (\n    SELECT\n        customer_id,\n        STRFTIME('%Y-%m', balance_date) AS month,\n        MAX(balance) AS peak_balance\n    FROM daily_balances\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(peak_balance) AS monthly_total\nFROM customer_monthly_peaks\nGROUP BY month\nORDER BY month\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 4,
+  "sql": "WITH RECURSIVE daily_changes AS (\n    SELECT\n        customer_id,\n        txn_date,\n        SUM(CASE\n            WHEN txn_type = 'deposit' THEN txn_amount\n            WHEN txn_type IN ('purchase', 'withdrawal') THEN -txn_amount\n        END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ntransaction_balances AS (\n    SELECT\n        customer_id,\n        txn_date,\n        LEAD(txn_date) OVER customer_dates AS next_txn_date,\n        SUM(net_change) OVER customer_dates AS closing_balance\n    FROM daily_changes\n    WINDOW customer_dates AS (PARTITION BY customer_id ORDER BY txn_date)\n),\ndaily_balances(customer_id, balance_date, next_txn_date, balance) AS (\n    SELECT customer_id, txn_date, next_txn_date, MAX(0, closing_balance)\n    FROM transaction_balances\n\n    UNION ALL\n\n    SELECT customer_id, DATE(balance_date, '+1 day'), next_txn_date, balance\n    FROM daily_balances\n    WHERE DATE(balance_date, '+1 day') < next_txn_date\n),\ncustomer_monthly_peaks AS (\n    SELECT\n        customer_id,\n        STRFTIME('%Y-%m', balance_date) AS month,\n        MAX(balance) AS peak_balance\n    FROM daily_balances\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(peak_balance) AS monthly_total\nFROM customer_monthly_peaks\nGROUP BY month\nORDER BY month\nLIMIT 1000",
+  "seconds": 40.40854870900512
+}

@@ -1,0 +1,192 @@
+{
+  "instance_id": "bird193",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "4b55f2bbd93be9696eeff892ede3461dc408fac42ffce79c12c4a750a61b30e8",
+  "events_sha256": "184ef0ceb57b6aa56682c88e0e6fbd0738bb17d7d85e6d55816464666ef2151c",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 191583,
+      "cached_input_tokens": 176256,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1233,
+      "reasoning_output_tokens": 17
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"pOhCzvTYojKbf8-ve4fkG6JZe_gnTz1Y_cDUM4UP8_w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Player_Attributes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Player_Attributes (table)\n- id: INTEGER\n- player_fifa_api_id: INTEGER\n- player_api_id: INTEGER\n- date: TEXT\n- overall_rating: INTEGER\n- potential: INTEGER\n- preferred_foot: TEXT\n- attacking_work_rate: TEXT\n- defensive_work_rate: TEXT\n- crossing: INTEGER\n- finishing: INTEGER\n- heading_accuracy: INTEGER\n- short_passing: INTEGER\n- volleys: INTEGER\n- dribbling: INTEGER\n- curve: INTEGER\n- free_kick_accuracy: INTEGER\n- long_passing: INTEGER\n- ball_control: INTEGER\n- acceleration: INTEGER\n- sprint_speed: INTEGER\n- agility: INTEGER\n- reactions: INTEGER\n- balance: INTEGER\n- shot_power: INTEGER\n- jumping: INTEGER\n- stamina: INTEGER\n- strength: INTEGER\n- long_shots: INTEGER\n- aggression: INTEGER\n- interceptions: INTEGER\n- positioning: INTEGER\n- vision: INTEGER\n- penalties: INTEGER\n- marking: INTEGER\n- standing_tackle: INTEGER\n- sliding_tackle: INTEGER\n- gk_diving: INTEGER\n- gk_handling: INTEGER\n- gk_kicking: INTEGER\n- gk_positioning: INTEGER\n- gk_reflexes: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (player_api_id) REFERENCES Player (player_api_id)\nFOREIGN KEY (player_fifa_api_id) REFERENCES Player (player_fifa_api_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Player"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Player (table)\n- id: INTEGER\n- player_api_id: INTEGER\n- player_name: TEXT\n- player_fifa_api_id: INTEGER\n- birthday: TEXT\n- height: INTEGER\n- weight: INTEGER\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "pOhCzvTYojKbf8-ve4fkG6JZe_gnTz1Y_cDUM4UP8_w",
+        "sql": "WITH last_dates AS (\n    SELECT player_api_id, MAX(date) AS latest\n    FROM main.Player_Attributes\n    WHERE date < '2013-07-13'\n    GROUP BY player_api_id\n), snapshots AS (\n    SELECT a.player_api_id, a.date, a.overall_rating, a.defensive_work_rate, p.player_name\n    FROM last_dates AS d\n    JOIN main.Player_Attributes AS a ON a.player_api_id = d.player_api_id AND a.date = d.latest\n    LEFT JOIN main.Player AS p ON p.player_api_id = a.player_api_id\n)\nSELECT COUNT(*) AS latest_rows, COUNT(DISTINCT player_api_id) AS players,\n       COUNT(*) FILTER (WHERE player_name IS NULL) AS missing_names,\n       COUNT(*) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_rows,\n       MAX(date) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_date,\n       MAX(overall_rating) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_rating,\n       MAX(defensive_work_rate) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_rate,\n       COUNT(*) FILTER (WHERE overall_rating IS NULL AND defensive_work_rate IN ('low','medium','high')) AS missing_ratings\nFROM snapshots"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): latest_rows=int; players=int; missing_names=int; donovan_rows=int; donovan_date=str; donovan_rating=int; donovan_rate=str; missing_ratings=int\nlatest_rows | players | missing_names | donovan_rows | donovan_date | donovan_rating | donovan_rate | missing_ratings\n--- | --- | --- | --- | --- | --- | --- | ---\n11064 | 11060 | 0 | 1 | 2013-07-12 00:00:00 | 79 | high | 0\nSQL: WITH last_dates AS (\n    SELECT player_api_id, MAX(date) AS latest\n    FROM main.Player_Attributes\n    WHERE date < '2013-07-13'\n    GROUP BY player_api_id\n), snapshots AS (\n    SELECT a.player_api_id, a.date, a.overall_rating, a.defensive_work_rate, p.player_name\n    FROM last_dates AS d\n    JOIN main.Player_Attributes AS a ON a.player_api_id = d.player_api_id AND a.date = d.latest\n    LEFT JOIN main.Player AS p ON p.player_api_id = a.player_api_id\n)\nSELECT COUNT(*) AS latest_rows, COUNT(DISTINCT player_api_id) AS players,\n       COUNT(*) FILTER (WHERE player_name IS NULL) AS missing_names,\n       COUNT(*) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_rows,\n       MAX(date) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_date,\n       MAX(overall_rating) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_rating,\n       MAX(defensive_work_rate) FILTER (WHERE player_name = 'Landon Donovan') AS donovan_rate,\n       COUNT(*) FILTER (WHERE overall_rating IS NULL AND defensive_work_rate IN ('low','medium','high')) AS missing_ratings\nFROM snapshots\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"LpgCxjghtTXqSEmvv83zx4w6lWnlGbKLb67qJKX5YFo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "LpgCxjghtTXqSEmvv83zx4w6lWnlGbKLb67qJKX5YFo",
+        "sql": "WITH latest AS (\n    SELECT a.*, DENSE_RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes AS a\n    WHERE date < '2013-07-13'\n)\nSELECT player_api_id, date, GROUP_CONCAT(id) AS ids, GROUP_CONCAT(COALESCE(overall_rating, 'NULL')) AS ratings,\n       GROUP_CONCAT(COALESCE(defensive_work_rate, 'NULL')) AS work_rates\nFROM latest\nWHERE recency = 1\nGROUP BY player_api_id\nHAVING COUNT(*) > 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): player_api_id=int; date=str; ids=str; ratings=str; work_rates=str\nplayer_api_id | date | ids | ratings | work_rates\n--- | --- | --- | --- | ---\n13549 | 2007-02-22 00:00:00 | 176421,176422 | 59,NULL | medium,NULL\n110189 | 2013-02-15 00:00:00 | 129791,129816 | 78,NULL | medium,NULL\n193866 | 2013-02-15 00:00:00 | 138971,138995 | 68,NULL | 8,NULL\n357288 | 2007-02-22 00:00:00 | 38161,38162 | 55,NULL | medium,NULL\nSQL: WITH latest AS (\n    SELECT a.*, DENSE_RANK() OVER (PARTITION BY player_api_id ORDER BY date DESC) AS recency\n    FROM main.Player_Attributes AS a\n    WHERE date < '2013-07-13'\n)\nSELECT player_api_id, date, GROUP_CONCAT(id) AS ids, GROUP_CONCAT(COALESCE(overall_rating, 'NULL')) AS ratings,\n       GROUP_CONCAT(COALESCE(defensive_work_rate, 'NULL')) AS work_rates\nFROM latest\nWHERE recency = 1\nGROUP BY player_api_id\nHAVING COUNT(*) > 1\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"uoqK3S-t5uzK9GFd7fydcehe3XTsXNNW9C2met2LoGk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "uoqK3S-t5uzK9GFd7fydcehe3XTsXNNW9C2met2LoGk",
+        "expected_columns": [
+          "percentage_higher"
+        ],
+        "sql": "WITH ranked_updates AS (\n    SELECT a.player_api_id,\n           a.overall_rating,\n           a.defensive_work_rate,\n           RANK() OVER (\n               PARTITION BY a.player_api_id\n               ORDER BY a.date DESC\n           ) AS recency\n    FROM main.Player_Attributes AS a\n    WHERE a.date < '2013-07-13'\n),\nratings AS (\n    SELECT MAX(CASE WHEN p.player_name = 'Landon Donovan'\n                    THEN u.overall_rating END) AS donovan_rating,\n           AVG(u.overall_rating) AS average_rating\n    FROM ranked_updates AS u\n    JOIN main.Player AS p ON p.player_api_id = u.player_api_id\n    WHERE u.recency = 1\n      AND u.defensive_work_rate IN ('low', 'medium', 'high')\n)\nSELECT ROUND(\n           100.0 * (donovan_rating - average_rating) / NULLIF(average_rating, 0),\n           2\n       ) AS percentage_higher\nFROM ratings\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage_higher=float\npercentage_higher\n---\n18.67\nSQL: WITH ranked_updates AS (\n    SELECT a.player_api_id,\n           a.overall_rating,\n           a.defensive_work_rate,\n           RANK() OVER (\n               PARTITION BY a.player_api_id\n               ORDER BY a.date DESC\n           ) AS recency\n    FROM main.Player_Attributes AS a\n    WHERE a.date < '2013-07-13'\n),\nratings AS (\n    SELECT MAX(CASE WHEN p.player_name = 'Landon Donovan'\n                    THEN u.overall_rating END) AS donovan_rating,\n           AVG(u.overall_rating) AS average_rating\n    FROM ranked_updates AS u\n    JOIN main.Player AS p ON p.player_api_id = u.player_api_id\n    WHERE u.recency = 1\n      AND u.defensive_work_rate IN ('low', 'medium', 'high')\n)\nSELECT ROUND(\n           100.0 * (donovan_rating - average_rating) / NULLIF(average_rating, 0),\n           2\n       ) AS percentage_higher\nFROM ratings\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH ranked_updates AS (\n    SELECT a.player_api_id,\n           a.overall_rating,\n           a.defensive_work_rate,\n           RANK() OVER (\n               PARTITION BY a.player_api_id\n               ORDER BY a.date DESC\n           ) AS recency\n    FROM main.Player_Attributes AS a\n    WHERE a.date < '2013-07-13'\n),\nratings AS (\n    SELECT MAX(CASE WHEN p.player_name = 'Landon Donovan'\n                    THEN u.overall_rating END) AS donovan_rating,\n           AVG(u.overall_rating) AS average_rating\n    FROM ranked_updates AS u\n    JOIN main.Player AS p ON p.player_api_id = u.player_api_id\n    WHERE u.recency = 1\n      AND u.defensive_work_rate IN ('low', 'medium', 'high')\n)\nSELECT ROUND(\n           100.0 * (donovan_rating - average_rating) / NULLIF(average_rating, 0),\n           2\n       ) AS percentage_higher\nFROM ratings\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH ranked_updates AS (\n    SELECT a.player_api_id,\n           a.overall_rating,\n           a.defensive_work_rate,\n           RANK() OVER (\n               PARTITION BY a.player_api_id\n               ORDER BY a.date DESC\n           ) AS recency\n    FROM main.Player_Attributes AS a\n    WHERE a.date < '2013-07-13'\n),\nratings AS (\n    SELECT MAX(CASE WHEN p.player_name = 'Landon Donovan'\n                    THEN u.overall_rating END) AS donovan_rating,\n           AVG(u.overall_rating) AS average_rating\n    FROM ranked_updates AS u\n    JOIN main.Player AS p ON p.player_api_id = u.player_api_id\n    WHERE u.recency = 1\n      AND u.defensive_work_rate IN ('low', 'medium', 'high')\n)\nSELECT ROUND(\n           100.0 * (donovan_rating - average_rating) / NULLIF(average_rating, 0),\n           2\n       ) AS percentage_higher\nFROM ratings\nLIMIT 1",
+  "seconds": 44.79082658304833
+}

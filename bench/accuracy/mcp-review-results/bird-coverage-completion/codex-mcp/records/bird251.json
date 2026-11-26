@@ -1,0 +1,110 @@
+{
+  "instance_id": "bird251",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "5fcce653a66dd4f4fdc8ed3e1210d2705777e8bf8cdd9c263118a66c256c5c7f",
+  "events_sha256": "2c5317369a51fcc558c752c13869f016fbf9d0e5e8bcbfddbe403e864787caea",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 121509,
+      "cached_input_tokens": 109312,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 517,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"oDf_C9vw_Gsnt1YZFe-r1CHX2tBwdUOy4ngMOIfXi2s\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "pitStops"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "pitStops (table)\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- stop: INTEGER NOT NULL\n- lap: INTEGER NOT NULL\n- time: TEXT NOT NULL\n- duration: TEXT\n- milliseconds: INTEGER\nPRIMARY KEY (raceId, driverId, stop)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH race_stop_counts AS (\n    SELECT r.raceId, COUNT(p.raceId) AS pit_stops\n    FROM main.races AS r\n    LEFT JOIN main.pitStops AS p ON p.raceId = r.raceId\n    WHERE r.year = 2017\n      AND r.name NOT IN (\n          SELECT prior.name\n          FROM main.races AS prior\n          WHERE prior.year = 2000\n      )\n    GROUP BY r.raceId\n)\nSELECT ROUND(AVG(pit_stops), 2) AS average_pit_stops_per_race\nFROM race_stop_counts;",
+        "definition_check_id": "oDf_C9vw_Gsnt1YZFe-r1CHX2tBwdUOy4ngMOIfXi2s",
+        "expected_columns": [
+          "average_pit_stops_per_race"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_pit_stops_per_race=float\naverage_pit_stops_per_race\n---\n39.71\nSQL: WITH race_stop_counts AS (\n    SELECT r.raceId, COUNT(p.raceId) AS pit_stops\n    FROM main.races AS r\n    LEFT JOIN main.pitStops AS p ON p.raceId = r.raceId\n    WHERE r.year = 2017\n      AND r.name NOT IN (\n          SELECT prior.name\n          FROM main.races AS prior\n          WHERE prior.year = 2000\n      )\n    GROUP BY r.raceId\n)\nSELECT ROUND(AVG(pit_stops), 2) AS average_pit_stops_per_race\nFROM race_stop_counts\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH race_stop_counts AS (\n    SELECT r.raceId, COUNT(p.raceId) AS pit_stops\n    FROM main.races AS r\n    LEFT JOIN main.pitStops AS p ON p.raceId = r.raceId\n    WHERE r.year = 2017\n      AND r.name NOT IN (\n          SELECT prior.name\n          FROM main.races AS prior\n          WHERE prior.year = 2000\n      )\n    GROUP BY r.raceId\n)\nSELECT ROUND(AVG(pit_stops), 2) AS average_pit_stops_per_race\nFROM race_stop_counts\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH race_stop_counts AS (\n    SELECT r.raceId, COUNT(p.raceId) AS pit_stops\n    FROM main.races AS r\n    LEFT JOIN main.pitStops AS p ON p.raceId = r.raceId\n    WHERE r.year = 2017\n      AND r.name NOT IN (\n          SELECT prior.name\n          FROM main.races AS prior\n          WHERE prior.year = 2000\n      )\n    GROUP BY r.raceId\n)\nSELECT ROUND(AVG(pit_stops), 2) AS average_pit_stops_per_race\nFROM race_stop_counts\nLIMIT 1000",
+  "seconds": 22.206524417037144
+}

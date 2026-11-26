@@ -1,0 +1,275 @@
+{
+  "instance_id": "bird221",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "e81665896a3058b990f2a1bfde8034ca4d8a298fe601a079351143a82b06100f",
+  "events_sha256": "ed9449fb43ea71de574e2f97a5106fb25dea9fe4c24b379db8e9100144563ccb",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 229749,
+      "cached_input_tokens": 214272,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1833,
+      "reasoning_output_tokens": 66
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "trans"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "trans (table)\n- trans_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- type: TEXT NOT NULL\n- operation: TEXT\n- amount: INTEGER NOT NULL\n- balance: INTEGER NOT NULL\n- k_symbol: TEXT\n- bank: TEXT\n- account: INTEGER\nPRIMARY KEY (trans_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "account (table)\n- account_id: INTEGER NOT NULL\n- district_id: INTEGER NOT NULL\n- frequency: TEXT NOT NULL\n- date: DATE NOT NULL\nPRIMARY KEY (account_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ICuadeSoiqhcV3qwNJ9262Zrt6SoHRP0_UMAFT0aQlc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "order"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "order (table)\n- order_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- bank_to: TEXT NOT NULL\n- account_to: INTEGER NOT NULL\n- amount: REAL NOT NULL\n- k_symbol: TEXT NOT NULL\nPRIMARY KEY (order_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ICuadeSoiqhcV3qwNJ9262Zrt6SoHRP0_UMAFT0aQlc",
+        "sql": "SELECT\n    (SELECT COUNT(*) FROM main.district WHERE A4 = '' OR A4 GLOB '*[^0-9]*') AS noninteger_populations,\n    (SELECT COUNT(*) FROM main.district WHERE CAST(A4 AS INTEGER) >= 100000) AS major_districts,\n    (SELECT COUNT(*) FROM main.account) AS accounts,\n    COUNT(DISTINCT account_id) AS accounts_with_orders,\n    COUNT(*) FILTER (WHERE amount <> ROUND(amount, 0)) AS fractional_orders,\n    COUNT(*) FILTER (WHERE amount <> ROUND(amount, 1)) AS beyond_tenths,\n    COUNT(*) FILTER (WHERE amount <> ROUND(amount, 2)) AS beyond_hundredths\nFROM main.\"order\""
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): noninteger_populations=int; major_districts=int; accounts=int; accounts_with_orders=int; fractional_orders=int; beyond_tenths=int; beyond_hundredths=int\nnoninteger_populations | major_districts | accounts | accounts_with_orders | fractional_orders | beyond_tenths | beyond_hundredths\n--- | --- | --- | --- | --- | --- | ---\n0 | 46 | 4500 | 3758 | 499 | 0 | 0\nSQL: SELECT\n    (SELECT COUNT(*) FROM main.district WHERE A4 = '' OR A4 GLOB '*[^0-9]*') AS noninteger_populations,\n    (SELECT COUNT(*) FROM main.district WHERE CAST(A4 AS INTEGER) >= 100000) AS major_districts,\n    (SELECT COUNT(*) FROM main.account) AS accounts,\n    COUNT(DISTINCT account_id) AS accounts_with_orders,\n    COUNT(*) FILTER (WHERE amount <> ROUND(amount, 0)) AS fractional_orders,\n    COUNT(*) FILTER (WHERE amount <> ROUND(amount, 1)) AS beyond_tenths,\n    COUNT(*) FILTER (WHERE amount <> ROUND(amount, 2)) AS beyond_hundredths\nFROM main.\"order\"\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"1-kuXBQ1Y6eCo8rRi1kqldPR3tN67wiVBAR_tLZXmNQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "dialect": "sqlite",
+        "aggregate": "avg",
+        "input_scale": 1,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "fixed_decimal_sql",
+      "arguments": {
+        "dialect": "sqlite",
+        "aggregate": "avg",
+        "input_scale": 1,
+        "output_scale": 2
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Supply WITH decimal_input AS (your SELECT exposing group_id, scaled_value), append these CTEs, then SELECT from decimal_result. Reserve decimal_* CTE names. NULL inputs are excluded like AVG/SUM.\nscaled_value MUST be an INTEGER representing value * 10^input_scale. Confirm source precision before conversion: for known fixed-scale numeric data, CAST(ROUND(value * 10^input_scale) AS INTEGER) removes representation noise. Do not choose a scale that rounds away meaningful source digits. No precision or currency conversion is inferred by this tool.\nInspect status and invalid_count: noninteger non-NULL input makes the entire group invalid_input; unsafe magnitude makes it overflow; all NULL makes it empty. Those groups retain their row with NULL results. No partial aggregates.\nRounding is half away from zero, performed once after aggregation using exact integer quotient/remainder. rounded_units is the exact integer at output_scale; rounded_value is its REAL representation for normal SQL display. This changes neither the source values nor the DB connection; run_sql remains required.\n\ndecimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_10",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "1-kuXBQ1Y6eCo8rRi1kqldPR3tN67wiVBAR_tLZXmNQ",
+        "sql": "WITH order_totals AS (\n    SELECT o.account_id, SUM(CAST(ROUND(o.amount * 10) AS INTEGER)) AS debit_tenths\n    FROM main.\"order\" AS o\n    GROUP BY o.account_id\n), decimal_input AS (\n    SELECT a.district_id AS group_id, COALESCE(o.debit_tenths, 0) AS scaled_value\n    FROM main.account AS a\n    LEFT JOIN order_totals AS o ON o.account_id = a.account_id\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n) SELECT status, SUM(invalid_count) AS invalid_inputs, COUNT(*) AS districts FROM decimal_result GROUP BY status"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): status=str; invalid_inputs=int; districts=int\nstatus | invalid_inputs | districts\n--- | --- | ---\nok | 0 | 77\nSQL: WITH order_totals AS (\n    SELECT o.account_id, SUM(CAST(ROUND(o.amount * 10) AS INTEGER)) AS debit_tenths\n    FROM main.\"order\" AS o\n    GROUP BY o.account_id\n), decimal_input AS (\n    SELECT a.district_id AS group_id, COALESCE(o.debit_tenths, 0) AS scaled_value\n    FROM main.account AS a\n    LEFT JOIN order_totals AS o ON o.account_id = a.account_id\n), decimal_bounds AS (\n  SELECT group_id, scaled_value,\n    COUNT(scaled_value) OVER g AS n,\n    SUM(CASE WHEN scaled_value IS NOT NULL AND typeof(scaled_value) <> 'integer' THEN 1 ELSE 0 END) OVER g AS invalid_count,\n    SUM(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value NOT BETWEEN -90071992547409 AND 90071992547409 THEN 1 ELSE 0 END) OVER g AS oversized_count,\n    TOTAL(CASE WHEN typeof(scaled_value) = 'integer' AND scaled_value BETWEEN -90071992547409 AND 90071992547409 THEN ABS(scaled_value) ELSE 0 END) OVER g AS abs_total\n  FROM decimal_input\n  WINDOW g AS (PARTITION BY group_id)\n), decimal_totals AS (\n  SELECT group_id, n, invalid_count,\n    CASE WHEN invalid_count > 0 THEN 'invalid_input'\n      WHEN n = 0 THEN 'empty'\n      WHEN oversized_count > 0 OR abs_total > 90071992547409\n        OR n > 900719925474099 THEN 'overflow'\n      ELSE 'ok' END AS status,\n    SUM(CASE WHEN invalid_count = 0 AND oversized_count = 0\n      AND abs_total <= 90071992547409 AND n <= 900719925474099\n      THEN scaled_value END) AS scaled_sum\n  FROM decimal_bounds\n  GROUP BY group_id\n), decimal_fraction AS (\n  SELECT group_id, n, invalid_count, status,\n    scaled_sum * 100 AS numerator, n * 10 AS denominator\n  FROM decimal_totals\n), decimal_rounded AS (\n  SELECT group_id, n, invalid_count, status,\n    CASE WHEN status = 'ok' THEN numerator / denominator\n      + CASE WHEN ABS(numerator % denominator) >= (denominator + 1) / 2\n        THEN CASE WHEN numerator < 0 THEN -1 ELSE 1 END ELSE 0 END END AS rounded_units\n  FROM decimal_fraction\n), decimal_result AS (\n  SELECT *, rounded_units * 1.0 / 100 AS rounded_value\n  FROM decimal_rounded\n) SELECT status, SUM(invalid_count) AS invalid_inputs, COUNT(*) AS districts FROM decimal_result GROUP BY status\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Q1EfmM1jm9cWoVz1ROsrPW4Gow_836Jh64ZYwttLyiA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Q1EfmM1jm9cWoVz1ROsrPW4Gow_836Jh64ZYwttLyiA",
+        "sql": "WITH district_withdrawals AS (\n    SELECT a.district_id, SUM(t.amount) AS total_withdrawn\n    FROM main.trans AS t\n    JOIN main.account AS a ON a.account_id = t.account_id\n    WHERE t.type = 'VYDAJ'\n    GROUP BY a.district_id\n),\naccount_orders AS (\n    SELECT o.account_id,\n           SUM(CAST(ROUND(o.amount * 10) AS INTEGER)) AS debit_tenths\n    FROM main.\"order\" AS o\n    GROUP BY o.account_id\n),\ndistrict_orders AS (\n    SELECT a.district_id,\n           SUM(COALESCE(o.debit_tenths, 0)) * 10 AS debit_hundredths,\n           COUNT(*) AS account_count\n    FROM main.account AS a\n    LEFT JOIN account_orders AS o ON o.account_id = a.account_id\n    GROUP BY a.district_id\n),\ndistrict_metrics AS (\n    SELECT d.A2 AS district_name,\n           d.A3 AS region,\n           CAST(d.A4 AS INTEGER) AS population,\n           w.total_withdrawn,\n           1.0 * w.total_withdrawn / CAST(d.A4 AS INTEGER) AS per_inhabitant,\n           (s.debit_hundredths / s.account_count\n            + CASE WHEN 2 * ABS(s.debit_hundredths % s.account_count) >= s.account_count\n                   THEN SIGN(s.debit_hundredths) ELSE 0 END\n           ) / 100.0 AS avg_standing_order_debit_per_account\n    FROM main.district AS d\n    JOIN district_withdrawals AS w ON w.district_id = d.district_id\n    JOIN district_orders AS s ON s.district_id = d.district_id\n    WHERE CAST(d.A4 AS INTEGER) >= 100000\n)\nSELECT district_name,\n       region,\n       population,\n       total_withdrawn,\n       ROUND(per_inhabitant, 2) AS withdrawals_per_inhabitant,\n       RANK() OVER (ORDER BY per_inhabitant DESC) AS withdrawal_rank,\n       avg_standing_order_debit_per_account\nFROM district_metrics\nORDER BY withdrawal_rank, district_name\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "46 row(s):\nResult coverage: fetched_rows=46; displayed_rows=46; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): district_name=str; region=str; population=int; total_withdrawn=int; withdrawals_per_inhabitant=float; withdrawal_rank=int; avg_standing_order_debit_per_account=float\ndistrict_name | region | population | total_withdrawn | withdrawals_per_inhabitant | withdrawal_rank | avg_standing_order_debit_per_account\n--- | --- | --- | --- | --- | --- | ---\nUsti nad Orlici | east Bohemia | 139012 | 47790924 | 343.79 | 1 | 5298.02\nZlin | south Moravia | 197099 | 66361520 | 336.69 | 2 | 4626.36\nZdar nad Sazavou | south Moravia | 125832 | 41280569 | 328.06 | 3 | 4933.09\nKarvina | north Moravia | 285387 | 92538764 | 324.26 | 4 | 4432.05\nChrudim | east Bohemia | 105606 | 32933341 | 311.85 | 5 | 4448.96\nTabor | south Bohemia | 103347 | 31450219 | 304.32 | 6 | 5095.89\nBlansko | south Moravia | 107911 | 32553677 | 301.67 | 7 | 4822.6\nHl.m. Praha | Prague | 1204953 | 362872305 | 301.15 | 8 | 5008.78\nMlada Boleslav | central Bohemia | 112065 | 32275063 | 288.0 | 9 | 4147.87\nOstrava - mesto | north Moravia | 323870 | 92303987 | 285.0 | 10 | 4759.69\nProstejov | south Moravia | 110643 | 31519602 | 284.88 | 11 | 4616.86\nSvitavy | east Bohemia | 102609 | 29179190 | 284.37 | 12 | 4917.12\nTrebic | south Moravia | 117897 | 32847763 | 278.61 | 13 | 4310.03\nFrydek - Mistek | north Moravia | 228848 | 63055302 | 275.53 | 14 | 5745.39\nUsti nad Labem | north Bohemia | 118650 | 31722540 | 267.36 | 15 | 5554.04\nKromeriz | south Moravia | 108871 | 29019996 | 266.55 | 16 | 4138.06\nBruntal | north Moravia | 106054 | 27576640 | 260.02 | 17 | 4683.12\nSumperk | north Moravia | 127369 | 32335335 | 253.87 | 18 | 4472.09\nPrerov | north Moravia | 138032 | 34777123 | 251.95 | 19 | 4858.4\nDecin | north Bohemia | 133777 | 33186026 | 248.07 | 20 | 5120.59\nOlomouc | north Moravia | 226122 | 55654626 | 246.13 | 21 | 4282.04\nTrutnov | east Bohemia | 121947 | 29955331 | 245.64 | 22 | 5550.29\nPribram | central Bohemia | 107870 | 26358552 | 244.35 | 23 | 3798.72\nLitomerice | north Bohemia | 114006 | 27103749 | 237.74 | 24 | 4258.69\nNachod | east Bohemia | 112709 | 26633441 | 236.3 | 25 | 4539.64\nTeplice | north Bohemia | 128118 | 30097984 | 234.92 | 26 | 4273.22\nCeska Lipa | north Bohemia | 105058 | 23854645 | 227.06 | 27 | 4729.39\nKarlovy Vary | west Bohemia | 122603 | 27581803 | 224.97 | 28 | 5306.76\nPardubice | east Bohemia | 162580 | 33541381 | 206.31 | 29 | 4152.1\nBreclav | south Moravia | 124605 | 25590999 | 205.38 | 30 | 4327.84\nZnojmo | south Moravia | 114200 | 23251315 | 203.6 | 31 | 4781.91\nBrno - venkov | south Moravia | 157042 | 31891136 | 203.07 | 32 | 4749.87\nLiberec | north Bohemia | 159617 | 30973551 | 194.05 | 33 | 4656.18\nOpava | north Moravia | 182027 | 32829433 | 180.35 | 34 | 5026.32\nKladno | central Bohemia | 149893 | 26950917 | 179.8 | 35 | 5102.24\nBrno - mesto | south Moravia | 387570 | 67826067 | 175.0 | 36 | 4567.54\nMost | north Bohemia | 119895 | 20749296 | 173.06 | 37 | 4152.69\nHradec Kralove | east Bohemia | 161854 | 27744006 | 171.41 | 38 | 3750.24\nVsetin | north Moravia | 148545 | 25386160 | 170.9 | 39 | 4752.54\nJihlava | south Moravia | 109164 | 18338655 | 167.99 | 40 | 4486.53\nHodonin | south Moravia | 161954 | 26746637 | 165.15 | 41 | 4530.12\nChomutov | north Bohemia | 125236 | 20055702 | 160.14 | 42 | 4990.73\nUherske Hradiste | south Moravia | 145688 | 22547296 | 154.76 | 43 | 4105.02\nNovy Jicin | north Moravia | 161227 | 24009623 | 148.92 | 44 | 4763.56\nPlzen - mesto | west Bohemia | 170449 | 23028121 | 135.1 | 45 | 3971.29\nCeske Budejovice | south Bohemia | 177686 | 23923746 | 134.64 | 46 | 3966.25\nSQL: WITH district_withdrawals AS (\n    SELECT a.district_id, SUM(t.amount) AS total_withdrawn\n    FROM main.trans AS t\n    JOIN main.account AS a ON a.account_id = t.account_id\n    WHERE t.type = 'VYDAJ'\n    GROUP BY a.district_id\n),\naccount_orders AS (\n    SELECT o.account_id,\n           SUM(CAST(ROUND(o.amount * 10) AS INTEGER)) AS debit_tenths\n    FROM main.\"order\" AS o\n    GROUP BY o.account_id\n),\ndistrict_orders AS (\n    SELECT a.district_id,\n           SUM(COALESCE(o.debit_tenths, 0)) * 10 AS debit_hundredths,\n           COUNT(*) AS account_count\n    FROM main.account AS a\n    LEFT JOIN account_orders AS o ON o.account_id = a.account_id\n    GROUP BY a.district_id\n),\ndistrict_metrics AS (\n    SELECT d.A2 AS district_name,\n           d.A3 AS region,\n           CAST(d.A4 AS INTEGER) AS population,\n           w.total_withdrawn,\n           1.0 * w.total_withdrawn / CAST(d.A4 AS INTEGER) AS per_inhabitant,\n           (s.debit_hundredths / s.account_count\n            + CASE WHEN 2 * ABS(s.debit_hundredths % s.account_count) >= s.account_count\n                   THEN SIGN(s.debit_hundredths) ELSE 0 END\n           ) / 100.0 AS avg_standing_order_debit_per_account\n    FROM main.district AS d\n    JOIN district_withdrawals AS w ON w.district_id = d.district_id\n    JOIN district_orders AS s ON s.district_id = d.district_id\n    WHERE CAST(d.A4 AS INTEGER) >= 100000\n)\nSELECT district_name,\n       region,\n       population,\n       total_withdrawn,\n       ROUND(per_inhabitant, 2) AS withdrawals_per_inhabitant,\n       RANK() OVER (ORDER BY per_inhabitant DESC) AS withdrawal_rank,\n       avg_standing_order_debit_per_account\nFROM district_metrics\nORDER BY withdrawal_rank, district_name\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH district_withdrawals AS (\n    SELECT a.district_id, SUM(t.amount) AS total_withdrawn\n    FROM main.trans AS t\n    JOIN main.account AS a ON a.account_id = t.account_id\n    WHERE t.type = 'VYDAJ'\n    GROUP BY a.district_id\n),\naccount_orders AS (\n    SELECT o.account_id,\n           SUM(CAST(ROUND(o.amount * 10) AS INTEGER)) AS debit_tenths\n    FROM main.\"order\" AS o\n    GROUP BY o.account_id\n),\ndistrict_orders AS (\n    SELECT a.district_id,\n           SUM(COALESCE(o.debit_tenths, 0)) * 10 AS debit_hundredths,\n           COUNT(*) AS account_count\n    FROM main.account AS a\n    LEFT JOIN account_orders AS o ON o.account_id = a.account_id\n    GROUP BY a.district_id\n),\ndistrict_metrics AS (\n    SELECT d.A2 AS district_name,\n           d.A3 AS region,\n           CAST(d.A4 AS INTEGER) AS population,\n           w.total_withdrawn,\n           1.0 * w.total_withdrawn / CAST(d.A4 AS INTEGER) AS per_inhabitant,\n           (s.debit_hundredths / s.account_count\n            + CASE WHEN 2 * ABS(s.debit_hundredths % s.account_count) >= s.account_count\n                   THEN SIGN(s.debit_hundredths) ELSE 0 END\n           ) / 100.0 AS avg_standing_order_debit_per_account\n    FROM main.district AS d\n    JOIN district_withdrawals AS w ON w.district_id = d.district_id\n    JOIN district_orders AS s ON s.district_id = d.district_id\n    WHERE CAST(d.A4 AS INTEGER) >= 100000\n)\nSELECT district_name,\n       region,\n       population,\n       total_withdrawn,\n       ROUND(per_inhabitant, 2) AS withdrawals_per_inhabitant,\n       RANK() OVER (ORDER BY per_inhabitant DESC) AS withdrawal_rank,\n       avg_standing_order_debit_per_account\nFROM district_metrics\nORDER BY withdrawal_rank, district_name\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 46,
+  "sql": "WITH district_withdrawals AS (\n    SELECT a.district_id, SUM(t.amount) AS total_withdrawn\n    FROM main.trans AS t\n    JOIN main.account AS a ON a.account_id = t.account_id\n    WHERE t.type = 'VYDAJ'\n    GROUP BY a.district_id\n),\naccount_orders AS (\n    SELECT o.account_id,\n           SUM(CAST(ROUND(o.amount * 10) AS INTEGER)) AS debit_tenths\n    FROM main.\"order\" AS o\n    GROUP BY o.account_id\n),\ndistrict_orders AS (\n    SELECT a.district_id,\n           SUM(COALESCE(o.debit_tenths, 0)) * 10 AS debit_hundredths,\n           COUNT(*) AS account_count\n    FROM main.account AS a\n    LEFT JOIN account_orders AS o ON o.account_id = a.account_id\n    GROUP BY a.district_id\n),\ndistrict_metrics AS (\n    SELECT d.A2 AS district_name,\n           d.A3 AS region,\n           CAST(d.A4 AS INTEGER) AS population,\n           w.total_withdrawn,\n           1.0 * w.total_withdrawn / CAST(d.A4 AS INTEGER) AS per_inhabitant,\n           (s.debit_hundredths / s.account_count\n            + CASE WHEN 2 * ABS(s.debit_hundredths % s.account_count) >= s.account_count\n                   THEN SIGN(s.debit_hundredths) ELSE 0 END\n           ) / 100.0 AS avg_standing_order_debit_per_account\n    FROM main.district AS d\n    JOIN district_withdrawals AS w ON w.district_id = d.district_id\n    JOIN district_orders AS s ON s.district_id = d.district_id\n    WHERE CAST(d.A4 AS INTEGER) >= 100000\n)\nSELECT district_name,\n       region,\n       population,\n       total_withdrawn,\n       ROUND(per_inhabitant, 2) AS withdrawals_per_inhabitant,\n       RANK() OVER (ORDER BY per_inhabitant DESC) AS withdrawal_rank,\n       avg_standing_order_debit_per_account\nFROM district_metrics\nORDER BY withdrawal_rank, district_name\nLIMIT -1",
+  "seconds": 59.51552049990278
+}

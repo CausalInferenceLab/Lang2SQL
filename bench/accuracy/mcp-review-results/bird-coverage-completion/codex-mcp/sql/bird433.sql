@@ -1,0 +1,14 @@
+WITH patient_peaks AS (
+    SELECT p.ID, p.SEX,
+           MAX(CASE WHEN l.RNP <> 'negative' THEN CAST(l.RNP AS INTEGER) END) AS peak_RNP
+    FROM Patient AS p
+    JOIN Laboratory AS l ON l.ID = p.ID
+    WHERE p.Admission = '-'
+    GROUP BY p.ID, p.SEX
+    HAVING MIN(l.HGB) < 10
+)
+SELECT ID, SEX, peak_RNP
+FROM patient_peaks
+WHERE peak_RNP = (SELECT MAX(peak_RNP) FROM patient_peaks)
+ORDER BY ID
+LIMIT -1

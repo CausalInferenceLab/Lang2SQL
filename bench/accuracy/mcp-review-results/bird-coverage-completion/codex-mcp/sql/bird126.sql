@@ -1,0 +1,11 @@
+WITH single_comments AS (
+    SELECT MAX(c.Score) AS score
+    FROM main.comments AS c
+    JOIN main.posts AS p ON p.Id = c.PostId
+    GROUP BY c.PostId
+    HAVING COUNT(*) = 1
+)
+SELECT COUNT(*) AS zero_score_comments
+FROM single_comments
+WHERE score = 0
+LIMIT 1000

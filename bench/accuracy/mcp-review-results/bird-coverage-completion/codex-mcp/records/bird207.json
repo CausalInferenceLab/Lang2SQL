@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird207",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "6d94281c8a2a78ac87d1aeb207110ccb4b302d4a9edec08a96c894e7f92950ec",
+  "events_sha256": "17e3d471d12e93ed42095748f20257fd162806c635cb26467a4b278a605d916c",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 153117,
+      "cached_input_tokens": 142720,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 540,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "trans"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "trans (table)\n- trans_id: INTEGER NOT NULL\n- account_id: INTEGER NOT NULL\n- date: DATE NOT NULL\n- type: TEXT NOT NULL\n- operation: TEXT\n- amount: INTEGER NOT NULL\n- balance: INTEGER NOT NULL\n- k_symbol: TEXT\n- bank: TEXT\n- account: INTEGER\nPRIMARY KEY (trans_id)\nFOREIGN KEY (account_id) REFERENCES account (account_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "district"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "district (table)\n- district_id: INTEGER NOT NULL\n- A2: TEXT NOT NULL\n- A3: TEXT NOT NULL\n- A4: TEXT NOT NULL\n- A5: TEXT NOT NULL\n- A6: TEXT NOT NULL\n- A7: TEXT NOT NULL\n- A8: INTEGER NOT NULL\n- A9: INTEGER NOT NULL\n- A10: REAL NOT NULL\n- A11: INTEGER NOT NULL\n- A12: REAL\n- A13: REAL NOT NULL\n- A14: INTEGER NOT NULL\n- A15: INTEGER\n- A16: INTEGER NOT NULL\nPRIMARY KEY (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"lMOan0HFnuxasi_br6864f8L3wejYk0aO69FlqWKtAs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "account"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "account (table)\n- account_id: INTEGER NOT NULL\n- district_id: INTEGER NOT NULL\n- frequency: TEXT NOT NULL\n- date: DATE NOT NULL\nPRIMARY KEY (account_id)\nFOREIGN KEY (district_id) REFERENCES district (district_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "lMOan0HFnuxasi_br6864f8L3wejYk0aO69FlqWKtAs",
+        "sql": "SELECT d.A3, MIN(a.date) AS first_opening, MAX(a.date) AS last_opening FROM district AS d JOIN account AS a ON a.district_id = d.district_id GROUP BY d.A3"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "8 row(s):\nResult coverage: fetched_rows=8; displayed_rows=8; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): A3=str; first_opening=str; last_opening=str\nA3 | first_opening | last_opening\n--- | --- | ---\nPrague | 1993-01-03 | 1997-12-29\ncentral Bohemia | 1993-01-04 | 1997-12-23\neast Bohemia | 1993-01-03 | 1997-12-22\nnorth Bohemia | 1993-01-06 | 1997-12-25\nnorth Moravia | 1993-01-01 | 1997-12-26\nsouth Bohemia | 1993-01-01 | 1997-12-27\nsouth Moravia | 1993-01-01 | 1997-12-29\nwest Bohemia | 1993-01-02 | 1997-12-28\nSQL: SELECT d.A3, MIN(a.date) AS first_opening, MAX(a.date) AS last_opening FROM district AS d JOIN account AS a ON a.district_id = d.district_id GROUP BY d.A3\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"CioJqQOEqnn8E-pwkOzcGzFqJIgS-soALpIeaDMzfU8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "CioJqQOEqnn8E-pwkOzcGzFqJIgS-soALpIeaDMzfU8",
+        "expected_columns": [
+          "account_count"
+        ],
+        "sql": "SELECT COUNT(*) AS account_count\nFROM account AS a\nJOIN district AS d ON d.district_id = a.district_id\nWHERE d.A3 = 'north Bohemia'\n  AND a.date <= '1995-12-31'\n  AND a.account_id IN (\n      SELECT t.account_id\n      FROM trans AS t\n      WHERE t.bank = 'AB'\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): account_count=int\naccount_count\n---\n32\nSQL: SELECT COUNT(*) AS account_count\nFROM account AS a\nJOIN district AS d ON d.district_id = a.district_id\nWHERE d.A3 = 'north Bohemia'\n  AND a.date <= '1995-12-31'\n  AND a.account_id IN (\n      SELECT t.account_id\n      FROM trans AS t\n      WHERE t.bank = 'AB'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS account_count\nFROM account AS a\nJOIN district AS d ON d.district_id = a.district_id\nWHERE d.A3 = 'north Bohemia'\n  AND a.date <= '1995-12-31'\n  AND a.account_id IN (\n      SELECT t.account_id\n      FROM trans AS t\n      WHERE t.bank = 'AB'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS account_count\nFROM account AS a\nJOIN district AS d ON d.district_id = a.district_id\nWHERE d.A3 = 'north Bohemia'\n  AND a.date <= '1995-12-31'\n  AND a.account_id IN (\n      SELECT t.account_id\n      FROM trans AS t\n      WHERE t.bank = 'AB'\n  )\nLIMIT 1",
+  "seconds": 31.599641124950722
+}

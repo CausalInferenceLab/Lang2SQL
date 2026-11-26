@@ -1,0 +1,148 @@
+{
+  "instance_id": "local275",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "5c537fc85f2df61399becb88b6c6d7828d970b0408cdd01ae6d4afb799b8eb43",
+  "events_sha256": "9e4939a7f84b875ec103cf70b54dd819fd06038fbe83b6d92c61e6a8e0901be1",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 191293,
+      "cached_input_tokens": 176000,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 997,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"25xUkB293a_40UYyZ_Uy9q4g8Gb5spAKoVVvwi844oY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "products"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "products (table)\n- id: INTEGER\n- name: TEXT NOT NULL\n- group_id: INTEGER NOT NULL\nPRIMARY KEY (id)\nFOREIGN KEY (group_id) REFERENCES product_groups (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "monthly_sales"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "monthly_sales (table)\n- product_id: INTEGER NOT NULL\n- mth: TEXT NOT NULL\n- qty: INTEGER NOT NULL\nPRIMARY KEY (product_id, mth)\nFOREIGN KEY (product_id) REFERENCES products (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "25xUkB293a_40UYyZ_Uy9q4g8Gb5spAKoVVvwi844oY",
+        "sql": "SELECT product_id, MIN(mth), MAX(mth), COUNT(*) AS months,\n       SUM(mth <> date(mth, 'start of month')) AS off_cycle, MIN(qty), MAX(qty)\nFROM main.monthly_sales\nWHERE mth >= '2016-01-01' AND mth < '2019-01-01'\nGROUP BY product_id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): product_id=int; MIN(mth)=str; MAX(mth)=str; months=int; off_cycle=int; MIN(qty)=int; MAX(qty)=int\nproduct_id | MIN(mth) | MAX(mth) | months | off_cycle | MIN(qty) | MAX(qty)\n--- | --- | --- | --- | --- | --- | ---\n4040 | 2016-01-01 | 2018-12-01 | 36 | 0 | 2 | 55\n4160 | 2016-01-01 | 2018-12-01 | 36 | 0 | 0 | 247\n4280 | 2016-01-01 | 2018-12-01 | 36 | 0 | 0 | 21\n5310 | 2016-01-01 | 2018-12-01 | 36 | 0 | 24 | 59\n5430 | 2016-01-01 | 2018-12-01 | 36 | 0 | 14 | 45\n6520 | 2016-01-01 | 2018-12-01 | 36 | 0 | 8 | 71\n6600 | 2016-01-01 | 2018-12-01 | 36 | 0 | 0 | 22\n7790 | 2016-01-01 | 2018-12-01 | 36 | 0 | 2 | 85\n7870 | 2016-01-01 | 2018-12-01 | 36 | 0 | 9 | 101\n7950 | 2016-01-01 | 2018-12-01 | 36 | 0 | 11 | 50\nSQL: SELECT product_id, MIN(mth), MAX(mth), COUNT(*) AS months,\n       SUM(mth <> date(mth, 'start of month')) AS off_cycle, MIN(qty), MAX(qty)\nFROM main.monthly_sales\nWHERE mth >= '2016-01-01' AND mth < '2019-01-01'\nGROUP BY product_id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"TUZIKt49vASrtsLxVObkQtAd_ZYX3LLPYNsKN35i8Hk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "TUZIKt49vASrtsLxVObkQtAd_ZYX3LLPYNsKN35i8Hk",
+        "sql": "WITH smoothed_sales AS (\n    SELECT product_id, mth, qty,\n           (AVG(qty) OVER (product_months ROWS BETWEEN 6 PRECEDING AND 5 FOLLOWING)\n            + AVG(qty) OVER (product_months ROWS BETWEEN 5 PRECEDING AND 6 FOLLOWING)\n           ) / 2.0 AS cma\n    FROM main.monthly_sales\n    WHERE mth >= '2016-01-01'\n    WINDOW product_months AS (PARTITION BY product_id ORDER BY mth)\n),\nmonthly_ratios AS (\n    SELECT product_id, mth, qty / NULLIF(cma, 0) AS sales_to_cma\n    FROM smoothed_sales\n    WHERE mth >= '2016-07-01' AND mth < '2018-07-01'\n)\nSELECT p.id AS product_id, p.name AS product_name,\n       MIN(r.sales_to_cma) AS lowest_monthly_ratio\nFROM monthly_ratios AS r\nJOIN main.products AS p ON p.id = r.product_id\nWHERE r.mth >= '2017-01-01' AND r.mth < '2018-01-01'\nGROUP BY p.id, p.name\nHAVING COUNT(r.sales_to_cma) = 12 AND MIN(r.sales_to_cma) > 2\nORDER BY p.id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "(0 rows)\nResult coverage: fetched_rows=0; displayed_rows=0; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nSQL: WITH smoothed_sales AS (\n    SELECT product_id, mth, qty,\n           (AVG(qty) OVER (product_months ROWS BETWEEN 6 PRECEDING AND 5 FOLLOWING)\n            + AVG(qty) OVER (product_months ROWS BETWEEN 5 PRECEDING AND 6 FOLLOWING)\n           ) / 2.0 AS cma\n    FROM main.monthly_sales\n    WHERE mth >= '2016-01-01'\n    WINDOW product_months AS (PARTITION BY product_id ORDER BY mth)\n),\nmonthly_ratios AS (\n    SELECT product_id, mth, qty / NULLIF(cma, 0) AS sales_to_cma\n    FROM smoothed_sales\n    WHERE mth >= '2016-07-01' AND mth < '2018-07-01'\n)\nSELECT p.id AS product_id, p.name AS product_name,\n       MIN(r.sales_to_cma) AS lowest_monthly_ratio\nFROM monthly_ratios AS r\nJOIN main.products AS p ON p.id = r.product_id\nWHERE r.mth >= '2017-01-01' AND r.mth < '2018-01-01'\nGROUP BY p.id, p.name\nHAVING COUNT(r.sales_to_cma) = 12 AND MIN(r.sales_to_cma) > 2\nORDER BY p.id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH smoothed_sales AS (\n    SELECT product_id, mth, qty,\n           (AVG(qty) OVER (product_months ROWS BETWEEN 6 PRECEDING AND 5 FOLLOWING)\n            + AVG(qty) OVER (product_months ROWS BETWEEN 5 PRECEDING AND 6 FOLLOWING)\n           ) / 2.0 AS cma\n    FROM main.monthly_sales\n    WHERE mth >= '2016-01-01'\n    WINDOW product_months AS (PARTITION BY product_id ORDER BY mth)\n),\nmonthly_ratios AS (\n    SELECT product_id, mth, qty / NULLIF(cma, 0) AS sales_to_cma\n    FROM smoothed_sales\n    WHERE mth >= '2016-07-01' AND mth < '2018-07-01'\n)\nSELECT p.id AS product_id, p.name AS product_name,\n       MIN(r.sales_to_cma) AS lowest_monthly_ratio\nFROM monthly_ratios AS r\nJOIN main.products AS p ON p.id = r.product_id\nWHERE r.mth >= '2017-01-01' AND r.mth < '2018-01-01'\nGROUP BY p.id, p.name\nHAVING COUNT(r.sales_to_cma) = 12 AND MIN(r.sales_to_cma) > 2\nORDER BY p.id\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 0,
+  "sql": "WITH smoothed_sales AS (\n    SELECT product_id, mth, qty,\n           (AVG(qty) OVER (product_months ROWS BETWEEN 6 PRECEDING AND 5 FOLLOWING)\n            + AVG(qty) OVER (product_months ROWS BETWEEN 5 PRECEDING AND 6 FOLLOWING)\n           ) / 2.0 AS cma\n    FROM main.monthly_sales\n    WHERE mth >= '2016-01-01'\n    WINDOW product_months AS (PARTITION BY product_id ORDER BY mth)\n),\nmonthly_ratios AS (\n    SELECT product_id, mth, qty / NULLIF(cma, 0) AS sales_to_cma\n    FROM smoothed_sales\n    WHERE mth >= '2016-07-01' AND mth < '2018-07-01'\n)\nSELECT p.id AS product_id, p.name AS product_name,\n       MIN(r.sales_to_cma) AS lowest_monthly_ratio\nFROM monthly_ratios AS r\nJOIN main.products AS p ON p.id = r.product_id\nWHERE r.mth >= '2017-01-01' AND r.mth < '2018-01-01'\nGROUP BY p.id, p.name\nHAVING COUNT(r.sales_to_cma) = 12 AND MIN(r.sales_to_cma) > 2\nORDER BY p.id\nLIMIT 1000",
+  "seconds": 34.978777416050434
+}

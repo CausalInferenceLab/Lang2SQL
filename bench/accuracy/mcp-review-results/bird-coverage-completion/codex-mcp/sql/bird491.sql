@@ -1,0 +1,43 @@
+WITH atom_counts AS (
+    SELECT molecule_id,
+           COUNT(*) AS atom_count,
+           COUNT(*) FILTER (WHERE element = 'c') AS carbon_atom_count,
+           COUNT(*) FILTER (WHERE element = 'cl') AS chlorine_atom_count
+    FROM main.atom
+    GROUP BY molecule_id
+    HAVING COUNT(*) FILTER (WHERE element = 'c') > 0
+),
+carbon_bonds AS (
+    SELECT DISTINCT c.bond_id
+    FROM main.connected AS c
+    JOIN main.atom AS a1 ON a1.atom_id = c.atom_id
+    JOIN main.atom AS a2 ON a2.atom_id = c.atom_id2
+    WHERE a1.element = 'c' OR a2.element = 'c'
+),
+bond_counts AS (
+    SELECT b.molecule_id,
+           COUNT(*) AS bond_count,
+           COUNT(cb.bond_id) AS carbon_touching_bond_count,
+           COUNT(*) FILTER (WHERE b.bond_type IN ('=', '#')) AS multiple_bond_count
+    FROM main.bond AS b
+    LEFT JOIN carbon_bonds AS cb ON cb.bond_id = b.bond_id
+    GROUP BY b.molecule_id
+)
+SELECT ROW_NUMBER() OVER (
+           ORDER BY COALESCE(b.carbon_touching_bond_count, 0) DESC,
+                    a.atom_count DESC,
+                    m.molecule_id ASC
+       ) AS rank_position,
+       m.molecule_id,
+       m.label,
+       a.atom_count,
+       COALESCE(b.bond_count, 0) AS bond_count,
+       a.carbon_atom_count,
+       a.chlorine_atom_count,
+       COALESCE(b.carbon_touching_bond_count, 0) AS carbon_touching_bond_count,
+       COALESCE(b.multiple_bond_count, 0) AS multiple_bond_count
+FROM main.molecule AS m
+JOIN atom_counts AS a ON a.molecule_id = m.molecule_id
+LEFT JOIN bond_counts AS b ON b.molecule_id = m.molecule_id
+ORDER BY rank_position
+LIMIT -1

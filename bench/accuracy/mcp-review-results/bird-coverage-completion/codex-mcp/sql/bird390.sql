@@ -1,0 +1,9 @@
+SELECT ROUND(
+    100.0 * COUNT(CASE WHEN p.Admission = '+' THEN 1 END) / NULLIF(COUNT(*), 0),
+    2
+) AS inpatient_percentage
+FROM Patient AS p
+WHERE p.Birthday >= '1930-01-01'
+  AND p.Birthday < '1941-01-01'
+  AND p.ID IN (SELECT l.ID FROM Laboratory AS l)
+LIMIT 1

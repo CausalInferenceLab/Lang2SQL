@@ -1,0 +1,111 @@
+{
+  "instance_id": "bird377",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "240755068408626af6adb8f462a4504f8b5b190e1d4482ad26963c84e8134ba2",
+  "events_sha256": "e8474099da131742494434c5c875b843f279571293c9c31effe8694bcdc0028d",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 101754,
+      "cached_input_tokens": 92544,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 487,
+      "reasoning_output_tokens": 27
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ng294ixw00zXwZPX6pw3ZU0u5JrFA5YTO95CzrgvJPc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "colour (table)\n- id: INTEGER NOT NULL\n- colour: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ng294ixw00zXwZPX6pw3ZU0u5JrFA5YTO95CzrgvJPc",
+        "expected_columns": [
+          "eye_colour",
+          "hero_count"
+        ],
+        "sql": "SELECT\n    eye.colour AS eye_colour,\n    COUNT(*) FILTER (WHERE hair.colour <> 'Brown') AS hero_count\nFROM superhero AS hero\nJOIN colour AS eye ON eye.id = hero.eye_colour_id\nJOIN colour AS hair ON hair.id = hero.hair_colour_id\nGROUP BY eye.colour\nHAVING COUNT(*) FILTER (WHERE hair.colour = 'Brown') > 0\nORDER BY hero_count DESC, eye_colour ASC;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "12 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): eye_colour=str; hero_count=int\neye_colour | hero_count\n--- | ---\nBlue | 212\nNo Colour | 168\nBrown | 86\nGreen | 69\nRed | 44\nBlack | 23\nYellow | 21\nWhite | 15\nGrey | 4\nPurple | 3\nHazel | 1\nBlue/White | 0\nSQL: SELECT\n    eye.colour AS eye_colour,\n    COUNT(*) FILTER (WHERE hair.colour <> 'Brown') AS hero_count\nFROM superhero AS hero\nJOIN colour AS eye ON eye.id = hero.eye_colour_id\nJOIN colour AS hair ON hair.id = hero.hair_colour_id\nGROUP BY eye.colour\nHAVING COUNT(*) FILTER (WHERE hair.colour = 'Brown') > 0\nORDER BY hero_count DESC, eye_colour ASC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    eye.colour AS eye_colour,\n    COUNT(*) FILTER (WHERE hair.colour <> 'Brown') AS hero_count\nFROM superhero AS hero\nJOIN colour AS eye ON eye.id = hero.eye_colour_id\nJOIN colour AS hair ON hair.id = hero.hair_colour_id\nGROUP BY eye.colour\nHAVING COUNT(*) FILTER (WHERE hair.colour = 'Brown') > 0\nORDER BY hero_count DESC, eye_colour ASC\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 12,
+  "sql": "SELECT\n    eye.colour AS eye_colour,\n    COUNT(*) FILTER (WHERE hair.colour <> 'Brown') AS hero_count\nFROM superhero AS hero\nJOIN colour AS eye ON eye.id = hero.eye_colour_id\nJOIN colour AS hair ON hair.id = hero.hair_colour_id\nGROUP BY eye.colour\nHAVING COUNT(*) FILTER (WHERE hair.colour = 'Brown') > 0\nORDER BY hero_count DESC, eye_colour ASC\nLIMIT 1000",
+  "seconds": 23.553253125050105
+}

@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird361",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "797b091b2765df8286f0382c4a957c2108bef0e4960454afcaadd2b54b449363",
+  "events_sha256": "a647b54244081f264d9c9ff92ad2cabf939b43e7a91fe61263bbd208e95c4784",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 164879,
+      "cached_input_tokens": 153472,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 826,
+      "reasoning_output_tokens": 143
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"D11fkw8Nn5TFTA461ZuCvEzDBFmBG9ChK00Y8vgK_6w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "colour (table)\n- id: INTEGER NOT NULL\n- colour: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "D11fkw8Nn5TFTA461ZuCvEzDBFmBG9ChK00Y8vgK_6w",
+        "sql": "SELECT p.publisher_name, COUNT(h.id) AS heroes,\n       SUM(CASE WHEN c.colour = 'No Colour' THEN 1 ELSE 0 END) AS no_colour,\n       SUM(CASE WHEN h.superhero_name = 'Blackwulf' THEN 1 ELSE 0 END) AS blackwulf_rows\nFROM main.superhero AS h\nLEFT JOIN main.publisher AS p ON p.id = h.publisher_id\nLEFT JOIN main.colour AS c ON c.id = h.eye_colour_id\nGROUP BY p.publisher_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "26 row(s):\nResult coverage: fetched_rows=26; displayed_rows=26; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): publisher_name=NoneType,str; heroes=int; no_colour=int; blackwulf_rows=int\npublisher_name | heroes | no_colour | blackwulf_rows\n--- | --- | --- | ---\nNone | 3 | 2 | 0\n | 17 | 11 | 0\nABC Studios | 4 | 4 | 0\nDC Comics | 224 | 40 | 0\nDark Horse Comics | 19 | 8 | 0\nGeorge Lucas | 15 | 3 | 0\nHanna-Barbera | 1 | 1 | 0\nHarperCollins | 6 | 4 | 0\nIDW Publishing | 4 | 1 | 0\nIcon Comics | 4 | 3 | 0\nImage Comics | 14 | 12 | 0\nJ. K. Rowling | 1 | 0 | 0\nJ. R. R. Tolkien | 1 | 1 | 0\nMarvel Comics | 387 | 47 | 1\nMicrosoft | 1 | 0 | 0\nNBC - Heroes | 19 | 13 | 0\nRebellion | 1 | 1 | 0\nShueisha | 4 | 3 | 0\nSony Pictures | 2 | 1 | 0\nSouth Park | 1 | 1 | 0\nStar Trek | 6 | 3 | 0\nSyFy | 5 | 5 | 0\nTeam Epic TV | 5 | 0 | 0\nTitan Books | 1 | 0 | 0\nUniversal Studios | 1 | 1 | 0\nWildstorm | 4 | 4 | 0\nSQL: SELECT p.publisher_name, COUNT(h.id) AS heroes,\n       SUM(CASE WHEN c.colour = 'No Colour' THEN 1 ELSE 0 END) AS no_colour,\n       SUM(CASE WHEN h.superhero_name = 'Blackwulf' THEN 1 ELSE 0 END) AS blackwulf_rows\nFROM main.superhero AS h\nLEFT JOIN main.publisher AS p ON p.id = h.publisher_id\nLEFT JOIN main.colour AS c ON c.id = h.eye_colour_id\nGROUP BY p.publisher_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"GLT3Ip_iJUuj3xJ0T1Jc_PfDlhsBF5TIaFbyL9nKJEA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "GLT3Ip_iJUuj3xJ0T1Jc_PfDlhsBF5TIaFbyL9nKJEA",
+        "expected_columns": [
+          "hero_count"
+        ],
+        "sql": "SELECT COUNT(*) AS hero_count\nFROM main.superhero AS hero\nWHERE hero.publisher_id = (\n    SELECT blackwulf.publisher_id\n    FROM main.superhero AS blackwulf\n    WHERE blackwulf.superhero_name = 'Blackwulf'\n)\nAND EXISTS (\n    SELECT 1\n    FROM main.superhero AS other\n    JOIN main.publisher AS p ON p.id = other.publisher_id\n    WHERE other.eye_colour_id = hero.eye_colour_id\n      AND other.publisher_id <> hero.publisher_id\n      AND p.publisher_name <> ''\n)\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): hero_count=int\nhero_count\n---\n382\nSQL: SELECT COUNT(*) AS hero_count\nFROM main.superhero AS hero\nWHERE hero.publisher_id = (\n    SELECT blackwulf.publisher_id\n    FROM main.superhero AS blackwulf\n    WHERE blackwulf.superhero_name = 'Blackwulf'\n)\nAND EXISTS (\n    SELECT 1\n    FROM main.superhero AS other\n    JOIN main.publisher AS p ON p.id = other.publisher_id\n    WHERE other.eye_colour_id = hero.eye_colour_id\n      AND other.publisher_id <> hero.publisher_id\n      AND p.publisher_name <> ''\n)\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(*) AS hero_count\nFROM main.superhero AS hero\nWHERE hero.publisher_id = (\n    SELECT blackwulf.publisher_id\n    FROM main.superhero AS blackwulf\n    WHERE blackwulf.superhero_name = 'Blackwulf'\n)\nAND EXISTS (\n    SELECT 1\n    FROM main.superhero AS other\n    JOIN main.publisher AS p ON p.id = other.publisher_id\n    WHERE other.eye_colour_id = hero.eye_colour_id\n      AND other.publisher_id <> hero.publisher_id\n      AND p.publisher_name <> ''\n)\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(*) AS hero_count\nFROM main.superhero AS hero\nWHERE hero.publisher_id = (\n    SELECT blackwulf.publisher_id\n    FROM main.superhero AS blackwulf\n    WHERE blackwulf.superhero_name = 'Blackwulf'\n)\nAND EXISTS (\n    SELECT 1\n    FROM main.superhero AS other\n    JOIN main.publisher AS p ON p.id = other.publisher_id\n    WHERE other.eye_colour_id = hero.eye_colour_id\n      AND other.publisher_id <> hero.publisher_id\n      AND p.publisher_name <> ''\n)\nLIMIT 1",
+  "seconds": 38.7809319999069
+}

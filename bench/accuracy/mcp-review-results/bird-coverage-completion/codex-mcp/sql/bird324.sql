@@ -1,0 +1,18 @@
+WITH purchases_by_budget AS (
+    SELECT
+        link_to_budget,
+        SUM(1 + LENGTH(expense_description)
+              - LENGTH(REPLACE(expense_description, ',', ''))) AS purchases
+    FROM main.expense
+    WHERE TRIM(expense_description) <> ''
+    GROUP BY link_to_budget
+)
+SELECT e.event_name
+FROM main.event AS e
+LEFT JOIN main.budget AS b ON b.link_to_event = e.event_id
+LEFT JOIN purchases_by_budget AS p ON p.link_to_budget = b.budget_id
+WHERE e.status = 'Closed'
+GROUP BY e.event_id, e.event_name
+HAVING COALESCE(SUM(b.spent), 0) <= COALESCE(SUM(b.amount), 0)
+ORDER BY COALESCE(SUM(p.purchases), 0) DESC, e.event_id ASC
+LIMIT 1

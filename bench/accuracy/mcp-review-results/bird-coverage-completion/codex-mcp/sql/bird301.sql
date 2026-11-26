@@ -1,0 +1,8 @@
+SELECT m.first_name, m.last_name, m.phone
+FROM main.member AS m
+WHERE m.member_id IN (
+    SELECT e.link_to_member
+    FROM main.expense AS e
+    WHERE e.cost > (SELECT AVG(cost) FROM main.expense)
+)
+LIMIT 1000

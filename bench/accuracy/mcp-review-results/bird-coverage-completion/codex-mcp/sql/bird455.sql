@@ -1,0 +1,4 @@
+SELECT COUNT(*) AS patient_count
+FROM main.Patient
+WHERE Diagnosis = 'psoriatic arthritis' COLLATE NOCASE
+LIMIT 1

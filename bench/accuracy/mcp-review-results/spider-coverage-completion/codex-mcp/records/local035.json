@@ -1,0 +1,87 @@
+{
+  "instance_id": "local035",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "78ce4769af2a45184e8a18882250e219ba01df086ce548b85d15924caf17e74b",
+  "events_sha256": "79fad804e6e755eaa2df3c989de3f66f87e56da9af173365b6bc30e70a5ccdc6",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 131466,
+      "cached_input_tokens": 117248,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 723,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "olist_geolocation"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "olist_geolocation (table)\n- geolocation_zip_code_prefix: BIGINT\n- geolocation_lat: FLOAT\n- geolocation_lng: FLOAT\n- geolocation_city: TEXT\n- geolocation_state: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"nFh8Ok1BZLMoSjYG-zzm_s77xjuV2uO4kF3Gu7JBwRg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "nFh8Ok1BZLMoSjYG-zzm_s77xjuV2uO4kF3Gu7JBwRg",
+        "sql": "WITH adjacent AS (\n    SELECT\n        LAG(geolocation_city) OVER location_order AS previous_city,\n        geolocation_city AS current_city,\n        LAG(RADIANS(geolocation_lat)) OVER location_order AS previous_lat,\n        RADIANS(geolocation_lat) AS current_lat,\n        LAG(RADIANS(geolocation_lng)) OVER location_order AS previous_lng,\n        RADIANS(geolocation_lng) AS current_lng\n    FROM main.olist_geolocation\n    WINDOW location_order AS (\n        ORDER BY geolocation_state, geolocation_city, geolocation_zip_code_prefix,\n                 geolocation_lat, geolocation_lng\n    )\n),\ndistances AS (\n    SELECT\n        previous_city,\n        current_city,\n        6371.0 * ACOS(MAX(-1.0, MIN(1.0,\n            COS(previous_lat) * COS(current_lat) * COS(current_lng - previous_lng)\n            + SIN(previous_lat) * SIN(current_lat)\n        ))) AS distance_km\n    FROM adjacent\n)\nSELECT previous_city, current_city, distance_km\nFROM distances\nWHERE distance_km = (SELECT MAX(distance_km) FROM distances);"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): previous_city=str; current_city=str; distance_km=float\nprevious_city | current_city | distance_km\n--- | --- | ---\nsanta cruz do sul | santa lucia do piai | 18208.18495814143\nSQL: WITH adjacent AS (\n    SELECT\n        LAG(geolocation_city) OVER location_order AS previous_city,\n        geolocation_city AS current_city,\n        LAG(RADIANS(geolocation_lat)) OVER location_order AS previous_lat,\n        RADIANS(geolocation_lat) AS current_lat,\n        LAG(RADIANS(geolocation_lng)) OVER location_order AS previous_lng,\n        RADIANS(geolocation_lng) AS current_lng\n    FROM main.olist_geolocation\n    WINDOW location_order AS (\n        ORDER BY geolocation_state, geolocation_city, geolocation_zip_code_prefix,\n                 geolocation_lat, geolocation_lng\n    )\n),\ndistances AS (\n    SELECT\n        previous_city,\n        current_city,\n        6371.0 * ACOS(MAX(-1.0, MIN(1.0,\n            COS(previous_lat) * COS(current_lat) * COS(current_lng - previous_lng)\n            + SIN(previous_lat) * SIN(current_lat)\n        ))) AS distance_km\n    FROM adjacent\n)\nSELECT previous_city, current_city, distance_km\nFROM distances\nWHERE distance_km = (SELECT MAX(distance_km) FROM distances)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH adjacent AS (\n    SELECT\n        LAG(geolocation_city) OVER location_order AS previous_city,\n        geolocation_city AS current_city,\n        LAG(RADIANS(geolocation_lat)) OVER location_order AS previous_lat,\n        RADIANS(geolocation_lat) AS current_lat,\n        LAG(RADIANS(geolocation_lng)) OVER location_order AS previous_lng,\n        RADIANS(geolocation_lng) AS current_lng\n    FROM main.olist_geolocation\n    WINDOW location_order AS (\n        ORDER BY geolocation_state, geolocation_city, geolocation_zip_code_prefix,\n                 geolocation_lat, geolocation_lng\n    )\n),\ndistances AS (\n    SELECT\n        previous_city,\n        current_city,\n        6371.0 * ACOS(MAX(-1.0, MIN(1.0,\n            COS(previous_lat) * COS(current_lat) * COS(current_lng - previous_lng)\n            + SIN(previous_lat) * SIN(current_lat)\n        ))) AS distance_km\n    FROM adjacent\n)\nSELECT previous_city, current_city, distance_km\nFROM distances\nWHERE distance_km = (SELECT MAX(distance_km) FROM distances)\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH adjacent AS (\n    SELECT\n        LAG(geolocation_city) OVER location_order AS previous_city,\n        geolocation_city AS current_city,\n        LAG(RADIANS(geolocation_lat)) OVER location_order AS previous_lat,\n        RADIANS(geolocation_lat) AS current_lat,\n        LAG(RADIANS(geolocation_lng)) OVER location_order AS previous_lng,\n        RADIANS(geolocation_lng) AS current_lng\n    FROM main.olist_geolocation\n    WINDOW location_order AS (\n        ORDER BY geolocation_state, geolocation_city, geolocation_zip_code_prefix,\n                 geolocation_lat, geolocation_lng\n    )\n),\ndistances AS (\n    SELECT\n        previous_city,\n        current_city,\n        6371.0 * ACOS(MAX(-1.0, MIN(1.0,\n            COS(previous_lat) * COS(current_lat) * COS(current_lng - previous_lng)\n            + SIN(previous_lat) * SIN(current_lat)\n        ))) AS distance_km\n    FROM adjacent\n)\nSELECT previous_city, current_city, distance_km\nFROM distances\nWHERE distance_km = (SELECT MAX(distance_km) FROM distances)\nLIMIT 1000",
+  "seconds": 30.21362366597168
+}

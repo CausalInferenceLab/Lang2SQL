@@ -1,0 +1,9 @@
+SELECT ROUND(AVG(h.height_cm), 1) AS average_height_cm
+FROM main.superhero AS h
+WHERE h.height_cm > 0
+  AND h.race_id = (
+      SELECT race_id
+      FROM main.superhero
+      WHERE superhero_name = 'A-Bomb'
+  )
+LIMIT 1

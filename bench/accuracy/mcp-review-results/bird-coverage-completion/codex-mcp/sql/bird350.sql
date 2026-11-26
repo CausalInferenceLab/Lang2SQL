@@ -1,0 +1,20 @@
+WITH strength_scores AS (
+    SELECT ha.hero_id, ha.attribute_value AS strength
+    FROM main.hero_attribute AS ha
+    JOIN main.attribute AS a ON a.id = ha.attribute_id
+    WHERE a.attribute_name = 'Strength'
+)
+SELECT CAST(ROUND(AVG(s.weight_kg)) AS INTEGER) AS average_weight_kg
+FROM main.superhero AS s
+WHERE s.weight_kg > 0
+  AND s.id IN (
+      SELECT scores.hero_id
+      FROM strength_scores AS scores
+      WHERE scores.strength = (
+          SELECT hs.strength
+          FROM strength_scores AS hs
+          JOIN main.superhero AS h ON h.id = hs.hero_id
+          WHERE h.superhero_name = 'Hulk'
+      )
+  )
+LIMIT 1

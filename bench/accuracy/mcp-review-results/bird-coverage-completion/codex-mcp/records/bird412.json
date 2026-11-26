@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird412",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1479689161bf4c12e3590c0100fb7a36aca38f8b33a8d513895e4a9691b6c4fa",
+  "events_sha256": "be8bc8f5c3d9e18647268d95b51cceb5214d99f89e318aa6374a67e3bc26f2a0",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 166211,
+      "cached_input_tokens": 154240,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 647,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"eVeWSZ9BurQ3KWErwPlWCVk0MZnvPsyqG8MAUXTehSA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Examination"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Examination (table)\n- ID: INTEGER\n- Examination Date: DATE\n- aCL IgG: REAL\n- aCL IgM: REAL\n- ANA: INTEGER\n- ANA Pattern: TEXT\n- aCL IgA: INTEGER\n- Diagnosis: TEXT\n- KCT: TEXT\n- RVVT: TEXT\n- LAC: TEXT\n- Symptoms: TEXT\n- Thrombosis: INTEGER\nFOREIGN KEY (ID) REFERENCES Patient (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "eVeWSZ9BurQ3KWErwPlWCVk0MZnvPsyqG8MAUXTehSA",
+        "sql": "SELECT p.Admission, COUNT(*) AS examination_rows, COUNT(DISTINCT p.ID) AS patients,\n       COUNT(julianday(p.\"First Date\")) AS parseable_visits,\n       COUNT(julianday(e.\"Examination Date\")) AS parseable_exams,\n       MIN(p.\"First Date\") AS earliest_visit, MIN(e.\"Examination Date\") AS earliest_exam\nFROM Patient AS p\nJOIN Examination AS e ON e.ID = p.ID\nGROUP BY p.Admission"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Admission=str; examination_rows=int; patients=int; parseable_visits=int; parseable_exams=int; earliest_visit=str; earliest_exam=str\nAdmission | examination_rows | patients | parseable_visits | parseable_exams | earliest_visit | earliest_exam\n--- | --- | --- | --- | --- | --- | ---\n | 2 | 2 | 2 | 2 | 1997-07-07 | 1997-07-07\n+ | 30 | 30 | 20 | 29 | 1976-12-09 | 1992-07-20\n+( | 1 | 1 | 1 | 1 | 1998-02-27 | 1998-02-27\n- | 37 | 36 | 31 | 37 | 1978-06-09 | 1993-10-04\nSQL: SELECT p.Admission, COUNT(*) AS examination_rows, COUNT(DISTINCT p.ID) AS patients,\n       COUNT(julianday(p.\"First Date\")) AS parseable_visits,\n       COUNT(julianday(e.\"Examination Date\")) AS parseable_exams,\n       MIN(p.\"First Date\") AS earliest_visit, MIN(e.\"Examination Date\") AS earliest_exam\nFROM Patient AS p\nJOIN Examination AS e ON e.ID = p.ID\nGROUP BY p.Admission\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"XsyR5RTZqucWG5SiAikrbz21S1rwQeYtuqL2xKEyjr4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "XsyR5RTZqucWG5SiAikrbz21S1rwQeYtuqL2xKEyjr4",
+        "expected_columns": [
+          "average_delay_days"
+        ],
+        "sql": "WITH first_examination AS (\n    SELECT e.ID, MIN(julianday(e.\"Examination Date\")) AS first_exam_day\n    FROM Examination AS e\n    GROUP BY e.ID\n)\nSELECT CAST(ROUND(AVG(f.first_exam_day - julianday(p.\"First Date\"))) AS INTEGER) AS average_delay_days\nFROM Patient AS p\nJOIN first_examination AS f ON f.ID = p.ID\nWHERE instr(p.Admission, '+') > 0\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_delay_days=int\naverage_delay_days\n---\n1616\nSQL: WITH first_examination AS (\n    SELECT e.ID, MIN(julianday(e.\"Examination Date\")) AS first_exam_day\n    FROM Examination AS e\n    GROUP BY e.ID\n)\nSELECT CAST(ROUND(AVG(f.first_exam_day - julianday(p.\"First Date\"))) AS INTEGER) AS average_delay_days\nFROM Patient AS p\nJOIN first_examination AS f ON f.ID = p.ID\nWHERE instr(p.Admission, '+') > 0\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH first_examination AS (\n    SELECT e.ID, MIN(julianday(e.\"Examination Date\")) AS first_exam_day\n    FROM Examination AS e\n    GROUP BY e.ID\n)\nSELECT CAST(ROUND(AVG(f.first_exam_day - julianday(p.\"First Date\"))) AS INTEGER) AS average_delay_days\nFROM Patient AS p\nJOIN first_examination AS f ON f.ID = p.ID\nWHERE instr(p.Admission, '+') > 0\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH first_examination AS (\n    SELECT e.ID, MIN(julianday(e.\"Examination Date\")) AS first_exam_day\n    FROM Examination AS e\n    GROUP BY e.ID\n)\nSELECT CAST(ROUND(AVG(f.first_exam_day - julianday(p.\"First Date\"))) AS INTEGER) AS average_delay_days\nFROM Patient AS p\nJOIN first_examination AS f ON f.ID = p.ID\nWHERE instr(p.Admission, '+') > 0\nLIMIT 1",
+  "seconds": 34.55813008302357
+}

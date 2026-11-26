@@ -1,0 +1,30 @@
+```sql
+WITH top_loans AS (
+    SELECT l.loan_id, l.account_id, a.district_id,
+           l.amount AS approved_amount, l.date AS approval_date
+    FROM loan AS l
+    JOIN account AS a ON a.account_id = l.account_id
+    WHERE l.duration = 24
+      AND a.frequency = 'POPLATEK TYDNE'
+    ORDER BY l.amount DESC, l.date ASC, l.loan_id ASC
+    LIMIT 10
+),
+ranked_balances AS (
+    SELECT l.*, t.balance,
+           ROW_NUMBER() OVER (
+               PARTITION BY l.loan_id
+               ORDER BY t.date DESC, t.trans_id DESC
+           ) AS transaction_rank
+    FROM top_loans AS l
+    LEFT JOIN trans AS t
+      ON t.account_id = l.account_id
+     AND t.date <= l.approval_date
+)
+SELECT d.A2 AS district, b.approved_amount, b.approval_date,
+       b.balance AS end_of_day_balance
+FROM ranked_balances AS b
+JOIN district AS d ON d.district_id = b.district_id
+WHERE b.transaction_rank = 1
+ORDER BY b.approved_amount DESC, b.approval_date ASC, b.loan_id ASC
+LIMIT 1000
+```

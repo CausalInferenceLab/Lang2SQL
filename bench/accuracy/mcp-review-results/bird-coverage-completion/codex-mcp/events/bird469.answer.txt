@@ -1,0 +1,12 @@
+```sql
+WITH bonds_per_molecule AS (
+    SELECT b.molecule_id, COUNT(*) AS single_bond_count
+    FROM main.bond AS b
+    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id
+    WHERE m.label = '+' AND b.bond_type = '-'
+    GROUP BY b.molecule_id
+)
+SELECT AVG(single_bond_count) AS average_single_bonds_per_molecule
+FROM bonds_per_molecule
+LIMIT 1000
+```

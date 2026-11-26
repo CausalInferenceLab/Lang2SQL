@@ -1,0 +1,11 @@
+SELECT COUNT(DISTINCT c.name) AS card_count
+FROM cards AS c
+WHERE INSTR(',' || c.types || ',', ',Creature,') > 0
+  AND (CAST(c.power AS REAL) >= 10 OR c.power = '∞')
+  AND c.setCode IN (
+      SELECT t.setCode
+      FROM set_translations AS t
+      WHERE t.language = 'French'
+        AND TRIM(t.translation) <> ''
+  )
+LIMIT 1

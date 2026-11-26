@@ -1,0 +1,27 @@
+WITH rep_totals AS (
+    SELECT s.region_id,
+           s.id AS rep_id,
+           s.name AS rep_name,
+           COUNT(*) AS order_count,
+           SUM(CAST(ROUND(o.total_amt_usd * 100) AS INTEGER)) AS sales_cents
+    FROM main.web_orders AS o
+    JOIN main.web_accounts AS a ON a.id = o.account_id
+    JOIN main.web_sales_reps AS s ON s.id = a.sales_rep_id
+    GROUP BY s.region_id, s.id, s.name
+),
+ranked_reps AS (
+    SELECT rep_totals.*,
+           SUM(order_count) OVER (PARTITION BY region_id) AS region_orders,
+           SUM(sales_cents) OVER (PARTITION BY region_id) AS region_sales_cents,
+           RANK() OVER (PARTITION BY region_id ORDER BY sales_cents DESC) AS sales_rank
+    FROM rep_totals
+)
+SELECT r.name AS region,
+       COALESCE(t.region_orders, 0) AS number_of_orders,
+       COALESCE(t.region_sales_cents, 0) / 100.0 AS total_sales_usd,
+       t.rep_name AS top_sales_representative,
+       t.sales_cents / 100.0 AS representative_sales_usd
+FROM main.web_region AS r
+LEFT JOIN ranked_reps AS t ON t.region_id = r.id AND t.sales_rank = 1
+ORDER BY r.name, t.rep_name, t.rep_id
+LIMIT -1

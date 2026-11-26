@@ -1,0 +1,6 @@
+SELECT COUNT(DISTINCT pa.player_api_id) AS player_count
+FROM main.Player_Attributes AS pa
+WHERE pa.jumping >= 80
+  AND pa.date >= '2007-02-22'
+  AND pa.date < '2007-08-31'
+LIMIT 1000

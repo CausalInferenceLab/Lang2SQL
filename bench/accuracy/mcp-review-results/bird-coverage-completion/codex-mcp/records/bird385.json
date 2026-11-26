@@ -1,0 +1,173 @@
+{
+  "instance_id": "bird385",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "bb9b62cdcd444fb7ea081ac13ea6792afa4126a34c3d1b9b0421420b9c926e07",
+  "events_sha256": "74d94003d487c1e210b59b44f615d3680c5fabbf34a746155accfb5da5e4e2f2",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169556,
+      "cached_input_tokens": 157312,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 662,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Laboratory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Laboratory (table)\n- ID: INTEGER NOT NULL\n- Date: DATE NOT NULL\n- GOT: INTEGER\n- GPT: INTEGER\n- LDH: INTEGER\n- ALP: INTEGER\n- TP: REAL\n- ALB: REAL\n- UA: REAL\n- UN: INTEGER\n- CRE: REAL\n- T-BIL: REAL\n- T-CHO: INTEGER\n- TG: INTEGER\n- CPK: INTEGER\n- GLU: INTEGER\n- WBC: REAL\n- RBC: REAL\n- HGB: REAL\n- HCT: REAL\n- PLT: INTEGER\n- PT: REAL\n- APTT: INTEGER\n- FG: REAL\n- PIC: INTEGER\n- TAT: INTEGER\n- TAT2: INTEGER\n- U-PRO: TEXT\n- IGG: INTEGER\n- IGA: INTEGER\n- IGM: INTEGER\n- CRP: TEXT\n- RA: TEXT\n- RF: TEXT\n- C3: INTEGER\n- C4: INTEGER\n- RNP: TEXT\n- SM: TEXT\n- SC170: TEXT\n- SSA: TEXT\n- SSB: TEXT\n- CENTROMEA: TEXT\n- DNA: TEXT\n- DNA-II: INTEGER\nPRIMARY KEY (ID, Date)\nFOREIGN KEY (ID) REFERENCES Patient (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "calendar_interval_sql",
+      "arguments": {
+        "dialect": "sqlite"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "SQLite only. Start with WITH calendar_input AS (your SELECT exposing row_id, start_date, end_date), then append these CTEs, then SELECT from calendar_interval. Reserve the calendar_* CTE names.\nInputs: strict YYYY-MM-DD dates, years 0001..9999; NULL, invalid dates and timestamps yield NULL components and direction, preserving the row.\nOutput: nonnegative years, remaining months (0..11), remaining days; direction=-1 for reversed inputs, otherwise +1. Dates are ordered first: this is an absolute calendar span, not a signed SQL AGE implementation. Take the maximum whole months with the original day clamped to the target month end; divide into years/months; days are the remaining elapsed days. Rounding, fractional-year conversion and aggregation remain explicit caller choices. No DB read, UDF or SQL execution occurs in this tool.\n\ncalendar_validated AS (\n  SELECT row_id,\n    CASE WHEN typeof(start_date) = 'text' AND length(start_date) = 10\n      AND start_date BETWEEN '0001-01-01' AND '9999-12-31'\n      AND date(start_date, '+0 days') = start_date THEN start_date END AS s,\n    CASE WHEN typeof(end_date) = 'text' AND length(end_date) = 10\n      AND end_date BETWEEN '0001-01-01' AND '9999-12-31'\n      AND date(end_date, '+0 days') = end_date THEN end_date END AS e\n  FROM calendar_input\n), calendar_ordered AS (\n  SELECT row_id, MIN(s, e) AS lo, MAX(s, e) AS hi,\n    CASE WHEN s IS NULL OR e IS NULL THEN NULL\n      WHEN e < s THEN -1 ELSE 1 END AS direction\n  FROM calendar_validated\n), calendar_months AS (\n  SELECT *, (CAST(strftime('%Y', hi) AS INTEGER) - CAST(strftime('%Y', lo) AS INTEGER)) * 12\n    + CAST(strftime('%m', hi) AS INTEGER) - CAST(strftime('%m', lo) AS INTEGER) AS m\n  FROM calendar_ordered\n), calendar_complete_months AS (\n  SELECT *, m - CASE WHEN date(date(lo, 'start of month', printf('+%d months', m)), printf('+%d days', MIN(CAST(strftime('%d', lo) AS INTEGER), CASE WHEN strftime('%m', date(lo, 'start of month', printf('+%d months', m))) = '12' THEN 31 ELSE CAST(strftime('%d', date(date(lo, 'start of month', printf('+%d months', m)), '+1 month', '-1 day')) AS INTEGER) END) - 1)) > hi THEN 1 ELSE 0 END AS whole_months\n  FROM calendar_months\n), calendar_interval AS (\n  SELECT row_id, direction,\n    whole_months / 12 AS years, whole_months % 12 AS months,\n    CAST(julianday(hi) - julianday(date(date(lo, 'start of month', printf('+%d months', whole_months)), printf('+%d days', MIN(CAST(strftime('%d', lo) AS INTEGER), CASE WHEN strftime('%m', date(lo, 'start of month', printf('+%d months', whole_months))) = '12' THEN 31 ELSE CAST(strftime('%d', date(date(lo, 'start of month', printf('+%d months', whole_months)), '+1 month', '-1 day')) AS INTEGER) END) - 1))) AS INTEGER) AS days\n  FROM calendar_complete_months\n)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"zuOMGBgmbCiw-yTc3stlrSXVyo-k-kQ0NnLqflsWfY0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "zuOMGBgmbCiw-yTc3stlrSXVyo-k-kQ0NnLqflsWfY0",
+        "sql": "SELECT MIN(p.Birthday) AS first_birthday, MAX(p.Birthday) AS last_birthday,\n       COUNT(p.Birthday) - COUNT(date(p.Birthday)) AS unparsed_birthdays,\n       (SELECT COUNT(*) FROM Laboratory AS l WHERE typeof(l.GLU) = 'text' OR typeof(l.\"T-CHO\") = 'text') AS text_measurements\nFROM Patient AS p"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_birthday=str; last_birthday=str; unparsed_birthdays=int; text_measurements=int\nfirst_birthday | last_birthday | unparsed_birthdays | text_measurements\n--- | --- | --- | ---\n1912-08-28 | 2007-05-28 | 0 | 0\nSQL: SELECT MIN(p.Birthday) AS first_birthday, MAX(p.Birthday) AS last_birthday,\n       COUNT(p.Birthday) - COUNT(date(p.Birthday)) AS unparsed_birthdays,\n       (SELECT COUNT(*) FROM Laboratory AS l WHERE typeof(l.GLU) = 'text' OR typeof(l.\"T-CHO\") = 'text') AS text_measurements\nFROM Patient AS p\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"HH_uI8a9JUuxtQLwBRVhXxK3QTNOCazv18T_m4CpWb8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "HH_uI8a9JUuxtQLwBRVhXxK3QTNOCazv18T_m4CpWb8",
+        "expected_columns": [
+          "ID",
+          "SEX",
+          "completed_age"
+        ],
+        "sql": "SELECT\n    p.ID,\n    p.SEX,\n    2026 - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n         - (strftime('%m-%d', p.Birthday) > '10-09') AS completed_age\nFROM Patient AS p\nWHERE p.ID IN (\n    SELECT l.ID\n    FROM Laboratory AS l\n    WHERE l.GLU >= 180\n      AND l.\"T-CHO\" < 250\n)\nORDER BY p.ID\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "13 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=13; displayed_rows=13; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): ID=int; SEX=str; completed_age=int\nID | SEX | completed_age\n--- | --- | ---\n57266 | M | 103\n2371753 | F | 93\n3354706 | F | 89\n4432946 | M | 66\n4466420 | F | 96\n4466840 | F | 73\n4791049 | F | 87\n4792459 | M | 95\n5065022 | F | 54\n5093771 | F | 61\n5126587 | F | 62\n5405581 | F | 70\n5446559 | F | 95\nSQL: SELECT\n    p.ID,\n    p.SEX,\n    2026 - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n         - (strftime('%m-%d', p.Birthday) > '10-09') AS completed_age\nFROM Patient AS p\nWHERE p.ID IN (\n    SELECT l.ID\n    FROM Laboratory AS l\n    WHERE l.GLU >= 180\n      AND l.\"T-CHO\" < 250\n)\nORDER BY p.ID\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    p.ID,\n    p.SEX,\n    2026 - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n         - (strftime('%m-%d', p.Birthday) > '10-09') AS completed_age\nFROM Patient AS p\nWHERE p.ID IN (\n    SELECT l.ID\n    FROM Laboratory AS l\n    WHERE l.GLU >= 180\n      AND l.\"T-CHO\" < 250\n)\nORDER BY p.ID\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 13,
+  "sql": "SELECT\n    p.ID,\n    p.SEX,\n    2026 - CAST(strftime('%Y', p.Birthday) AS INTEGER)\n         - (strftime('%m-%d', p.Birthday) > '10-09') AS completed_age\nFROM Patient AS p\nWHERE p.ID IN (\n    SELECT l.ID\n    FROM Laboratory AS l\n    WHERE l.GLU >= 180\n      AND l.\"T-CHO\" < 250\n)\nORDER BY p.ID\nLIMIT -1",
+  "seconds": 31.68198150000535
+}

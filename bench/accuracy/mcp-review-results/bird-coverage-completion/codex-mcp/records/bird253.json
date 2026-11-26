@@ -1,0 +1,174 @@
+{
+  "instance_id": "bird253",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "fb0793dac96124c294c7121536cd5097c4f91e125645a21157bea1fba7c17f58",
+  "events_sha256": "953568afbef961cce6b12bfd879293783ba15aa8c6a50aa3cd0e73db7648d9c7",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 162876,
+      "cached_input_tokens": 151040,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 792,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"26dSSeHDSL1Kir2rliw36-o-QMekT5IPuiLl64-DfZI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "qualifying"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "qualifying (table)\n- qualifyId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER NOT NULL\n- position: INTEGER\n- q1: TEXT\n- q2: TEXT\n- q3: TEXT\nPRIMARY KEY (qualifyId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "26dSSeHDSL1Kir2rliw36-o-QMekT5IPuiLl64-DfZI",
+        "sql": "SELECT q.q1, q.driverId, d.driverRef\nFROM races AS r\nJOIN qualifying AS q ON q.raceId = r.raceId\nLEFT JOIN drivers AS d ON d.driverId = q.driverId\nWHERE r.year = 1995 AND r.name = 'Japanese Grand Prix'\nORDER BY q.q1 DESC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "24 row(s):\nResult coverage: fetched_rows=24; displayed_rows=24; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): q1=str; driverId=int; driverRef=str\nq1 | driverId | driverRef\n--- | --- | ---\n1:48.289 | 92 | gachot\n1:48.267 | 90 | moreno\n1:46.654 | 64 | diniz\n1:46.097 | 85 | montermini\n1:44.074 | 89 | inoue\n1:43.542 | 69 | badoer\n1:43.102 | 83 | lamy\n1:42.912 | 91 | wendlinger\n1:42.059 | 81 | morbidelli\n1:41.977 | 79 | katayama\n1:41.592 | 88 | suzuki\n1:41.355 | 63 | salo\n1:40.838 | 44 | panis\n1:40.381 | 22 | barrichello\n1:40.349 | 65 | herbert\n1:40.010 | 49 | frentzen\n1:39.621 | 56 | irvine\n1:39.155 | 14 | coulthard\n1:39.040 | 77 | berger\n1:39.032 | 71 | damon_hill\n1:38.954 | 57 | hakkinen\n1:38.888 | 55 | alesi\n1:38.023 | 30 | michael_schumacher\n16:42.640 | 87 | blundell\nSQL: SELECT q.q1, q.driverId, d.driverRef\nFROM races AS r\nJOIN qualifying AS q ON q.raceId = r.raceId\nLEFT JOIN drivers AS d ON d.driverId = q.driverId\nWHERE r.year = 1995 AND r.name = 'Japanese Grand Prix'\nORDER BY q.q1 DESC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"eVoQAp5R9LjFdNAW0Mionb6Uhyxvysor5niVDrYeT3k\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "eVoQAp5R9LjFdNAW0Mionb6Uhyxvysor5niVDrYeT3k",
+        "expected_columns": [
+          "driverRef",
+          "nationality",
+          "dob",
+          "q1"
+        ],
+        "sql": "WITH ranked AS (\n    SELECT q.driverId, q.q1,\n           RANK() OVER (\n               ORDER BY CAST(substr(q.q1, 1, instr(q.q1, ':') - 1) AS INTEGER) DESC,\n                        CAST(substr(q.q1, instr(q.q1, ':') + 1) AS REAL) DESC\n           ) AS time_rank\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 1995\n      AND r.name = 'Japanese Grand Prix'\n      AND q.q1 IS NOT NULL\n)\nSELECT d.driverRef, d.nationality, d.dob, ranked.q1\nFROM ranked\nJOIN drivers AS d ON d.driverId = ranked.driverId\nWHERE ranked.time_rank = 1\nORDER BY d.driverRef"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): driverRef=str; nationality=str; dob=str; q1=str\ndriverRef | nationality | dob | q1\n--- | --- | --- | ---\nblundell | British | 1966-04-08 | 16:42.640\nSQL: WITH ranked AS (\n    SELECT q.driverId, q.q1,\n           RANK() OVER (\n               ORDER BY CAST(substr(q.q1, 1, instr(q.q1, ':') - 1) AS INTEGER) DESC,\n                        CAST(substr(q.q1, instr(q.q1, ':') + 1) AS REAL) DESC\n           ) AS time_rank\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 1995\n      AND r.name = 'Japanese Grand Prix'\n      AND q.q1 IS NOT NULL\n)\nSELECT d.driverRef, d.nationality, d.dob, ranked.q1\nFROM ranked\nJOIN drivers AS d ON d.driverId = ranked.driverId\nWHERE ranked.time_rank = 1\nORDER BY d.driverRef\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH ranked AS (\n    SELECT q.driverId, q.q1,\n           RANK() OVER (\n               ORDER BY CAST(substr(q.q1, 1, instr(q.q1, ':') - 1) AS INTEGER) DESC,\n                        CAST(substr(q.q1, instr(q.q1, ':') + 1) AS REAL) DESC\n           ) AS time_rank\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 1995\n      AND r.name = 'Japanese Grand Prix'\n      AND q.q1 IS NOT NULL\n)\nSELECT d.driverRef, d.nationality, d.dob, ranked.q1\nFROM ranked\nJOIN drivers AS d ON d.driverId = ranked.driverId\nWHERE ranked.time_rank = 1\nORDER BY d.driverRef\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH ranked AS (\n    SELECT q.driverId, q.q1,\n           RANK() OVER (\n               ORDER BY CAST(substr(q.q1, 1, instr(q.q1, ':') - 1) AS INTEGER) DESC,\n                        CAST(substr(q.q1, instr(q.q1, ':') + 1) AS REAL) DESC\n           ) AS time_rank\n    FROM qualifying AS q\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE r.year = 1995\n      AND r.name = 'Japanese Grand Prix'\n      AND q.q1 IS NOT NULL\n)\nSELECT d.driverRef, d.nationality, d.dob, ranked.q1\nFROM ranked\nJOIN drivers AS d ON d.driverId = ranked.driverId\nWHERE ranked.time_rank = 1\nORDER BY d.driverRef\nLIMIT 1000",
+  "seconds": 34.60599349997938
+}

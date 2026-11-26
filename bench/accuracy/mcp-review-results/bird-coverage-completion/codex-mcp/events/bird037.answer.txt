@@ -1,0 +1,29 @@
+```sql
+WITH benchmark AS (
+    SELECT MAX(sat.AvgScrMath) AS highest_avg_sat_math
+    FROM satscores AS sat
+    JOIN schools AS s ON s.CDSCode = sat.cds
+    WHERE s.StatusType = 'Active'
+      AND sat.rtype = 'S'
+      AND sat.NumTstTakr >= 10
+)
+SELECT
+    s.School AS school_name,
+    s.Phone AS phone,
+    s.Website AS website,
+    sat.AvgScrRead AS avg_sat_reading,
+    sat.AvgScrMath AS avg_sat_math,
+    sat.AvgScrWrite AS avg_sat_writing,
+    s.Charter = 1 AS is_charter_school,
+    f."Enrollment (K-12)" AS k12_enrollment,
+    ROUND(100.0 * f."FRPM Count (K-12)" / NULLIF(f."Enrollment (K-12)", 0), 2) AS frpm_eligible_pct,
+    b.highest_avg_sat_math,
+    b.highest_avg_sat_math - sat.AvgScrMath AS math_points_below_highest
+FROM schools AS s
+JOIN satscores AS sat ON sat.cds = s.CDSCode
+JOIN frpm AS f ON f.CDSCode = s.CDSCode
+CROSS JOIN benchmark AS b
+WHERE s.CDSCode = '07618040113118'
+  AND f."Academic Year" = '2014-2015'
+LIMIT 1
+```

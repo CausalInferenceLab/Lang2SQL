@@ -1,0 +1,11 @@
+SELECT ROUND(AVG(u.Reputation), 2) AS average_reputation
+FROM main.users AS u
+WHERE (TRIM(u.Location) = 'India' COLLATE NOCASE
+       OR TRIM(u.Location) LIKE '%, India')
+  AND u.Id IN (
+      SELECT p.OwnerUserId
+      FROM main.posts AS p
+      WHERE p.CreaionDate >= '2010-01-01'
+        AND p.CreaionDate < '2011-01-01'
+  )
+LIMIT 1

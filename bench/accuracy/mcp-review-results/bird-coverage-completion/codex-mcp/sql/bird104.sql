@@ -1,0 +1,5 @@
+SELECT SUM(convertedManaCost) AS total_converted_mana_cost
+FROM main.cards
+WHERE artist = 'Rob Alexander'
+  AND substr(originalReleaseDate, 1, 4) = '2013'
+LIMIT 1

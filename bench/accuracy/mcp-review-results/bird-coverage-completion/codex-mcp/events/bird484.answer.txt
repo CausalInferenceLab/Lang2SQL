@@ -1,0 +1,19 @@
+```sql
+WITH chlorine AS (
+    SELECT atom_id
+    FROM main.atom
+    WHERE element = 'cl'
+),
+neighbors AS (
+    SELECT c.atom_id2 AS atom_id
+    FROM main.connected AS c
+    JOIN chlorine ON chlorine.atom_id = c.atom_id
+    UNION
+    SELECT c.atom_id
+    FROM main.connected AS c
+    JOIN chlorine ON chlorine.atom_id = c.atom_id2
+)
+SELECT COUNT(*) AS atom_count
+FROM neighbors
+LIMIT 1000
+```

@@ -1,0 +1,171 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'm writing a report on the 2017 Italian Grand Prix (the one held in the 2017 season). Could you tell me the nationality of the driver who set the fastest time in Q3, the final part of qualifying? If several drivers share the same fastest Q3 time, please give each of their nationalities.
+Provided evidence:
+Q3 is the third and final part of the qualifying session.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `circuits` (
+    `circuitId` INTEGER, -- unique identification number of the circuit; example: [2, 3]
+    `circuitRef` TEXT, -- circuit reference name; example: ['sepang', 'bahrain']
+    `name` TEXT, -- full name of circuit; example: ['Sepang International Circuit', 'Bahrain International Circuit']
+    `location` TEXT, -- location of circuit; example: ['Kuala Lumpur', 'Sakhir']
+    `country` TEXT, -- country of circuit; example: ['Malaysia', 'Bahrain']
+    `lat` REAL, -- latitude of location of circuit; example: [2.76083, 26.0325]
+    `lng` REAL, -- longitude of location of circuit; example: [101.738, 50.5106]
+    `alt` INTEGER, -- example: []
+    `url` TEXT, -- url; example: ['http://en.wikipedia.org/wiki/Sepang_International_Circuit', 'http://en.wikipedia.org/wiki/Bahrain_International_Circuit']
+    PRIMARY KEY (`circuitId`)
+);
+
+CREATE TABLE `constructors` (
+    `constructorId` INTEGER, -- the unique identification number identifying constructors; example: [1, 2]
+    `constructorRef` TEXT, -- Constructor Reference name; example: ['mclaren', 'bmw_sauber']
+    `name` TEXT, -- full name of the constructor; example: ['McLaren', 'BMW Sauber']
+    `nationality` TEXT, -- nationality of the constructor; example: ['British', 'German']
+    `url` TEXT, -- the introduction website of the constructor; example: ['http://en.wikipedia.org/wiki/McLaren', 'http://en.wikipedia.org/wiki/BMW_Sauber']
+    PRIMARY KEY (`constructorId`)
+);
+
+CREATE TABLE `drivers` (
+    `driverId` INTEGER, -- the unique identification number identifying each driver; example: [1, 2]
+    `driverRef` TEXT, -- driver reference name; example: ['hamilton', 'heidfeld']
+    `number` INTEGER, -- number; example: [44, 6]
+    `code` TEXT, -- abbreviated code for drivers; example: ['HAM', 'HEI']
+    `forename` TEXT, -- forename; example: ['Lewis', 'Nick']
+    `surname` TEXT, -- surname; example: ['Hamilton', 'Heidfeld']
+    `dob` DATE, -- date of birth; example: ['1985-01-07', '1977-05-10']
+    `nationality` TEXT, -- nationality of drivers; example: ['British', 'German']
+    `url` TEXT, -- the introduction website of the drivers; example: ['http://en.wikipedia.org/wiki/Lewis_Hamilton', 'http://en.wikipedia.org/wiki/Nick_Heidfeld']
+    PRIMARY KEY (`driverId`)
+);
+
+CREATE TABLE `seasons` (
+    `year` INTEGER, -- the unique identification number identifying the race; example: [1950, 1951]
+    `url` TEXT, -- website link of season race introduction; example: ['http://en.wikipedia.org/wiki/1950_Formula_One_season', 'http://en.wikipedia.org/wiki/1951_Formula_One_season']
+    PRIMARY KEY (`year`)
+);
+
+CREATE TABLE `races` (
+    `raceId` INTEGER, -- the unique identification number identifying the race; example: [2, 3]
+    `year` INTEGER, -- year; example: [2009]
+    `round` INTEGER, -- round; example: [2, 3]
+    `circuitId` INTEGER, -- circuit Id; example: [2, 17]
+    `name` TEXT, -- name of the race; example: ['Malaysian Grand Prix', 'Chinese Grand Prix']
+    `date` DATE, -- duration time; example: ['2009-04-05', '2009-04-19']
+    `time` TEXT, -- time of the location; example: ['09:00:00', '07:00:00']
+    `url` TEXT, -- introduction of races; example: ['http://en.wikipedia.org/wiki/2009_Malaysian_Grand_Prix', 'http://en.wikipedia.org/wiki/2009_Chinese_Grand_Prix']
+    PRIMARY KEY (`raceId`),
+    FOREIGN KEY (`circuitId`) REFERENCES `circuits` (`circuitId`),
+    FOREIGN KEY (`year`) REFERENCES `seasons` (`year`)
+);
+
+CREATE TABLE `constructorResults` (
+    `constructorResultsId` INTEGER, -- constructor Results Id; example: [1, 2]
+    `raceId` INTEGER, -- race id; example: [18]
+    `constructorId` INTEGER, -- constructor id; example: [1, 2]
+    `points` REAL, -- points; example: [14.0, 8.0]
+    `status` TEXT, -- status; example: []
+    PRIMARY KEY (`constructorResultsId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `constructorStandings` (
+    `constructorStandingsId` INTEGER, -- unique identification of the constructor standing records; example: [1, 2]
+    `raceId` INTEGER, -- id number identifying which races; example: [18]
+    `constructorId` INTEGER, -- id number identifying which id; example: [1, 2]
+    `points` REAL, -- how many points acquired in each race; example: [14.0, 8.0]
+    `position` INTEGER, -- position or track of circuits; example: [1, 3]
+    `positionText` TEXT, -- position text; example: ['1', '3']
+    `wins` INTEGER, -- wins; example: [1, 0]
+    PRIMARY KEY (`constructorStandingsId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `driverStandings` (
+    `driverStandingsId` INTEGER, -- the unique identification number identifying driver standing records; example: [1, 2]
+    `raceId` INTEGER, -- id number identifying which races; example: [18]
+    `driverId` INTEGER, -- id number identifying which drivers; example: [1, 2]
+    `points` REAL, -- how many points acquired in each race; example: [10.0, 8.0]
+    `position` INTEGER, -- position or track of circuits; example: [1, 2]
+    `positionText` TEXT, -- position text; example: ['1', '2']
+    `wins` INTEGER, -- wins; example: [1, 0]
+    PRIMARY KEY (`driverStandingsId`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `lapTimes` (
+    `raceId` INTEGER, -- the identification number identifying race; example: [2]
+    `driverId` INTEGER, -- the identification number identifying each driver; example: [1]
+    `lap` INTEGER, -- lap number; example: [1, 2]
+    `position` INTEGER, -- position or track of circuits; example: [10, 11]
+    `time` TEXT, -- lap time; example: ['1:52.965', '1:41.865']
+    `milliseconds` INTEGER, -- milliseconds; example: [112965, 101865]
+    PRIMARY KEY (`raceId`, `driverId`, `lap`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `pitStops` (
+    `raceId` INTEGER, -- the identification number identifying race; example: [842]
+    `driverId` INTEGER, -- the identification number identifying each driver; example: [1, 2]
+    `stop` INTEGER, -- stop number; example: [1, 2]
+    `lap` INTEGER, -- lap number; example: [12, 24]
+    `time` TEXT, -- time; example: ['16:24:40', '16:45:48']
+    `duration` TEXT, -- duration time; example: ['22.552', '22.611']
+    `milliseconds` INTEGER, -- milliseconds; example: [22552, 22611]
+    PRIMARY KEY (`raceId`, `driverId`, `stop`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `qualifying` (
+    `qualifyId` INTEGER, -- the unique identification number identifying qualifying; example: [23, 24]
+    `raceId` INTEGER, -- the identification number identifying each race; example: [19]
+    `driverId` INTEGER, -- the identification number identifying each driver; example: [13, 8]
+    `constructorId` INTEGER, -- constructor Id; example: [6, 1]
+    `number` INTEGER, -- number; example: [2, 1]
+    `position` INTEGER, -- position or track of circuit; example: [1, 2]
+    `q1` TEXT, -- time in qualifying 1; example: ['1:35.347', '1:35.645']
+    `q2` TEXT, -- time in qualifying 2; example: ['1:34.412', '1:34.188']
+    `q3` TEXT, -- time in qualifying 3; example: ['1:35.748', '1:36.230']
+    PRIMARY KEY (`qualifyId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+CREATE TABLE `status` (
+    `statusId` INTEGER, -- the unique identification number identifying status; example: [1, 2]
+    `status` TEXT, -- full name of status; example: ['Finished', 'Disqualified']
+    PRIMARY KEY (`statusId`)
+);
+
+CREATE TABLE `results` (
+    `resultId` INTEGER, -- the unique identification number identifying race result; example: [23, 24]
+    `raceId` INTEGER, -- the identification number identifying the race; example: [19]
+    `driverId` INTEGER, -- the identification number identifying the driver; example: [8, 9]
+    `constructorId` INTEGER, -- the identification number identifying which constructors; example: [6, 2]
+    `number` INTEGER, -- number; example: [1, 4]
+    `grid` INTEGER, -- the number identifying the area where cars are set into a grid formation in order to start the race.; example: [2, 4]
+    `position` INTEGER, -- The finishing position or track of circuits; example: [1, 2]
+    `positionText` TEXT, -- position text; example: ['1', '2']
+    `positionOrder` INTEGER, -- the finishing order of positions; example: [1, 2]
+    `points` REAL, -- points; example: [10.0, 8.0]
+    `laps` INTEGER, -- lap number; example: [56]
+    `time` TEXT, -- finish time; example: ['1:31:18.555', '+19.570']
+    `milliseconds` INTEGER, -- the actual finishing time of drivers in milliseconds; example: [5478555, 5498125]
+    `fastestLap` INTEGER, -- fastest lap number; example: [37, 39]
+    `rank` INTEGER, -- starting rank positioned by fastest lap speed; example: [2, 6]
+    `fastestLapTime` TEXT, -- fastest Lap Time; example: ['1:35.405', '1:35.921']
+    `fastestLapSpeed` TEXT, -- fastest Lap Speed; example: ['209.158', '208.033']
+    `statusId` INTEGER, -- status ID; example: [1]
+    PRIMARY KEY (`resultId`),
+    FOREIGN KEY (`statusId`) REFERENCES `status` (`statusId`),
+    FOREIGN KEY (`constructorId`) REFERENCES `constructors` (`constructorId`),
+    FOREIGN KEY (`driverId`) REFERENCES `drivers` (`driverId`),
+    FOREIGN KEY (`raceId`) REFERENCES `races` (`raceId`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

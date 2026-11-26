@@ -1,0 +1,18 @@
+```sql
+WITH normal_gpt AS (
+    SELECT l.ID, MAX(l.GPT) AS highest_gpt
+    FROM Laboratory AS l
+    WHERE l.GPT < 60
+      AND l.ID IN (
+          SELECT r.ID
+          FROM Laboratory AS r
+          WHERE CAST(r.RNP AS REAL) >= 16
+      )
+    GROUP BY l.ID
+)
+SELECT p.Birthday
+FROM normal_gpt AS g
+JOIN Patient AS p ON p.ID = g.ID
+ORDER BY g.highest_gpt DESC, p.ID ASC
+LIMIT 3
+```

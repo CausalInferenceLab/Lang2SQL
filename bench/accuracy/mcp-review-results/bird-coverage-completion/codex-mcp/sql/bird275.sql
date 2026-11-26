@@ -1,0 +1,10 @@
+SELECT
+    c.nationality,
+    COUNT(DISTINCT r.constructorId) AS constructor_count
+FROM constructors AS c
+LEFT JOIN results AS r
+    ON r.constructorId = c.constructorId
+   AND r.rank = 1
+GROUP BY c.nationality
+ORDER BY c.nationality
+LIMIT 1000

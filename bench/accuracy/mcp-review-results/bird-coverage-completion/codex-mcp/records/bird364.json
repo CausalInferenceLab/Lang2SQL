@@ -1,0 +1,191 @@
+{
+  "instance_id": "bird364",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "ae830d585664113181485f8818c7de4ff76d8c0584c66c2e6eada154a5c8a7cc",
+  "events_sha256": "1f60c4a8780c630bc71bfe3fbc988b3db9d5d64890a99d498391f59f5cc0c1da",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 149428,
+      "cached_input_tokens": 119808,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 704,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_nq20gVt6tXgGgIx6v2F5mJYACIgofBl-pdRs1p-Hfs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hero_attribute"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hero_attribute (table)\n- hero_id: INTEGER\n- attribute_id: INTEGER\n- attribute_value: INTEGER\nFOREIGN KEY (attribute_id) REFERENCES attribute (id)\nFOREIGN KEY (hero_id) REFERENCES superhero (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "hero_power"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "hero_power (table)\n- hero_id: INTEGER\n- power_id: INTEGER\nFOREIGN KEY (hero_id) REFERENCES superhero (id)\nFOREIGN KEY (power_id) REFERENCES superpower (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superpower"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superpower (table)\n- id: INTEGER NOT NULL\n- power_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "attribute"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "attribute (table)\n- id: INTEGER NOT NULL\n- attribute_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_nq20gVt6tXgGgIx6v2F5mJYACIgofBl-pdRs1p-Hfs",
+        "sql": "SELECT sp.power_name AS name, COUNT(*) AS records, COUNT(DISTINCT hp.hero_id) AS heroes, NULL AS value_type\nFROM superpower AS sp\nJOIN hero_power AS hp ON hp.power_id = sp.id\nWHERE LOWER(sp.power_name) IN ('super speed', 'death touch')\nGROUP BY sp.power_name\nUNION ALL\nSELECT a.attribute_name, COUNT(*), COUNT(DISTINCT ha.hero_id), TYPEOF(ha.attribute_value)\nFROM attribute AS a\nJOIN hero_attribute AS ha ON ha.attribute_id = a.id\nWHERE LOWER(a.attribute_name) = 'intelligence'\nGROUP BY a.attribute_name, TYPEOF(ha.attribute_value);"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): name=str; records=int; heroes=int; value_type=NoneType,str\nname | records | heroes | value_type\n--- | --- | --- | ---\nDeath Touch | 7 | 7 | None\nSuper Speed | 249 | 249 | None\nIntelligence | 623 | 623 | integer\nSQL: SELECT sp.power_name AS name, COUNT(*) AS records, COUNT(DISTINCT hp.hero_id) AS heroes, NULL AS value_type\nFROM superpower AS sp\nJOIN hero_power AS hp ON hp.power_id = sp.id\nWHERE LOWER(sp.power_name) IN ('super speed', 'death touch')\nGROUP BY sp.power_name\nUNION ALL\nSELECT a.attribute_name, COUNT(*), COUNT(DISTINCT ha.hero_id), TYPEOF(ha.attribute_value)\nFROM attribute AS a\nJOIN hero_attribute AS ha ON ha.attribute_id = a.id\nWHERE LOWER(a.attribute_name) = 'intelligence'\nGROUP BY a.attribute_name, TYPEOF(ha.attribute_value)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Amyoi6aOIVoquxiZ1YdBtXD8whyRJTNrWkUJYwWCPxk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Amyoi6aOIVoquxiZ1YdBtXD8whyRJTNrWkUJYwWCPxk",
+        "expected_columns": [
+          "average_intelligence"
+        ],
+        "sql": "SELECT ROUND(AVG(ha.attribute_value), 1) AS average_intelligence\nFROM hero_attribute AS ha\nJOIN attribute AS a ON a.id = ha.attribute_id\nWHERE a.attribute_name = 'Intelligence'\n  AND ha.attribute_value IS NOT NULL\n  AND ha.hero_id IN (\n      SELECT hp.hero_id\n      FROM hero_power AS hp\n      JOIN superpower AS sp ON sp.id = hp.power_id\n      WHERE sp.power_name IN ('Super Speed', 'Death Touch')\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_intelligence=float\naverage_intelligence\n---\n85.9\nSQL: SELECT ROUND(AVG(ha.attribute_value), 1) AS average_intelligence\nFROM hero_attribute AS ha\nJOIN attribute AS a ON a.id = ha.attribute_id\nWHERE a.attribute_name = 'Intelligence'\n  AND ha.attribute_value IS NOT NULL\n  AND ha.hero_id IN (\n      SELECT hp.hero_id\n      FROM hero_power AS hp\n      JOIN superpower AS sp ON sp.id = hp.power_id\n      WHERE sp.power_name IN ('Super Speed', 'Death Touch')\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(AVG(ha.attribute_value), 1) AS average_intelligence\nFROM hero_attribute AS ha\nJOIN attribute AS a ON a.id = ha.attribute_id\nWHERE a.attribute_name = 'Intelligence'\n  AND ha.attribute_value IS NOT NULL\n  AND ha.hero_id IN (\n      SELECT hp.hero_id\n      FROM hero_power AS hp\n      JOIN superpower AS sp ON sp.id = hp.power_id\n      WHERE sp.power_name IN ('Super Speed', 'Death Touch')\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(AVG(ha.attribute_value), 1) AS average_intelligence\nFROM hero_attribute AS ha\nJOIN attribute AS a ON a.id = ha.attribute_id\nWHERE a.attribute_name = 'Intelligence'\n  AND ha.attribute_value IS NOT NULL\n  AND ha.hero_id IN (\n      SELECT hp.hero_id\n      FROM hero_power AS hp\n      JOIN superpower AS sp ON sp.id = hp.power_id\n      WHERE sp.power_name IN ('Super Speed', 'Death Touch')\n  )\nLIMIT 1",
+  "seconds": 28.683537584031
+}

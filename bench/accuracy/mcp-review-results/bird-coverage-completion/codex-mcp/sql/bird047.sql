@@ -1,0 +1,12 @@
+SELECT s.School, s.Street, s.City, s.State, s.Zip
+FROM main.frpm AS f
+JOIN main.schools AS s ON s.CDSCode = f.CDSCode
+WHERE f."County Name" = 'Los Angeles'
+  AND f."School Type" IN (
+      'High Schools (Public)',
+      'Continuation High Schools',
+      'High Schools In 1 School Dist. (Public)'
+  )
+  AND f."FRPM Count (Ages 5-17)" > 500
+ORDER BY s.School, s.CDSCode
+LIMIT 1000

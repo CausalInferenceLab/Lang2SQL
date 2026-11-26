@@ -1,0 +1,214 @@
+{
+  "instance_id": "bird306",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "3ce245a82759d31dc30fe58abf853a5c4e4066e2686df5c9d8e5ae3ce9eb9dd9",
+  "events_sha256": "5ff8c8c0166316a83a763679876bc28a196e9f079e09c49fe64ce15a01807d90",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 228309,
+      "cached_input_tokens": 200832,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1096,
+      "reasoning_output_tokens": 121
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"pG2NaYcyOVv1WyXPdtkEczfi7HIzxExCzZCIh1ScxSU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "member"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "member (table)\n- member_id: TEXT\n- first_name: TEXT\n- last_name: TEXT\n- email: TEXT\n- position: TEXT\n- t_shirt_size: TEXT\n- phone: TEXT\n- zip: INTEGER\n- link_to_major: TEXT\nPRIMARY KEY (member_id)\nFOREIGN KEY (link_to_major) REFERENCES major (major_id)\nFOREIGN KEY (zip) REFERENCES zip_code (zip_code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "expense"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "expense (table)\n- expense_id: TEXT\n- expense_description: TEXT\n- expense_date: TEXT\n- cost: REAL\n- approved: TEXT\n- link_to_member: TEXT\n- link_to_budget: TEXT\nPRIMARY KEY (expense_id)\nFOREIGN KEY (link_to_budget) REFERENCES budget (budget_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "pG2NaYcyOVv1WyXPdtkEczfi7HIzxExCzZCIh1ScxSU",
+        "sql": "WITH member_lines AS (\n  SELECT e.link_to_member, e.link_to_budget, COUNT(*) AS purchases\n  FROM main.expense AS e\n  WHERE e.cost > 50\n  GROUP BY e.link_to_member, e.link_to_budget\n)\nSELECT COUNT(*) AS member_lines, SUM(q.purchases) AS purchases,\n       COUNT(DISTINCT m.member_id) AS members, COUNT(b.budget_id) AS matched_lines,\n       COUNT(b.remaining) AS known_balances,\n       SUM(b.remaining <> ROUND(b.remaining, 2)) AS subcent_balances,\n       SUM(ABS(b.remaining - (b.amount - b.spent)) > 0.000001) AS inconsistent_balances,\n       MIN(b.remaining) AS minimum_balance, MAX(b.remaining) AS maximum_balance\nFROM member_lines AS q\nLEFT JOIN main.budget AS b ON b.budget_id = q.link_to_budget\nLEFT JOIN main.member AS m ON m.member_id = q.link_to_member"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): member_lines=int; purchases=int; members=int; matched_lines=int; known_balances=int; subcent_balances=int; inconsistent_balances=int; minimum_balance=float; maximum_balance=float\nmember_lines | purchases | members | matched_lines | known_balances | subcent_balances | inconsistent_balances | minimum_balance | maximum_balance\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n18 | 22 | 3 | 18 | 18 | 5 | 0 | -24.25 | 48.06\nSQL: WITH member_lines AS (\n  SELECT e.link_to_member, e.link_to_budget, COUNT(*) AS purchases\n  FROM main.expense AS e\n  WHERE e.cost > 50\n  GROUP BY e.link_to_member, e.link_to_budget\n)\nSELECT COUNT(*) AS member_lines, SUM(q.purchases) AS purchases,\n       COUNT(DISTINCT m.member_id) AS members, COUNT(b.budget_id) AS matched_lines,\n       COUNT(b.remaining) AS known_balances,\n       SUM(b.remaining <> ROUND(b.remaining, 2)) AS subcent_balances,\n       SUM(ABS(b.remaining - (b.amount - b.spent)) > 0.000001) AS inconsistent_balances,\n       MIN(b.remaining) AS minimum_balance, MAX(b.remaining) AS maximum_balance\nFROM member_lines AS q\nLEFT JOIN main.budget AS b ON b.budget_id = q.link_to_budget\nLEFT JOIN main.member AS m ON m.member_id = q.link_to_member\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"p6JfZ-wEch-wRxXUDWbfNlAFD1BZ12IdnbTCazA93DI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "p6JfZ-wEch-wRxXUDWbfNlAFD1BZ12IdnbTCazA93DI",
+        "sql": "SELECT b.amount, b.spent, b.remaining, CAST(b.remaining AS TEXT) AS decimal_balance\nFROM main.budget AS b\nWHERE b.budget_id IN (SELECT e.link_to_budget FROM main.expense AS e WHERE e.cost > 50)\nORDER BY b.remaining"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "15 row(s):\nResult coverage: fetched_rows=15; displayed_rows=15; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): amount=int; spent=float; remaining=float; decimal_balance=str\namount | spent | remaining | decimal_balance\n--- | --- | --- | ---\n150 | 174.25 | -24.25 | -24.25\n150 | 173.06 | -23.06 | -23.06\n75 | 74.59 | 0.409999999999997 | 0.409999999999997\n155 | 154.34 | 0.659999999999997 | 0.659999999999997\n55 | 54.25 | 0.75 | 0.75\n55 | 54.25 | 0.75 | 0.75\n55 | 54.25 | 0.75 | 0.75\n300 | 295.12 | 4.88 | 4.88\n75 | 67.81 | 7.19 | 7.19\n75 | 67.81 | 7.19 | 7.19\n350 | 327.07 | 22.9299999999999 | 22.9299999999999\n150 | 122.33 | 27.67 | 27.67\n150 | 122.06 | 27.94 | 27.94\n150 | 121.14 | 28.86 | 28.86\n150 | 101.94 | 48.06 | 48.06\nSQL: SELECT b.amount, b.spent, b.remaining, CAST(b.remaining AS TEXT) AS decimal_balance\nFROM main.budget AS b\nWHERE b.budget_id IN (SELECT e.link_to_budget FROM main.expense AS e WHERE e.cost > 50)\nORDER BY b.remaining\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wJ2N3aRTuLX7FYums_FY-qEF62MDl2799cQUsym340U\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wJ2N3aRTuLX7FYums_FY-qEF62MDl2799cQUsym340U",
+        "expected_columns": [
+          "first_name",
+          "last_name",
+          "total_remaining_dollars"
+        ],
+        "sql": "WITH qualifying_lines AS (\n    SELECT DISTINCT e.link_to_member, e.link_to_budget\n    FROM main.expense AS e\n    WHERE e.cost > 50\n)\nSELECT\n    m.first_name,\n    m.last_name,\n    ROUND(SUM(b.remaining), 2) AS total_remaining_dollars\nFROM qualifying_lines AS q\nJOIN main.member AS m ON m.member_id = q.link_to_member\nJOIN main.budget AS b ON b.budget_id = q.link_to_budget\nGROUP BY m.member_id, m.first_name, m.last_name\nORDER BY total_remaining_dollars DESC, m.last_name ASC, m.first_name ASC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_name=str; last_name=str; total_remaining_dollars=float\nfirst_name | last_name | total_remaining_dollars\n--- | --- | ---\nPhillip | Cullen | 107.5\nSacha | Harrison | 19.01\nElijah | Allen | 4.75\nSQL: WITH qualifying_lines AS (\n    SELECT DISTINCT e.link_to_member, e.link_to_budget\n    FROM main.expense AS e\n    WHERE e.cost > 50\n)\nSELECT\n    m.first_name,\n    m.last_name,\n    ROUND(SUM(b.remaining), 2) AS total_remaining_dollars\nFROM qualifying_lines AS q\nJOIN main.member AS m ON m.member_id = q.link_to_member\nJOIN main.budget AS b ON b.budget_id = q.link_to_budget\nGROUP BY m.member_id, m.first_name, m.last_name\nORDER BY total_remaining_dollars DESC, m.last_name ASC, m.first_name ASC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH qualifying_lines AS (\n    SELECT DISTINCT e.link_to_member, e.link_to_budget\n    FROM main.expense AS e\n    WHERE e.cost > 50\n)\nSELECT\n    m.first_name,\n    m.last_name,\n    ROUND(SUM(b.remaining), 2) AS total_remaining_dollars\nFROM qualifying_lines AS q\nJOIN main.member AS m ON m.member_id = q.link_to_member\nJOIN main.budget AS b ON b.budget_id = q.link_to_budget\nGROUP BY m.member_id, m.first_name, m.last_name\nORDER BY total_remaining_dollars DESC, m.last_name ASC, m.first_name ASC\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "WITH qualifying_lines AS (\n    SELECT DISTINCT e.link_to_member, e.link_to_budget\n    FROM main.expense AS e\n    WHERE e.cost > 50\n)\nSELECT\n    m.first_name,\n    m.last_name,\n    ROUND(SUM(b.remaining), 2) AS total_remaining_dollars\nFROM qualifying_lines AS q\nJOIN main.member AS m ON m.member_id = q.link_to_member\nJOIN main.budget AS b ON b.budget_id = q.link_to_budget\nGROUP BY m.member_id, m.first_name, m.last_name\nORDER BY total_remaining_dollars DESC, m.last_name ASC, m.first_name ASC\nLIMIT 1000",
+  "seconds": 45.61162866593804
+}

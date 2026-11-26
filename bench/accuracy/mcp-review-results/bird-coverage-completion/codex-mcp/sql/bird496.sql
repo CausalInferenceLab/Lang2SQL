@@ -1,0 +1,15 @@
+SELECT m.molecule_id
+FROM main.molecule AS m
+WHERE m.label = '-'
+  AND m.molecule_id IN (
+      SELECT a.molecule_id
+      FROM main.atom AS a
+      WHERE a.element IN ('na', 'k', 'ca', 'cu', 'zn', 'sn', 'pb', 'mg', 'li')
+  )
+  AND m.molecule_id IN (
+      SELECT b.molecule_id
+      FROM main.bond AS b
+      WHERE b.bond_type = '-'
+  )
+ORDER BY m.molecule_id ASC
+LIMIT 3;

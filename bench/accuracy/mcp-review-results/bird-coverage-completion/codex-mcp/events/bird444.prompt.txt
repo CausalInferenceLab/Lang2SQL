@@ -1,0 +1,83 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+Among all patients diagnosed with systemic lupus erythematosus, I want to find the patient whose anti-DNA test result was the strongest ever recorded for that disease. Please report the patient's identifier, the patient's diagnosis, and that patient's highest anti-DNA test result, using the number exactly as the test wrote it. If several patients tie for the highest anti-DNA result, list every tied patient.
+Provided evidence:
+Systemic lupus erythematosus (SLE) is an autoimmune disease; anti-DNA is an antibody test reported as a number.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `Examination` (
+    `ID` INTEGER, -- identification of the patient; example: [14872, 48473]
+    `Examination Date` DATE, -- Examination Date; example: ['1997-05-27', '1992-12-21']
+    `aCL IgG` REAL, -- anti-Cardiolipin antibody (IgG) concentration; example: [1.3, 4.3]
+    `aCL IgM` REAL, -- anti-Cardiolipin antibody (IgM) concentration; example: [1.6, 4.6]
+    `ANA` INTEGER, -- anti-nucleus antibody concentration; example: [256, 0]
+    `ANA Pattern` TEXT, -- pattern observed in the sheet of ANA examination; example: ['P', 'P,S']
+    `aCL IgA` INTEGER, -- anti-Cardiolipin antibody (IgA) concentration; example: [0, 3]
+    `Diagnosis` TEXT, -- disease names; example: ['MCTD, AMI', 'SLE']
+    `KCT` TEXT, -- measure of degree of coagulation; example: ['-']
+    `RVVT` TEXT, -- measure of degree of coagulation; example: ['-']
+    `LAC` TEXT, -- measure of degree of coagulation; example: ['-']
+    `Symptoms` TEXT, -- other symptoms observed; example: ['AMI']
+    `Thrombosis` INTEGER, -- degree of thrombosis; example: [1, 0]
+    FOREIGN KEY (`ID`) REFERENCES `Patient` (`ID`)
+);
+
+CREATE TABLE `Patient` (
+    `ID` INTEGER, -- identification of the patient; example: [2110, 11408]
+    `SEX` TEXT, -- Sex; example: ['F']
+    `Birthday` DATE, -- Birthday; example: ['1934-02-13', '1937-05-02']
+    `Description` DATE, -- the first date when a patient data was recorded; example: ['1994-02-14', '1996-12-01']
+    `First Date` DATE, -- the date when a patient came to the hospital; example: ['1993-02-10', '1973-01-01']
+    `Admission` TEXT, -- patient was admitted to the hospital (+) or followed at the outpatient clinic (-); example: ['+']
+    `Diagnosis` TEXT, -- disease names; example: ['RA susp.', 'PSS']
+    PRIMARY KEY (`ID`)
+);
+
+CREATE TABLE `Laboratory` (
+    `ID` INTEGER, -- identification of the patient; example: [27654]
+    `Date` DATE, -- Date of the laboratory tests (YYMMDD); example: ['1991-09-11', '1991-09-17']
+    `GOT` INTEGER, -- AST glutamic oxaloacetic transaminase; example: [34, 29]
+    `GPT` INTEGER, -- ALT glutamic pyruvic transaminase; example: [36, 31]
+    `LDH` INTEGER, -- lactate dehydrogenase; example: [567, 579]
+    `ALP` INTEGER, -- alkaliphophatase; example: [166, 154]
+    `TP` REAL, -- total protein; example: [4.5, 5.1]
+    `ALB` REAL, -- albumin; example: [3.3, 3.4]
+    `UA` REAL, -- uric acid; example: [3.8, 4.2]
+    `UN` INTEGER, -- urea nitrogen; example: [29, 36]
+    `CRE` REAL, -- creatinine; example: [0.8, 0.9]
+    `T-BIL` REAL, -- total bilirubin; example: [0.3, 0.2]
+    `T-CHO` INTEGER, -- total cholesterol; example: [165, 134]
+    `TG` INTEGER, -- triglyceride; example: []
+    `CPK` INTEGER, -- creatinine phosphokinase; example: [9, 10]
+    `GLU` INTEGER, -- blood glucose; example: [88]
+    `WBC` REAL, -- White blood cell; example: [5.0, 10.4]
+    `RBC` REAL, -- Red blood cell; example: [2.6, 2.9]
+    `HGB` REAL, -- Hemoglobin; example: [6.4, 6.7]
+    `HCT` REAL, -- Hematoclit; example: [20.3, 21.6]
+    `PLT` INTEGER, -- platelet; example: [227, 242]
+    `PT` REAL, -- prothrombin time; example: []
+    `APTT` INTEGER, -- activated partial prothrombin time; example: []
+    `FG` REAL, -- fibrinogen; example: []
+    `PIC` INTEGER, -- example: []
+    `TAT` INTEGER, -- example: []
+    `TAT2` INTEGER, -- example: []
+    `U-PRO` TEXT, -- proteinuria; example: []
+    `IGG` INTEGER, -- Ig G; example: [339, 771]
+    `IGA` INTEGER, -- Ig A; example: [145, 188]
+    `IGM` INTEGER, -- Ig M; example: [46, 132]
+    `CRP` TEXT, -- C-reactive protein; example: ['0.6', '2.7']
+    `RA` TEXT, -- Rhuematoid Factor; example: []
+    `RF` TEXT, -- RAHA; example: []
+    `C3` INTEGER, -- complement 3; example: []
+    `C4` INTEGER, -- complement 4; example: []
+    `RNP` TEXT, -- anti-ribonuclear protein; example: []
+    `SM` TEXT, -- anti-SM; example: []
+    `SC170` TEXT, -- anti-scl70; example: []
+    `SSA` TEXT, -- anti-SSA; example: []
+    `SSB` TEXT, -- anti-SSB; example: []
+    `CENTROMEA` TEXT, -- anti-centromere; example: []
+    `DNA` TEXT, -- anti-DNA; example: []
+    `DNA-II` INTEGER, -- anti-DNA; example: []
+    PRIMARY KEY (`ID`, `Date`),
+    FOREIGN KEY (`ID`) REFERENCES `Patient` (`ID`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

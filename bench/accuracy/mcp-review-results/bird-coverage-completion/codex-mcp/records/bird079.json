@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird079",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "6233f16159e43424b84155e5235e3b14f81f2488865777543e05b7068cd972e0",
+  "events_sha256": "b4103eb5f901ce0c962d82af05fb2c0025042c148a84d7d04524ec0a43db48a3",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169223,
+      "cached_input_tokens": 147968,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 633,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sets"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sets (table)\n- id: INTEGER NOT NULL\n- baseSetSize: INTEGER\n- block: TEXT\n- booster: TEXT\n- code: TEXT NOT NULL\n- isFoilOnly: INTEGER NOT NULL\n- isForeignOnly: INTEGER NOT NULL\n- isNonFoilOnly: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isPartialPreview: INTEGER NOT NULL\n- keyruneCode: TEXT\n- mcmId: INTEGER\n- mcmIdExtras: INTEGER\n- mcmName: TEXT\n- mtgoCode: TEXT\n- name: TEXT\n- parentCode: TEXT\n- releaseDate: DATE\n- tcgplayerGroupId: INTEGER\n- totalSetSize: INTEGER\n- type: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"-zLMX96_LHzmZRkfGsfA829nFwN4GBOtzp_crtcoCwg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "set_translations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "set_translations (table)\n- id: INTEGER NOT NULL\n- language: TEXT\n- setCode: TEXT\n- translation: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (setCode) REFERENCES sets (code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "-zLMX96_LHzmZRkfGsfA829nFwN4GBOtzp_crtcoCwg",
+        "sql": "SELECT t.language, COUNT(*) AS rows_in_language,\n       COUNT(NULLIF(TRIM(t.translation), '')) AS named_rows,\n       MIN(s.releaseDate) AS first_release, MAX(s.releaseDate) AS last_release\nFROM sets AS s\nJOIN set_translations AS t ON t.setCode = s.code\nWHERE s.releaseDate >= '2017-01-01' AND s.releaseDate < '2018-01-01'\nGROUP BY t.language"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): language=str; rows_in_language=int; named_rows=int; first_release=str; last_release=str\nlanguage | rows_in_language | named_rows | first_release | last_release\n--- | --- | --- | --- | ---\nChinese Simplified | 3 | 3 | 2017-01-20 | 2017-08-25\nChinese Traditional | 3 | 3 | 2017-01-20 | 2017-08-25\nFrench | 3 | 3 | 2017-01-20 | 2017-08-25\nGerman | 3 | 3 | 2017-01-20 | 2017-08-25\nItalian | 3 | 3 | 2017-01-20 | 2017-08-25\nJapanese | 3 | 3 | 2017-01-20 | 2017-08-25\nKorean | 3 | 3 | 2017-01-20 | 2017-08-25\nPortuguese (Brazil) | 3 | 3 | 2017-01-20 | 2017-08-25\nRussian | 3 | 3 | 2017-01-20 | 2017-08-25\nSpanish | 3 | 3 | 2017-01-20 | 2017-08-25\nSQL: SELECT t.language, COUNT(*) AS rows_in_language,\n       COUNT(NULLIF(TRIM(t.translation), '')) AS named_rows,\n       MIN(s.releaseDate) AS first_release, MAX(s.releaseDate) AS last_release\nFROM sets AS s\nJOIN set_translations AS t ON t.setCode = s.code\nWHERE s.releaseDate >= '2017-01-01' AND s.releaseDate < '2018-01-01'\nGROUP BY t.language\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"7DvNUIciHZZhec2T4mvvJPyOooXaW9I6d0KAtZJxlS4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "7DvNUIciHZZhec2T4mvvJPyOooXaW9I6d0KAtZJxlS4",
+        "expected_columns": [
+          "total_cards"
+        ],
+        "sql": "SELECT SUM(s.totalSetSize) AS total_cards\nFROM sets AS s\nWHERE s.releaseDate >= '2017-01-01'\n  AND s.releaseDate < '2018-01-01'\n  AND s.code IN (\n      SELECT t.setCode\n      FROM set_translations AS t\n      WHERE t.language <> 'English'\n        AND TRIM(t.translation) <> ''\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): total_cards=int\ntotal_cards\n---\n793\nSQL: SELECT SUM(s.totalSetSize) AS total_cards\nFROM sets AS s\nWHERE s.releaseDate >= '2017-01-01'\n  AND s.releaseDate < '2018-01-01'\n  AND s.code IN (\n      SELECT t.setCode\n      FROM set_translations AS t\n      WHERE t.language <> 'English'\n        AND TRIM(t.translation) <> ''\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT SUM(s.totalSetSize) AS total_cards\nFROM sets AS s\nWHERE s.releaseDate >= '2017-01-01'\n  AND s.releaseDate < '2018-01-01'\n  AND s.code IN (\n      SELECT t.setCode\n      FROM set_translations AS t\n      WHERE t.language <> 'English'\n        AND TRIM(t.translation) <> ''\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT SUM(s.totalSetSize) AS total_cards\nFROM sets AS s\nWHERE s.releaseDate >= '2017-01-01'\n  AND s.releaseDate < '2018-01-01'\n  AND s.code IN (\n      SELECT t.setCode\n      FROM set_translations AS t\n      WHERE t.language <> 'English'\n        AND TRIM(t.translation) <> ''\n  )\nLIMIT 1",
+  "seconds": 30.83665287506301
+}

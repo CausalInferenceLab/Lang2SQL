@@ -1,0 +1,12 @@
+SELECT a.buildUpPlayDribblingClass
+FROM Team_Attributes AS a
+JOIN Team AS t ON t.team_api_id = a.team_api_id
+WHERE t.team_short_name = 'POR'
+  AND date(a.date) = '2015-09-10'
+  AND t.team_api_id IN (
+      SELECT m.home_team_api_id
+      FROM "Match" AS m
+      JOIN Country AS c ON c.id = m.country_id
+      WHERE c.name = 'England'
+  )
+LIMIT 1000

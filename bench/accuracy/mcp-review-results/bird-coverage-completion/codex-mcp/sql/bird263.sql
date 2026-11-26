@@ -1,0 +1,11 @@
+SELECT
+    c.name AS racetrack_name,
+    c.location,
+    c.country,
+    r.year AS season_year,
+    p.duration AS pit_stop_length
+FROM pitStops AS p
+JOIN races AS r ON r.raceId = p.raceId
+JOIN circuits AS c ON c.circuitId = r.circuitId
+WHERE p.milliseconds = (SELECT MAX(milliseconds) FROM pitStops)
+LIMIT -1

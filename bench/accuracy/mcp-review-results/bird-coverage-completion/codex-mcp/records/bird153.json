@@ -1,0 +1,172 @@
+{
+  "instance_id": "bird153",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1ecf9e2f21c0c2ae5ad0c192bb410422b35a564b4c9be8279d648f1b2af0af5b",
+  "events_sha256": "587d528636f9b723ec69e78f7a3e81f2b34c9291cc050839a8cbaf8b18755346",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 146379,
+      "cached_input_tokens": 136960,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 803,
+      "reasoning_output_tokens": 98
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "transactions_1k"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "transactions_1k (table)\n- TransactionID: INTEGER\n- Date: DATE\n- Time: TEXT\n- CustomerID: INTEGER\n- CardID: INTEGER\n- GasStationID: INTEGER\n- ProductID: INTEGER\n- Amount: INTEGER\n- Price: REAL\nPRIMARY KEY (TransactionID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"A1F0xEvPyKXnPO2-25MjV3lmXjsGP2WAEUVLMH9lL1Y\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "A1F0xEvPyKXnPO2-25MjV3lmXjsGP2WAEUVLMH9lL1Y",
+        "sql": "SELECT MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(DISTINCT y.Date) AS months, COUNT(*) AS monthly_rows,\n       COUNT(y.Consumption) AS known_values, MIN(y.Consumption) AS minimum_consumption,\n       SUM(y.Consumption = 0) AS zero_months,\n       (SELECT MIN(t.Date) FROM main.transactions_1k AS t) AS first_transaction,\n       (SELECT MAX(t.Date) FROM main.transactions_1k AS t) AS last_transaction\nFROM main.yearmonth AS y\nWHERE y.Date >= '201201' AND y.Date < '201301'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): first_month=str; last_month=str; months=int; monthly_rows=int; known_values=int; minimum_consumption=float; zero_months=int; first_transaction=str; last_transaction=str\nfirst_month | last_month | months | monthly_rows | known_values | minimum_consumption | zero_months | first_transaction | last_transaction\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n201201 | 201209 | 9 | 158808 | 158808 | -18145.35 | 6 | 2012-08-23 | 2012-08-26\nSQL: SELECT MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(DISTINCT y.Date) AS months, COUNT(*) AS monthly_rows,\n       COUNT(y.Consumption) AS known_values, MIN(y.Consumption) AS minimum_consumption,\n       SUM(y.Consumption = 0) AS zero_months,\n       (SELECT MIN(t.Date) FROM main.transactions_1k AS t) AS first_transaction,\n       (SELECT MAX(t.Date) FROM main.transactions_1k AS t) AS last_transaction\nFROM main.yearmonth AS y\nWHERE y.Date >= '201201' AND y.Date < '201301'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NZyneW-qyMXbqy69M4iOTX5CG-8O_Su349j-RSKCsWs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NZyneW-qyMXbqy69M4iOTX5CG-8O_Su349j-RSKCsWs",
+        "expected_columns": [
+          "Segment",
+          "customer_count"
+        ],
+        "sql": "WITH qualifying_customers AS (\n    SELECT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201201' AND y.Date < '201301'\n    GROUP BY y.CustomerID\n    HAVING SUM(y.Consumption) < 30000\n)\nSELECT c.Segment, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Segment\nORDER BY c.Segment"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; customer_count=int\nSegment | customer_count\n--- | ---\nKAM | 1123\nLAM | 2031\nSME | 21869\nSQL: WITH qualifying_customers AS (\n    SELECT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201201' AND y.Date < '201301'\n    GROUP BY y.CustomerID\n    HAVING SUM(y.Consumption) < 30000\n)\nSELECT c.Segment, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Segment\nORDER BY c.Segment\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH qualifying_customers AS (\n    SELECT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201201' AND y.Date < '201301'\n    GROUP BY y.CustomerID\n    HAVING SUM(y.Consumption) < 30000\n)\nSELECT c.Segment, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Segment\nORDER BY c.Segment\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 3,
+  "sql": "WITH qualifying_customers AS (\n    SELECT y.CustomerID\n    FROM main.yearmonth AS y\n    WHERE y.Date >= '201201' AND y.Date < '201301'\n    GROUP BY y.CustomerID\n    HAVING SUM(y.Consumption) < 30000\n)\nSELECT c.Segment, COUNT(q.CustomerID) AS customer_count\nFROM main.customers AS c\nLEFT JOIN qualifying_customers AS q ON q.CustomerID = c.CustomerID\nGROUP BY c.Segment\nORDER BY c.Segment\nLIMIT 1000",
+  "seconds": 31.858026583096944
+}

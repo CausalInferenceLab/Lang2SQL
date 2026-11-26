@@ -1,0 +1,16 @@
+WITH counts AS (
+    SELECT
+        COUNT(*) FILTER (WHERE p.publisher_name = 'DC Comics') AS dc_count,
+        COUNT(*) FILTER (WHERE p.publisher_name = 'Marvel Comics') AS marvel_count
+    FROM main.superhero AS s
+    JOIN main.publisher AS p ON p.id = s.publisher_id
+)
+SELECT
+    CASE
+        WHEN dc_count > marvel_count THEN 'DC Comics'
+        WHEN marvel_count > dc_count THEN 'Marvel Comics'
+        ELSE 'Tie'
+    END AS publisher,
+    ABS(dc_count - marvel_count) AS difference
+FROM counts
+LIMIT 1000

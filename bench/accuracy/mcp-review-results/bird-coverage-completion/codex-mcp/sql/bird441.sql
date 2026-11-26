@@ -1,0 +1,28 @@
+WITH RECURSIVE diagnoses (ID, diagnosis, remaining) AS (
+    SELECT p.ID, '',
+           replace(replace(p.Diagnosis, char(29), ','), '  ', ',') || ','
+    FROM main.Patient AS p
+
+    UNION ALL
+
+    SELECT ID,
+           trim(substr(remaining, 1, instr(remaining, ',') - 1)),
+           substr(remaining, instr(remaining, ',') + 1)
+    FROM diagnoses
+    WHERE remaining <> ''
+)
+SELECT p.ID, p.SEX
+FROM main.Patient AS p
+WHERE p.ID IN (
+    SELECT d.ID
+    FROM diagnoses AS d
+    WHERE d.diagnosis IN ('SLE', 'SLE (diffuse LE)', 'systemic lupus erythematosus')
+)
+AND EXISTS (
+    SELECT 1
+    FROM main.Laboratory AS l
+    WHERE l.ID = p.ID
+      AND l."T-BIL" >= 1.2
+)
+ORDER BY p.SEX, p.ID
+LIMIT 1000

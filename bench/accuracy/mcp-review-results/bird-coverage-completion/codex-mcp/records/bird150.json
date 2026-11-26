@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird150",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "d2f76e270a429f8082a2c76e8a3d9f80bebfaeb497a3250cdda184fb94371025",
+  "events_sha256": "9af856d47c61032de63c0076b955599e5a39820e125f3dd31e4529db4b23eeb9",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 146376,
+      "cached_input_tokens": 128000,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1053,
+      "reasoning_output_tokens": 30
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Ak7RMoUDhVOjLLywSUZby07Qc1bSyXMdC1dG47DFM9g\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "yearmonth"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "yearmonth (table)\n- CustomerID: INTEGER NOT NULL\n- Date: TEXT NOT NULL\n- Consumption: REAL\nPRIMARY KEY (Date, CustomerID)\nFOREIGN KEY (CustomerID) REFERENCES customers (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "customers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "customers (table)\n- CustomerID: INTEGER NOT NULL\n- Segment: TEXT\n- Currency: TEXT\nPRIMARY KEY (CustomerID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Ak7RMoUDhVOjLLywSUZby07Qc1bSyXMdC1dG47DFM9g",
+        "sql": "SELECT c.Segment, SUBSTR(y.Date, 1, 4) AS year,\n       MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS monthly_rows, COUNT(y.Consumption) AS recorded_values,\n       SUM(y.Consumption) AS total_consumption\nFROM main.yearmonth AS y\nJOIN main.customers AS c ON c.CustomerID = y.CustomerID\nWHERE c.Currency = 'EUR' AND c.Segment IN ('SME', 'LAM', 'KAM')\nGROUP BY c.Segment, SUBSTR(y.Date, 1, 4)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; year=str; first_month=str; last_month=str; monthly_rows=int; recorded_values=int; total_consumption=float\nSegment | year | first_month | last_month | monthly_rows | recorded_values | total_consumption\n--- | --- | --- | --- | --- | --- | ---\nKAM | 2011 | 201112 | 201112 | 2 | 2 | 82.08\nKAM | 2012 | 201201 | 201209 | 462 | 462 | 646663.61\nKAM | 2013 | 201301 | 201311 | 550 | 550 | 4224041.47\nLAM | 2011 | 201112 | 201112 | 1 | 1 | 575.79\nLAM | 2012 | 201201 | 201209 | 2066 | 2066 | 676212.68\nLAM | 2013 | 201301 | 201311 | 2287 | 2287 | 4326606.13\nSME | 2011 | 201112 | 201112 | 2 | 2 | 66.96000000000001\nSME | 2012 | 201201 | 201209 | 7621 | 7621 | 869537.52\nSME | 2013 | 201301 | 201311 | 10835 | 10835 | 7258151.96\nSQL: SELECT c.Segment, SUBSTR(y.Date, 1, 4) AS year,\n       MIN(y.Date) AS first_month, MAX(y.Date) AS last_month,\n       COUNT(*) AS monthly_rows, COUNT(y.Consumption) AS recorded_values,\n       SUM(y.Consumption) AS total_consumption\nFROM main.yearmonth AS y\nJOIN main.customers AS c ON c.CustomerID = y.CustomerID\nWHERE c.Currency = 'EUR' AND c.Segment IN ('SME', 'LAM', 'KAM')\nGROUP BY c.Segment, SUBSTR(y.Date, 1, 4)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"7JwVWF4vRFFuvEIu-Babk428HpxM6yslK3nLPPu-i3w\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "7JwVWF4vRFFuvEIu-Babk428HpxM6yslK3nLPPu-i3w",
+        "expected_columns": [
+          "Segment",
+          "increase_percentage"
+        ],
+        "sql": "WITH segment_totals AS (\n    SELECT c.Segment,\n           SUM(CASE WHEN y.Date < '201301' THEN y.Consumption END) AS total_2012,\n           SUM(CASE WHEN y.Date >= '201301' THEN y.Consumption END) AS total_2013\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'EUR'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date >= '201201'\n      AND y.Date < '201401'\n    GROUP BY c.Segment\n),\nsegment_growth AS (\n    SELECT Segment,\n           100.0 * (total_2013 - total_2012) / NULLIF(total_2012, 0) AS growth_pct\n    FROM segment_totals\n),\nextremes AS (\n    SELECT Segment, growth_pct,\n           MAX(growth_pct) OVER () AS highest_pct,\n           MIN(growth_pct) OVER () AS lowest_pct\n    FROM segment_growth\n)\nSELECT Segment, ROUND(growth_pct, 2) AS increase_percentage\nFROM extremes\nWHERE growth_pct = highest_pct OR growth_pct = lowest_pct\nORDER BY growth_pct DESC, Segment\nLIMIT 3"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Segment=str; increase_percentage=float\nSegment | increase_percentage\n--- | ---\nSME | 734.71\nLAM | 539.83\nSQL: WITH segment_totals AS (\n    SELECT c.Segment,\n           SUM(CASE WHEN y.Date < '201301' THEN y.Consumption END) AS total_2012,\n           SUM(CASE WHEN y.Date >= '201301' THEN y.Consumption END) AS total_2013\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'EUR'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date >= '201201'\n      AND y.Date < '201401'\n    GROUP BY c.Segment\n),\nsegment_growth AS (\n    SELECT Segment,\n           100.0 * (total_2013 - total_2012) / NULLIF(total_2012, 0) AS growth_pct\n    FROM segment_totals\n),\nextremes AS (\n    SELECT Segment, growth_pct,\n           MAX(growth_pct) OVER () AS highest_pct,\n           MIN(growth_pct) OVER () AS lowest_pct\n    FROM segment_growth\n)\nSELECT Segment, ROUND(growth_pct, 2) AS increase_percentage\nFROM extremes\nWHERE growth_pct = highest_pct OR growth_pct = lowest_pct\nORDER BY growth_pct DESC, Segment\nLIMIT 3"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH segment_totals AS (\n    SELECT c.Segment,\n           SUM(CASE WHEN y.Date < '201301' THEN y.Consumption END) AS total_2012,\n           SUM(CASE WHEN y.Date >= '201301' THEN y.Consumption END) AS total_2013\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'EUR'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date >= '201201'\n      AND y.Date < '201401'\n    GROUP BY c.Segment\n),\nsegment_growth AS (\n    SELECT Segment,\n           100.0 * (total_2013 - total_2012) / NULLIF(total_2012, 0) AS growth_pct\n    FROM segment_totals\n),\nextremes AS (\n    SELECT Segment, growth_pct,\n           MAX(growth_pct) OVER () AS highest_pct,\n           MIN(growth_pct) OVER () AS lowest_pct\n    FROM segment_growth\n)\nSELECT Segment, ROUND(growth_pct, 2) AS increase_percentage\nFROM extremes\nWHERE growth_pct = highest_pct OR growth_pct = lowest_pct\nORDER BY growth_pct DESC, Segment\nLIMIT 3\n```",
+  "event_parse_errors": [],
+  "rows": 2,
+  "sql": "WITH segment_totals AS (\n    SELECT c.Segment,\n           SUM(CASE WHEN y.Date < '201301' THEN y.Consumption END) AS total_2012,\n           SUM(CASE WHEN y.Date >= '201301' THEN y.Consumption END) AS total_2013\n    FROM main.customers AS c\n    JOIN main.yearmonth AS y ON y.CustomerID = c.CustomerID\n    WHERE c.Currency = 'EUR'\n      AND c.Segment IN ('SME', 'LAM', 'KAM')\n      AND y.Date >= '201201'\n      AND y.Date < '201401'\n    GROUP BY c.Segment\n),\nsegment_growth AS (\n    SELECT Segment,\n           100.0 * (total_2013 - total_2012) / NULLIF(total_2012, 0) AS growth_pct\n    FROM segment_totals\n),\nextremes AS (\n    SELECT Segment, growth_pct,\n           MAX(growth_pct) OVER () AS highest_pct,\n           MIN(growth_pct) OVER () AS lowest_pct\n    FROM segment_growth\n)\nSELECT Segment, ROUND(growth_pct, 2) AS increase_percentage\nFROM extremes\nWHERE growth_pct = highest_pct OR growth_pct = lowest_pct\nORDER BY growth_pct DESC, Segment\nLIMIT 3",
+  "seconds": 38.544711209018715
+}

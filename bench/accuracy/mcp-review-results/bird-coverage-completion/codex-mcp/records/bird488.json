@@ -1,0 +1,110 @@
+{
+  "instance_id": "bird488",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "72e2229a9227b86d8b40a00fef0e89897de25ed7bbd4c644c2982614e7121750",
+  "events_sha256": "c05d80cd3719c18ad17beabfd52cbb0148f972f45f0e918d310af9628aacd93e",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 98553,
+      "cached_input_tokens": 84736,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 463,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "connected"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "connected (table)\n- atom_id: TEXT NOT NULL\n- atom_id2: TEXT NOT NULL\n- bond_id: TEXT\nPRIMARY KEY (atom_id, atom_id2)\nFOREIGN KEY (bond_id) REFERENCES bond (bond_id)\nFOREIGN KEY (atom_id2) REFERENCES atom (atom_id)\nFOREIGN KEY (atom_id) REFERENCES atom (atom_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"D7NiATSjT5dcblNceyhnvX2a8yqvmRr6zmG_OjfpwQM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "D7NiATSjT5dcblNceyhnvX2a8yqvmRr6zmG_OjfpwQM",
+        "expected_columns": [
+          "atom_count"
+        ],
+        "sql": "WITH chlorine_neighbors AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id\n    WHERE a.element = 'cl'\n    UNION\n    SELECT c.atom_id AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id2\n    WHERE a.element = 'cl'\n)\nSELECT COUNT(*) AS atom_count\nFROM chlorine_neighbors;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): atom_count=int\natom_count\n---\n271\nSQL: WITH chlorine_neighbors AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id\n    WHERE a.element = 'cl'\n    UNION\n    SELECT c.atom_id AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id2\n    WHERE a.element = 'cl'\n)\nSELECT COUNT(*) AS atom_count\nFROM chlorine_neighbors\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH chlorine_neighbors AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id\n    WHERE a.element = 'cl'\n    UNION\n    SELECT c.atom_id AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id2\n    WHERE a.element = 'cl'\n)\nSELECT COUNT(*) AS atom_count\nFROM chlorine_neighbors\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH chlorine_neighbors AS (\n    SELECT c.atom_id2 AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id\n    WHERE a.element = 'cl'\n    UNION\n    SELECT c.atom_id AS atom_id\n    FROM main.connected AS c\n    JOIN main.atom AS a ON a.atom_id = c.atom_id2\n    WHERE a.element = 'cl'\n)\nSELECT COUNT(*) AS atom_count\nFROM chlorine_neighbors\nLIMIT 1000",
+  "seconds": 22.37433487502858
+}

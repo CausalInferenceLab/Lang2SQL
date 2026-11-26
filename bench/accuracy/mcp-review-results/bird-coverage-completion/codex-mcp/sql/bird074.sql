@@ -1,0 +1,5 @@
+SELECT COUNT(DISTINCT name) AS card_count
+FROM main.cards
+WHERE isPromo = 1
+  AND instr(',' || promoTypes || ',', ',release,') > 0
+LIMIT 1

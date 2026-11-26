@@ -1,0 +1,8 @@
+SELECT p.SEX, COUNT(*) AS patient_count
+FROM Patient AS p
+LEFT JOIN Examination AS e ON e.ID = p.ID
+WHERE e.ID IS NULL
+  AND p.SEX IN ('F', 'M')
+GROUP BY p.SEX
+ORDER BY p.SEX
+LIMIT 1000

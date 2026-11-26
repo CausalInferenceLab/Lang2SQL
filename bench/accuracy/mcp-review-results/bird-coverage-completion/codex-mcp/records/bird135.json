@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird135",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1ea8a3cb2a46d9d3be594d02e1bf7dda725f0f7dfa896f2020be6783aff405db",
+  "events_sha256": "caf15b1cec712d6312779b3fc0be8e9a4e8032ef93eafec6e0705767434cbf0b",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 162922,
+      "cached_input_tokens": 150400,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 645,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"kgwqnfZ4n6jl2dRroMUwXK4VOklLiDrPHfT8ayGlOYw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "postLinks"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "postLinks (table)\n- Id: INTEGER NOT NULL\n- CreationDate: DATETIME\n- PostId: INTEGER\n- RelatedPostId: INTEGER\n- LinkTypeId: INTEGER\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (RelatedPostId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "kgwqnfZ4n6jl2dRroMUwXK4VOklLiDrPHfT8ayGlOYw",
+        "sql": "SELECT target.Id, target.PostTypeId, link.LinkTypeId, source.Id AS source_id, source.PostTypeId AS source_type, source.Tags, source.Score\nFROM posts AS target\nLEFT JOIN postLinks AS link ON link.RelatedPostId = target.Id\nLEFT JOIN posts AS source ON source.Id = link.PostId\nWHERE target.Title = 'A Probability distribution value exceeding 1 is OK?'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "57 row(s):\nResult coverage: fetched_rows=57; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Id=int; PostTypeId=int; LinkTypeId=int; source_id=int; source_type=int; Tags=str; Score=int\nId | PostTypeId | LinkTypeId | source_id | source_type | Tags | Score\n--- | --- | --- | --- | --- | --- | ---\n4220 | 1 | 1 | 4298 | 1 | <bayesian><kde> | 5\n4220 | 1 | 1 | 5819 | 1 | <distributions><probability><estimation><python> | 2\n4220 | 1 | 1 | 8470 | 1 | <probability> | 2\n4220 | 1 | 1 | 9427 | 1 | <normal-distribution><matlab> | 1\n4220 | 1 | 3 | 9427 | 1 | <normal-distribution><matlab> | 1\n4220 | 1 | 1 | 13275 | 1 | <bayesian><conditional-probability> | 2\n4220 | 1 | 1 | 17000 | 1 | <random-variable><mathematical-statistics> | 0\n4220 | 1 | 1 | 17258 | 1 | <r><data-visualization><histogram> | 3\n4220 | 1 | 1 | 22607 | 1 | <normalization><pdf><logarithm><lognormal> | 1\n4220 | 1 | 1 | 25170 | 1 | <density-function> | 1\n4220 | 1 | 1 | 28257 | 1 | <data-visualization><matlab><gaussian-mixture> | 1\n4220 | 1 | 1 | 29890 | 1 | <probability><normal-distribution> | 0\n4220 | 1 | 1 | 33955 | 1 | <r><distributions><probability><pdf><dirichlet-distribution> | 1\n4220 | 1 | 3 | 33955 | 1 | <r><distributions><probability><pdf><dirichlet-distribution> | 1\n4220 | 1 | 1 | 35364 | 1 | <classification><outliers><naive-bayes> | 1\n4220 | 1 | 3 | 35364 | 1 | <classification><outliers><naive-bayes> | 1\n4220 | 1 | 1 | 36111 | 1 | <dirichlet-distribution> | 2\n4220 | 1 | 1 | 39224 | 1 | <distributions> | 1\n4220 | 1 | 1 | 47714 | 1 | <interpretation><pdf> | 2\n4220 | 1 | 1 | 47771 | 1 | <distributions><beta-distribution> | 85\n4220 | 1 | 1 | 48109 | 1 | <r><distributions><kernel><density> | 2\n4220 | 1 | 3 | 48109 | 1 | <r><distributions><kernel><density> | 2\n4220 | 1 | 1 | 55591 | 1 | <kernel><density> | 1\n4220 | 1 | 1 | 58498 | 1 | <pdf> | 3\n4220 | 1 | 1 | 60702 | 1 | <probability><normal-distribution><poisson> | 3\n4220 | 1 | 3 | 62255 | 1 | <regression><machine-learning><matlab><gaussian-process> | 0\n4220 | 1 | 1 | 62284 | 1 | <r><density> | 0\n4220 | 1 | 3 | 62284 | 1 | <r><density> | 0\n4220 | 1 | 3 | 65041 | 1 | <r> | 3\n4220 | 1 | 1 | 66099 | 1 | <r><distributions><excel><histogram> | 2\n4220 | 1 | 1 | 67600 | 1 | <probability><self-study><exponential><likelihood><poisson-process> | 3\n4220 | 1 | 1 | 68113 | 1 | <r><generalized-linear-model><exponential> | 2\n4220 | 1 | 3 | 68299 | 1 | <pdf> | 2\n4220 | 1 | 1 | 68525 | 1 | <probability> | 3\n4220 | 1 | 1 | 69866 | 1 | <distributions><pdf><joint-distribution> | 2\n4220 | 1 | 3 | 69866 | 1 | <distributions><pdf><joint-distribution> | 2\n4220 | 1 | 3 | 70288 | 1 | <kernel><pdf><density> | 0\n4220 | 1 | 1 | 70747 | 1 | <normal-distribution> | 0\n4220 | 1 | 3 | 71806 | 1 | <r><kernel><density> | 1\n4220 | 1 | 1 | 74586 | 1 | <pdf><posterior><bayes> | 1\n4220 | 1 | 1 | 74998 | 1 | <probability><random-variable><pdf><cdf> | 1\n4220 | 1 | 1 | 77112 | 1 | <r><data-visualization><histogram><kernel-density-estimate> | 1\n4220 | 1 | 1 | 78711 | 1 | <r><pdf><cdf> | 1\n4220 | 1 | 1 | 84197 | 1 | <distributions><self-study><continuous-data> | 0\n4220 | 1 | 1 | 86487 | 1 | <distributions><pdf><intuition> | 5\n4220 | 1 | 3 | 93773 | 1 | <probability><copula> | 0\n4220 | 1 | 1 | 99299 | 1 | <probability><bayesian><python><pymc><probabilistic-programming> | 3\n4220 | 1 | 3 | 99299 | 1 | <probability><bayesian><python><pymc><probabilistic-programming> | 3\n4220 | 1 | 1 | 99935 | 1 | <r><pdf> | 4\n4220 | 1 | 1 | 101208 | 1 | <distributions><maximum-likelihood> | 3\nSQL: SELECT target.Id, target.PostTypeId, link.LinkTypeId, source.Id AS source_id, source.PostTypeId AS source_type, source.Tags, source.Score\nFROM posts AS target\nLEFT JOIN postLinks AS link ON link.RelatedPostId = target.Id\nLEFT JOIN posts AS source ON source.Id = link.PostId\nWHERE target.Title = 'A Probability distribution value exceeding 1 is OK?'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Nf-fvdqeojg-qYT3VC5tSM7mkuJjGLvwE-s3qr3JpIA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Nf-fvdqeojg-qYT3VC5tSM7mkuJjGLvwE-s3qr3JpIA",
+        "expected_columns": [
+          "total_score"
+        ],
+        "sql": "SELECT SUM(q.Score) AS total_score\nFROM posts AS q\nWHERE q.PostTypeId = 1\n  AND instr(q.Tags, '<r>') > 0\n  AND q.Id IN (\n      SELECT link.PostId\n      FROM postLinks AS link\n      JOIN posts AS target ON target.Id = link.RelatedPostId\n      WHERE target.PostTypeId = 1\n        AND target.Title = 'A Probability distribution value exceeding 1 is OK?'\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): total_score=int\ntotal_score\n---\n22\nSQL: SELECT SUM(q.Score) AS total_score\nFROM posts AS q\nWHERE q.PostTypeId = 1\n  AND instr(q.Tags, '<r>') > 0\n  AND q.Id IN (\n      SELECT link.PostId\n      FROM postLinks AS link\n      JOIN posts AS target ON target.Id = link.RelatedPostId\n      WHERE target.PostTypeId = 1\n        AND target.Title = 'A Probability distribution value exceeding 1 is OK?'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT SUM(q.Score) AS total_score\nFROM posts AS q\nWHERE q.PostTypeId = 1\n  AND instr(q.Tags, '<r>') > 0\n  AND q.Id IN (\n      SELECT link.PostId\n      FROM postLinks AS link\n      JOIN posts AS target ON target.Id = link.RelatedPostId\n      WHERE target.PostTypeId = 1\n        AND target.Title = 'A Probability distribution value exceeding 1 is OK?'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT SUM(q.Score) AS total_score\nFROM posts AS q\nWHERE q.PostTypeId = 1\n  AND instr(q.Tags, '<r>') > 0\n  AND q.Id IN (\n      SELECT link.PostId\n      FROM postLinks AS link\n      JOIN posts AS target ON target.Id = link.RelatedPostId\n      WHERE target.PostTypeId = 1\n        AND target.Title = 'A Probability distribution value exceeding 1 is OK?'\n  )\nLIMIT 1",
+  "seconds": 29.730065208044834
+}

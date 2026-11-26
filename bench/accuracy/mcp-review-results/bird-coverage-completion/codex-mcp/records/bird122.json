@@ -1,0 +1,111 @@
+{
+  "instance_id": "bird122",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "3fae14b91278643646ee1b4fcd53e43c85427027f729badeb59db76fa69cba88",
+  "events_sha256": "5f58ab0a55f5c1e5cec0eb23d683cd19d7209358107500c95a45a5dc3a0a2322",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 119540,
+      "cached_input_tokens": 107776,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 490,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"McNk9WlIgfaCStWZE3kkbwE85xVySXMpPTjMyT-5Q0Q\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "McNk9WlIgfaCStWZE3kkbwE85xVySXMpPTjMyT-5Q0Q",
+        "sql": "WITH posts_2010 AS (\n    SELECT p.Id, p.OwnerUserId, p.FavoriteCount\n    FROM main.posts AS p\n    WHERE p.CreaionDate >= '2010-01-01'\n      AND p.CreaionDate < '2011-01-01'\n)\nSELECT p.Id AS PostId, u.DisplayName\nFROM posts_2010 AS p\nLEFT JOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE p.FavoriteCount = (SELECT MAX(FavoriteCount) FROM posts_2010);",
+        "expected_columns": [
+          "PostId",
+          "DisplayName"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): PostId=int; DisplayName=str\nPostId | DisplayName\n--- | ---\n1595 | Fabian Fagerholm\nSQL: WITH posts_2010 AS (\n    SELECT p.Id, p.OwnerUserId, p.FavoriteCount\n    FROM main.posts AS p\n    WHERE p.CreaionDate >= '2010-01-01'\n      AND p.CreaionDate < '2011-01-01'\n)\nSELECT p.Id AS PostId, u.DisplayName\nFROM posts_2010 AS p\nLEFT JOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE p.FavoriteCount = (SELECT MAX(FavoriteCount) FROM posts_2010)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH posts_2010 AS (\n    SELECT p.Id, p.OwnerUserId, p.FavoriteCount\n    FROM main.posts AS p\n    WHERE p.CreaionDate >= '2010-01-01'\n      AND p.CreaionDate < '2011-01-01'\n)\nSELECT p.Id AS PostId, u.DisplayName\nFROM posts_2010 AS p\nLEFT JOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE p.FavoriteCount = (SELECT MAX(FavoriteCount) FROM posts_2010)\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH posts_2010 AS (\n    SELECT p.Id, p.OwnerUserId, p.FavoriteCount\n    FROM main.posts AS p\n    WHERE p.CreaionDate >= '2010-01-01'\n      AND p.CreaionDate < '2011-01-01'\n)\nSELECT p.Id AS PostId, u.DisplayName\nFROM posts_2010 AS p\nLEFT JOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE p.FavoriteCount = (SELECT MAX(FavoriteCount) FROM posts_2010)\nLIMIT 1000",
+  "seconds": 42.45508887490723
+}

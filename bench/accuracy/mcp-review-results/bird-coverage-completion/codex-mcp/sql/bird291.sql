@@ -1,0 +1,11 @@
+SELECT d.forename, d.surname
+FROM drivers AS d
+JOIN results AS r ON r.driverId = d.driverId
+WHERE d.dob >= '1980-01-01'
+  AND d.dob < '1990-01-01'
+  AND r.fastestLapSpeed IS NOT NULL
+GROUP BY d.driverId, d.forename, d.surname, d.dob
+ORDER BY MAX(CAST(r.fastestLapSpeed AS REAL)) DESC,
+         d.dob ASC,
+         d.surname ASC
+LIMIT 3

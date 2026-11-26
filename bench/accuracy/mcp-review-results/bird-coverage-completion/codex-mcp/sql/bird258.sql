@@ -1,0 +1,10 @@
+SELECT d.forename, COUNT(DISTINCT d.driverId) AS runner_up_count
+FROM races AS r
+JOIN results AS res ON res.raceId = r.raceId
+JOIN drivers AS d ON d.driverId = res.driverId
+WHERE r.name = 'Italian Grand Prix'
+  AND res.position = 2
+GROUP BY d.forename
+HAVING COUNT(DISTINCT d.driverId) >= 2
+ORDER BY runner_up_count DESC, d.forename ASC
+LIMIT 1000

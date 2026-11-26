@@ -1,0 +1,21 @@
+WITH care_settings (admission, care_setting) AS (
+    VALUES ('+', 'admitted to the hospital'),
+           ('-', 'followed at the outpatient clinic')
+),
+elevated_patients AS (
+    SELECT DISTINCT l.ID
+    FROM main.Laboratory AS l
+    WHERE CAST(l.RNP AS REAL) >= 4
+)
+SELECT s.care_setting,
+       COUNT(e.ID) AS patients_with_elevated_rnp,
+       COUNT(p.ID) - COUNT(e.ID) AS patients_without_elevated_rnp
+FROM care_settings AS s
+LEFT JOIN main.Patient AS p
+    ON p.Admission = s.admission
+   AND p.SEX = 'F'
+   AND date(p.Birthday) <= date('2026-10-09', '-50 years')
+LEFT JOIN elevated_patients AS e ON e.ID = p.ID
+GROUP BY s.care_setting
+ORDER BY s.care_setting
+LIMIT 2

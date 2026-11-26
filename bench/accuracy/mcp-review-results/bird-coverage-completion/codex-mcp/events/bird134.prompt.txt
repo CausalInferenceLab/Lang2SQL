@@ -1,0 +1,122 @@
+You must use lang2sql MCP to inspect the schema and execute your final answer query, not merely write SQL. Call resolve_business_terms before run_sql; use terms=[] only for literal diagnostics or fully specified request criteria. Inspect the returned result and return the exact successfully executed final SQL in one fenced sql block. A result table alone or SQL that you have not executed does not complete this task. Do not use shell, files, web, or other servers. Do not invent missing business definitions; if essential meaning remains unresolved, ask for clarification instead of inventing SQL or placeholders.
+I'd like to gauge the standing of the community members behind the R posts on one day. Could you tell me the combined reputation of the users who own the posts tagged R that were last active on 2014-08-27? I just need that one number, covering the whole calendar day 2014-08-27.
+Provided evidence:
+R: the R language for statistical computing.
+Official schema metadata (examples are not exhaustive):
+CREATE TABLE `badges` (
+    `Id` INTEGER, -- the badge id; example: [1, 2]
+    `UserId` INTEGER, -- the unique id of the user; example: [5, 6]
+    `Name` TEXT, -- the badge name the user obtained; example: ['Teacher']
+    `Date` DATETIME, -- the date that the user obtained the badge; example: ['2010-07-19 19:39:07.0']
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`UserId`) REFERENCES `users` (`Id`)
+);
+
+CREATE TABLE `comments` (
+    `Id` INTEGER, -- the comment Id; example: [1, 2]
+    `PostId` INTEGER, -- the unique id of the post; example: [3, 5]
+    `Score` INTEGER, -- rating score; example: [5, 0]
+    `Text` TEXT, -- the detailed content of the comment; example: ['Could be a poster child fo argumentative and subjective. At the least, need to d', "Yes, R is nice- but WHY is it 'valuable'."]
+    `CreationDate` DATETIME, -- the creation date of the comment; example: ['2010-07-19 19:15:52.0', '2010-07-19 19:16:14.0']
+    `UserId` INTEGER, -- the id of the user who post the comment; example: [13, 37]
+    `UserDisplayName` TEXT, -- user's display name; example: []
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`UserId`) REFERENCES `users` (`Id`),
+    FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`)
+);
+
+CREATE TABLE `postHistory` (
+    `Id` INTEGER, -- the post history id; example: [1, 2]
+    `PostHistoryTypeId` INTEGER, -- the id of the post history type; example: [2, 1]
+    `PostId` INTEGER, -- the unique id of the post; example: [1, 2]
+    `RevisionGUID` TEXT, -- the revision globally unique id of the post; example: ['e58bf7fd-e60f-4c58-a6e4-dfc91cf98a69', '18bf9150-f1cb-432d-b7b7-26d2f8e33581']
+    `CreationDate` DATETIME, -- the creation date of the post; example: ['2010-07-19 19:12:12.0', '2010-07-19 19:12:57.0']
+    `UserId` INTEGER, -- the user who post the post; example: [8, 24]
+    `Text` TEXT, -- the detailed content of the post; example: ['How should I elicit prior distributions from experts when fitting a Bayesian mod', 'Eliciting priors from experts']
+    `Comment` TEXT, -- comments of the post; example: ['']
+    `UserDisplayName` TEXT, -- user's display name; example: ['']
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`UserId`) REFERENCES `users` (`Id`),
+    FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`)
+);
+
+CREATE TABLE `postLinks` (
+    `Id` INTEGER, -- the post link id; example: [108, 145]
+    `CreationDate` DATETIME, -- the creation date of the post link; example: ['2010-07-21 14:47:33.0', '2010-07-23 16:30:41.0']
+    `PostId` INTEGER, -- the post id; example: [395, 548]
+    `RelatedPostId` INTEGER, -- the id of the related post; example: [173, 539]
+    `LinkTypeId` INTEGER, -- the id of the link type; example: [1]
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`RelatedPostId`) REFERENCES `posts` (`Id`),
+    FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`)
+);
+
+CREATE TABLE `posts` (
+    `Id` INTEGER, -- the post id; example: [1, 2]
+    `PostTypeId` INTEGER, -- the id of the post type; example: [1, 2]
+    `AcceptedAnswerId` INTEGER, -- the accepted answer id of the post; example: [15, 59]
+    `CreaionDate` DATETIME, -- the creation date of the post; example: ['2010-07-19 19:12:12.0', '2010-07-19 19:12:57.0']
+    `Score` INTEGER, -- the score of the post; example: [23, 22]
+    `ViewCount` INTEGER, -- the view count of the post; example: [1278, 8198]
+    `Body` TEXT, -- the body of the post; example: ['<p>How should I elicit prior distributions from experts when fitting a Bayesian ', '<p>In many different statistical methods there is an "assumption of normality". ']
+    `OwnerUserId` INTEGER, -- the id of the owner user; example: [8, 24]
+    `LasActivityDate` DATETIME, -- the last activity date; example: ['2010-09-15 21:08:26.0', '2012-11-12 09:21:54.0']
+    `Title` TEXT, -- the title of the post; example: ['Eliciting priors from experts', 'What is normality?']
+    `Tags` TEXT, -- the tag of the post; example: ['<bayesian><prior><elicitation>', '<distributions><normality>']
+    `AnswerCount` INTEGER, -- the total number of answers of the post; example: [5, 7]
+    `CommentCount` INTEGER, -- the total number of comments of the post; example: [1, 4]
+    `FavoriteCount` INTEGER, -- the total number of favorites of the post; example: [14, 8]
+    `LastEditorUserId` INTEGER, -- the id of the last editor; example: [88, 183]
+    `LastEditDate` DATETIME, -- the last edit date; example: ['2010-08-07 17:56:44.0', '2011-02-12 05:50:03.0']
+    `CommunityOwnedDate` DATETIME, -- the community owned date; example: ['2010-07-19 19:13:28.0', '2010-07-19 19:14:43.0']
+    `ParentId` INTEGER, -- the id of the parent post; example: [3]
+    `ClosedDate` DATETIME, -- the closed date of the post; example: []
+    `OwnerDisplayName` TEXT, -- the display name of the post owner; example: []
+    `LastEditorDisplayName` TEXT, -- the display name of the last editor; example: []
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`ParentId`) REFERENCES `posts` (`Id`),
+    FOREIGN KEY (`OwnerUserId`) REFERENCES `users` (`Id`),
+    FOREIGN KEY (`LastEditorUserId`) REFERENCES `users` (`Id`)
+);
+
+CREATE TABLE `tags` (
+    `Id` INTEGER, -- the tag id; example: [1, 2]
+    `TagName` TEXT, -- the name of the tag; example: ['bayesian', 'prior']
+    `Count` INTEGER, -- the count of posts that contain this tag; example: [1342, 168]
+    `ExcerptPostId` INTEGER, -- the excerpt post id of the tag; example: [20258, 62158]
+    `WikiPostId` INTEGER, -- the wiki post id of the tag; example: [20257, 62157]
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`ExcerptPostId`) REFERENCES `posts` (`Id`)
+);
+
+CREATE TABLE `users` (
+    `Id` INTEGER, -- the user id; example: [-1, 2]
+    `Reputation` INTEGER, -- the user's reputation; example: [1, 101]
+    `CreationDate` DATETIME, -- the creation date of the user account; example: ['2010-07-19 06:55:26.0', '2010-07-19 14:01:36.0']
+    `DisplayName` TEXT, -- the user's display name; example: ['Community', 'Geoff Dalgas']
+    `LastAccessDate` DATETIME, -- the last access date of the user account; example: ['2010-07-19 06:55:26.0', '2013-11-12 22:07:23.0']
+    `WebsiteUrl` TEXT, -- the website url of the user account; example: ['http://meta.stackexchange.com/', 'http://stackoverflow.com']
+    `Location` TEXT, -- user's location; example: ['on the server farm', 'Corvallis, OR']
+    `AboutMe` TEXT, -- the self introduction of the user; example: ["<p>Hi, I'm not really a person.</p> <p>I'm a background process that helps keep ", '<p>Developer on the StackOverflow team. Find me on</p> <p><a href="http://www.tw']
+    `Views` INTEGER, -- the number of views; example: [0, 25]
+    `UpVotes` INTEGER, -- the number of upvotes; example: [5007, 3]
+    `DownVotes` INTEGER, -- the number of downvotes; example: [1920, 0]
+    `AccountId` INTEGER, -- the unique id of the account; example: [-1, 2]
+    `Age` INTEGER, -- user's age; example: [37, 35]
+    `ProfileImageUrl` TEXT, -- the profile image url; example: ['http://i.stack.imgur.com/d1oHX.jpg']
+    PRIMARY KEY (`Id`)
+);
+
+CREATE TABLE `votes` (
+    `Id` INTEGER, -- the vote id; example: [1, 2]
+    `PostId` INTEGER, -- the id of the post that is voted; example: [3, 2]
+    `VoteTypeId` INTEGER, -- the id of the vote type; example: [2]
+    `CreationDate` DATE, -- the creation date of the vote; example: ['2010-07-19']
+    `UserId` INTEGER, -- the id of the voter; example: []
+    `BountyAmount` INTEGER, -- the amount of bounty; example: []
+    PRIMARY KEY (`Id`),
+    FOREIGN KEY (`UserId`) REFERENCES `users` (`Id`),
+    FOREIGN KEY (`PostId`) REFERENCES `posts` (`Id`)
+);
+
+Return your final answer as exactly one fenced ```sql block containing the single read-only SQLite SELECT/WITH query that answers the question. Do not include exploratory SQL in the final answer. Use the supplied documentation; no user simulator is available.

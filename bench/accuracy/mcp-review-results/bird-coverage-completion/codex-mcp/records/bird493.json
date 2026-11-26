@@ -1,0 +1,130 @@
+{
+  "instance_id": "bird493",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "8292ab5167ff437e126ba0d6088d09d795e18933cd98347ff23904b9ad1a2872",
+  "events_sha256": "33d1a5400c58de3c7116e09b27121a37b8ae68a4e030b195c20e770bdb41ea72",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 110128,
+      "cached_input_tokens": 100096,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 469,
+      "reasoning_output_tokens": 13
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"HX2W7A2PFD70SjOtpbRzg9x-uny4A0bhHA5S5TrBCEw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "bond"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "bond (table)\n- bond_id: TEXT NOT NULL\n- molecule_id: TEXT\n- bond_type: TEXT\nPRIMARY KEY (bond_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "connected"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "connected (table)\n- atom_id: TEXT NOT NULL\n- atom_id2: TEXT NOT NULL\n- bond_id: TEXT\nPRIMARY KEY (atom_id, atom_id2)\nFOREIGN KEY (bond_id) REFERENCES bond (bond_id)\nFOREIGN KEY (atom_id2) REFERENCES atom (atom_id)\nFOREIGN KEY (atom_id) REFERENCES atom (atom_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "atom"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "atom (table)\n- atom_id: TEXT NOT NULL\n- molecule_id: TEXT\n- element: TEXT\nPRIMARY KEY (atom_id)\nFOREIGN KEY (molecule_id) REFERENCES molecule (molecule_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "HX2W7A2PFD70SjOtpbRzg9x-uny4A0bhHA5S5TrBCEw",
+        "expected_columns": [
+          "average_bonds_per_atom"
+        ],
+        "sql": "WITH atom_bond_counts AS (\n    SELECT a.atom_id, COUNT(DISTINCT c.bond_id) AS bond_count\n    FROM main.atom AS a\n    LEFT JOIN main.connected AS c\n        ON a.atom_id IN (c.atom_id, c.atom_id2)\n    WHERE a.molecule_id = 'TR397'\n    GROUP BY a.atom_id\n)\nSELECT ROUND(AVG(bond_count), 2) AS average_bonds_per_atom\nFROM atom_bond_counts;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): average_bonds_per_atom=float\naverage_bonds_per_atom\n---\n2.02\nSQL: WITH atom_bond_counts AS (\n    SELECT a.atom_id, COUNT(DISTINCT c.bond_id) AS bond_count\n    FROM main.atom AS a\n    LEFT JOIN main.connected AS c\n        ON a.atom_id IN (c.atom_id, c.atom_id2)\n    WHERE a.molecule_id = 'TR397'\n    GROUP BY a.atom_id\n)\nSELECT ROUND(AVG(bond_count), 2) AS average_bonds_per_atom\nFROM atom_bond_counts\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH atom_bond_counts AS (\n    SELECT a.atom_id, COUNT(DISTINCT c.bond_id) AS bond_count\n    FROM main.atom AS a\n    LEFT JOIN main.connected AS c\n        ON a.atom_id IN (c.atom_id, c.atom_id2)\n    WHERE a.molecule_id = 'TR397'\n    GROUP BY a.atom_id\n)\nSELECT ROUND(AVG(bond_count), 2) AS average_bonds_per_atom\nFROM atom_bond_counts\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH atom_bond_counts AS (\n    SELECT a.atom_id, COUNT(DISTINCT c.bond_id) AS bond_count\n    FROM main.atom AS a\n    LEFT JOIN main.connected AS c\n        ON a.atom_id IN (c.atom_id, c.atom_id2)\n    WHERE a.molecule_id = 'TR397'\n    GROUP BY a.atom_id\n)\nSELECT ROUND(AVG(bond_count), 2) AS average_bonds_per_atom\nFROM atom_bond_counts\nLIMIT 1000",
+  "seconds": 23.424912124988623
+}

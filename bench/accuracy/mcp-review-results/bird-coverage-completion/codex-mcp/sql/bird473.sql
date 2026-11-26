@@ -1,0 +1,13 @@
+WITH ranked_bonds AS (
+    SELECT b.bond_type, m.label,
+           RANK() OVER (ORDER BY COUNT(*) DESC) AS frequency_rank
+    FROM main.bond AS b
+    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id
+    WHERE b.molecule_id = 'TR010'
+    GROUP BY b.bond_type, m.label
+)
+SELECT bond_type,
+       CASE label WHEN '+' THEN 'YES' WHEN '-' THEN 'NO' END AS carcinogenic
+FROM ranked_bonds
+WHERE frequency_rank = 1
+LIMIT 1000

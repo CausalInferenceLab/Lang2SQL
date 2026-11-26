@@ -1,0 +1,107 @@
+{
+  "instance_id": "local075",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-sol",
+  "status": "failed",
+  "calls": [],
+  "events_sha256": "b34d2053487e1eacecc2c51db93f19471997ae91ec9d9cc5aea20826af4df3cd",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 70865,
+      "cached_input_tokens": 59264,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 665,
+      "reasoning_output_tokens": 451
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "shopping_cart_events"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "shopping_cart_events (table)\n- visit_id: TEXT\n- cookie_id: TEXT\n- page_id: INTEGER\n- event_type: INTEGER\n- sequence_number: INTEGER\n- event_time: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "shopping_cart_page_hierarchy"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "shopping_cart_page_hierarchy (table)\n- page_id: INTEGER\n- page_name: TEXT\n- product_category: TEXT\n- product_id: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": [
+          "left in the cart without being purchased",
+          "actual purchases"
+        ]
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"left in the cart without being purchased\", \"actual purchases\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "failed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "shopping_cart_event_identifier"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "shopping_cart_event_identifier (table)\n- event_type: INTEGER\n- event_name: TEXT"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "Should I count each product added to the cart as purchased if the same visit recorded a Purchase event, and as left in the cart otherwise? The schema shows a Purchase event on the confirmation page, and Lang2SQL has no confirmed rule for attributing it to individual products.",
+  "error_type": "ValueError",
+  "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+  "seconds": 22.28215458302293
+}

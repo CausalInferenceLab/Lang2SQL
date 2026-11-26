@@ -1,0 +1,28 @@
+```sql
+WITH no_thrombosis AS (
+    SELECT e.ID
+    FROM main.Examination AS e
+    GROUP BY e.ID
+    HAVING MAX(e.Thrombosis) = 0
+)
+SELECT COUNT(*) AS patient_count
+FROM no_thrombosis AS n
+WHERE EXISTS (
+    SELECT 1
+    FROM main.Laboratory AS l
+    WHERE l.ID = n.ID AND l.SM IN ('negative', '0')
+)
+AND EXISTS (
+    SELECT 1
+    FROM main.Laboratory AS l
+    WHERE l.ID = n.ID
+      AND CAST(
+          CASE
+              WHEN l."U-PRO" LIKE '+%(%)' THEN substr(l."U-PRO", instr(l."U-PRO", '(') + 1)
+              WHEN l."U-PRO" LIKE '>=%' THEN substr(l."U-PRO", 3)
+              WHEN l."U-PRO" GLOB '[0-9]*' THEN l."U-PRO"
+          END AS REAL
+      ) >= 30
+)
+LIMIT 1
+```

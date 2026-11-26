@@ -1,0 +1,9 @@
+SELECT m.first_name, m.last_name
+FROM member AS m
+WHERE m.member_id IN (
+    SELECT a.link_to_member
+    FROM attendance AS a
+    GROUP BY a.link_to_member
+    HAVING COUNT(a.link_to_event) > 7
+)
+LIMIT 1000

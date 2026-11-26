@@ -1,0 +1,23 @@
+```sql
+WITH top_districts AS (
+    SELECT district_id, A2 AS district_name
+    FROM main.district
+    ORDER BY CAST(A4 AS INTEGER) DESC, district_id
+    LIMIT 5
+),
+district_averages AS (
+    SELECT d.district_name,
+           1.0 * COALESCE(SUM(l.amount), 0)
+               / NULLIF(COUNT(DISTINCT a.account_id), 0) AS average_amount
+    FROM top_districts AS d
+    LEFT JOIN main.account AS a ON a.district_id = d.district_id
+    LEFT JOIN main.loan AS l ON l.account_id = a.account_id
+                            AND l.status IN ('C', 'D')
+    GROUP BY d.district_id, d.district_name
+)
+SELECT district_name,
+       CAST(ROUND(average_amount) AS INTEGER) AS average_active_loan_per_account
+FROM district_averages
+ORDER BY average_amount DESC, district_name
+LIMIT 1000
+```

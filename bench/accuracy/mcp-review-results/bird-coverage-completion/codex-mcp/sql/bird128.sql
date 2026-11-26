@@ -1,0 +1,8 @@
+SELECT ROUND(AVG(u.Age), 2) AS average_age
+FROM main.users AS u
+WHERE u.Id IN (
+    SELECT c.UserId
+    FROM main.comments AS c
+    WHERE instr(c.Text, 'http://') > 0
+)
+LIMIT 1000

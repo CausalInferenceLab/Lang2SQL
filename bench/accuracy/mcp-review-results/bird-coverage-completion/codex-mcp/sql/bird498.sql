@@ -1,0 +1,13 @@
+WITH triple_bond_elements AS (
+    SELECT DISTINCT endpoint.element
+    FROM main.bond AS b
+    JOIN main.connected AS c ON c.bond_id = b.bond_id
+    JOIN main.atom AS endpoint ON endpoint.atom_id IN (c.atom_id, c.atom_id2)
+    WHERE b.bond_type = '#'
+)
+SELECT a.element, COUNT(DISTINCT a.molecule_id) AS molecule_count
+FROM main.atom AS a
+JOIN triple_bond_elements AS t ON t.element = a.element
+GROUP BY a.element
+ORDER BY molecule_count DESC, a.element ASC
+LIMIT 1000

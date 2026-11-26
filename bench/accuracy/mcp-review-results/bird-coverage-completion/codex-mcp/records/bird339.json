@@ -1,0 +1,172 @@
+{
+  "instance_id": "bird339",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "982a6bafbfdf6a2aa41c00b77fd8643b40790b1bd3e8884ee83d3d4709b0a675",
+  "events_sha256": "1f5bf711a7d4aab49559d1dcc4e999c106630f8ebe321a0a44b7749c46c3c866",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 163384,
+      "cached_input_tokens": 152064,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 608,
+      "reasoning_output_tokens": 39
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "publisher"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "publisher (table)\n- id: INTEGER NOT NULL\n- publisher_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "colour"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "colour (table)\n- id: INTEGER NOT NULL\n- colour: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"7nrVFg0FHMgEmFqx_DCXwqaASa5Tu7BWU5hpD2ef8eI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "superhero"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "superhero (table)\n- id: INTEGER NOT NULL\n- superhero_name: TEXT\n- full_name: TEXT\n- gender_id: INTEGER\n- eye_colour_id: INTEGER\n- hair_colour_id: INTEGER\n- skin_colour_id: INTEGER\n- race_id: INTEGER\n- publisher_id: INTEGER\n- alignment_id: INTEGER\n- height_cm: INTEGER\n- weight_kg: INTEGER\nPRIMARY KEY (id)\nFOREIGN KEY (alignment_id) REFERENCES alignment (id)\nFOREIGN KEY (eye_colour_id) REFERENCES colour (id)\nFOREIGN KEY (gender_id) REFERENCES gender (id)\nFOREIGN KEY (hair_colour_id) REFERENCES colour (id)\nFOREIGN KEY (publisher_id) REFERENCES publisher (id)\nFOREIGN KEY (race_id) REFERENCES race (id)\nFOREIGN KEY (skin_colour_id) REFERENCES colour (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "7nrVFg0FHMgEmFqx_DCXwqaASa5Tu7BWU5hpD2ef8eI",
+        "sql": "SELECT c.colour, COUNT(h.id) AS matching_heroes FROM colour AS c LEFT JOIN superhero AS h ON h.eye_colour_id = c.id AND h.hair_colour_id = c.id AND h.skin_colour_id = c.id GROUP BY c.id, c.colour ORDER BY c.id"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "35 row(s):\nResult coverage: fetched_rows=35; displayed_rows=35; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): colour=str; matching_heroes=int\ncolour | matching_heroes\n--- | ---\nNo Colour | 155\nAmber | 0\nAuburn | 0\nBlack | 0\nBlack/Blue | 0\nBlond | 0\nBlue | 1\nBlue/White | 0\nBrown | 0\nBrown/Black | 0\nBrown/White | 0\nGold | 0\nGrey | 0\nGreen | 2\nGreen/Blue | 0\nHazel | 0\nIndigo | 0\nMagenta | 0\nOrange | 0\nOrange/White | 0\nPink | 0\nPurple | 1\nRed | 0\nRed/Black | 0\nRed/Grey | 0\nRed/Orange | 0\nRed/White | 0\nSilver | 0\nStrawberry Blond | 0\nViolet | 0\nWhite | 0\nWhite/Red | 0\nYellow | 0\nYellow/Blue | 0\nYellow/Red | 0\nSQL: SELECT c.colour, COUNT(h.id) AS matching_heroes FROM colour AS c LEFT JOIN superhero AS h ON h.eye_colour_id = c.id AND h.hair_colour_id = c.id AND h.skin_colour_id = c.id GROUP BY c.id, c.colour ORDER BY c.id\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"bQ2oCT1XTHWbYaDKI6fikrLkScIJJGGlh5STttMmzpk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "bQ2oCT1XTHWbYaDKI6fikrLkScIJJGGlh5STttMmzpk",
+        "expected_columns": [
+          "superhero_name",
+          "publisher_name"
+        ],
+        "sql": "SELECT h.superhero_name, p.publisher_name\nFROM superhero AS h\nJOIN colour AS c ON c.id = h.eye_colour_id\nLEFT JOIN publisher AS p ON p.id = h.publisher_id\nWHERE h.hair_colour_id = c.id\n  AND h.skin_colour_id = c.id\n  AND c.colour <> 'No Colour'\nORDER BY h.superhero_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "4 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=4; displayed_rows=4; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): superhero_name=str; publisher_name=str\nsuperhero_name | publisher_name\n--- | ---\nBeast | Marvel Comics\nBeast Boy | DC Comics\nHulk | Marvel Comics\nPurple Man | Marvel Comics\nSQL: SELECT h.superhero_name, p.publisher_name\nFROM superhero AS h\nJOIN colour AS c ON c.id = h.eye_colour_id\nLEFT JOIN publisher AS p ON p.id = h.publisher_id\nWHERE h.hair_colour_id = c.id\n  AND h.skin_colour_id = c.id\n  AND c.colour <> 'No Colour'\nORDER BY h.superhero_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT h.superhero_name, p.publisher_name\nFROM superhero AS h\nJOIN colour AS c ON c.id = h.eye_colour_id\nLEFT JOIN publisher AS p ON p.id = h.publisher_id\nWHERE h.hair_colour_id = c.id\n  AND h.skin_colour_id = c.id\n  AND c.colour <> 'No Colour'\nORDER BY h.superhero_name\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 4,
+  "sql": "SELECT h.superhero_name, p.publisher_name\nFROM superhero AS h\nJOIN colour AS c ON c.id = h.eye_colour_id\nLEFT JOIN publisher AS p ON p.id = h.publisher_id\nWHERE h.hair_colour_id = c.id\n  AND h.skin_colour_id = c.id\n  AND c.colour <> 'No Colour'\nORDER BY h.superhero_name\nLIMIT 1000",
+  "seconds": 27.70211883308366
+}

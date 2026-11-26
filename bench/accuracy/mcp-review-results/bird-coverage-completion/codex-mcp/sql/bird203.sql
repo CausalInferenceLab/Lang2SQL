@@ -1,0 +1,20 @@
+WITH first_month AS (
+    SELECT date(MIN(a.date), 'start of month') AS month_start
+    FROM main.account AS a
+),
+eligible_districts AS (
+    SELECT d.A2 AS district_name, CAST(d.A4 AS INTEGER) AS inhabitants
+    FROM main.district AS d
+    WHERE d.district_id IN (
+        SELECT a.district_id
+        FROM main.account AS a
+        CROSS JOIN first_month AS m
+        WHERE a.date >= m.month_start
+          AND a.date < date(m.month_start, '+1 month')
+    )
+)
+SELECT district_name, inhabitants
+FROM eligible_districts
+WHERE inhabitants = (SELECT MAX(inhabitants) FROM eligible_districts)
+ORDER BY district_name
+LIMIT -1

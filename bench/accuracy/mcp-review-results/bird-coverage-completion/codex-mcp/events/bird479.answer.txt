@@ -1,0 +1,17 @@
+```sql
+WITH classified AS (
+    SELECT
+        m.molecule_id IN (
+            SELECT b.molecule_id
+            FROM main.bond AS b
+            WHERE b.bond_type IS NOT '-' AND b.molecule_id IS NOT NULL
+        ) AS has_other_bond,
+        CASE m.label WHEN '+' THEN 1 WHEN '-' THEN -1 ELSE 0 END AS contribution
+    FROM main.molecule AS m
+)
+SELECT
+    SUM(CASE WHEN has_other_bond = 0 THEN contribution ELSE 0 END) AS all_single_bonds_difference,
+    SUM(CASE WHEN has_other_bond = 1 THEN contribution ELSE 0 END) AS other_molecules_difference
+FROM classified
+LIMIT 1
+```

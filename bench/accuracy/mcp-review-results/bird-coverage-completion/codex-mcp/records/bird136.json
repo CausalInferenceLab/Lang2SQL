@@ -1,0 +1,197 @@
+{
+  "instance_id": "bird136",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "e42b37126c91c7aa97db9c90f9e62bc6c3a5745d275845df11151743aef40978",
+  "events_sha256": "5388e9acb308720bc12e37e16546edf46501020cb50bd47a9e31561233510130",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 226387,
+      "cached_input_tokens": 213376,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 891,
+      "reasoning_output_tokens": 20
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "badges"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "badges (table)\n- Id: INTEGER NOT NULL\n- UserId: INTEGER\n- Name: TEXT\n- Date: DATETIME\nPRIMARY KEY (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"HFw4ngDqRox_f3ibiMpCFAlg1qMuKR8Ux-26o19FuiU\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "HFw4ngDqRox_f3ibiMpCFAlg1qMuKR8Ux-26o19FuiU",
+        "sql": "SELECT u.Location, COUNT(*) AS users_at_location\nFROM main.users AS u\nWHERE u.Location LIKE '%Germany%'\nGROUP BY u.Location\nORDER BY users_at_location DESC\nLIMIT 10;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Location=str; users_at_location=int\nLocation | users_at_location\n--- | ---\nGermany | 221\nBerlin, Germany | 83\nMunich, Germany | 37\nHamburg, Germany | 17\nHeidelberg, Germany | 11\nStuttgart, Germany | 10\nDresden, Germany | 9\nCologne, Germany | 9\nKarlsruhe, Germany | 8\nFrankfurt, Germany | 7\nSQL: SELECT u.Location, COUNT(*) AS users_at_location\nFROM main.users AS u\nWHERE u.Location LIKE '%Germany%'\nGROUP BY u.Location\nORDER BY users_at_location DESC\nLIMIT 10;"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"JKN9Oj68teeKoPSMETxQo1mYZ7JGyNlF8qgIpBO5-EM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "JKN9Oj68teeKoPSMETxQo1mYZ7JGyNlF8qgIpBO5-EM",
+        "expected_columns": [
+          "DisplayName",
+          "badge_total"
+        ],
+        "sql": "WITH badge_totals AS (\n    SELECT u.DisplayName, COUNT(b.Id) AS badge_total\n    FROM main.users AS u\n    LEFT JOIN main.badges AS b ON b.UserId = u.Id\n    WHERE u.Location LIKE '%Germany%'\n    GROUP BY u.Id, u.DisplayName\n),\nranked_users AS (\n    SELECT DisplayName, badge_total,\n           DENSE_RANK() OVER (ORDER BY badge_total DESC) AS badge_rank\n    FROM badge_totals\n)\nSELECT DisplayName, badge_total\nFROM ranked_users\nWHERE badge_rank = 2\nORDER BY DisplayName;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DisplayName=str; badge_total=int\nDisplayName | badge_total\n--- | ---\nBernd Weiss | 49\nSQL: WITH badge_totals AS (\n    SELECT u.DisplayName, COUNT(b.Id) AS badge_total\n    FROM main.users AS u\n    LEFT JOIN main.badges AS b ON b.UserId = u.Id\n    WHERE u.Location LIKE '%Germany%'\n    GROUP BY u.Id, u.DisplayName\n),\nranked_users AS (\n    SELECT DisplayName, badge_total,\n           DENSE_RANK() OVER (ORDER BY badge_total DESC) AS badge_rank\n    FROM badge_totals\n)\nSELECT DisplayName, badge_total\nFROM ranked_users\nWHERE badge_rank = 2\nORDER BY DisplayName\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"wIOduF_X1pRF9-l-SGlZd39YD0wLwbFqFG0bFvhRytw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "wIOduF_X1pRF9-l-SGlZd39YD0wLwbFqFG0bFvhRytw",
+        "expected_columns": [
+          "DisplayName",
+          "badge_total"
+        ],
+        "sql": "WITH badge_totals AS (\n    SELECT u.DisplayName, COUNT(b.Id) AS badge_total\n    FROM main.users AS u\n    LEFT JOIN main.badges AS b ON b.UserId = u.Id\n    WHERE u.Location LIKE '%Germany%'\n    GROUP BY u.Id, u.DisplayName\n),\nranked_users AS (\n    SELECT DisplayName, badge_total,\n           DENSE_RANK() OVER (ORDER BY badge_total DESC) AS badge_rank\n    FROM badge_totals\n)\nSELECT DisplayName, badge_total\nFROM ranked_users\nWHERE badge_rank = 2\nORDER BY DisplayName\nLIMIT -1;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DisplayName=str; badge_total=int\nDisplayName | badge_total\n--- | ---\nBernd Weiss | 49\nSQL: WITH badge_totals AS (\n    SELECT u.DisplayName, COUNT(b.Id) AS badge_total\n    FROM main.users AS u\n    LEFT JOIN main.badges AS b ON b.UserId = u.Id\n    WHERE u.Location LIKE '%Germany%'\n    GROUP BY u.Id, u.DisplayName\n),\nranked_users AS (\n    SELECT DisplayName, badge_total,\n           DENSE_RANK() OVER (ORDER BY badge_total DESC) AS badge_rank\n    FROM badge_totals\n)\nSELECT DisplayName, badge_total\nFROM ranked_users\nWHERE badge_rank = 2\nORDER BY DisplayName\nLIMIT -1;"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH badge_totals AS (\n    SELECT u.DisplayName, COUNT(b.Id) AS badge_total\n    FROM main.users AS u\n    LEFT JOIN main.badges AS b ON b.UserId = u.Id\n    WHERE u.Location LIKE '%Germany%'\n    GROUP BY u.Id, u.DisplayName\n),\nranked_users AS (\n    SELECT DisplayName, badge_total,\n           DENSE_RANK() OVER (ORDER BY badge_total DESC) AS badge_rank\n    FROM badge_totals\n)\nSELECT DisplayName, badge_total\nFROM ranked_users\nWHERE badge_rank = 2\nORDER BY DisplayName\nLIMIT -1;\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH badge_totals AS (\n    SELECT u.DisplayName, COUNT(b.Id) AS badge_total\n    FROM main.users AS u\n    LEFT JOIN main.badges AS b ON b.UserId = u.Id\n    WHERE u.Location LIKE '%Germany%'\n    GROUP BY u.Id, u.DisplayName\n),\nranked_users AS (\n    SELECT DisplayName, badge_total,\n           DENSE_RANK() OVER (ORDER BY badge_total DESC) AS badge_rank\n    FROM badge_totals\n)\nSELECT DisplayName, badge_total\nFROM ranked_users\nWHERE badge_rank = 2\nORDER BY DisplayName\nLIMIT -1;",
+  "seconds": 40.365386291989125
+}

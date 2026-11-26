@@ -1,0 +1,9 @@
+WITH york_users AS (
+    SELECT Age, Reputation
+    FROM main.users
+    WHERE Location IN ('York', 'York, England', 'York, UK', 'York, United Kingdom')
+)
+SELECT Age
+FROM york_users
+WHERE Reputation = (SELECT MAX(Reputation) FROM york_users)
+LIMIT 1000

@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird056",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "5cfc6ea670d6788b36d032649088c5eac2b853b358f8f935bf7601bd7401f784",
+  "events_sha256": "142fc56ac591b56ceba2a10eb07d42878c98d35fad65faf6376a1154182332ef",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169172,
+      "cached_input_tokens": 156416,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 536,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"NxvUzyeHEU3DhnQSRMntMcUZUVp2eueVN9Pl1Q2kIbo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "rulings"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "rulings (table)\n- id: INTEGER NOT NULL\n- date: DATE\n- text: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "cards"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "NxvUzyeHEU3DhnQSRMntMcUZUVp2eueVN9Pl1Q2kIbo",
+        "sql": "SELECT c.power, COUNT(*) AS occurrences FROM cards AS c GROUP BY c.power ORDER BY occurrences DESC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "29 row(s):\nResult coverage: fetched_rows=29; displayed_rows=29; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): power=NoneType,str; occurrences=int\npower | occurrences\n--- | ---\nNone | 30624\n2 | 7815\n1 | 5579\n3 | 4414\n4 | 2855\n5 | 1744\n0 | 1442\n6 | 1083\n* | 429\n7 | 384\n8 | 190\n10 | 77\n9 | 73\n12 | 26\n11 | 20\n1+* | 16\n13 | 12\n15 | 10\n2+* | 8\n3.5 | 4\n-1 | 4\n2.5 | 3\n∞ | 2\n? | 2\n1.5 | 2\n99 | 1\n16 | 1\n0.5 | 1\n*² | 1\nSQL: SELECT c.power, COUNT(*) AS occurrences FROM cards AS c GROUP BY c.power ORDER BY occurrences DESC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"e2UNjkvweDH_NRMGGjc2rulSuPdaIiu-LqvKfzHOR-A\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "e2UNjkvweDH_NRMGGjc2rulSuPdaIiu-LqvKfzHOR-A",
+        "expected_columns": [
+          "printing_count"
+        ],
+        "sql": "SELECT COUNT(DISTINCT c.uuid) AS printing_count\nFROM cards AS c\nWHERE (c.power IS NULL OR instr(c.power, '*') > 0)\n  AND c.uuid IN (\n      SELECT r.uuid\n      FROM rulings AS r\n      WHERE r.text LIKE '%triggered ability%'\n  )\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): printing_count=int\nprinting_count\n---\n1382\nSQL: SELECT COUNT(DISTINCT c.uuid) AS printing_count\nFROM cards AS c\nWHERE (c.power IS NULL OR instr(c.power, '*') > 0)\n  AND c.uuid IN (\n      SELECT r.uuid\n      FROM rulings AS r\n      WHERE r.text LIKE '%triggered ability%'\n  )\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT COUNT(DISTINCT c.uuid) AS printing_count\nFROM cards AS c\nWHERE (c.power IS NULL OR instr(c.power, '*') > 0)\n  AND c.uuid IN (\n      SELECT r.uuid\n      FROM rulings AS r\n      WHERE r.text LIKE '%triggered ability%'\n  )\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT COUNT(DISTINCT c.uuid) AS printing_count\nFROM cards AS c\nWHERE (c.power IS NULL OR instr(c.power, '*') > 0)\n  AND c.uuid IN (\n      SELECT r.uuid\n      FROM rulings AS r\n      WHERE r.text LIKE '%triggered ability%'\n  )\nLIMIT 1",
+  "seconds": 27.79157875000965
+}

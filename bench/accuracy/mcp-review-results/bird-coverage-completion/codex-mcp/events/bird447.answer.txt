@@ -1,0 +1,20 @@
+```sql
+WITH ranked_measurements AS (
+    SELECT l.RNP, l.CPK,
+           ROW_NUMBER() OVER (
+               PARTITION BY l.ID
+               ORDER BY l."Date" DESC
+           ) AS recency
+    FROM main.Laboratory AS l
+    JOIN main.Patient AS p ON p.ID = l.ID
+    WHERE p.SEX = 'F'
+      AND l.RNP IS NOT NULL
+)
+SELECT COUNT(*) AS patient_count
+FROM ranked_measurements
+WHERE recency = 1
+  AND RNP <> 'negative'
+  AND CAST(RNP AS REAL) > 64
+  AND CPK < 250
+LIMIT 1
+```

@@ -1,0 +1,8 @@
+SELECT COUNT(DISTINCT q.driverId) AS driver_count
+FROM qualifying AS q
+JOIN races AS r ON r.raceId = q.raceId
+WHERE r.year = 2017
+  AND r.name = 'Italian Grand Prix'
+  AND q.q2 <> ''
+  AND q.q2 < '1:40.000'
+LIMIT 1

@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird404",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "f149cdb47b48282d50294df0c012f1ed6760b996394cf72a2bd8d6b50f48c7b6",
+  "events_sha256": "cb1f7e94068291fca7a1e266f5607ef6867e8c97662cc7c26f7e03549db9d707",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 167063,
+      "cached_input_tokens": 155392,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 701,
+      "reasoning_output_tokens": 17
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Patient"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Patient (table)\n- ID: INTEGER NOT NULL\n- SEX: TEXT\n- Birthday: DATE\n- Description: DATE\n- First Date: DATE\n- Admission: TEXT\n- Diagnosis: TEXT\nPRIMARY KEY (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Laboratory"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Laboratory (table)\n- ID: INTEGER NOT NULL\n- Date: DATE NOT NULL\n- GOT: INTEGER\n- GPT: INTEGER\n- LDH: INTEGER\n- ALP: INTEGER\n- TP: REAL\n- ALB: REAL\n- UA: REAL\n- UN: INTEGER\n- CRE: REAL\n- T-BIL: REAL\n- T-CHO: INTEGER\n- TG: INTEGER\n- CPK: INTEGER\n- GLU: INTEGER\n- WBC: REAL\n- RBC: REAL\n- HGB: REAL\n- HCT: REAL\n- PLT: INTEGER\n- PT: REAL\n- APTT: INTEGER\n- FG: REAL\n- PIC: INTEGER\n- TAT: INTEGER\n- TAT2: INTEGER\n- U-PRO: TEXT\n- IGG: INTEGER\n- IGA: INTEGER\n- IGM: INTEGER\n- CRP: TEXT\n- RA: TEXT\n- RF: TEXT\n- C3: INTEGER\n- C4: INTEGER\n- RNP: TEXT\n- SM: TEXT\n- SC170: TEXT\n- SSA: TEXT\n- SSB: TEXT\n- CENTROMEA: TEXT\n- DNA: TEXT\n- DNA-II: INTEGER\nPRIMARY KEY (ID, Date)\nFOREIGN KEY (ID) REFERENCES Patient (ID)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ZxLIrS27-PdgCXQB6OB9Pz57-B3Yu-fv8vtJUKjW8Rk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ZxLIrS27-PdgCXQB6OB9Pz57-B3Yu-fv8vtJUKjW8Rk",
+        "sql": "SELECT l.RNP, COUNT(*) AS readings, COUNT(DISTINCT l.ID) AS patients\nFROM main.Laboratory AS l\nJOIN main.Patient AS p ON p.ID = l.ID\nWHERE p.SEX = 'F'\nGROUP BY l.RNP\nORDER BY readings DESC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "9 row(s):\nResult coverage: fetched_rows=9; displayed_rows=9; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): RNP=NoneType,str; readings=int; patients=int\nRNP | readings | patients\n--- | --- | ---\nNone | 11239 | 252\n0 | 58 | 48\nnegative | 20 | 17\n4 | 14 | 8\n16 | 10 | 7\n1 | 10 | 9\n64 | 8 | 7\n256 | 6 | 5\n15 | 1 | 1\nSQL: SELECT l.RNP, COUNT(*) AS readings, COUNT(DISTINCT l.ID) AS patients\nFROM main.Laboratory AS l\nJOIN main.Patient AS p ON p.ID = l.ID\nWHERE p.SEX = 'F'\nGROUP BY l.RNP\nORDER BY readings DESC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"1SsEGdhIYYrP_K3mZ_PVBW0GxaD6bLPAt45ouJ8sY90\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "1SsEGdhIYYrP_K3mZ_PVBW0GxaD6bLPAt45ouJ8sY90",
+        "expected_columns": [
+          "elevated_percentage"
+        ],
+        "sql": "WITH tested_women AS (\n    SELECT p.ID,\n           MAX(CASE WHEN l.RNP = 'negative' THEN 0\n                    ELSE CAST(l.RNP AS INTEGER)\n               END) AS highest_titer\n    FROM main.Patient AS p\n    JOIN main.Laboratory AS l ON l.ID = p.ID\n    WHERE p.SEX = 'F' AND l.RNP IS NOT NULL\n    GROUP BY p.ID\n)\nSELECT ROUND(100.0 * COUNT(*) FILTER (WHERE highest_titer > 64)\n             / NULLIF(COUNT(*), 0), 2) AS elevated_percentage\nFROM tested_women\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): elevated_percentage=float\nelevated_percentage\n---\n5.49\nSQL: WITH tested_women AS (\n    SELECT p.ID,\n           MAX(CASE WHEN l.RNP = 'negative' THEN 0\n                    ELSE CAST(l.RNP AS INTEGER)\n               END) AS highest_titer\n    FROM main.Patient AS p\n    JOIN main.Laboratory AS l ON l.ID = p.ID\n    WHERE p.SEX = 'F' AND l.RNP IS NOT NULL\n    GROUP BY p.ID\n)\nSELECT ROUND(100.0 * COUNT(*) FILTER (WHERE highest_titer > 64)\n             / NULLIF(COUNT(*), 0), 2) AS elevated_percentage\nFROM tested_women\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH tested_women AS (\n    SELECT p.ID,\n           MAX(CASE WHEN l.RNP = 'negative' THEN 0\n                    ELSE CAST(l.RNP AS INTEGER)\n               END) AS highest_titer\n    FROM main.Patient AS p\n    JOIN main.Laboratory AS l ON l.ID = p.ID\n    WHERE p.SEX = 'F' AND l.RNP IS NOT NULL\n    GROUP BY p.ID\n)\nSELECT ROUND(100.0 * COUNT(*) FILTER (WHERE highest_titer > 64)\n             / NULLIF(COUNT(*), 0), 2) AS elevated_percentage\nFROM tested_women\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH tested_women AS (\n    SELECT p.ID,\n           MAX(CASE WHEN l.RNP = 'negative' THEN 0\n                    ELSE CAST(l.RNP AS INTEGER)\n               END) AS highest_titer\n    FROM main.Patient AS p\n    JOIN main.Laboratory AS l ON l.ID = p.ID\n    WHERE p.SEX = 'F' AND l.RNP IS NOT NULL\n    GROUP BY p.ID\n)\nSELECT ROUND(100.0 * COUNT(*) FILTER (WHERE highest_titer > 64)\n             / NULLIF(COUNT(*), 0), 2) AS elevated_percentage\nFROM tested_women\nLIMIT 1",
+  "seconds": 34.16312991594896
+}

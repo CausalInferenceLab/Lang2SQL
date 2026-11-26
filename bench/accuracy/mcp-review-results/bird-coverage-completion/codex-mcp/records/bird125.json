@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird125",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "ae83c093fda32659eee3eacd249d4a440750a15e50e21c44d1d70796c598b3c5",
+  "events_sha256": "14d649d4f5be044a69b1d577d148109900a33c1cb145b5112494d9dc4ba9337a",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 171951,
+      "cached_input_tokens": 159744,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 535,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"vq2zaDhRtnxK_qFa0Ivasmg1F69Ia5keZJP9prFyruA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "posts"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "users"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "vq2zaDhRtnxK_qFa0Ivasmg1F69Ia5keZJP9prFyruA",
+        "sql": "SELECT COUNT(*) AS top_user_count FROM main.users WHERE Reputation = (SELECT MAX(Reputation) FROM main.users);"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): top_user_count=int\ntop_user_count\n---\n1\nSQL: SELECT COUNT(*) AS top_user_count FROM main.users WHERE Reputation = (SELECT MAX(Reputation) FROM main.users)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"rFaZ1siK1t-nSTAu_cjvxQKiaXYH61-FgsYMny4IZLI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "rFaZ1siK1t-nSTAu_cjvxQKiaXYH61-FgsYMny4IZLI",
+        "expected_columns": [
+          "percentage_above_50"
+        ],
+        "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE p.Score > 50) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_above_50\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.Reputation = (SELECT MAX(Reputation) FROM main.users)\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): percentage_above_50=float\npercentage_above_50\n---\n0.66\nSQL: SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE p.Score > 50) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_above_50\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.Reputation = (SELECT MAX(Reputation) FROM main.users)\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE p.Score > 50) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_above_50\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.Reputation = (SELECT MAX(Reputation) FROM main.users)\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT ROUND(\n    100.0 * COUNT(*) FILTER (WHERE p.Score > 50) / NULLIF(COUNT(*), 0),\n    2\n) AS percentage_above_50\nFROM main.posts AS p\nJOIN main.users AS u ON u.Id = p.OwnerUserId\nWHERE u.Reputation = (SELECT MAX(Reputation) FROM main.users)\nLIMIT 1",
+  "seconds": 26.805994707974605
+}

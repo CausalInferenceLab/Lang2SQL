@@ -1,0 +1,17 @@
+```sql
+WITH member_attendance AS (
+    SELECT
+        m.member_id,
+        CASE WHEN m.position IN ('President', 'Vice President', 'Secretary', 'Treasurer')
+             THEN 1 ELSE 0 END AS is_officer,
+        COUNT(a.link_to_event) AS events_attended
+    FROM main.member AS m
+    LEFT JOIN main.attendance AS a ON a.link_to_member = m.member_id
+    GROUP BY m.member_id, m.position
+)
+SELECT
+    ROUND(AVG(events_attended) FILTER (WHERE is_officer = 1), 2) AS avg_events_per_officer,
+    ROUND(AVG(events_attended) FILTER (WHERE is_officer = 0), 2) AS avg_events_per_other_student
+FROM member_attendance
+LIMIT 1
+```

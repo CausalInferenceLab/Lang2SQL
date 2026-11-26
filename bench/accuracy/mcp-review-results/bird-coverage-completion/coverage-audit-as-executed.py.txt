@@ -1,0 +1,33 @@
+"""Development backlog only: never mix selected attempts into full accuracy."""
+import hashlib,json
+from pathlib import Path
+from bench.accuracy.codex_mcp import _scored_cases
+
+repo=Path.cwd();root=Path('/Users/seyoung/workspace/benchmarks')
+prefixes=['v4','failures-only','evidence-review','text-ordering','aggregate-scope','selected-summary','selection-evidence','rate-projection','prior-full-failures','output-columns','reasoning-control','model-control','integrated','integrated-review','projection-precedence','astra-multistage','astra-bird-backlog','astra-spider-backlog','calendar-interval','fixed-decimal','fixed-decimal-guidance','astra-evidence-review','spider-grain-review','recovered-records','unobserved','checkpoint-review','share-units','sort-value-types','spider-effort-control','clarification-effort','integrated-pilot-backlog','output-row-contract','grouped-row-contract','new-projection-failures','window-evidence-review','spider-max-calculations','duration-output','recovered-failures-astra','recovered-spider-astra','final-selection','ranked-event-output','final-grain-probe','spider-max-remaining-calculations','official-values','official-values-missing-weight','official-values-remaining','official-values-remaining-all']
+canonical={s:json.loads((repo/'bench/accuracy'/f).read_text()) for s,f in [('bird','bird-manifest.json'),('spider2','spider2-manifest.json')]}
+ledger={s:{c['instance_id']:{'instance_id':c['instance_id'],'db':c['db'],'question':c['question'],'observations':[]} for c in m['cases']} for s,m in canonical.items()}
+runs=[]
+sources = [source for prefix in prefixes for source in sorted((root/f'codex-mcp-{prefix}-20261127').glob('*'))]
+for source in sources:
+ if not (source/'codex-mcp/scores.json').exists():continue
+ manifest=json.loads((source/'manifest.json').read_text());suite=manifest['suite'];base=canonical[suite]
+ cases,scores=_scored_cases(base['cases'],source,base['db_sha256'])
+ assert manifest['evaluator_sha256']==base['evaluator_sha256']
+ settings=json.loads((source/'settings.json').read_text());assert settings['backend']=='ChatGPT login -> Codex CLI -> production Lang2SQL MCP'
+ info={'source':str(source),'suite':suite,'cases':len(cases),'revision':settings.get('revision'),'profiles':settings.get('profiles'),'scores_sha256':hashlib.sha256((source/'codex-mcp/scores.json').read_bytes()).hexdigest(),'manifest_sha256':hashlib.sha256((source/'manifest.json').read_bytes()).hexdigest()};runs.append(info)
+ for c in cases:
+  i=c['instance_id'];p=source/'codex-mcp/records'/f'{i}.json';record=json.loads(p.read_text());assert record['instance_id']==i
+  if scores[i]['score']:assert record['status']=='predicted' and record.get('sql')
+  ledger[suite][i]['observations'].append({'source':str(source),'revision':info['revision'],'model':record.get('model'),'score':scores[i]['score'],'status':record['status'],'record_sha256':hashlib.sha256(p.read_bytes()).hexdigest()})
+summary={}
+for s,entries in ledger.items():
+ for e in entries.values():e['classification']='unobserved' if not e['observations'] else ('any_pass' if any(o['score'] for o in e['observations']) else 'unresolved_observed')
+ summary[s]={'denominator':len(entries),'observed_unique':sum(bool(e['observations']) for e in entries.values()),'any_pass':sum(e['classification']=='any_pass' for e in entries.values()),'unresolved_observed':[i for i,e in entries.items() if e['classification']=='unresolved_observed'],'unobserved':[i for i,e in entries.items() if e['classification']=='unobserved'],'completed_full_runs':[r['source'] for r in runs if r['suite']==s and r['cases']==len(entries)]}
+attempt_status={}
+for suite,entries in ledger.items():
+ unresolved=[e for e in entries.values() if e['classification']=='unresolved_observed']
+ attempt_status[suite]={'always_no_final_sql':[e['instance_id'] for e in unresolved if all(o['status']=='failed' for o in e['observations'])],'has_wrong_sql_attempt':[e['instance_id'] for e in unresolved if any(o['status']=='predicted' for o in e['observations'])]}
+out=Path(__file__).parent/'audit.json';out.write_text(json.dumps({'purpose':'Inventory validated completed Codex MCP trials; any_pass is backlog exclusion only, NOT accuracy across revisions/models','selection_policy':'Explicit post-fix run prefixes; completed top-level runs only; excludes snapshots, API baselines, regraded copies and interrupted/unscored runs; any-pass is never accuracy','prefixes':prefixes,'summary':summary,'runs':runs,'cases':{s:list(e.values()) for s,e in ledger.items()},'unresolved_attempt_status':attempt_status},indent=2)+'\n')
+print('validated runs',len(runs))
+for s,v in summary.items():print(s,{k:(len(x) if k=='unobserved' else x) for k,x in v.items()})

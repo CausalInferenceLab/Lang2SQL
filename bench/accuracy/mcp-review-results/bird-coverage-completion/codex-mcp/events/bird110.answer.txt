@@ -1,0 +1,16 @@
+```sql
+WITH eligible_cards AS (
+    SELECT DISTINCT c.scryfallOracleId, c.convertedManaCost
+    FROM main.cards AS c
+    WHERE c.edhrecRank BETWEEN 1 AND 1000
+      AND instr(',' || c.types || ',', ',Creature,') > 0
+      AND c.uuid IN (
+          SELECT l.uuid
+          FROM main.legalities AS l
+          WHERE l.status = 'Banned'
+      )
+)
+SELECT ROUND(AVG(convertedManaCost), 1) AS average_mana_value
+FROM eligible_cards
+LIMIT 1
+```

@@ -1,0 +1,12 @@
+```sql
+WITH sexes(code, sex) AS (
+    VALUES ('F', 'female'), ('M', 'male')
+)
+SELECT s.sex, COUNT(DISTINCT lab.ID) AS patient_count
+FROM sexes AS s
+LEFT JOIN main.Patient AS p ON p.SEX = s.code
+LEFT JOIN main.Laboratory AS lab ON lab.ID = p.ID AND lab.HGB < 7.0
+GROUP BY s.sex
+ORDER BY s.sex
+LIMIT 2
+```

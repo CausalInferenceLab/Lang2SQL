@@ -1,0 +1,14 @@
+SELECT
+    m.season,
+    COUNT(DISTINCT lineup.value) AS distinct_players
+FROM main."Match" AS m
+CROSS JOIN json_each(json_array(
+    m.away_player_1, m.away_player_2, m.away_player_3,
+    m.away_player_4, m.away_player_5, m.away_player_6,
+    m.away_player_7, m.away_player_8, m.away_player_9,
+    m.away_player_10, m.away_player_11
+)) AS lineup
+WHERE m.home_team_goal - m.away_team_goal >= 5
+GROUP BY m.season
+ORDER BY m.season
+LIMIT 1000

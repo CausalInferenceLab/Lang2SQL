@@ -1,0 +1,8 @@
+SELECT ROUND(
+    100.0 * COUNT(*) FILTER (WHERE p.Score > 50) / NULLIF(COUNT(*), 0),
+    2
+) AS percentage_above_50
+FROM main.posts AS p
+JOIN main.users AS u ON u.Id = p.OwnerUserId
+WHERE u.Reputation = (SELECT MAX(Reputation) FROM main.users)
+LIMIT 1

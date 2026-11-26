@@ -1,0 +1,16 @@
+WITH driver_wins AS (
+    SELECT r.driverId, COUNT(DISTINCT r.raceId) AS races_won
+    FROM main.results AS r
+    WHERE r.position = 1
+    GROUP BY r.driverId
+)
+SELECT d.forename AS first_name,
+       d.surname AS last_name,
+       d.nationality,
+       MAX(s.points) AS highest_standings_points
+FROM driver_wins AS w
+JOIN main.drivers AS d ON d.driverId = w.driverId
+LEFT JOIN main.driverStandings AS s ON s.driverId = w.driverId
+WHERE w.races_won = (SELECT MAX(races_won) FROM driver_wins)
+GROUP BY d.driverId, d.forename, d.surname, d.nationality
+LIMIT 1000

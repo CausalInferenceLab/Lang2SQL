@@ -1,0 +1,45 @@
+WITH RECURSIVE
+monthly_activity AS (
+    SELECT
+        customer_id,
+        date(txn_date, 'start of month') AS month_start,
+        SUM(CASE
+            WHEN txn_type = 'deposit' THEN txn_amount
+            WHEN txn_type IN ('purchase', 'withdrawal') THEN -txn_amount
+        END) AS monthly_change
+    FROM main.customer_transactions
+    GROUP BY customer_id, date(txn_date, 'start of month')
+),
+months(month_start) AS (
+    SELECT MIN(month_start) FROM monthly_activity
+    UNION ALL
+    SELECT date(month_start, '+1 month')
+    FROM months
+    WHERE month_start < (SELECT MAX(month_start) FROM monthly_activity)
+),
+customers AS (
+    SELECT DISTINCT customer_id FROM monthly_activity
+),
+customer_months AS (
+    SELECT
+        c.customer_id,
+        m.month_start,
+        COALESCE(a.monthly_change, 0) AS monthly_change
+    FROM customers AS c
+    CROSS JOIN months AS m
+    LEFT JOIN monthly_activity AS a
+        ON a.customer_id = c.customer_id
+       AND a.month_start = m.month_start
+)
+SELECT
+    customer_id,
+    date(month_start, '+1 month', '-1 day') AS month_end,
+    monthly_change,
+    SUM(monthly_change) OVER (
+        PARTITION BY customer_id
+        ORDER BY month_start
+        ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+    ) AS closing_balance
+FROM customer_months
+ORDER BY customer_id, month_start
+LIMIT -1;

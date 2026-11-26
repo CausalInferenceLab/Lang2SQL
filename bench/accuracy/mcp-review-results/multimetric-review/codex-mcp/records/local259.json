@@ -1,0 +1,313 @@
+{
+  "instance_id": "local259",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "review_source_record_sha256": "8bf0dd9e3baaad1f14a1a6576872b8fea1942c68c6233b70091c43caca19be5f",
+  "prompt_sha256": "e9388b01030aea0194de16f0bb4a43630fc085f67f5cff2a65ec4d7856f7e2a9",
+  "events_sha256": "a16a23259890ca6632e3d3e705614eb2a35dea221ce73179c87443fc742aa8ca",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 307200,
+      "cached_input_tokens": 275840,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 3920,
+      "reasoning_output_tokens": 142
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "batsman_scored"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "batsman_scored (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- runs_scored: INTEGER\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "wicket_taken"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "wicket_taken (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- player_out: INTEGER\n- kind_out: TEXT\n- innings_no: INTEGER NOT NULL\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "player"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "player (table)\n- player_id: INTEGER\n- player_name: TEXT\n- dob: DATE\n- batting_hand: TEXT\n- bowling_skill: TEXT\n- country_name: TEXT\nPRIMARY KEY (player_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"RjDXEmkqOP8mvdnq5_RTTedQrm9godgrc-Zzrs0JxrQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "ball_by_ball"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "ball_by_ball (table)\n- match_id: INTEGER NOT NULL\n- over_id: INTEGER NOT NULL\n- ball_id: INTEGER NOT NULL\n- innings_no: INTEGER NOT NULL\n- team_batting: INTEGER\n- team_bowling: INTEGER\n- striker_batting_position: INTEGER\n- striker: INTEGER\n- non_striker: INTEGER\n- bowler: INTEGER\nPRIMARY KEY (match_id, over_id, ball_id, innings_no)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "player_match"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "player_match (table)\n- match_id: INTEGER NOT NULL\n- player_id: INTEGER NOT NULL\n- role: TEXT\n- team_id: INTEGER\nPRIMARY KEY (match_id, player_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "RjDXEmkqOP8mvdnq5_RTTedQrm9godgrc-Zzrs0JxrQ",
+        "sql": "WITH actors AS (\n    SELECT match_id, striker AS player_id FROM main.ball_by_ball\n    UNION SELECT match_id, non_striker FROM main.ball_by_ball\n    UNION SELECT match_id, bowler FROM main.ball_by_ball\n    UNION SELECT match_id, player_out FROM main.wicket_taken\n), roles AS (\n    SELECT player_id, role, COUNT(*) AS n,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS pos\n    FROM main.player_match GROUP BY player_id, role\n)\nSELECT 'event categories' AS metric, kind_out AS detail, COUNT(*) AS n FROM main.wicket_taken GROUP BY kind_out\nUNION ALL SELECT 'role tie', GROUP_CONCAT(role, ', ' ORDER BY role), player_id FROM roles WHERE pos=1 GROUP BY player_id HAVING COUNT(*)>1\nUNION ALL SELECT 'missing profile', CAST(pm.player_id AS TEXT), COUNT(*) FROM main.player_match AS pm LEFT JOIN main.player AS p USING(player_id) WHERE p.player_id IS NULL GROUP BY pm.player_id\nUNION ALL SELECT 'missing roster', player_name, player_id FROM main.player WHERE player_id NOT IN (SELECT player_id FROM main.player_match)\nUNION ALL SELECT 'unrostered player-match', CAST(a.player_id AS TEXT), COUNT(*) FROM actors AS a LEFT JOIN main.player_match AS pm USING(match_id,player_id) WHERE pm.match_id IS NULL GROUP BY a.player_id\nUNION ALL SELECT 'scoring rows','all', COUNT(*) FROM main.batsman_scored\nUNION ALL SELECT 'joined deliveries','all', COUNT(*) FROM main.ball_by_ball AS b LEFT JOIN main.batsman_scored AS s USING(match_id,innings_no,over_id,ball_id) LEFT JOIN main.wicket_taken AS w USING(match_id,innings_no,over_id,ball_id)\nUNION ALL SELECT 'joined scores', 'all', COUNT(s.runs_scored) FROM main.ball_by_ball AS b JOIN main.batsman_scored AS s USING(match_id,innings_no,over_id,ball_id)\nUNION ALL SELECT 'runs','all',SUM(runs_scored) FROM main.batsman_scored\nUNION ALL SELECT 'roster matches','all', COUNT(*) FROM main.player_match\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "20 row(s):\nResult coverage: fetched_rows=20; displayed_rows=20; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): metric=str; detail=str; n=int\nmetric | detail | n\n--- | --- | ---\nevent categories | bowled | 1234\nevent categories | caught | 3894\nevent categories | caught and bowled | 184\nevent categories | hit wicket | 8\nevent categories | lbw | 393\nevent categories | obstructing the field | 1\nevent categories | retired hurt | 8\nevent categories | run out | 677\nevent categories | stumped | 219\nrole tie | Captain, Player | 8\nrole tie | Keeper, Player | 200\nrole tie | Keeper, Player | 272\nmissing profile | 35 | 124\nmissing roster | SS Mundhe | 448\nunrostered player-match | 40 | 1\nscoring rows | all | 131259\njoined deliveries | all | 134703\njoined scores | all | 131259\nruns | all | 163680\nroster matches | all | 12495\nSQL: WITH actors AS (\n    SELECT match_id, striker AS player_id FROM main.ball_by_ball\n    UNION SELECT match_id, non_striker FROM main.ball_by_ball\n    UNION SELECT match_id, bowler FROM main.ball_by_ball\n    UNION SELECT match_id, player_out FROM main.wicket_taken\n), roles AS (\n    SELECT player_id, role, COUNT(*) AS n,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS pos\n    FROM main.player_match GROUP BY player_id, role\n)\nSELECT 'event categories' AS metric, kind_out AS detail, COUNT(*) AS n FROM main.wicket_taken GROUP BY kind_out\nUNION ALL SELECT 'role tie', GROUP_CONCAT(role, ', ' ORDER BY role), player_id FROM roles WHERE pos=1 GROUP BY player_id HAVING COUNT(*)>1\nUNION ALL SELECT 'missing profile', CAST(pm.player_id AS TEXT), COUNT(*) FROM main.player_match AS pm LEFT JOIN main.player AS p USING(player_id) WHERE p.player_id IS NULL GROUP BY pm.player_id\nUNION ALL SELECT 'missing roster', player_name, player_id FROM main.player WHERE player_id NOT IN (SELECT player_id FROM main.player_match)\nUNION ALL SELECT 'unrostered player-match', CAST(a.player_id AS TEXT), COUNT(*) FROM actors AS a LEFT JOIN main.player_match AS pm USING(match_id,player_id) WHERE pm.match_id IS NULL GROUP BY a.player_id\nUNION ALL SELECT 'scoring rows','all', COUNT(*) FROM main.batsman_scored\nUNION ALL SELECT 'joined deliveries','all', COUNT(*) FROM main.ball_by_ball AS b LEFT JOIN main.batsman_scored AS s USING(match_id,innings_no,over_id,ball_id) LEFT JOIN main.wicket_taken AS w USING(match_id,innings_no,over_id,ball_id)\nUNION ALL SELECT 'joined scores', 'all', COUNT(s.runs_scored) FROM main.ball_by_ball AS b JOIN main.batsman_scored AS s USING(match_id,innings_no,over_id,ball_id)\nUNION ALL SELECT 'runs','all',SUM(runs_scored) FROM main.batsman_scored\nUNION ALL SELECT 'roster matches','all', COUNT(*) FROM main.player_match\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"YQ9Pb6SevZA0K9Iq9lF8jFd4QwJt_xFYnDoueAo0xVI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_9",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH missing AS (\n    SELECT match_id, striker AS player_id FROM main.ball_by_ball\n    UNION SELECT match_id, non_striker FROM main.ball_by_ball\n    UNION SELECT match_id, bowler FROM main.ball_by_ball\n    UNION SELECT match_id, player_out FROM main.wicket_taken\n    EXCEPT SELECT match_id, player_id FROM main.player_match\n)\nSELECT m.match_id, m.player_id, p.player_name, COUNT(*) AS deliveries,\n       SUM(b.striker = m.player_id) AS as_striker,\n       SUM(b.bowler = m.player_id) AS as_bowler,\n       SUM(b.non_striker = m.player_id) AS as_non_striker,\n       COUNT(*) FILTER (WHERE w.player_out = m.player_id) AS outs,\n       (SELECT COUNT(*) FROM main.player_match AS pm WHERE pm.match_id=m.match_id) AS roster_rows\nFROM missing AS m JOIN main.ball_by_ball AS b USING(match_id)\nLEFT JOIN main.wicket_taken AS w USING(match_id, innings_no, over_id, ball_id)\nLEFT JOIN main.player AS p USING(player_id)\nGROUP BY m.match_id, m.player_id\nLIMIT -1",
+        "definition_check_id": "YQ9Pb6SevZA0K9Iq9lF8jFd4QwJt_xFYnDoueAo0xVI"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): match_id=int; player_id=int; player_name=str; deliveries=int; as_striker=int; as_bowler=int; as_non_striker=int; outs=int; roster_rows=int\nmatch_id | player_id | player_name | deliveries | as_striker | as_bowler | as_non_striker | outs | roster_rows\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n501274 | 40 | G Gambhir | 241 | 9 | 0 | 9 | 1 | 21\nSQL: WITH missing AS (\n    SELECT match_id, striker AS player_id FROM main.ball_by_ball\n    UNION SELECT match_id, non_striker FROM main.ball_by_ball\n    UNION SELECT match_id, bowler FROM main.ball_by_ball\n    UNION SELECT match_id, player_out FROM main.wicket_taken\n    EXCEPT SELECT match_id, player_id FROM main.player_match\n)\nSELECT m.match_id, m.player_id, p.player_name, COUNT(*) AS deliveries,\n       SUM(b.striker = m.player_id) AS as_striker,\n       SUM(b.bowler = m.player_id) AS as_bowler,\n       SUM(b.non_striker = m.player_id) AS as_non_striker,\n       COUNT(*) FILTER (WHERE w.player_out = m.player_id) AS outs,\n       (SELECT COUNT(*) FROM main.player_match AS pm WHERE pm.match_id=m.match_id) AS roster_rows\nFROM missing AS m JOIN main.ball_by_ball AS b USING(match_id)\nLEFT JOIN main.wicket_taken AS w USING(match_id, innings_no, over_id, ball_id)\nLEFT JOIN main.player AS p USING(player_id)\nGROUP BY m.match_id, m.player_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_11",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"E1iYE-P2HkN5WNSztDtdf8ptEvmNYm_fiaVaEVwVIdw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_12",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH deliveries AS (\n    -- Each delivery counts once. Only runs credited to the striker enter the score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs, w.kind_out\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_matches AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, SUM(runs) AS runs, COUNT(*) AS balls\n        FROM deliveries\n        GROUP BY striker, match_id\n        UNION ALL\n        -- A non-striker can bat and finish a match without facing a delivery.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS runs, SUM(balls_faced) AS balls,\n           MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus\n    FROM batting_matches\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS outs\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_matches AS (\n    SELECT bowler AS player_id, match_id, SUM(runs) AS runs_given,\n           COUNT(*) AS balls_bowled,\n           COUNT(*) FILTER (WHERE kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           )) AS wickets\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career / SUM(balls_bowled) OVER career AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id\n           ) AS performance_rank\n    FROM bowling_matches\n    WINDOW career AS (PARTITION BY player_id)\n),\nappearances AS (\n    -- A roster entry or recorded participation establishes one player-match.\n    SELECT player_id, match_id FROM main.player_match\n    UNION\n    SELECT player_id, match_id FROM batting_matches\n    UNION\n    SELECT player_id, match_id FROM bowling_matches\n),\nmatch_counts AS (\n    SELECT player_id, COUNT(*) AS matches_played\n    FROM appearances\n    GROUP BY player_id\n),\nplayers AS (\n    SELECT player_id FROM main.player\n    UNION\n    SELECT player_id FROM match_counts\n),\nrole_counts AS (\n    SELECT player_id, role,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nroles AS (\n    SELECT player_id, GROUP_CONCAT(role, ', ' ORDER BY role) AS most_frequent_role\n    FROM role_counts\n    WHERE frequency_rank = 1\n    GROUP BY player_id\n)\n, report AS (\nSELECT ids.player_id, p.player_name, r.most_frequent_role, p.batting_hand, p.bowling_skill,\n       COALESCE(b.runs, 0) AS total_runs_scored,\n       COALESCE(m.matches_played, 0) AS total_matches_played,\n       COALESCE(d.outs, 0) AS total_dismissals,\n       1.0 * COALESCE(b.runs, 0) / NULLIF(d.outs, 0) AS batting_average,\n       b.highest_match_score,\n       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(b.balls, 0) AS total_balls_faced,\n       100.0 * b.runs / NULLIF(b.balls, 0) AS strike_rate,\n       COALESCE(w.total_wickets, 0) AS total_wickets_taken,\n       w.economy_rate,\n       w.wickets || '-' || w.runs_given AS best_bowling_performance\nFROM players AS ids\nLEFT JOIN main.player AS p USING (player_id)\nLEFT JOIN roles AS r USING (player_id)\nLEFT JOIN match_counts AS m USING (player_id)\nLEFT JOIN batting AS b USING (player_id)\nLEFT JOIN dismissals AS d USING (player_id)\nLEFT JOIN bowling AS w ON w.player_id = ids.player_id AND w.performance_rank = 1\n)\nSELECT COUNT(*) AS n, COUNT(DISTINCT player_id) AS ids, SUM(total_runs_scored) AS runs,\nSUM(total_matches_played) AS appearances, SUM(total_dismissals) AS outs, MAX(highest_match_score) AS highest,\nSUM(matches_30_plus < matches_50_plus OR matches_50_plus < matches_100_plus) AS milestone_errors,\nSUM(total_balls_faced) AS balls, SUM(total_wickets_taken) AS wickets,\nCOUNT(best_bowling_performance) AS figures, COUNT(economy_rate) AS bowlers, COUNT(strike_rate) AS strikers,\nSUM((total_dismissals=0) <> (batting_average IS NULL)) AS average_errors\nFROM report LIMIT -1",
+        "definition_check_id": "E1iYE-P2HkN5WNSztDtdf8ptEvmNYm_fiaVaEVwVIdw"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): n=int; ids=int; runs=int; appearances=int; outs=int; highest=int; milestone_errors=int; balls=int; wickets=int; figures=int; bowlers=int; strikers=int; average_errors=int\nn | ids | runs | appearances | outs | highest | milestone_errors | balls | wickets | figures | bowlers | strikers | average_errors\n--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---\n469 | 469 | 163680 | 12496 | 6610 | 175 | 0 | 134703 | 5932 | 330 | 330 | 434 | 0\nSQL: WITH deliveries AS (\n    -- Each delivery counts once. Only runs credited to the striker enter the score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs, w.kind_out\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_matches AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, SUM(runs) AS runs, COUNT(*) AS balls\n        FROM deliveries\n        GROUP BY striker, match_id\n        UNION ALL\n        -- A non-striker can bat and finish a match without facing a delivery.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS runs, SUM(balls_faced) AS balls,\n           MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus\n    FROM batting_matches\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS outs\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_matches AS (\n    SELECT bowler AS player_id, match_id, SUM(runs) AS runs_given,\n           COUNT(*) AS balls_bowled,\n           COUNT(*) FILTER (WHERE kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           )) AS wickets\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career / SUM(balls_bowled) OVER career AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id\n           ) AS performance_rank\n    FROM bowling_matches\n    WINDOW career AS (PARTITION BY player_id)\n),\nappearances AS (\n    -- A roster entry or recorded participation establishes one player-match.\n    SELECT player_id, match_id FROM main.player_match\n    UNION\n    SELECT player_id, match_id FROM batting_matches\n    UNION\n    SELECT player_id, match_id FROM bowling_matches\n),\nmatch_counts AS (\n    SELECT player_id, COUNT(*) AS matches_played\n    FROM appearances\n    GROUP BY player_id\n),\nplayers AS (\n    SELECT player_id FROM main.player\n    UNION\n    SELECT player_id FROM match_counts\n),\nrole_counts AS (\n    SELECT player_id, role,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nroles AS (\n    SELECT player_id, GROUP_CONCAT(role, ', ' ORDER BY role) AS most_frequent_role\n    FROM role_counts\n    WHERE frequency_rank = 1\n    GROUP BY player_id\n)\n, report AS (\nSELECT ids.player_id, p.player_name, r.most_frequent_role, p.batting_hand, p.bowling_skill,\n       COALESCE(b.runs, 0) AS total_runs_scored,\n       COALESCE(m.matches_played, 0) AS total_matches_played,\n       COALESCE(d.outs, 0) AS total_dismissals,\n       1.0 * COALESCE(b.runs, 0) / NULLIF(d.outs, 0) AS batting_average,\n       b.highest_match_score,\n       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(b.balls, 0) AS total_balls_faced,\n       100.0 * b.runs / NULLIF(b.balls, 0) AS strike_rate,\n       COALESCE(w.total_wickets, 0) AS total_wickets_taken,\n       w.economy_rate,\n       w.wickets || '-' || w.runs_given AS best_bowling_performance\nFROM players AS ids\nLEFT JOIN main.player AS p USING (player_id)\nLEFT JOIN roles AS r USING (player_id)\nLEFT JOIN match_counts AS m USING (player_id)\nLEFT JOIN batting AS b USING (player_id)\nLEFT JOIN dismissals AS d USING (player_id)\nLEFT JOIN bowling AS w ON w.player_id = ids.player_id AND w.performance_rank = 1\n)\nSELECT COUNT(*) AS n, COUNT(DISTINCT player_id) AS ids, SUM(total_runs_scored) AS runs,\nSUM(total_matches_played) AS appearances, SUM(total_dismissals) AS outs, MAX(highest_match_score) AS highest,\nSUM(matches_30_plus < matches_50_plus OR matches_50_plus < matches_100_plus) AS milestone_errors,\nSUM(total_balls_faced) AS balls, SUM(total_wickets_taken) AS wickets,\nCOUNT(best_bowling_performance) AS figures, COUNT(economy_rate) AS bowlers, COUNT(strike_rate) AS strikers,\nSUM((total_dismissals=0) <> (batting_average IS NULL)) AS average_errors\nFROM report LIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_13",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"jglJTP9ll817B8-zV5qS3hXpCi4M8BSdGoZr6g_xSXY\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_14",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "sql": "WITH deliveries AS (\n    -- Each delivery counts once. Only runs credited to the striker enter the score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs, w.kind_out\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_matches AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, SUM(runs) AS runs, COUNT(*) AS balls\n        FROM deliveries\n        GROUP BY striker, match_id\n        UNION ALL\n        -- A non-striker can bat and finish a match without facing a delivery.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS runs, SUM(balls_faced) AS balls,\n           MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus\n    FROM batting_matches\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS outs\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_matches AS (\n    SELECT bowler AS player_id, match_id, SUM(runs) AS runs_given,\n           COUNT(*) AS balls_bowled,\n           COUNT(*) FILTER (WHERE kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           )) AS wickets\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career / SUM(balls_bowled) OVER career AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id\n           ) AS performance_rank\n    FROM bowling_matches\n    WINDOW career AS (PARTITION BY player_id)\n),\nappearances AS (\n    -- A roster entry or recorded participation establishes one player-match.\n    SELECT player_id, match_id FROM main.player_match\n    UNION\n    SELECT player_id, match_id FROM batting_matches\n    UNION\n    SELECT player_id, match_id FROM bowling_matches\n),\nmatch_counts AS (\n    SELECT player_id, COUNT(*) AS matches_played\n    FROM appearances\n    GROUP BY player_id\n),\nplayers AS (\n    SELECT player_id FROM main.player\n    UNION\n    SELECT player_id FROM match_counts\n),\nrole_counts AS (\n    SELECT player_id, role,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nroles AS (\n    SELECT player_id, GROUP_CONCAT(role, ', ' ORDER BY role) AS most_frequent_role\n    FROM role_counts\n    WHERE frequency_rank = 1\n    GROUP BY player_id\n)\nSELECT ids.player_id, p.player_name, r.most_frequent_role, p.batting_hand, p.bowling_skill,\n       COALESCE(b.runs, 0) AS total_runs_scored,\n       COALESCE(m.matches_played, 0) AS total_matches_played,\n       COALESCE(d.outs, 0) AS total_dismissals,\n       1.0 * COALESCE(b.runs, 0) / NULLIF(d.outs, 0) AS batting_average,\n       b.highest_match_score,\n       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(b.balls, 0) AS total_balls_faced,\n       100.0 * b.runs / NULLIF(b.balls, 0) AS strike_rate,\n       COALESCE(w.total_wickets, 0) AS total_wickets_taken,\n       w.economy_rate,\n       w.wickets || '-' || w.runs_given AS best_bowling_performance\nFROM players AS ids\nLEFT JOIN main.player AS p USING (player_id)\nLEFT JOIN roles AS r USING (player_id)\nLEFT JOIN match_counts AS m USING (player_id)\nLEFT JOIN batting AS b USING (player_id)\nLEFT JOIN dismissals AS d USING (player_id)\nLEFT JOIN bowling AS w ON w.player_id = ids.player_id AND w.performance_rank = 1\nORDER BY ids.player_id\nLIMIT -1",
+        "definition_check_id": "jglJTP9ll817B8-zV5qS3hXpCi4M8BSdGoZr6g_xSXY",
+        "expected_rows": 469,
+        "expected_columns": [
+          "player_id",
+          "player_name",
+          "most_frequent_role",
+          "batting_hand",
+          "bowling_skill",
+          "total_runs_scored",
+          "total_matches_played",
+          "total_dismissals",
+          "batting_average",
+          "highest_match_score",
+          "matches_30_plus",
+          "matches_50_plus",
+          "matches_100_plus",
+          "total_balls_faced",
+          "strike_rate",
+          "total_wickets_taken",
+          "economy_rate",
+          "best_bowling_performance"
+        ],
+        "limit": 1000
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "469 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=469; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): player_id=int; player_name=NoneType,str; most_frequent_role=str; batting_hand=NoneType,str; bowling_skill=NoneType,str; total_runs_scored=int; total_matches_played=int; total_dismissals=int; batting_average=float; highest_match_score=int; matches_30_plus=int; matches_50_plus=int; matches_100_plus=int; total_balls_faced=int; strike_rate=float; total_wickets_taken=int; economy_rate=NoneType,float; best_bowling_performance=NoneType,str\nplayer_id | player_name | most_frequent_role | batting_hand | bowling_skill | total_runs_scored | total_matches_played | total_dismissals | batting_average | highest_match_score | matches_30_plus | matches_50_plus | matches_100_plus | total_balls_faced | strike_rate | total_wickets_taken | economy_rate | best_bowling_performance\n--- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | ---\n1 | SC Ganguly | Captain | Left-hand bat | Right-arm medium | 1303 | 57 | 52 | 25.057692307692307 | 91 | 20 | 7 | 0 | 1291 | 100.92951200619675 | 10 | 7.694656488549619 | 2-20\n2 | BB McCullum | Player | Right-hand bat | Right-arm medium | 2431 | 91 | 86 | 28.267441860465116 | 158 | 35 | 13 | 2 | 1944 | 125.05144032921811 | 0 | None | None\n3 | RT Ponting | Captain | Right-hand bat | Right-arm medium | 91 | 10 | 9 | 10.11111111111111 | 28 | 0 | 0 | 0 | 129 | 70.54263565891473 | 0 | None | None\n4 | DJ Hussey | Player | Right-hand bat | Right-arm offbreak | 1322 | 64 | 49 | 26.979591836734695 | 71 | 19 | 5 | 0 | 1101 | 120.07266121707539 | 8 | 8.674922600619196 | 2-2\n5 | Mohammad Hafeez | Player | Right-hand bat | Right-arm offbreak | 64 | 8 | 7 | 9.142857142857142 | 16 | 0 | 0 | 0 | 84 | 76.19047619047619 | 2 | 5.809523809523809 | 1-7\n6 | R Dravid | Captain | Right-hand bat | Right-arm offbreak | 2170 | 89 | 77 | 28.181818181818183 | 75 | 32 | 11 | 0 | 1918 | 113.13868613138686 | 0 | None | None\n7 | W Jaffer | Player | Right-hand bat | Right-arm offbreak | 130 | 8 | 8 | 16.25 | 50 | 2 | 1 | 0 | 129 | 100.7751937984496 | 0 | None | None\n8 | V Kohli | Captain, Player | Right-hand bat | Right-arm medium | 3987 | 134 | 105 | 37.97142857142857 | 113 | 57 | 29 | 4 | 3133 | 127.25821895946378 | 4 | 8.045454545454545 | 2-23\n9 | JH Kallis | Player | Right-hand bat | Right-arm fast-medium | 2414 | 97 | 84 | 28.738095238095237 | 89 | 34 | 17 | 0 | 2274 | 106.15655233069481 | 65 | 7.422197434467373 | 3-12\n10 | CL White | Player | Right-hand bat | Legbreak googly | 949 | 46 | 35 | 27.114285714285714 | 78 | 15 | 6 | 0 | 758 | 125.19788918205805 | 1 | 10.565217391304348 | 1-14\n11 | MV Boucher | Keeper | Right-hand bat | Right-arm medium | 394 | 31 | 14 | 28.142857142857142 | 50 | 6 | 1 | 0 | 318 | 123.8993710691824 | 0 | None | None\n12 | B Akhil | Player | Right-hand bat | Right-arm medium-fast | 76 | 15 | 6 | 12.666666666666666 | 27 | 0 | 0 | 0 | 57 | 133.33333333333334 | 6 | 7.305699481865285 | 2-17\n13 | AA Noffke | Player | Right-hand bat | Right-arm fast-medium | 9 | 1 | 1 | 9.0 | 9 | 0 | 0 | 0 | 12 | 75.0 | 1 | 8.4 | 1-35\n14 | P Kumar | Player | Right-hand bat | Right-arm medium | 332 | 113 | 37 | 8.972972972972974 | 34 | 1 | 0 | 0 | 314 | 105.73248407643312 | 84 | 7.0395569620253164 | 3-16\n15 | Z Khan | Player | Right-hand bat | Left-arm fast-medium | 113 | 87 | 13 | 8.692307692307692 | 23 | 0 | 0 | 0 | 128 | 88.28125 | 92 | 7.0468210941350415 | 4-17\n16 | SB Joshi | Player | Left-hand bat | Slow left-arm orthodox | 6 | 4 | 2 | 3.0 | 3 | 0 | 0 | 0 | 16 | 37.5 | 1 | 8.945454545454545 | 1-27\n17 | PA Patel | Keeper | Left-hand bat | Right-arm medium | 1868 | 101 | 88 | 21.227272727272727 | 81 | 21 | 7 | 0 | 1688 | 110.66350710900474 | 0 | None | None\n18 | ML Hayden | Player | Left-hand bat | Right-arm medium | 1074 | 31 | 29 | 37.03448275862069 | 93 | 16 | 8 | 0 | 813 | 132.10332103321034 | 0 | None | None\n19 | MEK Hussey | Player | Left-hand bat | Right-arm medium | 1977 | 59 | 51 | 38.76470588235294 | 116 | 28 | 16 | 1 | 1648 | 119.9635922330097 | 0 | None | None\n20 | MS Dhoni | CaptainKeeper | Right-hand bat | Right-arm medium | 3270 | 142 | 83 | 39.397590361445786 | 70 | 45 | 16 | 0 | 2419 | 135.17982637453494 | 0 | None | None\n21 | SK Raina | Player | Left-hand bat | Right-arm offbreak | 4083 | 145 | 121 | 33.743801652892564 | 100 | 56 | 29 | 1 | 3043 | 134.17679921130463 | 24 | 6.956004756242568 | 2-0\n22 | JDP Oram | Player | Left-hand bat | Right-arm fast-medium | 106 | 18 | 8 | 13.25 | 41 | 1 | 0 | 0 | 110 | 96.36363636363636 | 9 | 8.40983606557377 | 3-32\n23 | S Badrinath | Player | Right-hand bat | Right-arm offbreak | 1439 | 93 | 46 | 31.282608695652176 | 71 | 23 | 11 | 0 | 1243 | 115.76830249396622 | 0 | None | None\n24 | K Goel | Player | Left-hand bat | Right-arm offbreak | 218 | 22 | 15 | 14.533333333333333 | 38 | 1 | 0 | 0 | 239 | 91.2133891213389 | 0 | 8.238805970149254 | 0-7\n25 | JR Hopes | Player | Right-hand bat | Right-arm medium | 417 | 20 | 16 | 26.0625 | 71 | 4 | 4 | 0 | 314 | 132.80254777070064 | 14 | 8.764227642276422 | 2-2\n26 | KC Sangakkara | CaptainKeeper | Left-hand bat | Right-arm offbreak | 1656 | 69 | 63 | 26.285714285714285 | 94 | 23 | 10 | 0 | 1391 | 119.0510424155284 | 0 | None | None\n27 | Yuvraj Singh | Player | Left-hand bat | Slow left-arm orthodox | 2281 | 105 | 90 | 25.344444444444445 | 83 | 31 | 10 | 0 | 1825 | 124.98630136986301 | 34 | 7.139784946236559 | 4-29\n28 | SM Katich | Player | Left-hand bat | Slow left-arm chinaman | 237 | 11 | 10 | 23.7 | 75 | 3 | 2 | 0 | 191 | 124.08376963350786 | 0 | None | None\n29 | IK Pathan | Player | Left-hand bat | Left-arm medium-fast | 1079 | 99 | 51 | 21.15686274509804 | 60 | 8 | 1 | 0 | 938 | 115.0319829424307 | 79 | 7.215743440233236 | 3-21\n30 | T Kohli | Player | Right-hand bat | Right-arm medium | 11 | 4 | 3 | 3.6666666666666665 | 7 | 0 | 0 | 0 | 20 | 55.0 | 0 | None | None\n31 | YK Pathan | Player | Right-hand bat | Right-arm offbreak | 2719 | 133 | 89 | 30.55056179775281 | 100 | 34 | 13 | 1 | 1927 | 141.1001556824079 | 40 | 6.926391382405745 | 3-20\n32 | SR Watson | Player | Right-hand bat | Right-arm fast-medium | 2469 | 91 | 76 | 32.48684210526316 | 104 | 33 | 16 | 2 | 1803 | 136.93843594009982 | 81 | 6.961648540354894 | 4-27\n33 | M Kaif | Player | Right-hand bat | Right-arm offbreak | 245 | 28 | 17 | 14.411764705882353 | 34 | 2 | 0 | 0 | 241 | 101.65975103734439 | 0 | None | None\n34 | DS Lehmann | Player | Left-hand bat | Slow left-arm orthodox | 18 | 2 | 2 | 9.0 | 17 | 0 | 0 | 0 | 19 | 94.73684210526316 | 0 | None | None\n35 | None | Player | None | None | 1552 | 124 | 67 | 23.16417910447761 | 48 | 14 | 0 | 0 | 1312 | 118.29268292682927 | 77 | 7.302837290098436 | 5-16\n36 | M Rawat | Keeper | Right-hand bat | Right-arm medium | 55 | 17 | 5 | 11.0 | 23 | 0 | 0 | 0 | 70 | 78.57142857142857 | 0 | None | None\n37 | D Salunkhe | Player | Right-hand bat | Legbreak | 33 | 6 | 2 | 16.5 | 26 | 0 | 0 | 0 | 24 | 137.5 | 1 | 8.235294117647058 | 1-19\n38 | SK Warne | Captain | Right-hand bat | Legbreak googly | 196 | 54 | 20 | 9.8 | 34 | 1 | 0 | 0 | 217 | 90.3225806451613 | 55 | 6.942355889724311 | 4-21\n39 | SK Trivedi | Player | Right-hand bat | Right-arm medium | 42 | 76 | 7 | 6.0 | 9 | 0 | 0 | 0 | 61 | 68.85245901639344 | 65 | 7.090558766859345 | 4-23\n40 | G Gambhir | Captain | Left-hand bat | Legbreak | 3589 | 131 | 118 | 30.415254237288135 | 93 | 50 | 31 | 0 | 2983 | 120.31511900771036 | 0 | None | None\n41 | V Sehwag | Captain | Right-hand bat | Right-arm offbreak | 2702 | 102 | 97 | 27.855670103092784 | 122 | 35 | 18 | 2 | 1806 | 149.6124031007752 | 6 | 10.130434782608695 | 2-18\n42 | S Dhawan | Player | Left-hand bat | Right-arm offbreak | 3082 | 113 | 96 | 32.104166666666664 | 95 | 42 | 25 | 0 | 2622 | 117.54385964912281 | 4 | 7.959183673469388 | 1-7\n43 | L Ronchi | Keeper | Right-hand bat | Right-arm medium | 34 | 5 | 5 | 6.8 | 13 | 0 | 0 | 0 | 37 | 91.89189189189189 | 0 | None | None\n44 | ST Jayasuriya | Player | Left-hand bat | Slow left-arm orthodox | 768 | 30 | 28 | 27.428571428571427 | 114 | 10 | 5 | 1 | 573 | 134.03141361256544 | 13 | 7.475083056478406 | 3-13\n45 | DJ Thornely | Player | Right-hand bat | Right-arm medium | 39 | 6 | 2 | 19.5 | 30 | 1 | 0 | 0 | 54 | 72.22222222222223 | 3 | 5.181818181818182 | 2-6\n46 | RV Uthappa | Keeper | Right-hand bat | Right-arm medium | 3390 | 133 | 114 | 29.736842105263158 | 83 | 49 | 17 | 0 | 2720 | 124.63235294117646 | 0 | None | None\n47 | PR Shah | Keeper | Right-hand bat | Right-arm medium | 92 | 16 | 8 | 11.5 | 29 | 0 | 0 | 0 | 96 | 95.83333333333333 | 0 | None | None\n48 | AM Nayar | Player | Left-hand bat | Right-arm medium | 672 | 60 | 38 | 17.68421052631579 | 45 | 6 | 0 | 0 | 588 | 114.28571428571429 | 9 | 7.807531380753138 | 3-13\n49 | SM Pollock | Player | Right-hand bat | Right-arm fast-medium | 147 | 13 | 8 | 18.375 | 33 | 2 | 0 | 0 | 116 | 126.72413793103448 | 11 | 6.364285714285714 | 3-11\n50 | Harbhajan Singh | Player | Right-hand bat | Right-arm offbreak | 783 | 125 | 47 | 16.659574468085108 | 64 | 6 | 1 | 0 | 574 | 136.41114982578398 | 119 | 6.63019693654267 | 5-17\nSQL: WITH deliveries AS (\n    -- Each delivery counts once. Only runs credited to the striker enter the score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs, w.kind_out\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_matches AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, SUM(runs) AS runs, COUNT(*) AS balls\n        FROM deliveries\n        GROUP BY striker, match_id\n        UNION ALL\n        -- A non-striker can bat and finish a match without facing a delivery.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS runs, SUM(balls_faced) AS balls,\n           MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus\n    FROM batting_matches\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS outs\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_matches AS (\n    SELECT bowler AS player_id, match_id, SUM(runs) AS runs_given,\n           COUNT(*) AS balls_bowled,\n           COUNT(*) FILTER (WHERE kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           )) AS wickets\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career / SUM(balls_bowled) OVER career AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id\n           ) AS performance_rank\n    FROM bowling_matches\n    WINDOW career AS (PARTITION BY player_id)\n),\nappearances AS (\n    -- A roster entry or recorded participation establishes one player-match.\n    SELECT player_id, match_id FROM main.player_match\n    UNION\n    SELECT player_id, match_id FROM batting_matches\n    UNION\n    SELECT player_id, match_id FROM bowling_matches\n),\nmatch_counts AS (\n    SELECT player_id, COUNT(*) AS matches_played\n    FROM appearances\n    GROUP BY player_id\n),\nplayers AS (\n    SELECT player_id FROM main.player\n    UNION\n    SELECT player_id FROM match_counts\n),\nrole_counts AS (\n    SELECT player_id, role,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nroles AS (\n    SELECT player_id, GROUP_CONCAT(role, ', ' ORDER BY role) AS most_frequent_role\n    FROM role_counts\n    WHERE frequency_rank = 1\n    GROUP BY player_id\n)\nSELECT ids.player_id, p.player_name, r.most_frequent_role, p.batting_hand, p.bowling_skill,\n       COALESCE(b.runs, 0) AS total_runs_scored,\n       COALESCE(m.matches_played, 0) AS total_matches_played,\n       COALESCE(d.outs, 0) AS total_dismissals,\n       1.0 * COALESCE(b.runs, 0) / NULLIF(d.outs, 0) AS batting_average,\n       b.highest_match_score,\n       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(b.balls, 0) AS total_balls_faced,\n       100.0 * b.runs / NULLIF(b.balls, 0) AS strike_rate,\n       COALESCE(w.total_wickets, 0) AS total_wickets_taken,\n       w.economy_rate,\n       w.wickets || '-' || w.runs_given AS best_bowling_performance\nFROM players AS ids\nLEFT JOIN main.player AS p USING (player_id)\nLEFT JOIN roles AS r USING (player_id)\nLEFT JOIN match_counts AS m USING (player_id)\nLEFT JOIN batting AS b USING (player_id)\nLEFT JOIN dismissals AS d USING (player_id)\nLEFT JOIN bowling AS w ON w.player_id = ids.player_id AND w.performance_rank = 1\nORDER BY ids.player_id\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH deliveries AS (\n    -- Each delivery counts once. Only runs credited to the striker enter the score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs, w.kind_out\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_matches AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, SUM(runs) AS runs, COUNT(*) AS balls\n        FROM deliveries\n        GROUP BY striker, match_id\n        UNION ALL\n        -- A non-striker can bat and finish a match without facing a delivery.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS runs, SUM(balls_faced) AS balls,\n           MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus\n    FROM batting_matches\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS outs\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_matches AS (\n    SELECT bowler AS player_id, match_id, SUM(runs) AS runs_given,\n           COUNT(*) AS balls_bowled,\n           COUNT(*) FILTER (WHERE kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           )) AS wickets\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career / SUM(balls_bowled) OVER career AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id\n           ) AS performance_rank\n    FROM bowling_matches\n    WINDOW career AS (PARTITION BY player_id)\n),\nappearances AS (\n    -- A roster entry or recorded participation establishes one player-match.\n    SELECT player_id, match_id FROM main.player_match\n    UNION\n    SELECT player_id, match_id FROM batting_matches\n    UNION\n    SELECT player_id, match_id FROM bowling_matches\n),\nmatch_counts AS (\n    SELECT player_id, COUNT(*) AS matches_played\n    FROM appearances\n    GROUP BY player_id\n),\nplayers AS (\n    SELECT player_id FROM main.player\n    UNION\n    SELECT player_id FROM match_counts\n),\nrole_counts AS (\n    SELECT player_id, role,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nroles AS (\n    SELECT player_id, GROUP_CONCAT(role, ', ' ORDER BY role) AS most_frequent_role\n    FROM role_counts\n    WHERE frequency_rank = 1\n    GROUP BY player_id\n)\nSELECT ids.player_id, p.player_name, r.most_frequent_role, p.batting_hand, p.bowling_skill,\n       COALESCE(b.runs, 0) AS total_runs_scored,\n       COALESCE(m.matches_played, 0) AS total_matches_played,\n       COALESCE(d.outs, 0) AS total_dismissals,\n       1.0 * COALESCE(b.runs, 0) / NULLIF(d.outs, 0) AS batting_average,\n       b.highest_match_score,\n       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(b.balls, 0) AS total_balls_faced,\n       100.0 * b.runs / NULLIF(b.balls, 0) AS strike_rate,\n       COALESCE(w.total_wickets, 0) AS total_wickets_taken,\n       w.economy_rate,\n       w.wickets || '-' || w.runs_given AS best_bowling_performance\nFROM players AS ids\nLEFT JOIN main.player AS p USING (player_id)\nLEFT JOIN roles AS r USING (player_id)\nLEFT JOIN match_counts AS m USING (player_id)\nLEFT JOIN batting AS b USING (player_id)\nLEFT JOIN dismissals AS d USING (player_id)\nLEFT JOIN bowling AS w ON w.player_id = ids.player_id AND w.performance_rank = 1\nORDER BY ids.player_id\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 469,
+  "sql": "WITH deliveries AS (\n    -- Each delivery counts once. Only runs credited to the striker enter the score.\n    SELECT b.match_id, b.striker, b.bowler,\n           COALESCE(s.runs_scored, 0) AS runs, w.kind_out\n    FROM main.ball_by_ball AS b\n    LEFT JOIN main.batsman_scored AS s USING (match_id, innings_no, over_id, ball_id)\n    LEFT JOIN main.wicket_taken AS w USING (match_id, innings_no, over_id, ball_id)\n),\nbatting_matches AS (\n    SELECT player_id, match_id, SUM(runs) AS match_runs, SUM(balls) AS balls_faced\n    FROM (\n        SELECT striker AS player_id, match_id, SUM(runs) AS runs, COUNT(*) AS balls\n        FROM deliveries\n        GROUP BY striker, match_id\n        UNION ALL\n        -- A non-striker can bat and finish a match without facing a delivery.\n        SELECT DISTINCT non_striker, match_id, 0, 0\n        FROM main.ball_by_ball\n    ) AS batters\n    GROUP BY player_id, match_id\n),\nbatting AS (\n    SELECT player_id, SUM(match_runs) AS runs, SUM(balls_faced) AS balls,\n           MAX(match_runs) AS highest_match_score,\n           COUNT(*) FILTER (WHERE match_runs >= 30) AS matches_30_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 50) AS matches_50_plus,\n           COUNT(*) FILTER (WHERE match_runs >= 100) AS matches_100_plus\n    FROM batting_matches\n    GROUP BY player_id\n),\ndismissals AS (\n    SELECT player_out AS player_id, COUNT(*) AS outs\n    FROM main.wicket_taken\n    WHERE kind_out <> 'retired hurt'\n    GROUP BY player_out\n),\nbowling_matches AS (\n    SELECT bowler AS player_id, match_id, SUM(runs) AS runs_given,\n           COUNT(*) AS balls_bowled,\n           COUNT(*) FILTER (WHERE kind_out IN (\n               'bowled', 'caught', 'caught and bowled', 'hit wicket', 'lbw', 'stumped'\n           )) AS wickets\n    FROM deliveries\n    GROUP BY bowler, match_id\n),\nbowling AS (\n    SELECT player_id, wickets, runs_given,\n           SUM(wickets) OVER career AS total_wickets,\n           6.0 * SUM(runs_given) OVER career / SUM(balls_bowled) OVER career AS economy_rate,\n           ROW_NUMBER() OVER (\n               career ORDER BY wickets DESC, runs_given ASC, match_id\n           ) AS performance_rank\n    FROM bowling_matches\n    WINDOW career AS (PARTITION BY player_id)\n),\nappearances AS (\n    -- A roster entry or recorded participation establishes one player-match.\n    SELECT player_id, match_id FROM main.player_match\n    UNION\n    SELECT player_id, match_id FROM batting_matches\n    UNION\n    SELECT player_id, match_id FROM bowling_matches\n),\nmatch_counts AS (\n    SELECT player_id, COUNT(*) AS matches_played\n    FROM appearances\n    GROUP BY player_id\n),\nplayers AS (\n    SELECT player_id FROM main.player\n    UNION\n    SELECT player_id FROM match_counts\n),\nrole_counts AS (\n    SELECT player_id, role,\n           RANK() OVER (PARTITION BY player_id ORDER BY COUNT(*) DESC) AS frequency_rank\n    FROM main.player_match\n    GROUP BY player_id, role\n),\nroles AS (\n    SELECT player_id, GROUP_CONCAT(role, ', ' ORDER BY role) AS most_frequent_role\n    FROM role_counts\n    WHERE frequency_rank = 1\n    GROUP BY player_id\n)\nSELECT ids.player_id, p.player_name, r.most_frequent_role, p.batting_hand, p.bowling_skill,\n       COALESCE(b.runs, 0) AS total_runs_scored,\n       COALESCE(m.matches_played, 0) AS total_matches_played,\n       COALESCE(d.outs, 0) AS total_dismissals,\n       1.0 * COALESCE(b.runs, 0) / NULLIF(d.outs, 0) AS batting_average,\n       b.highest_match_score,\n       COALESCE(b.matches_30_plus, 0) AS matches_30_plus,\n       COALESCE(b.matches_50_plus, 0) AS matches_50_plus,\n       COALESCE(b.matches_100_plus, 0) AS matches_100_plus,\n       COALESCE(b.balls, 0) AS total_balls_faced,\n       100.0 * b.runs / NULLIF(b.balls, 0) AS strike_rate,\n       COALESCE(w.total_wickets, 0) AS total_wickets_taken,\n       w.economy_rate,\n       w.wickets || '-' || w.runs_given AS best_bowling_performance\nFROM players AS ids\nLEFT JOIN main.player AS p USING (player_id)\nLEFT JOIN roles AS r USING (player_id)\nLEFT JOIN match_counts AS m USING (player_id)\nLEFT JOIN batting AS b USING (player_id)\nLEFT JOIN dismissals AS d USING (player_id)\nLEFT JOIN bowling AS w ON w.player_id = ids.player_id AND w.performance_rank = 1\nORDER BY ids.player_id\nLIMIT -1",
+  "seconds": 94.16328754194546
+}

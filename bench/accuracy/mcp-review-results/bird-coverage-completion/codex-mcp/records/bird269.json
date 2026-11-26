@@ -1,0 +1,174 @@
+{
+  "instance_id": "bird269",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "e7c233c08196be47393fb643df0acf2985b5db8d8331b8e7f5a6547b6f5b30b4",
+  "events_sha256": "2929513898ba409d1e881fe8bea9784bb31a4e635424184a1e639edd1d03ab83",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 162480,
+      "cached_input_tokens": 150912,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 853,
+      "reasoning_output_tokens": 54
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "drivers"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "drivers (table)\n- driverId: INTEGER\n- driverRef: TEXT NOT NULL\n- number: INTEGER\n- code: TEXT\n- forename: TEXT NOT NULL\n- surname: TEXT NOT NULL\n- dob: DATE\n- nationality: TEXT\n- url: TEXT NOT NULL\nPRIMARY KEY (driverId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"EcpkerQXNg6CxOXNltbar-8gqUMJ2q9W74yoc3aHsyo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "qualifying"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "qualifying (table)\n- qualifyId: INTEGER\n- raceId: INTEGER NOT NULL\n- driverId: INTEGER NOT NULL\n- constructorId: INTEGER NOT NULL\n- number: INTEGER NOT NULL\n- position: INTEGER\n- q1: TEXT\n- q2: TEXT\n- q3: TEXT\nPRIMARY KEY (qualifyId)\nFOREIGN KEY (raceId) REFERENCES races (raceId)\nFOREIGN KEY (driverId) REFERENCES drivers (driverId)\nFOREIGN KEY (constructorId) REFERENCES constructors (constructorId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "races"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "races (table)\n- raceId: INTEGER\n- year: INTEGER NOT NULL\n- round: INTEGER NOT NULL\n- circuitId: INTEGER NOT NULL\n- name: TEXT NOT NULL\n- date: DATE NOT NULL\n- time: TEXT\n- url: TEXT\nPRIMARY KEY (raceId)\nFOREIGN KEY (year) REFERENCES seasons (year)\nFOREIGN KEY (circuitId) REFERENCES circuits (circuitId)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "EcpkerQXNg6CxOXNltbar-8gqUMJ2q9W74yoc3aHsyo",
+        "sql": "SELECT CASE WHEN q.q3 GLOB '[0-9]:[0-5][0-9].[0-9][0-9][0-9]' THEN 'm:ss.sss' ELSE quote(q.q3) END AS time_format,\n       COUNT(*) AS qualifying_rows, COUNT(r.raceId) AS matched_races, MIN(d.dob) AS earliest_birth, MIN(q.q3) AS sample_time\nFROM qualifying AS q\nJOIN drivers AS d ON d.driverId = q.driverId\nLEFT JOIN races AS r ON r.raceId = q.raceId\nWHERE d.nationality = 'British' AND d.dob >= '1981-01-01'\nGROUP BY time_format"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): time_format=str; qualifying_rows=int; matched_races=int; earliest_birth=str; sample_time=NoneType,str\ntime_format | qualifying_rows | matched_races | earliest_birth | sample_time\n--- | --- | --- | --- | ---\n'' | 1 | 1 | 1991-01-20 | \nNULL | 142 | 142 | 1985-01-07 | None\nm:ss.sss | 186 | 186 | 1985-01-07 | 1:04.424\nSQL: SELECT CASE WHEN q.q3 GLOB '[0-9]:[0-5][0-9].[0-9][0-9][0-9]' THEN 'm:ss.sss' ELSE quote(q.q3) END AS time_format,\n       COUNT(*) AS qualifying_rows, COUNT(r.raceId) AS matched_races, MIN(d.dob) AS earliest_birth, MIN(q.q3) AS sample_time\nFROM qualifying AS q\nJOIN drivers AS d ON d.driverId = q.driverId\nLEFT JOIN races AS r ON r.raceId = q.raceId\nWHERE d.nationality = 'British' AND d.dob >= '1981-01-01'\nGROUP BY time_format\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"GdI5C7Xo-Q8IM0GPC7pcjqPBFn_C_nu0rqq0032SDFs\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "GdI5C7Xo-Q8IM0GPC7pcjqPBFn_C_nu0rqq0032SDFs",
+        "expected_columns": [
+          "driver_name",
+          "race_name",
+          "race_year",
+          "q3_time"
+        ],
+        "sql": "WITH eligible AS (\n    SELECT d.forename || ' ' || d.surname AS driver_name,\n           r.name AS race_name,\n           r.year AS race_year,\n           q.q3 AS q3_time\n    FROM qualifying AS q\n    JOIN drivers AS d ON d.driverId = q.driverId\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE d.nationality = 'British'\n      AND d.dob >= '1981-01-01'\n      AND q.q3 <> ''\n)\nSELECT driver_name, race_name, race_year, q3_time\nFROM eligible\nWHERE q3_time = (SELECT MIN(q3_time) FROM eligible)\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): driver_name=str; race_name=str; race_year=int; q3_time=str\ndriver_name | race_name | race_year | q3_time\n--- | --- | --- | ---\nLewis Hamilton | Austrian Grand Prix | 2017 | 1:04.424\nSQL: WITH eligible AS (\n    SELECT d.forename || ' ' || d.surname AS driver_name,\n           r.name AS race_name,\n           r.year AS race_year,\n           q.q3 AS q3_time\n    FROM qualifying AS q\n    JOIN drivers AS d ON d.driverId = q.driverId\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE d.nationality = 'British'\n      AND d.dob >= '1981-01-01'\n      AND q.q3 <> ''\n)\nSELECT driver_name, race_name, race_year, q3_time\nFROM eligible\nWHERE q3_time = (SELECT MIN(q3_time) FROM eligible)\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH eligible AS (\n    SELECT d.forename || ' ' || d.surname AS driver_name,\n           r.name AS race_name,\n           r.year AS race_year,\n           q.q3 AS q3_time\n    FROM qualifying AS q\n    JOIN drivers AS d ON d.driverId = q.driverId\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE d.nationality = 'British'\n      AND d.dob >= '1981-01-01'\n      AND q.q3 <> ''\n)\nSELECT driver_name, race_name, race_year, q3_time\nFROM eligible\nWHERE q3_time = (SELECT MIN(q3_time) FROM eligible)\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH eligible AS (\n    SELECT d.forename || ' ' || d.surname AS driver_name,\n           r.name AS race_name,\n           r.year AS race_year,\n           q.q3 AS q3_time\n    FROM qualifying AS q\n    JOIN drivers AS d ON d.driverId = q.driverId\n    JOIN races AS r ON r.raceId = q.raceId\n    WHERE d.nationality = 'British'\n      AND d.dob >= '1981-01-01'\n      AND q.q3 <> ''\n)\nSELECT driver_name, race_name, race_year, q3_time\nFROM eligible\nWHERE q3_time = (SELECT MIN(q3_time) FROM eligible)\nLIMIT -1",
+  "seconds": 33.713895334047265
+}

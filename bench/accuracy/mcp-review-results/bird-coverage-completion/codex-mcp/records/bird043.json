@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird043",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "801249216df5275c0a5691b3c4b8920a865823eb84cf80b471d9a10a957c4908",
+  "events_sha256": "1534a49644fb612095b0f26d2246fbcbb6db788fcfadc5377634c7284736784a",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 161359,
+      "cached_input_tokens": 149504,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 700,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"J4Fk2Uaeh-Q_eGUtPnnuNcCAoeJDCiTPZcmEmaCqb_c\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "frpm"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "frpm (table)\n- CDSCode: TEXT NOT NULL\n- Academic Year: TEXT\n- County Code: TEXT\n- District Code: INTEGER\n- School Code: TEXT\n- County Name: TEXT\n- District Name: TEXT\n- School Name: TEXT\n- District Type: TEXT\n- School Type: TEXT\n- Educational Option Type: TEXT\n- NSLP Provision Status: TEXT\n- Charter School (Y/N): INTEGER\n- Charter School Number: TEXT\n- Charter Funding Type: TEXT\n- IRC: INTEGER\n- Low Grade: TEXT\n- High Grade: TEXT\n- Enrollment (K-12): REAL\n- Free Meal Count (K-12): REAL\n- Percent (%) Eligible Free (K-12): REAL\n- FRPM Count (K-12): REAL\n- Percent (%) Eligible FRPM (K-12): REAL\n- Enrollment (Ages 5-17): REAL\n- Free Meal Count (Ages 5-17): REAL\n- Percent (%) Eligible Free (Ages 5-17): REAL\n- FRPM Count (Ages 5-17): REAL\n- Percent (%) Eligible FRPM (Ages 5-17): REAL\n- 2013-14 CALPADS Fall 1 Certification Status: INTEGER\nPRIMARY KEY (CDSCode)\nFOREIGN KEY (CDSCode) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "satscores"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "satscores (table)\n- cds: TEXT NOT NULL\n- rtype: TEXT NOT NULL\n- sname: TEXT\n- dname: TEXT\n- cname: TEXT\n- enroll12: INTEGER NOT NULL\n- NumTstTakr: INTEGER NOT NULL\n- AvgScrRead: INTEGER\n- AvgScrMath: INTEGER\n- AvgScrWrite: INTEGER\n- NumGE1500: INTEGER\nPRIMARY KEY (cds)\nFOREIGN KEY (cds) REFERENCES schools (CDSCode)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "J4Fk2Uaeh-Q_eGUtPnnuNcCAoeJDCiTPZcmEmaCqb_c",
+        "sql": "SELECT s.rtype, MIN(s.sname) AS sample_school, f.\"Academic Year\", typeof(s.NumGE1500) AS sat_count_type, COUNT(*) AS records\nFROM satscores AS s\nLEFT JOIN frpm AS f ON f.CDSCode = s.cds\nGROUP BY s.rtype, f.\"Academic Year\", typeof(s.NumGE1500)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "7 row(s):\nResult coverage: fetched_rows=7; displayed_rows=7; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): rtype=str; sample_school=NoneType,str; Academic Year=NoneType,str; sat_count_type=str; records=int\nrtype | sample_school | Academic Year | sat_count_type | records\n--- | --- | --- | --- | ---\nD | None | None | integer | 391\nD | None | None | null | 94\nD | None | 2014-2015 | integer | 31\nD | None | 2014-2015 | null | 4\nS | Anahuacalmecac International University Preparator | None | null | 2\nS | APEX Academy | 2014-2015 | integer | 1251\nS | 21st Century Learning Institute | 2014-2015 | null | 496\nSQL: SELECT s.rtype, MIN(s.sname) AS sample_school, f.\"Academic Year\", typeof(s.NumGE1500) AS sat_count_type, COUNT(*) AS records\nFROM satscores AS s\nLEFT JOIN frpm AS f ON f.CDSCode = s.cds\nGROUP BY s.rtype, f.\"Academic Year\", typeof(s.NumGE1500)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"331579_QisGNH85ei94zrIFBmiEooFQxxzX3xejkm8o\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "331579_QisGNH85ei94zrIFBmiEooFQxxzX3xejkm8o",
+        "expected_columns": [
+          "county_name",
+          "qualifying_schools"
+        ],
+        "sql": "SELECT\n    f.\"County Name\" AS county_name,\n    COUNT(*) AS qualifying_schools\nFROM frpm AS f\nJOIN satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND s.rtype = 'S'\n  AND s.NumGE1500 >= 1\n  AND CAST(f.\"Free Meal Count (K-12)\" AS REAL)\n      / NULLIF(f.\"Enrollment (K-12)\", 0) > 0.1\nGROUP BY f.\"County Name\"\nORDER BY qualifying_schools DESC, county_name ASC"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "56 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=56; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): county_name=str; qualifying_schools=int\ncounty_name | qualifying_schools\n--- | ---\nLos Angeles | 305\nSan Diego | 86\nOrange | 62\nSan Bernardino | 60\nRiverside | 58\nSacramento | 49\nAlameda | 45\nSanta Clara | 37\nFresno | 32\nSan Joaquin | 32\nKern | 31\nContra Costa | 24\nStanislaus | 21\nVentura | 21\nTulare | 20\nSan Francisco | 19\nSan Mateo | 19\nSonoma | 15\nMonterey | 13\nMerced | 12\nPlacer | 12\nSanta Barbara | 12\nSolano | 11\nButte | 10\nHumboldt | 10\nMendocino | 8\nSanta Cruz | 8\nShasta | 8\nImperial | 7\nKings | 7\nMadera | 7\nSan Luis Obispo | 7\nEl Dorado | 6\nNapa | 6\nSutter | 6\nYolo | 6\nMarin | 5\nNevada | 5\nColusa | 4\nLake | 4\nSiskiyou | 4\nYuba | 4\nGlenn | 3\nPlumas | 3\nTehama | 3\nAmador | 2\nCalaveras | 2\nSan Benito | 2\nTuolumne | 2\nDel Norte | 1\nSQL: SELECT\n    f.\"County Name\" AS county_name,\n    COUNT(*) AS qualifying_schools\nFROM frpm AS f\nJOIN satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND s.rtype = 'S'\n  AND s.NumGE1500 >= 1\n  AND CAST(f.\"Free Meal Count (K-12)\" AS REAL)\n      / NULLIF(f.\"Enrollment (K-12)\", 0) > 0.1\nGROUP BY f.\"County Name\"\nORDER BY qualifying_schools DESC, county_name ASC\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    f.\"County Name\" AS county_name,\n    COUNT(*) AS qualifying_schools\nFROM frpm AS f\nJOIN satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND s.rtype = 'S'\n  AND s.NumGE1500 >= 1\n  AND CAST(f.\"Free Meal Count (K-12)\" AS REAL)\n      / NULLIF(f.\"Enrollment (K-12)\", 0) > 0.1\nGROUP BY f.\"County Name\"\nORDER BY qualifying_schools DESC, county_name ASC\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 56,
+  "sql": "SELECT\n    f.\"County Name\" AS county_name,\n    COUNT(*) AS qualifying_schools\nFROM frpm AS f\nJOIN satscores AS s ON s.cds = f.CDSCode\nWHERE f.\"Academic Year\" = '2014-2015'\n  AND s.rtype = 'S'\n  AND s.NumGE1500 >= 1\n  AND CAST(f.\"Free Meal Count (K-12)\" AS REAL)\n      / NULLIF(f.\"Enrollment (K-12)\", 0) > 0.1\nGROUP BY f.\"County Name\"\nORDER BY qualifying_schools DESC, county_name ASC\nLIMIT 1000",
+  "seconds": 29.739442458027042
+}

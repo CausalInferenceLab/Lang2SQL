@@ -1,0 +1,152 @@
+{
+  "instance_id": "bird103",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "f103191140ca1fff23648463c387939e4491f7749a7e3b614a604a404bab81ac",
+  "events_sha256": "70cd99b1cc5e3042dac9de1c28981396a32695c665d29223a814ad0e25b667fc",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169406,
+      "cached_input_tokens": 156288,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 733,
+      "reasoning_output_tokens": 63
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "set_translations"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "set_translations (table)\n- id: INTEGER NOT NULL\n- language: TEXT\n- setCode: TEXT\n- translation: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (setCode) REFERENCES sets (code)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "sets"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "sets (table)\n- id: INTEGER NOT NULL\n- baseSetSize: INTEGER\n- block: TEXT\n- booster: TEXT\n- code: TEXT NOT NULL\n- isFoilOnly: INTEGER NOT NULL\n- isForeignOnly: INTEGER NOT NULL\n- isNonFoilOnly: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isPartialPreview: INTEGER NOT NULL\n- keyruneCode: TEXT\n- mcmId: INTEGER\n- mcmIdExtras: INTEGER\n- mcmName: TEXT\n- mtgoCode: TEXT\n- name: TEXT\n- parentCode: TEXT\n- releaseDate: DATE\n- tcgplayerGroupId: INTEGER\n- totalSetSize: INTEGER\n- type: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"gznyF8-PfecVvHrmf9HoUrIELPGFv_DrPhA9oUeqZMA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "gznyF8-PfecVvHrmf9HoUrIELPGFv_DrPhA9oUeqZMA",
+        "sql": "SELECT t.language, COUNT(*) AS entries, COUNT(t.translation) AS named_entries,\n       SUM(TRIM(t.translation) = '') AS blank_entries,\n       MIN(s.releaseDate) AS first_release, MAX(s.releaseDate) AS last_release\nFROM sets AS s\nLEFT JOIN set_translations AS t ON t.setCode = s.code\nWHERE s.releaseDate >= '2020-01-01' AND s.releaseDate < '2021-01-01'\nGROUP BY t.language"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "11 row(s):\nResult coverage: fetched_rows=11; displayed_rows=11; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): language=NoneType,str; entries=int; named_entries=int; blank_entries=NoneType,int; first_release=str; last_release=str\nlanguage | entries | named_entries | blank_entries | first_release | last_release\n--- | --- | --- | --- | --- | ---\nNone | 31 | 0 | None | 2020-01-01 | 2020-12-04\nChinese Simplified | 3 | 0 | None | 2020-01-24 | 2020-07-03\nChinese Traditional | 3 | 0 | None | 2020-01-24 | 2020-07-03\nFrench | 3 | 3 | 0 | 2020-01-24 | 2020-07-03\nGerman | 3 | 0 | None | 2020-01-24 | 2020-07-03\nItalian | 3 | 0 | None | 2020-01-24 | 2020-07-03\nJapanese | 3 | 0 | None | 2020-01-24 | 2020-07-03\nKorean | 3 | 0 | None | 2020-01-24 | 2020-07-03\nPortuguese (Brazil) | 3 | 0 | None | 2020-01-24 | 2020-07-03\nRussian | 3 | 0 | None | 2020-01-24 | 2020-07-03\nSpanish | 3 | 0 | None | 2020-01-24 | 2020-07-03\nSQL: SELECT t.language, COUNT(*) AS entries, COUNT(t.translation) AS named_entries,\n       SUM(TRIM(t.translation) = '') AS blank_entries,\n       MIN(s.releaseDate) AS first_release, MAX(s.releaseDate) AS last_release\nFROM sets AS s\nLEFT JOIN set_translations AS t ON t.setCode = s.code\nWHERE s.releaseDate >= '2020-01-01' AND s.releaseDate < '2021-01-01'\nGROUP BY t.language\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"yQqL8aUk85AxbOzs3brpjd4SY2HfLX1PCJcE4DJ8nX4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "yQqL8aUk85AxbOzs3brpjd4SY2HfLX1PCJcE4DJ8nX4",
+        "expected_columns": [
+          "code",
+          "releaseDate"
+        ],
+        "sql": "SELECT s.code, s.releaseDate\nFROM sets AS s\nWHERE s.releaseDate >= '2020-01-01'\n  AND s.releaseDate < '2021-01-01'\n  AND NOT EXISTS (\n      SELECT 1\n      FROM set_translations AS t\n      WHERE t.setCode = s.code\n        AND t.language = 'Spanish'\n        AND t.translation IS NOT NULL\n        AND t.translation <> ''\n  )\nORDER BY s.releaseDate, s.code\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "34 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=34; displayed_rows=34; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): code=str; releaseDate=str\ncode | releaseDate\n--- | ---\nJ20 | 2020-01-01\nPF20 | 2020-01-01\nPTHB | 2020-01-24\nTHB | 2020-01-24\nUND | 2020-02-29\nFMB1 | 2020-03-08\nHA2 | 2020-03-12\nC20 | 2020-04-17\nOC20 | 2020-04-17\nIKO | 2020-04-24\nPIKO | 2020-04-24\nPLGS | 2020-05-18\nHA3 | 2020-05-21\nSLU | 2020-05-29\nFJMP | 2020-06-18\nSS3 | 2020-06-26\nM21 | 2020-07-03\nPM21 | 2020-07-03\nAJMP | 2020-07-17\nJMP | 2020-07-17\n2XM | 2020-08-07\nAKR | 2020-08-13\nANB | 2020-08-13\nAZNR | 2020-09-25\nMZNR | 2020-09-25\nPZNR | 2020-09-25\nSZNR | 2020-09-25\nZNC | 2020-09-25\nZNE | 2020-09-25\nZNR | 2020-09-25\nPLIST | 2020-09-26\nKLR | 2020-11-12\nCMR | 2020-11-20\nCC1 | 2020-12-04\nSQL: SELECT s.code, s.releaseDate\nFROM sets AS s\nWHERE s.releaseDate >= '2020-01-01'\n  AND s.releaseDate < '2021-01-01'\n  AND NOT EXISTS (\n      SELECT 1\n      FROM set_translations AS t\n      WHERE t.setCode = s.code\n        AND t.language = 'Spanish'\n        AND t.translation IS NOT NULL\n        AND t.translation <> ''\n  )\nORDER BY s.releaseDate, s.code\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT s.code, s.releaseDate\nFROM sets AS s\nWHERE s.releaseDate >= '2020-01-01'\n  AND s.releaseDate < '2021-01-01'\n  AND NOT EXISTS (\n      SELECT 1\n      FROM set_translations AS t\n      WHERE t.setCode = s.code\n        AND t.language = 'Spanish'\n        AND t.translation IS NOT NULL\n        AND t.translation <> ''\n  )\nORDER BY s.releaseDate, s.code\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 34,
+  "sql": "SELECT s.code, s.releaseDate\nFROM sets AS s\nWHERE s.releaseDate >= '2020-01-01'\n  AND s.releaseDate < '2021-01-01'\n  AND NOT EXISTS (\n      SELECT 1\n      FROM set_translations AS t\n      WHERE t.setCode = s.code\n        AND t.language = 'Spanish'\n        AND t.translation IS NOT NULL\n        AND t.translation <> ''\n  )\nORDER BY s.releaseDate, s.code\nLIMIT -1",
+  "seconds": 29.20586083305534
+}

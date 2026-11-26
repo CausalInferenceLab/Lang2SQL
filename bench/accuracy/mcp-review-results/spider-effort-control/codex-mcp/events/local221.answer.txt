@@ -1,0 +1,16 @@
+```sql
+WITH match_winners AS (
+    SELECT CASE
+               WHEN m.home_team_goal > m.away_team_goal THEN m.home_team_api_id
+               ELSE m.away_team_api_id
+           END AS team_api_id
+    FROM main."Match" AS m
+    WHERE m.home_team_goal <> m.away_team_goal
+)
+SELECT t.team_long_name AS team, COUNT(*) AS wins
+FROM match_winners AS w
+JOIN main.Team AS t ON t.team_api_id = w.team_api_id
+GROUP BY t.team_api_id, t.team_long_name
+ORDER BY wins DESC, t.team_long_name, t.team_api_id
+LIMIT 10;
+```

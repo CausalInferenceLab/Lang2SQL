@@ -1,0 +1,171 @@
+{
+  "instance_id": "bird296",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "c381a7d97bdff6ea753fe6f3b9b0c3d5ac5f3272bc5db9b21e52d08912555123",
+  "events_sha256": "6ff4849f1a333d7efb4760559f7f614bd419ea427ab8111707e51b1b826f1e74",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 169603,
+      "cached_input_tokens": 157568,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 695,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "budget"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"sqGTccyzEh-nLiD1_JSrEB_zQOO8YQw9tFW8sOnBU5c\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "event"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "expense"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "expense (table)\n- expense_id: TEXT\n- expense_description: TEXT\n- expense_date: TEXT\n- cost: REAL\n- approved: TEXT\n- link_to_member: TEXT\n- link_to_budget: TEXT\nPRIMARY KEY (expense_id)\nFOREIGN KEY (link_to_budget) REFERENCES budget (budget_id)\nFOREIGN KEY (link_to_member) REFERENCES member (member_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "sqGTccyzEh-nLiD1_JSrEB_zQOO8YQw9tFW8sOnBU5c",
+        "sql": "SELECT substr(e.event_date, 1, 4) AS event_year, MIN(e.event_date) AS first_date, MAX(e.event_date) AS last_date, COUNT(*) AS budget_lines, COUNT(DISTINCT b.budget_id) AS distinct_lines, COUNT(b.spent) AS amounts, SUM(b.spent) AS total_spent, MAX(ABS(b.spent - ROUND(b.spent, 2))) AS max_subcent_difference\nFROM main.budget AS b\nLEFT JOIN main.event AS e ON e.event_id = b.link_to_event\nGROUP BY substr(e.event_date, 1, 4)"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_year=str; first_date=str; last_date=str; budget_lines=int; distinct_lines=int; amounts=int; total_spent=float; max_subcent_difference=float\nevent_year | first_date | last_date | budget_lines | distinct_lines | amounts | total_spent | max_subcent_difference\n--- | --- | --- | --- | --- | --- | --- | ---\n2019 | 2019-09-01T07:00:00 | 2019-11-19T12:00:00 | 24 | 24 | 24 | 2086.05 | 0.0\n2020 | 2020-01-14T09:30:00 | 2020-04-21T12:00:00 | 28 | 28 | 28 | 0.0 | 0.0\nSQL: SELECT substr(e.event_date, 1, 4) AS event_year, MIN(e.event_date) AS first_date, MAX(e.event_date) AS last_date, COUNT(*) AS budget_lines, COUNT(DISTINCT b.budget_id) AS distinct_lines, COUNT(b.spent) AS amounts, SUM(b.spent) AS total_spent, MAX(ABS(b.spent - ROUND(b.spent, 2))) AS max_subcent_difference\nFROM main.budget AS b\nLEFT JOIN main.event AS e ON e.event_id = b.link_to_event\nGROUP BY substr(e.event_date, 1, 4)\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"Oc6hAm9v22R7X0L8fBd0u7O7denYS0FSJFx0veVLpPQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "Oc6hAm9v22R7X0L8fBd0u7O7denYS0FSJFx0veVLpPQ",
+        "expected_columns": [
+          "spent_2019_minus_2020"
+        ],
+        "sql": "SELECT\n    SUM(b.spent) FILTER (WHERE e.event_date < '2020-01-01')\n    - SUM(b.spent) FILTER (WHERE e.event_date >= '2020-01-01') AS spent_2019_minus_2020\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nWHERE e.event_date >= '2019-01-01'\n  AND e.event_date < '2021-01-01'\nLIMIT 1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): spent_2019_minus_2020=float\nspent_2019_minus_2020\n---\n2086.05\nSQL: SELECT\n    SUM(b.spent) FILTER (WHERE e.event_date < '2020-01-01')\n    - SUM(b.spent) FILTER (WHERE e.event_date >= '2020-01-01') AS spent_2019_minus_2020\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nWHERE e.event_date >= '2019-01-01'\n  AND e.event_date < '2021-01-01'\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nSELECT\n    SUM(b.spent) FILTER (WHERE e.event_date < '2020-01-01')\n    - SUM(b.spent) FILTER (WHERE e.event_date >= '2020-01-01') AS spent_2019_minus_2020\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nWHERE e.event_date >= '2019-01-01'\n  AND e.event_date < '2021-01-01'\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "SELECT\n    SUM(b.spent) FILTER (WHERE e.event_date < '2020-01-01')\n    - SUM(b.spent) FILTER (WHERE e.event_date >= '2020-01-01') AS spent_2019_minus_2020\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nWHERE e.event_date >= '2019-01-01'\n  AND e.event_date < '2021-01-01'\nLIMIT 1",
+  "seconds": 34.38411595800426
+}

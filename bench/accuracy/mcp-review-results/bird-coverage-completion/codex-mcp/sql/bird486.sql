@@ -1,0 +1,12 @@
+SELECT b.bond_id, b.molecule_id
+FROM bond AS b
+JOIN molecule AS m ON m.molecule_id = b.molecule_id
+WHERE m.label = '+'
+  AND m.molecule_id IN (
+      SELECT MIN(a.molecule_id)
+      FROM atom AS a
+      WHERE a.element IS NOT NULL
+      GROUP BY a.element
+      HAVING COUNT(DISTINCT a.molecule_id) = 1
+  )
+LIMIT 1000

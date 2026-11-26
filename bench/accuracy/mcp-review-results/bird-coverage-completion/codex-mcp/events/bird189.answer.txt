@@ -1,0 +1,21 @@
+```sql
+WITH ranked_attributes AS (
+    SELECT preferred_foot,
+           attacking_work_rate,
+           ROW_NUMBER() OVER (
+               PARTITION BY player_api_id
+               ORDER BY date DESC, id DESC
+           ) AS recency
+    FROM main.Player_Attributes
+)
+SELECT ROUND(
+           100.0 * COUNT(CASE WHEN attacking_work_rate = 'low' THEN 1 END)
+           / NULLIF(COUNT(*), 0),
+           1
+       ) AS low_attacking_work_rate_pct
+FROM ranked_attributes
+WHERE recency = 1
+  AND preferred_foot = 'left'
+  AND attacking_work_rate IN ('low', 'medium', 'high')
+LIMIT 1
+```

@@ -1,0 +1,32 @@
+WITH customer_payments AS (
+    SELECT
+        customer_id,
+        MIN(payment_date) AS first_payment_date,
+        SUM(amount) AS total_spent
+    FROM main.payment
+    GROUP BY customer_id
+),
+customer_rentals AS (
+    SELECT
+        customer_id,
+        COUNT(*) - 1 AS subsequent_rentals
+    FROM main.rental
+    GROUP BY customer_id
+)
+SELECT
+    f.rating AS first_movie_rating,
+    AVG(cp.total_spent) AS avg_total_spent,
+    AVG(cr.subsequent_rentals) AS avg_subsequent_rentals
+FROM customer_payments AS cp
+JOIN main.payment AS p
+    ON p.customer_id = cp.customer_id
+   AND p.payment_date = cp.first_payment_date
+JOIN main.rental AS r
+    ON r.rental_id = p.rental_id
+   AND r.customer_id = cp.customer_id
+JOIN main.inventory AS i ON i.inventory_id = r.inventory_id
+JOIN main.film AS f ON f.film_id = i.film_id
+JOIN customer_rentals AS cr ON cr.customer_id = cp.customer_id
+GROUP BY f.rating
+ORDER BY f.rating
+LIMIT 1000

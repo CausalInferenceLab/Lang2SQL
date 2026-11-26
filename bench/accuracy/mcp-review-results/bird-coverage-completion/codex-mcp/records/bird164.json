@@ -1,0 +1,151 @@
+{
+  "instance_id": "bird164",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "1a1bc2ece5429a7edecc0014bfaebe1a35a613033cf547bf35ba2a580642705c",
+  "events_sha256": "7a20cdca47f32f7f09fdf5f9c635e7a5c0cadbfbde7aa0aa8dbe188ff83d245f",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 188743,
+      "cached_input_tokens": 173824,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 695,
+      "reasoning_output_tokens": 0
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Team"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Team (table)\n- id: INTEGER\n- team_api_id: INTEGER\n- team_fifa_api_id: INTEGER\n- team_long_name: TEXT\n- team_short_name: TEXT\nPRIMARY KEY (id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"5a2HRyT-JkS14767CC_HUpb4MHmhxnNWmACyXE-6Pbw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "Team_Attributes"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "Team_Attributes (table)\n- id: INTEGER\n- team_fifa_api_id: INTEGER\n- team_api_id: INTEGER\n- date: TEXT\n- buildUpPlaySpeed: INTEGER\n- buildUpPlaySpeedClass: TEXT\n- buildUpPlayDribbling: INTEGER\n- buildUpPlayDribblingClass: TEXT\n- buildUpPlayPassing: INTEGER\n- buildUpPlayPassingClass: TEXT\n- buildUpPlayPositioningClass: TEXT\n- chanceCreationPassing: INTEGER\n- chanceCreationPassingClass: TEXT\n- chanceCreationCrossing: INTEGER\n- chanceCreationCrossingClass: TEXT\n- chanceCreationShooting: INTEGER\n- chanceCreationShootingClass: TEXT\n- chanceCreationPositioningClass: TEXT\n- defencePressure: INTEGER\n- defencePressureClass: TEXT\n- defenceAggression: INTEGER\n- defenceAggressionClass: TEXT\n- defenceTeamWidth: INTEGER\n- defenceTeamWidthClass: TEXT\n- defenceDefenderLineClass: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (team_api_id) REFERENCES Team (team_api_id)\nFOREIGN KEY (team_fifa_api_id) REFERENCES Team (team_fifa_api_id)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "5a2HRyT-JkS14767CC_HUpb4MHmhxnNWmACyXE-6Pbw",
+        "sql": "SELECT COUNT(*) AS joined_rows, COUNT(DISTINCT a.id) AS attribute_rows,\n       COUNT(DISTINCT a.team_api_id) AS teams, COUNT(t.id) AS matched_rows,\n       MIN(a.date) AS first_date, MAX(a.date) AS last_date,\n       MIN(a.buildUpPlayPassing) AS min_score, MAX(a.buildUpPlayPassing) AS max_score\nFROM Team_Attributes AS a\nLEFT JOIN Team AS t ON t.team_api_id = a.team_api_id\nWHERE a.date >= '2012-01-01' AND a.date < '2013-01-01'"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): joined_rows=int; attribute_rows=int; teams=int; matched_rows=int; first_date=str; last_date=str; min_score=int; max_score=int\njoined_rows | attribute_rows | teams | matched_rows | first_date | last_date | min_score | max_score\n--- | --- | --- | --- | --- | --- | --- | ---\n242 | 242 | 242 | 242 | 2012-02-22 00:00:00 | 2012-02-22 00:00:00 | 23 | 75\nSQL: SELECT COUNT(*) AS joined_rows, COUNT(DISTINCT a.id) AS attribute_rows,\n       COUNT(DISTINCT a.team_api_id) AS teams, COUNT(t.id) AS matched_rows,\n       MIN(a.date) AS first_date, MAX(a.date) AS last_date,\n       MIN(a.buildUpPlayPassing) AS min_score, MAX(a.buildUpPlayPassing) AS max_score\nFROM Team_Attributes AS a\nLEFT JOIN Team AS t ON t.team_api_id = a.team_api_id\nWHERE a.date >= '2012-01-01' AND a.date < '2013-01-01'\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"ubAgMSsksT8IkuC6e1wabdzBathzzpzcSRWkYc46YK0\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_6",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "ubAgMSsksT8IkuC6e1wabdzBathzzpzcSRWkYc46YK0",
+        "expected_columns": [
+          "team_long_name"
+        ],
+        "sql": "WITH passing_2012 AS (\n    SELECT team_api_id, buildUpPlayPassing\n    FROM Team_Attributes\n    WHERE date >= '2012-01-01' AND date < '2013-01-01'\n)\nSELECT t.team_long_name\nFROM passing_2012 AS p\nJOIN Team AS t ON t.team_api_id = p.team_api_id\nWHERE p.buildUpPlayPassing > (SELECT AVG(buildUpPlayPassing) FROM passing_2012)\nORDER BY t.team_long_name"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "129 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=129; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): team_long_name=str\nteam_long_name\n---\n1. FC Kaiserslautern\n1. FC Köln\n1. FSV Mainz 05\nAC Ajaccio\nAS Saint-Étienne\nAberdeen\nAngers SCO\nAston Villa\nAtalanta\nAthletic Club de Bilbao\nAtlético Madrid\nBSC Young Boys\nBari\nBayer 04 Leverkusen\nBeerschot AC\nBirmingham City\nBlackburn Rovers\nBlackpool\nBologna\nBolton Wanderers\nBorussia Mönchengladbach\nCA Osasuna\nCagliari\nCardiff City\nCatania\nCeltic\nChievo Verona\nClub Brugge KV\nCracovia\nCórdoba CF\nDundee United\nDunfermline Athletic\nES Troyes AC\nEintracht Braunschweig\nElche CF\nEmpoli\nEverton\nExcelsior\nFC Augsburg\nFC Nantes\nFC Porto\nFC St. Pauli\nFC Utrecht\nFiorentina\nGKS Bełchatów\nGenoa\nGrasshopper Club Zürich\nHannover 96\nHeart of Midlothian\nHellas Verona\nSQL: WITH passing_2012 AS (\n    SELECT team_api_id, buildUpPlayPassing\n    FROM Team_Attributes\n    WHERE date >= '2012-01-01' AND date < '2013-01-01'\n)\nSELECT t.team_long_name\nFROM passing_2012 AS p\nJOIN Team AS t ON t.team_api_id = p.team_api_id\nWHERE p.buildUpPlayPassing > (SELECT AVG(buildUpPlayPassing) FROM passing_2012)\nORDER BY t.team_long_name\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH passing_2012 AS (\n    SELECT team_api_id, buildUpPlayPassing\n    FROM Team_Attributes\n    WHERE date >= '2012-01-01' AND date < '2013-01-01'\n)\nSELECT t.team_long_name\nFROM passing_2012 AS p\nJOIN Team AS t ON t.team_api_id = p.team_api_id\nWHERE p.buildUpPlayPassing > (SELECT AVG(buildUpPlayPassing) FROM passing_2012)\nORDER BY t.team_long_name\nLIMIT 1000\n```",
+  "event_parse_errors": [],
+  "rows": 129,
+  "sql": "WITH passing_2012 AS (\n    SELECT team_api_id, buildUpPlayPassing\n    FROM Team_Attributes\n    WHERE date >= '2012-01-01' AND date < '2013-01-01'\n)\nSELECT t.team_long_name\nFROM passing_2012 AS p\nJOIN Team AS t ON t.team_api_id = p.team_api_id\nWHERE p.buildUpPlayPassing > (SELECT AVG(buildUpPlayPassing) FROM passing_2012)\nORDER BY t.team_long_name\nLIMIT 1000",
+  "seconds": 30.88202083297074
+}
