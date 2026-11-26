@@ -106,3 +106,36 @@ def test_review_evidence_excludes_evaluation_feedback():
     data = json.loads(payload)
     assert set(data) == {"previous_answer", "tool_observations"}
     assert data["tool_observations"][0]["arguments"]["sql"] == "SELECT 1"
+
+
+@pytest.mark.parametrize("invalid", [None, "incomplete", "missing_score", "duplicate_score", "changed_question", "unknown_case", "nonbinary"])
+def test_failed_case_selection_preserves_inputs_and_rejects_incomplete_grades(tmp_path, invalid):
+    from bench.accuracy.codex_mcp import failed_cases
+    from bench.spider2.evaluate import write_json
+
+    cases = [{"instance_id": name, "question": "question " + name, "db": "demo"}
+             for name in ("correct", "wrong", "execution_failed")]
+    scores = [{"instance_id": case["instance_id"], "score": int(i == 0)}
+              for i, case in enumerate(cases)]
+    write_json(tmp_path / "manifest.json", {"cases": cases})
+    write_json(tmp_path / "codex-mcp/status.json", {"status": "running" if invalid == "incomplete" else "completed"})
+    if invalid == "missing_score":
+        scores.pop()
+    elif invalid == "duplicate_score":
+        scores.append(scores[0])
+    elif invalid == "unknown_case":
+        scores[-1]["instance_id"] = "other"
+    elif invalid == "nonbinary":
+        scores[-1]["score"] = 0.5
+    elif invalid == "changed_question":
+        cases[-1]["question"] = "different question"
+    write_json(tmp_path / "codex-mcp/scores.json", scores)
+    if invalid:
+        with pytest.raises(ValueError):
+            failed_cases(cases, tmp_path)
+    else:
+        selected = failed_cases(cases, tmp_path)
+        assert selected == cases[1:]
+        assert all(set(case) == {"instance_id", "question", "db"} for case in selected)
+        write_json(tmp_path / "codex-mcp/scores.json", [{**row, "score": 1} for row in scores])
+        assert failed_cases(cases, tmp_path) == []

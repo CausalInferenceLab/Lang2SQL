@@ -163,3 +163,18 @@ SQL actually ran through the production `run_sql` tool. Missing definitions are
 not silently seeded or bypassed. The default model is left to Codex; no resolved
 model identifier is asserted. Internal API calls are not observable, so report
 CLI invocations and captured usage separately from API-harness measurements.
+# Failed-case-only Codex iterations
+
+Add `--failures-from /path/to/previous-run` to the existing
+`python -m bench.accuracy.codex_mcp` command to run only that completed run's
+score-zero cases. The source directory must contain `manifest.json` and
+`codex-mcp/{status,scores}.json`. Every source case must have exactly one binary
+grade and must match the current selected input; incomplete grading or changed
+questions abort before model calls. No remaining failures means no model calls.
+
+Selection reads grades locally, but passes only unchanged input cases to Codex.
+`--review-source` is independent and adds only prior answers/tool observations.
+Settings record the selection source and score-file hash. Use a fresh output
+directory and the unchanged official scoring command after generation. Report
+the result as a repair rate on prior failures, never as full benchmark accuracy
+or a best-of-runs combined score. Correct cases are not replayed by this option.
