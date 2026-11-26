@@ -1,0 +1,215 @@
+{
+  "purpose": "Offline diagnosis only; no changes to original score, model input, production behavior or official evaluator.",
+  "evaluator_sha256": "e93624e4ffa00e51c67bdee1d9e42b534630087cb453270c0dedc0c73e618480",
+  "cases": {
+    "local299": {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-spider-max-calculations-20261127/spider-gpt-6.2-astra",
+      "config": {
+        "instance_id": "local299",
+        "condition_cols": [
+          1
+        ],
+        "ignore_order": true,
+        "toks": "203"
+      },
+      "hashes": {
+        "/Users/seyoung/workspace/benchmarks/codex-mcp-spider-max-calculations-20261127/spider-gpt-6.2-astra/codex-mcp/sql/local299.sql": "7dbbe30b75f13d4c49eb3bbcaf62ee772def44cd578fb53e898f270889035434",
+        "/Users/seyoung/workspace/benchmarks/codex-mcp-spider-max-calculations-20261127/spider-gpt-6.2-astra/codex-mcp/records/local299.json": "855a6e1927b9aa7040e0635e2cbd91e1cd6671136e9a5ed028ec32b01e19bede",
+        "/Users/seyoung/workspace/benchmarks/spider2-databases/bank_sales_trading.sqlite": "10c8b8136486902a19c3f974f210e9fb7c8f98918ae0313114c720219b02e18c",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local299_a.csv": "27a88bb2600981bbbe3052d03218f2b385a267c36a5497f3169afae7d99b78f0",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local299_b.csv": "1c3b8a170deb6ea5016ee61ce649c3ce32ad08ae2724485fbf4999c55501a45f"
+      },
+      "variants": {
+        "original": {
+          "sql": "WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, balance_date, baseline_month) AS (\n    SELECT customer_id, MIN(txn_date), strftime('%Y-%m', MIN(txn_date))\n    FROM daily_changes\n    GROUP BY customer_id\n\n    UNION ALL\n\n    SELECT customer_id, date(balance_date, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE balance_date < (SELECT MAX(txn_date) FROM daily_changes)\n),\ndaily_balances AS (\n    SELECT days.customer_id, days.balance_date, days.baseline_month,\n           SUM(COALESCE(changes.net_change, 0)) OVER (\n               PARTITION BY days.customer_id\n               ORDER BY days.balance_date\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS closing_balance\n    FROM customer_days AS days\n    LEFT JOIN daily_changes AS changes\n        ON changes.customer_id = days.customer_id\n       AND changes.txn_date = days.balance_date\n),\nrolling_averages AS (\n    SELECT customer_id, strftime('%Y-%m', balance_date) AS month, baseline_month,\n           AVG(closing_balance) OVER trailing_30_days AS avg_balance,\n           COUNT(*) OVER trailing_30_days AS days_in_window\n    FROM daily_balances\n    WINDOW trailing_30_days AS (\n        PARTITION BY customer_id\n        ORDER BY balance_date\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\ncustomer_monthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN avg_balance < 0 THEN 0.0 ELSE avg_balance END) AS max_avg_balance\n    FROM rolling_averages\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(max_avg_balance) AS total_max_30_day_avg_balance\nFROM customer_monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000\n",
+          "columns": [
+            "month",
+            "total_max_30_day_avg_balance"
+          ],
+          "rows": [
+            [
+              "2020-02",
+              290091.1666666667
+            ],
+            [
+              "2020-03",
+              337746.36666666664
+            ],
+            [
+              "2020-04",
+              316177.56666666665
+            ]
+          ],
+          "reference_matches": {
+            "local299_a.csv": 0,
+            "local299_b.csv": 0
+          }
+        },
+        "per_customer_horizon": {
+          "sql": "WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, balance_date, baseline_month) AS (\n    SELECT customer_id, MIN(txn_date), strftime('%Y-%m', MIN(txn_date))\n    FROM daily_changes\n    GROUP BY customer_id\n\n    UNION ALL\n\n    SELECT customer_id, date(balance_date, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE balance_date < (SELECT MAX(dc.txn_date) FROM daily_changes dc WHERE dc.customer_id=customer_days.customer_id)\n),\ndaily_balances AS (\n    SELECT days.customer_id, days.balance_date, days.baseline_month,\n           SUM(COALESCE(changes.net_change, 0)) OVER (\n               PARTITION BY days.customer_id\n               ORDER BY days.balance_date\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS closing_balance\n    FROM customer_days AS days\n    LEFT JOIN daily_changes AS changes\n        ON changes.customer_id = days.customer_id\n       AND changes.txn_date = days.balance_date\n),\nrolling_averages AS (\n    SELECT customer_id, strftime('%Y-%m', balance_date) AS month, baseline_month,\n           AVG(closing_balance) OVER trailing_30_days AS avg_balance,\n           COUNT(*) OVER trailing_30_days AS days_in_window\n    FROM daily_balances\n    WINDOW trailing_30_days AS (\n        PARTITION BY customer_id\n        ORDER BY balance_date\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\ncustomer_monthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN avg_balance < 0 THEN 0.0 ELSE avg_balance END) AS max_avg_balance\n    FROM rolling_averages\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(max_avg_balance) AS total_max_30_day_avg_balance\nFROM customer_monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000\n",
+          "columns": [
+            "month",
+            "total_max_30_day_avg_balance"
+          ],
+          "rows": [
+            [
+              "2020-02",
+              286194.36666666664
+            ],
+            [
+              "2020-03",
+              314140.93333333335
+            ],
+            [
+              "2020-04",
+              170303.96666666667
+            ]
+          ],
+          "reference_matches": {
+            "local299_a.csv": 0,
+            "local299_b.csv": 0
+          }
+        },
+        "per_customer_round3": {
+          "sql": "WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, balance_date, baseline_month) AS (\n    SELECT customer_id, MIN(txn_date), strftime('%Y-%m', MIN(txn_date))\n    FROM daily_changes\n    GROUP BY customer_id\n\n    UNION ALL\n\n    SELECT customer_id, date(balance_date, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE balance_date < (SELECT MAX(dc.txn_date) FROM daily_changes dc WHERE dc.customer_id=customer_days.customer_id)\n),\ndaily_balances AS (\n    SELECT days.customer_id, days.balance_date, days.baseline_month,\n           SUM(COALESCE(changes.net_change, 0)) OVER (\n               PARTITION BY days.customer_id\n               ORDER BY days.balance_date\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS closing_balance\n    FROM customer_days AS days\n    LEFT JOIN daily_changes AS changes\n        ON changes.customer_id = days.customer_id\n       AND changes.txn_date = days.balance_date\n),\nrolling_averages AS (\n    SELECT customer_id, strftime('%Y-%m', balance_date) AS month, baseline_month,\n           AVG(closing_balance) OVER trailing_30_days AS avg_balance,\n           COUNT(*) OVER trailing_30_days AS days_in_window\n    FROM daily_balances\n    WINDOW trailing_30_days AS (\n        PARTITION BY customer_id\n        ORDER BY balance_date\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\ncustomer_monthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN avg_balance < 0 THEN 0.0 ELSE avg_balance END) AS max_avg_balance\n    FROM rolling_averages\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(ROUND(max_avg_balance,3)) AS total_max_30_day_avg_balance\nFROM customer_monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000\n",
+          "columns": [
+            "month",
+            "total_max_30_day_avg_balance"
+          ],
+          "rows": [
+            [
+              "2020-02",
+              286194.371
+            ],
+            [
+              "2020-03",
+              314140.934
+            ],
+            [
+              "2020-04",
+              170303.967
+            ]
+          ],
+          "reference_matches": {
+            "local299_a.csv": 0,
+            "local299_b.csv": 0
+          }
+        },
+        "per_customer_truncate3": {
+          "sql": "WITH RECURSIVE\ndaily_changes AS (\n    SELECT customer_id, txn_date,\n           SUM(CASE WHEN txn_type = 'deposit' THEN txn_amount ELSE -txn_amount END) AS net_change\n    FROM main.customer_transactions\n    GROUP BY customer_id, txn_date\n),\ncustomer_days(customer_id, balance_date, baseline_month) AS (\n    SELECT customer_id, MIN(txn_date), strftime('%Y-%m', MIN(txn_date))\n    FROM daily_changes\n    GROUP BY customer_id\n\n    UNION ALL\n\n    SELECT customer_id, date(balance_date, '+1 day'), baseline_month\n    FROM customer_days\n    WHERE balance_date < (SELECT MAX(dc.txn_date) FROM daily_changes dc WHERE dc.customer_id=customer_days.customer_id)\n),\ndaily_balances AS (\n    SELECT days.customer_id, days.balance_date, days.baseline_month,\n           SUM(COALESCE(changes.net_change, 0)) OVER (\n               PARTITION BY days.customer_id\n               ORDER BY days.balance_date\n               ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW\n           ) AS closing_balance\n    FROM customer_days AS days\n    LEFT JOIN daily_changes AS changes\n        ON changes.customer_id = days.customer_id\n       AND changes.txn_date = days.balance_date\n),\nrolling_averages AS (\n    SELECT customer_id, strftime('%Y-%m', balance_date) AS month, baseline_month,\n           AVG(closing_balance) OVER trailing_30_days AS avg_balance,\n           COUNT(*) OVER trailing_30_days AS days_in_window\n    FROM daily_balances\n    WINDOW trailing_30_days AS (\n        PARTITION BY customer_id\n        ORDER BY balance_date\n        ROWS BETWEEN 29 PRECEDING AND CURRENT ROW\n    )\n),\ncustomer_monthly_maxima AS (\n    SELECT customer_id, month,\n           MAX(CASE WHEN avg_balance < 0 THEN 0.0 ELSE avg_balance END) AS max_avg_balance\n    FROM rolling_averages\n    WHERE days_in_window = 30 AND month > baseline_month\n    GROUP BY customer_id, month\n)\nSELECT month, SUM(CAST(max_avg_balance*1000 AS INTEGER)/1000.0) AS total_max_30_day_avg_balance\nFROM customer_monthly_maxima\nGROUP BY month\nORDER BY month\nLIMIT 1000\n",
+          "columns": [
+            "month",
+            "total_max_30_day_avg_balance"
+          ],
+          "rows": [
+            [
+              "2020-02",
+              286194.265
+            ],
+            [
+              "2020-03",
+              314140.851
+            ],
+            [
+              "2020-04",
+              170303.92
+            ]
+          ],
+          "reference_matches": {
+            "local299_a.csv": 1,
+            "local299_b.csv": 1
+          }
+        }
+      },
+      "interpretation": "Customer-specific end date removes large monthly differences. Truncating each customer monthly maximum to three decimals additionally matches reference within official tolerance; rounding does not. The question does not specify three-decimal intermediate truncation. Do not turn this reference-derived convention into a production default."
+    },
+    "local220": {
+      "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra",
+      "config": {
+        "instance_id": "local220",
+        "condition_cols": [],
+        "ignore_order": true,
+        "toks": "871"
+      },
+      "hashes": {
+        "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra/codex-mcp/sql/local220.sql": "850bb5c2f99ddf896ee0d19fb876b05848bcbf8c024c5a892ad75cc8c8ccaab3",
+        "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra/codex-mcp/records/local220.json": "38371c6536a82b9a5e1ea562845ebea2e3a74cb848d25d9db97cb9f091ea56db",
+        "/Users/seyoung/workspace/benchmarks/spider2-databases/EU_soccer.sqlite": "b4ebd079625bb9cd20437eaae1ccd0fc82f0f390567cfe3ee1df78fa08ad5f9a",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_a.csv": "3fd793f820da7caf070fa30e734fc50fd512de91bb8726157791e6505b19f2ca",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_b.csv": "307f4b3b18444ac7d3e2e0621f3e446bb0b3542c663d48bf0a3c88c0db8611be",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_c.csv": "cec03dbe63fba9147b27e0d97ee1a750943e8326029df162ca7a54f2950b7e83",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_d.csv": "38bdcb5070e77309a6968db11620e91994432b85feea07eeea4a998d496ed37f",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_e.csv": "588ce337a1878cb035e7116a0910bf3a1a932446c02dc1da315de913fb19deaa",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_f.csv": "6e6ab60d41c302b668986d652e63081989a7c9fa4d8eadce5097a1669be4ed8e",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_g.csv": "c9d54b9e5320fd510c11afa8d7ca9a4b0f9b86e13da1a8d6fae8065472e01340",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_h.csv": "29bc54cf4eefd315349bde9119d4355bf9e8fa315b32ecb9cdaafec1d84b34af",
+        "/Users/seyoung/workspace/benchmarks/Spider2/spider2-lite/evaluation_suite/gold/exec_result/local220_i.csv": "72eb0dcadb3803e4db881e56f3e983cf1f70d30f4aea1f3d5ae6d9f12ccdb004"
+      },
+      "variants": {
+        "original": {
+          "sql": "WITH appearances AS (\n    SELECT m.match_api_id, p.player_api_id,\n           CASE WHEN m.home_team_goal > m.away_team_goal THEN 'Win' ELSE 'Loss' END AS outcome\n    FROM main.\"Match\" AS m\n    JOIN main.Player AS p ON p.player_api_id IN (\n        m.home_player_1, m.home_player_2, m.home_player_3, m.home_player_4,\n        m.home_player_5, m.home_player_6, m.home_player_7, m.home_player_8,\n        m.home_player_9, m.home_player_10, m.home_player_11\n    )\n    WHERE m.home_team_goal <> m.away_team_goal\n\n    UNION ALL\n\n    SELECT m.match_api_id, p.player_api_id,\n           CASE WHEN m.away_team_goal > m.home_team_goal THEN 'Win' ELSE 'Loss' END AS outcome\n    FROM main.\"Match\" AS m\n    JOIN main.Player AS p ON p.player_api_id IN (\n        m.away_player_1, m.away_player_2, m.away_player_3, m.away_player_4,\n        m.away_player_5, m.away_player_6, m.away_player_7, m.away_player_8,\n        m.away_player_9, m.away_player_10, m.away_player_11\n    )\n    WHERE m.home_team_goal <> m.away_team_goal\n),\ncounts AS (\n    SELECT outcome, player_api_id, COUNT(DISTINCT match_api_id) AS match_count\n    FROM appearances\n    GROUP BY outcome, player_api_id\n),\nranked AS (\n    SELECT counts.*,\n           RANK() OVER (PARTITION BY outcome ORDER BY match_count DESC) AS outcome_rank\n    FROM counts\n)\nSELECT r.outcome, p.player_name, r.match_count\nFROM ranked AS r\nJOIN main.Player AS p ON p.player_api_id = r.player_api_id\nWHERE r.outcome_rank = 1\nORDER BY r.outcome DESC, p.player_name\nLIMIT 1000\n",
+          "columns": [
+            "outcome",
+            "player_name",
+            "match_count"
+          ],
+          "rows": [
+            [
+              "Win",
+              "Cristiano Ronaldo",
+              199
+            ],
+            [
+              "Loss",
+              "Gorka Iraizoz Moreno",
+              107
+            ]
+          ],
+          "reference_matches": {
+            "local220_a.csv": 0,
+            "local220_b.csv": 0,
+            "local220_c.csv": 0,
+            "local220_d.csv": 0,
+            "local220_e.csv": 0,
+            "local220_f.csv": 0,
+            "local220_g.csv": 0,
+            "local220_h.csv": 0,
+            "local220_i.csv": 0
+          }
+        },
+        "uppercase_output_labels": {
+          "sql": "WITH appearances AS (\n    SELECT m.match_api_id, p.player_api_id,\n           CASE WHEN m.home_team_goal > m.away_team_goal THEN 'Win' ELSE 'Loss' END AS outcome\n    FROM main.\"Match\" AS m\n    JOIN main.Player AS p ON p.player_api_id IN (\n        m.home_player_1, m.home_player_2, m.home_player_3, m.home_player_4,\n        m.home_player_5, m.home_player_6, m.home_player_7, m.home_player_8,\n        m.home_player_9, m.home_player_10, m.home_player_11\n    )\n    WHERE m.home_team_goal <> m.away_team_goal\n\n    UNION ALL\n\n    SELECT m.match_api_id, p.player_api_id,\n           CASE WHEN m.away_team_goal > m.home_team_goal THEN 'Win' ELSE 'Loss' END AS outcome\n    FROM main.\"Match\" AS m\n    JOIN main.Player AS p ON p.player_api_id IN (\n        m.away_player_1, m.away_player_2, m.away_player_3, m.away_player_4,\n        m.away_player_5, m.away_player_6, m.away_player_7, m.away_player_8,\n        m.away_player_9, m.away_player_10, m.away_player_11\n    )\n    WHERE m.home_team_goal <> m.away_team_goal\n),\ncounts AS (\n    SELECT outcome, player_api_id, COUNT(DISTINCT match_api_id) AS match_count\n    FROM appearances\n    GROUP BY outcome, player_api_id\n),\nranked AS (\n    SELECT counts.*,\n           RANK() OVER (PARTITION BY outcome ORDER BY match_count DESC) AS outcome_rank\n    FROM counts\n)\nSELECT UPPER(r.outcome) AS outcome, p.player_name, r.match_count\nFROM ranked AS r\nJOIN main.Player AS p ON p.player_api_id = r.player_api_id\nWHERE r.outcome_rank = 1\nORDER BY r.outcome DESC, p.player_name\nLIMIT 1000\n",
+          "columns": [
+            "outcome",
+            "player_name",
+            "match_count"
+          ],
+          "rows": [
+            [
+              "WIN",
+              "Cristiano Ronaldo",
+              199
+            ],
+            [
+              "LOSS",
+              "Gorka Iraizoz Moreno",
+              107
+            ]
+          ],
+          "reference_matches": {
+            "local220_a.csv": 0,
+            "local220_b.csv": 0,
+            "local220_c.csv": 1,
+            "local220_d.csv": 0,
+            "local220_e.csv": 0,
+            "local220_f.csv": 0,
+            "local220_g.csv": 0,
+            "local220_h.csv": 0,
+            "local220_i.csv": 0
+          }
+        }
+      },
+      "interpretation": "Names and match counts are already correct. Uppercasing only synthetic Win/Loss labels matches reference_c; the question does not prescribe label case. This is not an SQL execution fault and does not justify case-insensitive regrading or automatic uppercasing of database values."
+    }
+  }
+}
