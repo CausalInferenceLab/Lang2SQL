@@ -91,26 +91,49 @@ def review_evidence(record):
     )
 
 
-def failed_cases(cases, source):
-    """Select failures from one completed run; never pass grading data to inference."""
-    prior = json.loads((source / "manifest.json").read_text())["cases"]
+def _scored_cases(cases, source, db_sha256=None):
+    """Validate completed selection evidence before trusting any pass or failure."""
+    manifest = json.loads((source / "manifest.json").read_text())
+    prior = manifest["cases"]
     status = json.loads((source / "codex-mcp/status.json").read_text())
     if status.get("status") != "completed":
         raise ValueError("Failure selection requires a completed source run")
     scores = json.loads((source / "codex-mcp/scores.json").read_text())
     by_id = {row["instance_id"]: row for row in scores}
     prior_ids = {case["instance_id"] for case in prior}
-    if len(by_id) != len(scores) or set(by_id) != prior_ids:
+    if len(prior_ids) != len(prior) or len(by_id) != len(scores) or set(by_id) != prior_ids:
         raise ValueError("Source scores must cover every source case exactly once")
     if any(row["score"] not in (0, 1) for row in scores):
         raise ValueError("Source scores must be binary execution grades")
     current = {case["instance_id"]: case for case in cases}
     if any(current.get(case["instance_id"]) != case for case in prior):
         raise ValueError("Source cases must match current questions and inputs")
-    return [case for case in prior if by_id[case["instance_id"]]["score"] == 0]
+    if db_sha256 is not None and any(
+        case["db"] not in db_sha256
+        or manifest.get("db_sha256", {}).get(case["db"]) != db_sha256[case["db"]]
+        for case in prior
+    ):
+        raise ValueError("Source database hashes must match current inputs")
+    return prior, by_id
+
+
+def failed_cases(cases, source, *, exclude_passed_sources=(), db_sha256=None):
+    """Select failures, optionally excluding explicit completed passes; never infer accuracy."""
+    prior, scores = _scored_cases(cases, source, db_sha256)
+    passed = set()
+    for repair_source in exclude_passed_sources:
+        _, repair_scores = _scored_cases(cases, repair_source, db_sha256)
+        repaired = {ident for ident, row in repair_scores.items() if row["score"] == 1}
+        passed.update(repaired)
+        logger.info("Validated pass exclusion source=%s passed_ids=%s", repair_source, sorted(repaired))
+    return [case for case in prior
+            if scores[case["instance_id"]]["score"] == 0
+            and case["instance_id"] not in passed]
 
 
 async def run(args):
+    if args.exclude_passed_from and not args.failures_from:
+        raise ValueError("--exclude-passed-from requires --failures-from; never use exclusions for full accuracy")
     repo = Path(__file__).resolve().parents[2]
     manifest = json.loads(args.manifest.read_text())
     validate_inputs(manifest, args.db_dir)
@@ -122,7 +145,11 @@ async def run(args):
         c for c in manifest["cases"] if selected is None or c["instance_id"] in selected
     ]
     if args.failures_from:
-        manifest["cases"] = failed_cases(manifest["cases"], args.failures_from)
+        manifest["cases"] = failed_cases(
+            manifest["cases"], args.failures_from,
+            exclude_passed_sources=args.exclude_passed_from,
+            db_sha256=manifest["db_sha256"],
+        )
         logger.info("Failed-case selection source=%s selected=%d", args.failures_from, len(manifest["cases"]))
         if not manifest["cases"]:
             logger.info("No failed cases remain in the source run; no model calls made")
@@ -169,8 +196,16 @@ async def run(args):
             "review_source": str(args.review_source) if args.review_source else None,
             "failure_selection": {
                 "source": str(args.failures_from),
+                "manifest_sha256": digest(args.failures_from / "manifest.json"),
                 "scores_sha256": digest(args.failures_from / "codex-mcp/scores.json"),
-                "metric": "repair rate on prior failures, not full benchmark accuracy",
+                "excluded_passed_sources": [
+                    {"source": str(source),
+                     "manifest_sha256": digest(source / "manifest.json"),
+                     "scores_sha256": digest(source / "codex-mcp/scores.json")}
+                    for source in args.exclude_passed_from
+                ],
+                "exclusion_policy": "any pass in explicitly supplied completed runs; not an aggregate accuracy score",
+                "metric": "repair rate on selected prior failures, not full benchmark accuracy",
             } if args.failures_from else None,
             "split": args.split,
             "concurrency": args.concurrency,
@@ -371,6 +406,8 @@ def main():
     )
     parser.add_argument("--review-source", type=Path, help="Prior run directory; pass only prior model answer/tool observations, never scores")
     parser.add_argument("--failures-from", type=Path, help="Run only score=0 cases from this completed run; grades select cases but never enter model prompts")
+    parser.add_argument("--exclude-passed-from", type=Path, action="append", default=[],
+                        help="With --failures-from only: skip previously passed cases from each validated completed run; repeatable, never a full-accuracy selection")
     parser.add_argument("--model", required=True)
     parser.add_argument("--reasoning-effort", default="high")
     parser.add_argument("--concurrency", type=int, default=2)

@@ -139,3 +139,54 @@ def test_failed_case_selection_preserves_inputs_and_rejects_incomplete_grades(tm
         assert all(set(case) == {"instance_id", "question", "db"} for case in selected)
         write_json(tmp_path / "codex-mcp/scores.json", [{**row, "score": 1} for row in scores])
         assert failed_cases(cases, tmp_path) == []
+
+@pytest.mark.parametrize('invalid', [None, 'running', 'missing', 'changed', 'duplicate_case', 'database'])
+def test_exclude_completed_passes_from_failed_backlog(tmp_path, invalid):
+    from bench.accuracy.codex_mcp import failed_cases
+    from bench.spider2.evaluate import write_json
+
+    cases = [{'instance_id': name, 'question': 'question ' + name, 'db': 'demo'}
+             for name in ['repaired', 'still_wrong']]
+    base, repair = tmp_path / 'base', tmp_path / 'repair'
+    for directory, selected, scores in [
+        (base, cases, [0, 0]), (repair, cases[:1], [1]),
+    ]:
+        write_json(directory / 'manifest.json', {'cases': selected, 'db_sha256': {'demo': 'same-db'}})
+        write_json(directory / 'codex-mcp/status.json', {'status': 'completed'})
+        write_json(directory / 'codex-mcp/scores.json', [
+            {'instance_id': c['instance_id'], 'score': score}
+            for c, score in zip(selected, scores)
+        ])
+    if invalid == 'running':
+        write_json(repair / 'codex-mcp/status.json', {'status': 'running'})
+    elif invalid == 'missing':
+        write_json(repair / 'codex-mcp/scores.json', [])
+    elif invalid in {'changed', 'duplicate_case', 'database'}:
+        import json
+        path = repair / 'manifest.json'
+        data = json.loads(path.read_text())
+        if invalid == 'changed': data['cases'][0]['question'] = 'different question'
+        elif invalid == 'duplicate_case': data['cases'].append(data['cases'][0])
+        else: data['db_sha256']['demo'] = 'different-db'
+        write_json(path, data)
+    if invalid:
+        with pytest.raises(ValueError):
+            failed_cases(cases, base, exclude_passed_sources=[repair], db_sha256={'demo': 'same-db'})
+    else:
+        selected = failed_cases(cases, base, exclude_passed_sources=[repair], db_sha256={'demo': 'same-db'})
+        assert selected == cases[1:]
+        assert set(selected[0]) == {'instance_id', 'question', 'db'}
+        # A failed repair is retained, and an explicit pass exclusion is idempotent.
+        write_json(repair / 'codex-mcp/scores.json', [{'instance_id': 'repaired', 'score': 0}])
+        assert failed_cases(cases, base, exclude_passed_sources=[repair]) == cases
+        write_json(repair / 'codex-mcp/scores.json', [{'instance_id': 'repaired', 'score': 1}])
+        assert failed_cases(cases, base, exclude_passed_sources=[repair, repair]) == cases[1:]
+
+@pytest.mark.asyncio
+async def test_pass_exclusion_cannot_filter_full_accuracy():
+    from types import SimpleNamespace
+
+    from bench.accuracy.codex_mcp import run
+
+    with pytest.raises(ValueError, match='requires --failures-from'):
+        await run(SimpleNamespace(exclude_passed_from=['completed'], failures_from=None))

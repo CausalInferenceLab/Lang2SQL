@@ -178,3 +178,19 @@ Settings record the selection source and score-file hash. Use a fresh output
 directory and the unchanged official scoring command after generation. Report
 the result as a repair rate on prior failures, never as full benchmark accuracy
 or a best-of-runs combined score. Correct cases are not replayed by this option.
+
+## Codex MCP failed-case backlog
+
+For the ChatGPT-auth `bench.accuracy.codex_mcp` runner, `--failures-from RUN`
+selects only score-zero cases from a completed run. To avoid repeating cases
+repaired in later experiments, repeat `--exclude-passed-from REPAIR_RUN` for
+explicit completed runs. Source questions, case coverage and database hashes
+must match; incomplete, changed or inconsistent evidence is rejected before
+model calls. The runner records source manifest/score hashes in settings.
+
+Exclusions require `--failures-from` and are only a development backlog policy:
+any pass in an explicitly supplied exclusion source removes that case from the
+next attempt. They are not a latest-result ledger, regression check, pass@1
+estimate or full-suite score. Keep all original failures and repair attempts.
+A final accuracy claim still needs the prescribed full-suite evaluation with
+one fixed configuration and unchanged official denominator.
