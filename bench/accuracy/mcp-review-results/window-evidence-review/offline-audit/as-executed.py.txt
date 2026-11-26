@@ -1,0 +1,21 @@
+"""Offline native audits, never supplied to model inference."""
+import ast,hashlib,json,math,sqlite3
+from pathlib import Path
+import pandas as pd
+root=Path('/Users/seyoung/workspace/benchmarks');out=root/'scope-failure-audit-20261127';out.mkdir(exist_ok=True)
+evaluator=root/'Spider2/spider2-lite/evaluation_suite/evaluate.py'
+node=next(n for n in ast.parse(evaluator.read_text()).body if isinstance(n,ast.FunctionDef) and n.name=='compare_pandas_table');ns={'pd':pd,'math':math};exec(compile(ast.Module(body=[node],type_ignores=[]),str(evaluator),'exec'),ns)
+run=root/'codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra';manifest=json.loads((run/'manifest.json').read_text());db=root/'spider2-databases/bank_sales_trading.sqlite';assert hashlib.sha256(db.read_bytes()).hexdigest()==manifest['db_sha256']['bank_sales_trading'];assert hashlib.sha256(evaluator.read_bytes()).hexdigest()==manifest['evaluator_sha256']
+sql=(run/'codex-mcp/sql/local077.sql').read_text();assert sql.count('(2018, 7)')==1;fixed=sql.replace('(2018, 7)','(2018, 9)');(out/'local077-period-only.sql').write_text(fixed)
+config=next(json.loads(l) for l in (evaluator.parent/'gold/spider2lite_eval.jsonl').read_text().splitlines() if json.loads(l)['instance_id']=='local077')
+results={}
+with sqlite3.connect('file:'+str(db)+'?mode=ro',uri=True) as conn:
+ for label,query in [('original',sql),('period-only',fixed)]:
+  frame=pd.read_sql_query(query,conn);frame.to_csv(out/f'local077-{label}.csv',index=False)
+  results[label]={ref.name:bool(ns['compare_pandas_table'](frame,pd.read_csv(ref),config['condition_cols'],config.get('ignore_order',False))) for ref in sorted((evaluator.parent/'gold/exec_result').glob('local077*.csv'))}
+report={'scope':'Offline diagnostic only, not model repair. No references or counterfactual SQL supplied to model.','local077':{'one_change':'Start source population at requested September instead of July; all ranking, window functions, precision and projection unchanged.','results':results,'date_column_scored':0 in config['condition_cols'],'source_db_sha256':manifest['db_sha256']['bank_sales_trading'],'evaluator_sha256':manifest['evaluator_sha256']}}
+run=root/'codex-mcp-astra-bird-backlog-20261127/bird-gpt-6.2-astra';manifest=json.loads((run/'manifest.json').read_text());db=root/'bird-sqlite/toxicology.sqlite';assert hashlib.sha256(db.read_bytes()).hexdigest()==manifest['db_sha256']['toxicology'];questions=root/'bird-mini-dev-20261025.jsonl';assert hashlib.sha256(questions.read_bytes()).hexdigest()==manifest['question_file_sha256'];case=next(json.loads(l) for l in questions.read_text().splitlines() if json.loads(l)['question_id']==483)
+with sqlite3.connect('file:'+str(db)+'?mode=ro',uri=True) as conn:
+ predicted=conn.execute((run/'codex-mcp/sql/bird483.sql').read_text()).fetchall();reference=conn.execute(case['SQL']).fetchall()
+report['bird483']={'question':case['question'],'evidence':case['evidence'],'native_prediction':predicted,'native_reference':reference,'reference_additional_rows':sorted(set(reference)-set(predicted)),'prediction_additional_rows':sorted(set(predicted)-set(reference)), 'nonzero_predictions_match':{r for r in predicted if r[1]!=0}==set(reference),'requested_symbols_only_match':set(predicted)=={r for r in reference if r[0] in ['-','=','#']},'source_db_sha256':manifest['db_sha256']['toxicology'],'question_sha256':manifest['question_file_sha256'],'finding':'The model creates a synthetic zero-count triple-bond row through a VALUES table and LEFT JOIN; the reference contains only observed bond types. The nonzero counts agree exactly. Zero-count inclusion is an output-population interpretation difference; no arithmetic or extra reference bond-type issue is demonstrated. Official score stays0; no grader change.'}
+(out/'audit.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))

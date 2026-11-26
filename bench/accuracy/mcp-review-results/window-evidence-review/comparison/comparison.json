@@ -1,0 +1,673 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra",
+      "manifest_sha256": "42d0ea666016e56c84b2a280f7578a3ae88fc1a20d3b7333997de3d916114d49",
+      "scores_sha256": "0e4850bf9dd660ebf4d2ef9f31843f98c700a6ccd28aa98c19a35d344a16fa7a",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "56ade0726fc7522f6d8609d5f256e6267f4ecb40",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-window-evidence-review-20261127/spider-gpt-6.2-astra",
+      "manifest_sha256": "4b10e2e2f172696220b77f783146de7a17bfca15a442a3d20f63aad55793ed84",
+      "scores_sha256": "bbfbdcbd9cbfa78dd8696bfbf49df38a04eadbcec2b7465386eb125082ba3fa7",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "0d7be046fb64471b9c8659bdbecb6402562c0e0d",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "195a0e722bb4e670fda45308e583203fccd7a4979b412a05215ca525e7aec5bf",
+        "review_source": "/Users/seyoung/workspace/benchmarks/codex-mcp-astra-spider-backlog-20261127/spider-gpt-6.2-astra",
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 0": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "local077",
+        "db": "bank_sales_trading",
+        "question": "Please analyze our interest data from September 2018 to August 2019. For each month, calculate the average composition for each interest by dividing the composition by the index value. Identify the interest with the highest average composition value each month and report its average composition as the max index composition for that month. Compute the three-month rolling average of these monthly max index compositions. Ensure the output includes the date, the interest name, the max index composition for that month, the rolling average, and the names and max index compositions of the top interests from one month ago and two months ago.",
+        "external_knowledge": null,
+        "document_sha256": null
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,49 +1,39 @@\n-WITH monthly_interest AS (\n+WITH interest_scores AS (\n     SELECT\n         printf('%04d-%02d-01', m._year, m._month) AS month_start,\n         m.interest_id,\n-        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS avg_composition\n+        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n     FROM main.interest_metrics AS m\n     WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n     GROUP BY m._year, m._month, m.interest_id\n ),\n-ranked AS (\n+ranked_interests AS (\n     SELECT\n-        month_start,\n-        interest_id,\n-        avg_composition,\n-        ROW_NUMBER() OVER (\n-            PARTITION BY month_start\n-            ORDER BY avg_composition DESC, interest_id\n-        ) AS position\n-    FROM monthly_interest\n+        s.*,\n+        RANK() OVER (\n+            PARTITION BY month_start ORDER BY average_composition DESC\n+        ) AS monthly_rank\n+    FROM interest_scores AS s\n ),\n-monthly_winners AS (\n+winner_history AS (\n     SELECT\n-        r.month_start,\n+        r.month_start AS date,\n         i.interest_name,\n-        r.avg_composition AS max_index_composition\n-    FROM ranked AS r\n+        r.average_composition AS max_index_composition,\n+        AVG(r.average_composition) OVER (\n+            months ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n+        ) AS three_month_rolling_average,\n+        LAG(i.interest_name, 1) OVER months AS interest_one_month_ago,\n+        LAG(r.average_composition, 1) OVER months AS max_index_composition_one_month_ago,\n+        LAG(i.interest_name, 2) OVER months AS interest_two_months_ago,\n+        LAG(r.average_composition, 2) OVER months AS max_index_composition_two_months_ago\n+    FROM ranked_interests AS r\n     JOIN main.interest_map AS i ON i.id = r.interest_id\n-    WHERE r.position = 1\n-),\n-history AS (\n-    SELECT\n-        month_start AS date,\n-        interest_name,\n-        max_index_composition,\n-        AVG(max_index_composition) OVER (\n-            monthly_order ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n-        ) AS three_month_rolling_average,\n-        LAG(interest_name, 1) OVER monthly_order AS interest_one_month_ago,\n-        LAG(max_index_composition, 1) OVER monthly_order AS max_index_composition_one_month_ago,\n-        LAG(interest_name, 2) OVER monthly_order AS interest_two_months_ago,\n-        LAG(max_index_composition, 2) OVER monthly_order AS max_index_composition_two_months_ago\n-    FROM monthly_winners\n-    WINDOW monthly_order AS (ORDER BY month_start)\n+    WHERE r.monthly_rank = 1\n+    WINDOW months AS (ORDER BY r.month_start)\n )\n SELECT *\n-FROM history\n+FROM winner_history\n WHERE date BETWEEN '2018-09-01' AND '2019-08-01'\n ORDER BY date\n LIMIT 12",
+      "before": {
+        "score": 0,
+        "record_sha256": "e3390a7314bd3290dd53a7dfe7bf95906ef5fe760d550714d1c0e847e8057c4e",
+        "record": {
+          "instance_id": "local077",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "9e52d0b0d6a39272aa6f5014e7676d2fdf18eb730a4062951cebf45d32a83e14",
+          "events_sha256": "7c8edbe387b0cec5636630763860ca77a542f2dcd31651b0edcecbd1e0819e17",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 158103,
+              "cached_input_tokens": 143232,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1314,
+              "reasoning_output_tokens": 33
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "interest_metrics"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "interest_metrics (table)\n- _month: REAL\n- _year: REAL\n- month_year: TEXT\n- interest_id: REAL\n- composition: REAL\n- index_value: REAL\n- ranking: INTEGER\n- percentile_ranking: REAL"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"5icV8suoA3ndL9KkpRqLAV-zmA-5VMms_o-zvNtzcp8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "interest_map"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "interest_map (table)\n- id: INTEGER\n- interest_name: TEXT\n- interest_summary: TEXT\n- created_at: TEXT\n- last_modified: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "5icV8suoA3ndL9KkpRqLAV-zmA-5VMms_o-zvNtzcp8",
+                "sql": "SELECT m.month_year, m._year, m._month, COUNT(*) AS joined_rows,\n       COUNT(DISTINCT m.interest_id) AS interest_count,\n       COUNT(i.id) AS mapped_rows,\n       SUM(m.index_value = 0) AS zero_indices\nFROM main.interest_metrics AS m\nLEFT JOIN main.interest_map AS i ON i.id = m.interest_id\nGROUP BY m._year, m._month, m.month_year\nORDER BY m._year, m._month;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "15 row(s):\nResult coverage: fetched_rows=15; displayed_rows=15; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): month_year=NoneType,str; _year=NoneType,float; _month=NoneType,float; joined_rows=int; interest_count=int; mapped_rows=int; zero_indices=int\nmonth_year | _year | _month | joined_rows | interest_count | mapped_rows | zero_indices\n--- | --- | --- | --- | --- | --- | ---\nNone | None | None | 1194 | 1 | 1 | 0\n07-2018 | 2018.0 | 7.0 | 729 | 729 | 729 | 0\n08-2018 | 2018.0 | 8.0 | 767 | 767 | 767 | 0\n09-2018 | 2018.0 | 9.0 | 780 | 780 | 780 | 0\n10-2018 | 2018.0 | 10.0 | 857 | 857 | 857 | 0\n11-2018 | 2018.0 | 11.0 | 928 | 928 | 928 | 0\n12-2018 | 2018.0 | 12.0 | 995 | 995 | 995 | 0\n01-2019 | 2019.0 | 1.0 | 973 | 973 | 973 | 0\n02-2019 | 2019.0 | 2.0 | 1121 | 1121 | 1121 | 0\n03-2019 | 2019.0 | 3.0 | 1136 | 1136 | 1136 | 0\n04-2019 | 2019.0 | 4.0 | 1099 | 1099 | 1099 | 0\n05-2019 | 2019.0 | 5.0 | 857 | 857 | 857 | 0\n06-2019 | 2019.0 | 6.0 | 824 | 824 | 824 | 0\n07-2019 | 2019.0 | 7.0 | 864 | 864 | 864 | 0\n08-2019 | 2019.0 | 8.0 | 1149 | 1149 | 1149 | 0\nSQL: SELECT m.month_year, m._year, m._month, COUNT(*) AS joined_rows,\n       COUNT(DISTINCT m.interest_id) AS interest_count,\n       COUNT(i.id) AS mapped_rows,\n       SUM(m.index_value = 0) AS zero_indices\nFROM main.interest_metrics AS m\nLEFT JOIN main.interest_map AS i ON i.id = m.interest_id\nGROUP BY m._year, m._month, m.month_year\nORDER BY m._year, m._month\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"_K02MHL_twXB171m1ijXAx5J3cF3TVCn4yvKoeZ1F6U\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "_K02MHL_twXB171m1ijXAx5J3cF3TVCn4yvKoeZ1F6U",
+                "sql": "WITH monthly_interest AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS avg_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked AS (\n    SELECT\n        month_start,\n        interest_id,\n        avg_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY avg_composition DESC, interest_id\n        ) AS position\n    FROM monthly_interest\n),\nmonthly_winners AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.avg_composition AS max_index_composition\n    FROM ranked AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.position = 1\n),\nhistory AS (\n    SELECT\n        month_start AS date,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            monthly_order ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER monthly_order AS interest_one_month_ago,\n        LAG(max_index_composition, 1) OVER monthly_order AS max_index_composition_one_month_ago,\n        LAG(interest_name, 2) OVER monthly_order AS interest_two_months_ago,\n        LAG(max_index_composition, 2) OVER monthly_order AS max_index_composition_two_months_ago\n    FROM monthly_winners\n    WINDOW monthly_order AS (ORDER BY month_start)\n)\nSELECT *\nFROM history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "12 row(s):\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; interest_name=str; max_index_composition=float; three_month_rolling_average=float; interest_one_month_ago=str; max_index_composition_one_month_ago=float; interest_two_months_ago=str; max_index_composition_two_months_ago=float\ndate | interest_name | max_index_composition | three_month_rolling_average | interest_one_month_ago | max_index_composition_one_month_ago | interest_two_months_ago | max_index_composition_two_months_ago\n--- | --- | --- | --- | --- | --- | --- | ---\n2018-09-01 | Work Comes First Travelers | 8.263636363636364 | 7.6086358086358095 | Las Vegas Trip Planners | 7.205128205128205 | Las Vegas Trip Planners | 7.3571428571428585\n2018-10-01 | Work Comes First Travelers | 9.135135135135135 | 8.201299901299901 | Work Comes First Travelers | 8.263636363636364 | Las Vegas Trip Planners | 7.205128205128205\n2018-11-01 | Work Comes First Travelers | 8.27659574468085 | 8.55845574781745 | Work Comes First Travelers | 9.135135135135135 | Work Comes First Travelers | 8.263636363636364\n2018-12-01 | Work Comes First Travelers | 8.313725490196079 | 8.575152123337356 | Work Comes First Travelers | 8.27659574468085 | Work Comes First Travelers | 9.135135135135135\n2019-01-01 | Work Comes First Travelers | 7.657258064516128 | 8.08252643313102 | Work Comes First Travelers | 8.313725490196079 | Work Comes First Travelers | 8.27659574468085\n2019-02-01 | Work Comes First Travelers | 7.6625000000000005 | 7.877827851570736 | Work Comes First Travelers | 7.657258064516128 | Work Comes First Travelers | 8.313725490196079\n2019-03-01 | Alabama Trip Planners | 6.543046357615895 | 7.287601474044007 | Work Comes First Travelers | 7.6625000000000005 | Work Comes First Travelers | 7.657258064516128\n2019-04-01 | Solar Energy Researchers | 6.275862068965518 | 6.827136142193805 | Alabama Trip Planners | 6.543046357615895 | Work Comes First Travelers | 7.6625000000000005\n2019-05-01 | Readers of Honduran Content | 4.409090909090909 | 5.742666445224107 | Solar Energy Researchers | 6.275862068965518 | Alabama Trip Planners | 6.543046357615895\n2019-06-01 | Las Vegas Trip Planners | 2.7650602409638556 | 4.483337739673428 | Readers of Honduran Content | 4.409090909090909 | Solar Energy Researchers | 6.275862068965518\n2019-07-01 | Las Vegas Trip Planners | 2.8175675675675675 | 3.3305729058741105 | Las Vegas Trip Planners | 2.7650602409638556 | Readers of Honduran Content | 4.409090909090909\n2019-08-01 | Cosmetics and Beauty Shoppers | 2.728476821192053 | 2.7703682099078257 | Las Vegas Trip Planners | 2.8175675675675675 | Las Vegas Trip Planners | 2.7650602409638556\nSQL: WITH monthly_interest AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS avg_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked AS (\n    SELECT\n        month_start,\n        interest_id,\n        avg_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY avg_composition DESC, interest_id\n        ) AS position\n    FROM monthly_interest\n),\nmonthly_winners AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.avg_composition AS max_index_composition\n    FROM ranked AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.position = 1\n),\nhistory AS (\n    SELECT\n        month_start AS date,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            monthly_order ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER monthly_order AS interest_one_month_ago,\n        LAG(max_index_composition, 1) OVER monthly_order AS max_index_composition_one_month_ago,\n        LAG(interest_name, 2) OVER monthly_order AS interest_two_months_ago,\n        LAG(max_index_composition, 2) OVER monthly_order AS max_index_composition_two_months_ago\n    FROM monthly_winners\n    WINDOW monthly_order AS (ORDER BY month_start)\n)\nSELECT *\nFROM history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH monthly_interest AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS avg_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked AS (\n    SELECT\n        month_start,\n        interest_id,\n        avg_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY avg_composition DESC, interest_id\n        ) AS position\n    FROM monthly_interest\n),\nmonthly_winners AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.avg_composition AS max_index_composition\n    FROM ranked AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.position = 1\n),\nhistory AS (\n    SELECT\n        month_start AS date,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            monthly_order ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER monthly_order AS interest_one_month_ago,\n        LAG(max_index_composition, 1) OVER monthly_order AS max_index_composition_one_month_ago,\n        LAG(interest_name, 2) OVER monthly_order AS interest_two_months_ago,\n        LAG(max_index_composition, 2) OVER monthly_order AS max_index_composition_two_months_ago\n    FROM monthly_winners\n    WINDOW monthly_order AS (ORDER BY month_start)\n)\nSELECT *\nFROM history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12\n```",
+          "event_parse_errors": [],
+          "rows": 12,
+          "sql": "WITH monthly_interest AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS avg_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked AS (\n    SELECT\n        month_start,\n        interest_id,\n        avg_composition,\n        ROW_NUMBER() OVER (\n            PARTITION BY month_start\n            ORDER BY avg_composition DESC, interest_id\n        ) AS position\n    FROM monthly_interest\n),\nmonthly_winners AS (\n    SELECT\n        r.month_start,\n        i.interest_name,\n        r.avg_composition AS max_index_composition\n    FROM ranked AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.position = 1\n),\nhistory AS (\n    SELECT\n        month_start AS date,\n        interest_name,\n        max_index_composition,\n        AVG(max_index_composition) OVER (\n            monthly_order ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(interest_name, 1) OVER monthly_order AS interest_one_month_ago,\n        LAG(max_index_composition, 1) OVER monthly_order AS max_index_composition_one_month_ago,\n        LAG(interest_name, 2) OVER monthly_order AS interest_two_months_ago,\n        LAG(max_index_composition, 2) OVER monthly_order AS max_index_composition_two_months_ago\n    FROM monthly_winners\n    WINDOW monthly_order AS (ORDER BY month_start)\n)\nSELECT *\nFROM history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12",
+          "seconds": 42.20836708298884
+        },
+        "result": {
+          "columns": [
+            "date",
+            "interest_name",
+            "max_index_composition",
+            "three_month_rolling_average",
+            "interest_one_month_ago",
+            "max_index_composition_one_month_ago",
+            "interest_two_months_ago",
+            "max_index_composition_two_months_ago"
+          ],
+          "row_count": 12,
+          "preview": [
+            [
+              "2018-09-01",
+              "Work Comes First Travelers",
+              "8.263636363636364",
+              "7.6086358086358095",
+              "Las Vegas Trip Planners",
+              "7.205128205128205",
+              "Las Vegas Trip Planners",
+              "7.3571428571428585"
+            ],
+            [
+              "2018-10-01",
+              "Work Comes First Travelers",
+              "9.135135135135135",
+              "8.201299901299901",
+              "Work Comes First Travelers",
+              "8.263636363636364",
+              "Las Vegas Trip Planners",
+              "7.205128205128205"
+            ],
+            [
+              "2018-11-01",
+              "Work Comes First Travelers",
+              "8.27659574468085",
+              "8.55845574781745",
+              "Work Comes First Travelers",
+              "9.135135135135135",
+              "Work Comes First Travelers",
+              "8.263636363636364"
+            ],
+            [
+              "2018-12-01",
+              "Work Comes First Travelers",
+              "8.313725490196079",
+              "8.575152123337356",
+              "Work Comes First Travelers",
+              "8.27659574468085",
+              "Work Comes First Travelers",
+              "9.135135135135135"
+            ],
+            [
+              "2019-01-01",
+              "Work Comes First Travelers",
+              "7.657258064516128",
+              "8.08252643313102",
+              "Work Comes First Travelers",
+              "8.313725490196079",
+              "Work Comes First Travelers",
+              "8.27659574468085"
+            ],
+            [
+              "2019-02-01",
+              "Work Comes First Travelers",
+              "7.6625000000000005",
+              "7.877827851570736",
+              "Work Comes First Travelers",
+              "7.657258064516128",
+              "Work Comes First Travelers",
+              "8.313725490196079"
+            ],
+            [
+              "2019-03-01",
+              "Alabama Trip Planners",
+              "6.543046357615895",
+              "7.287601474044007",
+              "Work Comes First Travelers",
+              "7.6625000000000005",
+              "Work Comes First Travelers",
+              "7.657258064516128"
+            ],
+            [
+              "2019-04-01",
+              "Solar Energy Researchers",
+              "6.275862068965518",
+              "6.827136142193805",
+              "Alabama Trip Planners",
+              "6.543046357615895",
+              "Work Comes First Travelers",
+              "7.6625000000000005"
+            ],
+            [
+              "2019-05-01",
+              "Readers of Honduran Content",
+              "4.409090909090909",
+              "5.742666445224107",
+              "Solar Energy Researchers",
+              "6.275862068965518",
+              "Alabama Trip Planners",
+              "6.543046357615895"
+            ],
+            [
+              "2019-06-01",
+              "Las Vegas Trip Planners",
+              "2.7650602409638556",
+              "4.483337739673428",
+              "Readers of Honduran Content",
+              "4.409090909090909",
+              "Solar Energy Researchers",
+              "6.275862068965518"
+            ],
+            [
+              "2019-07-01",
+              "Las Vegas Trip Planners",
+              "2.8175675675675675",
+              "3.3305729058741105",
+              "Las Vegas Trip Planners",
+              "2.7650602409638556",
+              "Readers of Honduran Content",
+              "4.409090909090909"
+            ],
+            [
+              "2019-08-01",
+              "Cosmetics and Beauty Shoppers",
+              "2.728476821192053",
+              "2.7703682099078257",
+              "Las Vegas Trip Planners",
+              "2.8175675675675675",
+              "Las Vegas Trip Planners",
+              "2.7650602409638556"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "8e11769df569dfef1e7a101798f7c0df5a78ef4e29dc9d31ce626872dc3c7781"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "1e3dd3bdd1adda691ceef2780464cedc6478833fc230b673ff775ff1a51a062e",
+        "record": {
+          "instance_id": "local077",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "review_source_record_sha256": "e3390a7314bd3290dd53a7dfe7bf95906ef5fe760d550714d1c0e847e8057c4e",
+          "prompt_sha256": "6947b226f0bf0e8622fcf044da76317341954401d25388437f6c5d24d507ceed",
+          "events_sha256": "b65271a48b1918b9c724f8320cbc64f5ea6eb253310842ad565f1a7d83ba1fdd",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 190838,
+              "cached_input_tokens": 170240,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 1508,
+              "reasoning_output_tokens": 37
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "interest_metrics"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "interest_metrics (table)\n- _month: REAL\n- _year: REAL\n- month_year: TEXT\n- interest_id: REAL\n- composition: REAL\n- index_value: REAL\n- ranking: INTEGER\n- percentile_ranking: REAL"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"B9YHZUsJY5mZX8VrFu-eM0hLDYvj2N0VA5zGFz3O04U\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "interest_map"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "interest_map (table)\n- id: INTEGER\n- interest_name: TEXT\n- interest_summary: TEXT\n- created_at: TEXT\n- last_modified: TEXT"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "B9YHZUsJY5mZX8VrFu-eM0hLDYvj2N0VA5zGFz3O04U",
+                "sql": "WITH mapping AS (\n    SELECT id, COUNT(*) AS matches, COUNT(interest_name) AS names\n    FROM main.interest_map\n    GROUP BY id\n), scores AS (\n    SELECT m._year, m._month, m.interest_id, COUNT(*) AS observations,\n           COUNT(m.composition / NULLIF(m.index_value, 0)) AS valid_scores,\n           AVG(m.composition / NULLIF(m.index_value, 0)) AS score,\n           SUM(m.month_year IS NOT printf('%02d-%04d', m._month, m._year)) AS date_mismatches\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n), ranks AS (\n    SELECT s.*, RANK() OVER (PARTITION BY _year, _month ORDER BY score DESC) AS pos\n    FROM scores AS s\n)\nSELECT _year, _month, SUM(observations) AS observations, COUNT(*) AS interests,\n       SUM(observations - valid_scores) AS invalid_scores, SUM(date_mismatches) AS date_mismatches,\n       SUM(matches IS NOT 1 OR names IS NOT 1) AS mapping_errors,\n       SUM(pos = 1) AS winners, MAX(score) AS maximum\nFROM ranks AS r\nLEFT JOIN mapping AS i ON r.interest_id = i.id\nGROUP BY _year, _month\nORDER BY _year, _month"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "14 row(s):\nResult coverage: fetched_rows=14; displayed_rows=14; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): _year=float; _month=float; observations=int; interests=int; invalid_scores=int; date_mismatches=int; mapping_errors=int; winners=int; maximum=float\n_year | _month | observations | interests | invalid_scores | date_mismatches | mapping_errors | winners | maximum\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n2018.0 | 7.0 | 729 | 729 | 0 | 0 | 0 | 1 | 7.3571428571428585\n2018.0 | 8.0 | 767 | 767 | 0 | 0 | 0 | 1 | 7.205128205128205\n2018.0 | 9.0 | 780 | 780 | 0 | 0 | 0 | 1 | 8.263636363636364\n2018.0 | 10.0 | 857 | 857 | 0 | 0 | 0 | 1 | 9.135135135135135\n2018.0 | 11.0 | 928 | 928 | 0 | 0 | 0 | 1 | 8.27659574468085\n2018.0 | 12.0 | 995 | 995 | 0 | 0 | 0 | 1 | 8.313725490196079\n2019.0 | 1.0 | 973 | 973 | 0 | 0 | 0 | 1 | 7.657258064516128\n2019.0 | 2.0 | 1121 | 1121 | 0 | 0 | 0 | 1 | 7.6625000000000005\n2019.0 | 3.0 | 1136 | 1136 | 0 | 0 | 0 | 1 | 6.543046357615895\n2019.0 | 4.0 | 1099 | 1099 | 0 | 0 | 0 | 1 | 6.275862068965518\n2019.0 | 5.0 | 857 | 857 | 0 | 0 | 0 | 1 | 4.409090909090909\n2019.0 | 6.0 | 824 | 824 | 0 | 0 | 0 | 1 | 2.7650602409638556\n2019.0 | 7.0 | 864 | 864 | 0 | 0 | 0 | 1 | 2.8175675675675675\n2019.0 | 8.0 | 1149 | 1149 | 0 | 0 | 0 | 1 | 2.728476821192053\nSQL: WITH mapping AS (\n    SELECT id, COUNT(*) AS matches, COUNT(interest_name) AS names\n    FROM main.interest_map\n    GROUP BY id\n), scores AS (\n    SELECT m._year, m._month, m.interest_id, COUNT(*) AS observations,\n           COUNT(m.composition / NULLIF(m.index_value, 0)) AS valid_scores,\n           AVG(m.composition / NULLIF(m.index_value, 0)) AS score,\n           SUM(m.month_year IS NOT printf('%02d-%04d', m._month, m._year)) AS date_mismatches\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n), ranks AS (\n    SELECT s.*, RANK() OVER (PARTITION BY _year, _month ORDER BY score DESC) AS pos\n    FROM scores AS s\n)\nSELECT _year, _month, SUM(observations) AS observations, COUNT(*) AS interests,\n       SUM(observations - valid_scores) AS invalid_scores, SUM(date_mismatches) AS date_mismatches,\n       SUM(matches IS NOT 1 OR names IS NOT 1) AS mapping_errors,\n       SUM(pos = 1) AS winners, MAX(score) AS maximum\nFROM ranks AS r\nLEFT JOIN mapping AS i ON r.interest_id = i.id\nGROUP BY _year, _month\nORDER BY _year, _month\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"__91bcyND2nNe6o73a0WrxnurFHKxx1cfSv86hDuRXA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "__91bcyND2nNe6o73a0WrxnurFHKxx1cfSv86hDuRXA",
+                "expected_rows": 12,
+                "expected_columns": [
+                  "date",
+                  "interest_name",
+                  "max_index_composition",
+                  "three_month_rolling_average",
+                  "interest_one_month_ago",
+                  "max_index_composition_one_month_ago",
+                  "interest_two_months_ago",
+                  "max_index_composition_two_months_ago"
+                ],
+                "sql": "WITH interest_scores AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interests AS (\n    SELECT\n        s.*,\n        RANK() OVER (\n            PARTITION BY month_start ORDER BY average_composition DESC\n        ) AS monthly_rank\n    FROM interest_scores AS s\n),\nwinner_history AS (\n    SELECT\n        r.month_start AS date,\n        i.interest_name,\n        r.average_composition AS max_index_composition,\n        AVG(r.average_composition) OVER (\n            months ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(i.interest_name, 1) OVER months AS interest_one_month_ago,\n        LAG(r.average_composition, 1) OVER months AS max_index_composition_one_month_ago,\n        LAG(i.interest_name, 2) OVER months AS interest_two_months_ago,\n        LAG(r.average_composition, 2) OVER months AS max_index_composition_two_months_ago\n    FROM ranked_interests AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.monthly_rank = 1\n    WINDOW months AS (ORDER BY r.month_start)\n)\nSELECT *\nFROM winner_history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "12 row(s):\nOutput columns validated (projection only).\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=12; displayed_rows=12; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): date=str; interest_name=str; max_index_composition=float; three_month_rolling_average=float; interest_one_month_ago=str; max_index_composition_one_month_ago=float; interest_two_months_ago=str; max_index_composition_two_months_ago=float\ndate | interest_name | max_index_composition | three_month_rolling_average | interest_one_month_ago | max_index_composition_one_month_ago | interest_two_months_ago | max_index_composition_two_months_ago\n--- | --- | --- | --- | --- | --- | --- | ---\n2018-09-01 | Work Comes First Travelers | 8.263636363636364 | 7.6086358086358095 | Las Vegas Trip Planners | 7.205128205128205 | Las Vegas Trip Planners | 7.3571428571428585\n2018-10-01 | Work Comes First Travelers | 9.135135135135135 | 8.201299901299901 | Work Comes First Travelers | 8.263636363636364 | Las Vegas Trip Planners | 7.205128205128205\n2018-11-01 | Work Comes First Travelers | 8.27659574468085 | 8.55845574781745 | Work Comes First Travelers | 9.135135135135135 | Work Comes First Travelers | 8.263636363636364\n2018-12-01 | Work Comes First Travelers | 8.313725490196079 | 8.575152123337356 | Work Comes First Travelers | 8.27659574468085 | Work Comes First Travelers | 9.135135135135135\n2019-01-01 | Work Comes First Travelers | 7.657258064516128 | 8.08252643313102 | Work Comes First Travelers | 8.313725490196079 | Work Comes First Travelers | 8.27659574468085\n2019-02-01 | Work Comes First Travelers | 7.6625000000000005 | 7.877827851570736 | Work Comes First Travelers | 7.657258064516128 | Work Comes First Travelers | 8.313725490196079\n2019-03-01 | Alabama Trip Planners | 6.543046357615895 | 7.287601474044007 | Work Comes First Travelers | 7.6625000000000005 | Work Comes First Travelers | 7.657258064516128\n2019-04-01 | Solar Energy Researchers | 6.275862068965518 | 6.827136142193805 | Alabama Trip Planners | 6.543046357615895 | Work Comes First Travelers | 7.6625000000000005\n2019-05-01 | Readers of Honduran Content | 4.409090909090909 | 5.742666445224107 | Solar Energy Researchers | 6.275862068965518 | Alabama Trip Planners | 6.543046357615895\n2019-06-01 | Las Vegas Trip Planners | 2.7650602409638556 | 4.483337739673428 | Readers of Honduran Content | 4.409090909090909 | Solar Energy Researchers | 6.275862068965518\n2019-07-01 | Las Vegas Trip Planners | 2.8175675675675675 | 3.3305729058741105 | Las Vegas Trip Planners | 2.7650602409638556 | Readers of Honduran Content | 4.409090909090909\n2019-08-01 | Cosmetics and Beauty Shoppers | 2.728476821192053 | 2.7703682099078257 | Las Vegas Trip Planners | 2.8175675675675675 | Las Vegas Trip Planners | 2.7650602409638556\nSQL: WITH interest_scores AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interests AS (\n    SELECT\n        s.*,\n        RANK() OVER (\n            PARTITION BY month_start ORDER BY average_composition DESC\n        ) AS monthly_rank\n    FROM interest_scores AS s\n),\nwinner_history AS (\n    SELECT\n        r.month_start AS date,\n        i.interest_name,\n        r.average_composition AS max_index_composition,\n        AVG(r.average_composition) OVER (\n            months ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(i.interest_name, 1) OVER months AS interest_one_month_ago,\n        LAG(r.average_composition, 1) OVER months AS max_index_composition_one_month_ago,\n        LAG(i.interest_name, 2) OVER months AS interest_two_months_ago,\n        LAG(r.average_composition, 2) OVER months AS max_index_composition_two_months_ago\n    FROM ranked_interests AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.monthly_rank = 1\n    WINDOW months AS (ORDER BY r.month_start)\n)\nSELECT *\nFROM winner_history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH interest_scores AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interests AS (\n    SELECT\n        s.*,\n        RANK() OVER (\n            PARTITION BY month_start ORDER BY average_composition DESC\n        ) AS monthly_rank\n    FROM interest_scores AS s\n),\nwinner_history AS (\n    SELECT\n        r.month_start AS date,\n        i.interest_name,\n        r.average_composition AS max_index_composition,\n        AVG(r.average_composition) OVER (\n            months ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(i.interest_name, 1) OVER months AS interest_one_month_ago,\n        LAG(r.average_composition, 1) OVER months AS max_index_composition_one_month_ago,\n        LAG(i.interest_name, 2) OVER months AS interest_two_months_ago,\n        LAG(r.average_composition, 2) OVER months AS max_index_composition_two_months_ago\n    FROM ranked_interests AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.monthly_rank = 1\n    WINDOW months AS (ORDER BY r.month_start)\n)\nSELECT *\nFROM winner_history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12\n```",
+          "event_parse_errors": [],
+          "rows": 12,
+          "sql": "WITH interest_scores AS (\n    SELECT\n        printf('%04d-%02d-01', m._year, m._month) AS month_start,\n        m.interest_id,\n        AVG(1.0 * m.composition / NULLIF(m.index_value, 0)) AS average_composition\n    FROM main.interest_metrics AS m\n    WHERE (m._year, m._month) BETWEEN (2018, 7) AND (2019, 8)\n    GROUP BY m._year, m._month, m.interest_id\n),\nranked_interests AS (\n    SELECT\n        s.*,\n        RANK() OVER (\n            PARTITION BY month_start ORDER BY average_composition DESC\n        ) AS monthly_rank\n    FROM interest_scores AS s\n),\nwinner_history AS (\n    SELECT\n        r.month_start AS date,\n        i.interest_name,\n        r.average_composition AS max_index_composition,\n        AVG(r.average_composition) OVER (\n            months ROWS BETWEEN 2 PRECEDING AND CURRENT ROW\n        ) AS three_month_rolling_average,\n        LAG(i.interest_name, 1) OVER months AS interest_one_month_ago,\n        LAG(r.average_composition, 1) OVER months AS max_index_composition_one_month_ago,\n        LAG(i.interest_name, 2) OVER months AS interest_two_months_ago,\n        LAG(r.average_composition, 2) OVER months AS max_index_composition_two_months_ago\n    FROM ranked_interests AS r\n    JOIN main.interest_map AS i ON i.id = r.interest_id\n    WHERE r.monthly_rank = 1\n    WINDOW months AS (ORDER BY r.month_start)\n)\nSELECT *\nFROM winner_history\nWHERE date BETWEEN '2018-09-01' AND '2019-08-01'\nORDER BY date\nLIMIT 12",
+          "seconds": 43.89112533302978
+        },
+        "result": {
+          "columns": [
+            "date",
+            "interest_name",
+            "max_index_composition",
+            "three_month_rolling_average",
+            "interest_one_month_ago",
+            "max_index_composition_one_month_ago",
+            "interest_two_months_ago",
+            "max_index_composition_two_months_ago"
+          ],
+          "row_count": 12,
+          "preview": [
+            [
+              "2018-09-01",
+              "Work Comes First Travelers",
+              "8.263636363636364",
+              "7.6086358086358095",
+              "Las Vegas Trip Planners",
+              "7.205128205128205",
+              "Las Vegas Trip Planners",
+              "7.3571428571428585"
+            ],
+            [
+              "2018-10-01",
+              "Work Comes First Travelers",
+              "9.135135135135135",
+              "8.201299901299901",
+              "Work Comes First Travelers",
+              "8.263636363636364",
+              "Las Vegas Trip Planners",
+              "7.205128205128205"
+            ],
+            [
+              "2018-11-01",
+              "Work Comes First Travelers",
+              "8.27659574468085",
+              "8.55845574781745",
+              "Work Comes First Travelers",
+              "9.135135135135135",
+              "Work Comes First Travelers",
+              "8.263636363636364"
+            ],
+            [
+              "2018-12-01",
+              "Work Comes First Travelers",
+              "8.313725490196079",
+              "8.575152123337356",
+              "Work Comes First Travelers",
+              "8.27659574468085",
+              "Work Comes First Travelers",
+              "9.135135135135135"
+            ],
+            [
+              "2019-01-01",
+              "Work Comes First Travelers",
+              "7.657258064516128",
+              "8.08252643313102",
+              "Work Comes First Travelers",
+              "8.313725490196079",
+              "Work Comes First Travelers",
+              "8.27659574468085"
+            ],
+            [
+              "2019-02-01",
+              "Work Comes First Travelers",
+              "7.6625000000000005",
+              "7.877827851570736",
+              "Work Comes First Travelers",
+              "7.657258064516128",
+              "Work Comes First Travelers",
+              "8.313725490196079"
+            ],
+            [
+              "2019-03-01",
+              "Alabama Trip Planners",
+              "6.543046357615895",
+              "7.287601474044007",
+              "Work Comes First Travelers",
+              "7.6625000000000005",
+              "Work Comes First Travelers",
+              "7.657258064516128"
+            ],
+            [
+              "2019-04-01",
+              "Solar Energy Researchers",
+              "6.275862068965518",
+              "6.827136142193805",
+              "Alabama Trip Planners",
+              "6.543046357615895",
+              "Work Comes First Travelers",
+              "7.6625000000000005"
+            ],
+            [
+              "2019-05-01",
+              "Readers of Honduran Content",
+              "4.409090909090909",
+              "5.742666445224107",
+              "Solar Energy Researchers",
+              "6.275862068965518",
+              "Alabama Trip Planners",
+              "6.543046357615895"
+            ],
+            [
+              "2019-06-01",
+              "Las Vegas Trip Planners",
+              "2.7650602409638556",
+              "4.483337739673428",
+              "Readers of Honduran Content",
+              "4.409090909090909",
+              "Solar Energy Researchers",
+              "6.275862068965518"
+            ],
+            [
+              "2019-07-01",
+              "Las Vegas Trip Planners",
+              "2.8175675675675675",
+              "3.3305729058741105",
+              "Las Vegas Trip Planners",
+              "2.7650602409638556",
+              "Readers of Honduran Content",
+              "4.409090909090909"
+            ],
+            [
+              "2019-08-01",
+              "Cosmetics and Beauty Shoppers",
+              "2.728476821192053",
+              "2.7703682099078257",
+              "Las Vegas Trip Planners",
+              "2.8175675675675675",
+              "Las Vegas Trip Planners",
+              "2.7650602409638556"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "8e11769df569dfef1e7a101798f7c0df5a78ef4e29dc9d31ce626872dc3c7781"
+        }
+      }
+    }
+  ]
+}
