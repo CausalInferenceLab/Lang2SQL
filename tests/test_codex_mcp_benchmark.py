@@ -193,6 +193,43 @@ async def test_pass_exclusion_cannot_filter_full_accuracy():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("split,failed_only,expected,raises", [
+    ("development", False, 2, True),
+    ("all", True, 1, True),
+    ("all", True, 0, False),
+    ("all", False, -1, True),
+])
+async def test_selection_contract_precedes_output_and_inference(
+    tmp_path, monkeypatch, split, failed_only, expected, raises
+):
+    import json
+    from types import SimpleNamespace
+
+    from bench.accuracy import codex_mcp as runner
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(json.dumps({
+        "suite": "bird", "development_ids": ["first"], "db_sha256": {},
+        "cases": [{"instance_id": "first"}, {"instance_id": "second"}],
+    }))
+    monkeypatch.setattr(runner, "validate_inputs", lambda *a: None)
+    monkeypatch.setattr(runner, "load_schema_documents", lambda *a: {})
+    monkeypatch.setattr(runner, "failed_cases", lambda *a, **k: [])
+    args = SimpleNamespace(
+        exclude_passed_from=[], failures_from=tmp_path if failed_only else None,
+        manifest=manifest, db_dir=tmp_path, schema_docs=None, split=split,
+        expected_cases=expected, output=tmp_path / "run",
+    )
+    if raises:
+        with pytest.raises(ValueError, match="check --split"):
+            await runner.run(args)
+    else:
+        await runner.run(args)
+    # No output directory, subprocess metadata lookup or model process is created.
+    assert not args.output.exists()
+
+
+@pytest.mark.asyncio
 @pytest.mark.parametrize("timeout", [False, True])
 async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monkeypatch, timeout):
     import asyncio
@@ -246,10 +283,13 @@ async def test_runner_preserves_submitted_input_and_partial_trace(tmp_path, monk
         root=tmp_path, schema_docs=schema, split="all", output=tmp_path / "run",
         model="test-model", reasoning_effort="high", concurrency=1,
         case_timeout=0.01 if timeout else 1, sql_timeout=1, max_rows=100,
-        review_source=None,
+        review_source=None, expected_cases=1,
     )
     await runner.run(args)
     root = args.output / "codex-mcp"
+    assert json.loads((args.output / "settings.json").read_text())["case_selection"] == {
+        "split": "all", "input_cases": 1, "selected_cases": 1, "expected_cases": 1,
+    }
     record = json.loads((root / "records/case1.json").read_text())
     assert record["status"] == ("failed" if timeout else "predicted")
     assert len(record["mcp_calls"]) == 1

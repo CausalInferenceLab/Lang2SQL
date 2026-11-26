@@ -1,0 +1,23 @@
+WITH pair_counts AS (
+    SELECT b.bond_type,
+           m.label,
+           MIN(a1.element, a2.element) AS element_lo,
+           MAX(a1.element, a2.element) AS element_hi,
+           COUNT(DISTINCT b.bond_id) AS bonds_in_pair
+    FROM main.bond AS b
+    JOIN main.molecule AS m ON m.molecule_id = b.molecule_id
+    JOIN main.connected AS c ON c.bond_id = b.bond_id
+    JOIN main.atom AS a1 ON a1.atom_id = c.atom_id
+    JOIN main.atom AS a2 ON a2.atom_id = c.atom_id2
+    WHERE b.molecule_id = 'TR377'
+      AND b.bond_type IN ('-', '=')
+    GROUP BY b.bond_type, m.label, element_lo, element_hi
+)
+SELECT bond_type,
+       SUM(bonds_in_pair) AS bond_count,
+       COUNT(*) AS element_pair_count,
+       label AS carcinogenicity_label
+FROM pair_counts
+GROUP BY bond_type, label
+ORDER BY bond_count DESC, bond_type ASC
+LIMIT 2
