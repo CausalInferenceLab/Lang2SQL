@@ -1,0 +1,72 @@
+{
+  "scope": "Failed-case model-selection diagnostic; all three new attempts score zero. Reused Spider Sol/xhigh control is also zero in PR334. No full accuracy claim or reason to change production model default from this sample.",
+  "reused_control": {
+    "id": "local008",
+    "model": "gpt-6.2-sol",
+    "score": 0,
+    "source": "/Users/seyoung/workspace/benchmarks/codex-mcp-reasoning-control-20261127/spider-xhigh",
+    "scores_sha256": "d4eaf3bf3ead5e355f19a18f5216d4cc4dc54a70ea21afea53e039618cd748a3",
+    "archive_pr": "https://github.com/CausalInferenceLab/Lang2SQL/pull/334"
+  },
+  "verified": "Same product/runner/grader source and input manifests; same effort xhigh, schema, timeout/concurrency and Codex version. Revisions differ only in experiment artifacts.",
+  "observed_causes": [
+    "Both models interpret age over 50 as completed integer age at least 51; the reference uses a strict 50-year anniversary cutoff.",
+    "Both models select per-record maxima rather than career totals for local008. Neither case has a SQL execution/provenance error."
+  ],
+  "runs": [
+    {
+      "id": "bird384",
+      "model": "gpt-6.2-sol",
+      "reasoning_effort": "xhigh",
+      "score": 0,
+      "status": "predicted",
+      "seconds": 27.471007041982375,
+      "cli_usage": [
+        {
+          "input_tokens": 151780,
+          "cached_input_tokens": 127488,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 802,
+          "reasoning_output_tokens": 185
+        }
+      ],
+      "sql": "SELECT COUNT(DISTINCT p.\"ID\") AS patient_count\nFROM \"Patient\" AS p\nJOIN \"Laboratory\" AS l ON l.\"ID\" = p.\"ID\"\nWHERE l.\"TG\" >= 200\n  AND date(p.\"Birthday\") <= date('2026-10-09', '-51 years')\nLIMIT 1"
+    },
+    {
+      "id": "bird384",
+      "model": "gpt-6.2-astra",
+      "reasoning_effort": "xhigh",
+      "score": 0,
+      "status": "predicted",
+      "seconds": 29.90476775006391,
+      "cli_usage": [
+        {
+          "input_tokens": 128995,
+          "cached_input_tokens": 105984,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 671,
+          "reasoning_output_tokens": 130
+        }
+      ],
+      "sql": "SELECT COUNT(DISTINCT p.ID) AS patient_count\nFROM Patient AS p\nJOIN Laboratory AS l ON l.ID = p.ID\nWHERE l.TG >= 200\n  AND p.Birthday <= date('2026-10-09', '-51 years')\nLIMIT 1"
+    },
+    {
+      "id": "local008",
+      "model": "gpt-6.2-astra",
+      "reasoning_effort": "xhigh",
+      "score": 0,
+      "status": "predicted",
+      "seconds": 62.432180708041415,
+      "cli_usage": [
+        {
+          "input_tokens": 224047,
+          "cached_input_tokens": 190720,
+          "cache_write_input_tokens": 0,
+          "output_tokens": 1917,
+          "reasoning_output_tokens": 959
+        }
+      ],
+      "sql": "WITH records AS (\n    SELECT MAX(g) AS games,\n           MAX(NULLIF(r, '')) AS runs,\n           MAX(NULLIF(h, '')) AS hits,\n           MAX(NULLIF(hr, '')) AS home_runs\n    FROM main.batting\n),\nleaders AS (\n    SELECT b.player_id, 'Games played' AS statistic, b.g AS score\n    FROM main.batting AS b JOIN records ON b.g = records.games\n    UNION ALL\n    SELECT b.player_id, 'Runs', b.r\n    FROM main.batting AS b JOIN records ON b.r = records.runs\n    UNION ALL\n    SELECT b.player_id, 'Hits', b.h\n    FROM main.batting AS b JOIN records ON b.h = records.hits\n    UNION ALL\n    SELECT b.player_id, 'Home runs', b.hr\n    FROM main.batting AS b JOIN records ON b.hr = records.home_runs\n)\nSELECT l.statistic, p.name_given, l.score\nFROM leaders AS l\nJOIN main.player AS p ON p.player_id = l.player_id\nLIMIT 1000"
+    }
+  ]
+}
