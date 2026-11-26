@@ -276,3 +276,24 @@ async def test_literal_query_without_catalog_still_requires_single_use_receipt(
             "resolve_business_terms", {"terms": ["undefined_net_revenue"]}
         )
         assert missing.isError and "DEFINITION_REQUIRED" in missing.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_missing_definitions_are_reported_together_and_revoke_receipt(tmp_path):
+    async with connected(fixture_db(tmp_path), tmp_path / "metadata.db") as client:
+        await client.call_tool("term_custom", {
+            "term": "known", "definition": "SUM(orders.amount)", "layer": "team"
+        })
+        check = await client.call_tool("resolve_business_terms", {"terms": ["known"]})
+        token = json.loads(check.content[0].text)["definition_check_id"]
+        check = await client.call_tool("resolve_business_terms", {
+            "terms": ["missing_a", "known", "missing_b"]
+        })
+        assert check.isError
+        message = check.content[0].text
+        assert '["missing_a", "missing_b"]' in message
+        assert '"known"' not in message
+        rejected = await client.call_tool("run_sql", {
+            "sql": "SELECT COUNT(*) FROM orders", "definition_check_id": token
+        })
+        assert rejected.isError

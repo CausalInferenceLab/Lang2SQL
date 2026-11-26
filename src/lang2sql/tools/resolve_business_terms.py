@@ -50,11 +50,14 @@ class ResolveBusinessTerms:
             },
         )
 
-    def definitions(self, terms, ctx):
+    def definitions(self, terms, ctx, *, missing_terms=None):
         if ctx.store is None:
+            if missing_terms is not None:
+                missing_terms.extend(terms)
             return None
         entries = _load_all(ctx.store, ctx.identity.kv_scope)
         resolved = []
+        missing = []
         for term in terms:
             # Exact canonical names only: fuzzy/alias guessing defeats clarification.
             entry = _resolve_entry(
@@ -63,9 +66,12 @@ class ResolveBusinessTerms:
                 ctx.identity.user_id,
             )
             if entry is None or entry.inferred or not entry.definition.strip():
-                return None
-            resolved.append(asdict(entry))
-        return resolved
+                missing.append(term)
+            else:
+                resolved.append(asdict(entry))
+        if missing_terms is not None:
+            missing_terms.extend(missing)
+        return None if missing else resolved
 
     async def reject(self, ctx, reason):
         logger.warning(
@@ -101,11 +107,12 @@ class ResolveBusinessTerms:
             or any(not isinstance(t, str) or not t.strip() for t in terms)
         ):
             return await self.reject(ctx, "Supply all business terms as nonempty names")
-        definitions = self.definitions(terms, ctx)
+        missing = []
+        definitions = self.definitions(terms, ctx, missing_terms=missing)
         if definitions is None:
             return await self.reject(
                 ctx,
-                "At least one requested term has no confirmed definition in this scope",
+                "No confirmed definition in this scope for: " + json.dumps(missing, ensure_ascii=False),
             )
         token = secrets.token_urlsafe()
         self.receipt = (token, tuple(terms), definitions, ctx.identity.session_key())
