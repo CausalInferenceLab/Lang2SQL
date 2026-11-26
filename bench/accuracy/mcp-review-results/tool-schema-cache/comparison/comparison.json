@@ -1,0 +1,1332 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-official-values-remaining-all-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "f0bd64b123eb987d1efb9ac8220e68e1e49bfce4908aa154de622363ee5bb685",
+      "scores_sha256": "846dfce87e4644b41c58d013750fefc81fd1241d79bd37082007d9127e795b54",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "5374b07b7cb128613620dc241080112b5f98b7b9",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "all",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-tool-schema-cache-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "be0ae1421956fb04226db0e80a7b4d21c7bae7da12a301723cca1eeb7bc3a498",
+      "scores_sha256": "c88570a0271a9d112930988d34d3128f21fc7109610b97adbd5da73c28276e19",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "6c0987f35ab5ea27ead7066b29de9a929da24de4",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "f7393d92f53b8f64212076c49ce223eb2b49445484e9766ba0b281ee6d11def8",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
+        "cache_official_columns": true,
+        "case_selection": {
+          "split": "all",
+          "input_cases": 3,
+          "selected_cases": 3,
+          "expected_cases": 3
+        },
+        "review_source": null,
+        "failure_selection": null,
+        "split": "all",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 0": 3
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird093",
+        "db": "card_games",
+        "question": "Among the cards carrying the boros watermark that were printed in a foreign language, which card type is the most common, and how many of those cards have that type? If several types tie for the most, list all of them with their counts.",
+        "evidence": "\"Boros watermark\" refers to the guild watermark appearing on cards of the Boros guild; \"printed in a foreign language\" means the card was printed in any language other than English."
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -3,9 +3,10 @@\n     FROM cards AS c\n     WHERE c.watermark = 'boros'\n       AND c.uuid IN (\n-          SELECT f.uuid\n-          FROM foreign_data AS f\n-          WHERE f.language <> 'English'\n+          SELECT fd.uuid\n+          FROM foreign_data AS fd\n+          WHERE fd.language <> 'English'\n+            AND fd.language <> ''\n       )\n     GROUP BY c.types\n )",
+      "before": {
+        "score": 0,
+        "record_sha256": "92beef839caa69baeea7a419b549a437c6eea1995a691a425f01546f78f2d2c0",
+        "record": {
+          "instance_id": "bird093",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "79059d3a380d72e95092a791a9707ef7ad65d2db914b15c9b91c2552b88cb2e3",
+          "events_sha256": "b2a0112c2bf1c925c26df8d128ffc1dd7e74c38b8e22722838e74983144ad4e3",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 227778,
+              "cached_input_tokens": 203520,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 731,
+              "reasoning_output_tokens": 66
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "foreign_data"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "foreign_data (table)\n- id: INTEGER NOT NULL\n- flavorText: TEXT\n- language: TEXT\n- multiverseid: INTEGER\n- name: TEXT\n- text: TEXT\n- type: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"tklkBX1x_2ngbEE155-hT0kQm6I4d2unk5Ej_AzanPw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "tklkBX1x_2ngbEE155-hT0kQm6I4d2unk5Ej_AzanPw",
+                "sql": "SELECT c.types, MIN(c.type) AS example_type, COUNT(*) AS cards\nFROM cards AS c\nWHERE c.watermark = 'boros'\n  AND c.uuid IN (SELECT f.uuid FROM foreign_data AS f WHERE f.language <> 'English')\nGROUP BY c.types\nORDER BY cards DESC"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): types=str; example_type=str; cards=int\ntypes | example_type | cards\n--- | --- | ---\nCreature | Creature — Angel | 71\nInstant | Instant | 28\nLand | Land | 9\nSorcery | Sorcery | 7\nArtifact | Artifact | 7\nEnchantment | Enchantment | 4\nSQL: SELECT c.types, MIN(c.type) AS example_type, COUNT(*) AS cards\nFROM cards AS c\nWHERE c.watermark = 'boros'\n  AND c.uuid IN (SELECT f.uuid FROM foreign_data AS f WHERE f.language <> 'English')\nGROUP BY c.types\nORDER BY cards DESC\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"2c1OMeUnvq-6KFB5i349HAKAEZKLI80uFYJ6s_w-wzo\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "2c1OMeUnvq-6KFB5i349HAKAEZKLI80uFYJ6s_w-wzo",
+                "expected_columns": [
+                  "card_type",
+                  "card_count"
+                ],
+                "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): card_type=str; card_count=int\ncard_type | card_count\n--- | ---\nCreature | 71\nSQL: WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT f.uuid\n          FROM foreign_data AS f\n          WHERE f.language <> 'English'\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000",
+          "seconds": 31.415752250002697
+        },
+        "result": {
+          "columns": [
+            "card_type",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "Creature",
+              "71"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "447dc32e5bf636101affb8d2cea2a2e2762bd4cb599f9ead3a2a47187f4fe577"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "24aaba6e7f76e74ee9b78e044fac97de9910a94f29ebde02e629ec15502c2ae9",
+        "record": {
+          "instance_id": "bird093",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "initial_metadata_store_sha256": "e36c55200fc902a548c5f5c6dda40e4287e20c95a7f8d277559d75a4e6d46033",
+          "prompt_sha256": "79059d3a380d72e95092a791a9707ef7ad65d2db914b15c9b91c2552b88cb2e3",
+          "events_sha256": "0d1a27776d162b98bbd68ca53cf816d76422de8dcd2778e3373543ce9973706a",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 237349,
+              "cached_input_tokens": 215168,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 718,
+              "reasoning_output_tokens": 51
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"Pt2ot2ppz-1ID4Guq7GNo0UdqQKLM65KFCrHeAiZTao\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL — {\"original_column_name\": \"id\", \"column_name\": \"unique id number identifying the cards\", \"column_description\": \"\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- artist: TEXT — {\"original_column_name\": \"artist\", \"column_name\": \"\", \"column_description\": \"The name of the artist that illustrated the card art.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- asciiName: TEXT — {\"original_column_name\": \"asciiName\", \"column_name\": \"ascii Name\", \"column_description\": \"The ASCII(opens new window) (Basic/128) code formatted card name with no special unicode characters.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- availability: TEXT — {\"original_column_name\": \"availability\", \"column_name\": \"\", \"column_description\": \"A list of the card's available printing types.\", \"data_format\": \"text\", \"value_description\": \"\\\"arena\\\", \\\"dreamcast\\\", \\\"mtgo\\\", \\\"paper\\\", \\\"shandalar\\\"\"}\n- borderColor: TEXT — {\"original_column_name\": \"borderColor\", \"column_name\": \"border Color\", \"column_description\": \"The color of the card border.\", \"data_format\": \"text\", \"value_description\": \"\\\"black\\\", \\\"borderless\\\", \\\"gold\\\", \\\"silver\\\", \\\"white\\\"\"}\n- cardKingdomFoilId: TEXT — {\"original_column_name\": \"cardKingdomFoilId\", \"column_name\": \"card Kingdom Foil Id\", \"column_description\": \"card Kingdom Foil Id\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\ncardKingdomFoilId, when paired with cardKingdomId that is not Null, is incredibly powerful. \"}\n- cardKingdomId: TEXT — {\"original_column_name\": \"cardKingdomId\", \"column_name\": \"card Kingdom Id\", \"column_description\": \"card Kingdom Id\", \"data_format\": \"text\", \"value_description\": \"A list of all the colors in the color indicator\"}\n- colorIdentity: TEXT — {\"original_column_name\": \"colorIdentity\", \"column_name\": \"color Identity\", \"column_description\": \"A list of all the colors found in manaCost, colorIndicator, and text\", \"data_format\": \"text\", \"value_description\": \"\"}\n- colorIndicator: TEXT — {\"original_column_name\": \"colorIndicator\", \"column_name\": \"color Indicator\", \"column_description\": \"A list of all the colors in the color indicator (The symbol prefixed to a card's types).\", \"data_format\": \"text\", \"value_description\": \"\"}\n- colors: TEXT — {\"original_column_name\": \"colors\", \"column_name\": \"\", \"column_description\": \"A list of all the colors in manaCost and colorIndicator. \", \"data_format\": \"text\", \"value_description\": \"Some cards may not have values, such as cards with \\\"Devoid\\\" in its text.\"}\n- convertedManaCost: REAL — {\"original_column_name\": \"convertedManaCost\", \"column_name\": \"converted Mana Cost\", \"column_description\": \"The converted mana cost of the card. Use the manaValue property.\", \"data_format\": \"real\", \"value_description\": \"if value is higher, it means that this card cost more converted mana \"}\n- duelDeck: TEXT — {\"original_column_name\": \"duelDeck\", \"column_name\": \"duel Deck\", \"column_description\": \"The indicator for which duel deck the card is in.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- edhrecRank: INTEGER — {\"original_column_name\": \"edhrecRank\", \"column_name\": \"rec Rank in edh\", \"column_description\": \"The card rank on EDHRec\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- faceConvertedManaCost: REAL — {\"original_column_name\": \"faceConvertedManaCost\", \"column_name\": \"face Converted Mana Cost\", \"column_description\": \"The converted mana cost or mana value for the face for either half or part of the card. \", \"data_format\": \"real\", \"value_description\": \"if value is higher, it means that this card cost more converted mana for the face\"}\n- faceName: TEXT — {\"original_column_name\": \"faceName\", \"column_name\": \"face Name\", \"column_description\": \"The name on the face of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- flavorName: TEXT — {\"original_column_name\": \"flavorName\", \"column_name\": \"flavor Name\", \"column_description\": \"The promotional card name printed above the true card name on special cards that has no game function.\", \"data_format\": \"text\", \"value_description\": \"The promotional card name printed above the true card name on special cards that has no game function.\"}\n- flavorText: TEXT — {\"original_column_name\": \"flavorText\", \"column_name\": \"flavor Text\", \"column_description\": \"The italicized text found below the rules text that has no game function.\", \"data_format\": \"text\", \"value_description\": \"The italicized text found below the rules text that has no game function.\"}\n- frameEffects: TEXT — {\"original_column_name\": \"frameEffects\", \"column_name\": \"frame Effects\", \"column_description\": \"The visual frame effects.\", \"data_format\": \"text\", \"value_description\": \"\\\"colorshifted\\\", \\\"companion\\\", \\\"compasslanddfc\\\", \\\"devoid\\\", \\\"draft\\\", \\\"etched\\\", \\\"extendedart\\\", \\\"fullart\\\", \\\"inverted\\\", \\\"legendary\\\", \\\"lesson\\\", \\\"miracle\\\", \\\"mooneldrazidfc\\\", \\\"nyxtouched\\\", \\\"originpwdfc\\\", \\\"showcase\\\", \\\"snow\\\", \\\"sunmoondfc\\\", \\\"textless\\\", \\\"tombstone\\\", \\\"waxingandwaningmoondfc\\\"\"}\n- frameVersion: TEXT — {\"original_column_name\": \"frameVersion\", \"column_name\": \"frame Version\", \"column_description\": \"The version of the card frame style.\", \"data_format\": \"text\", \"value_description\": \"\\\"1993\\\", \\\"1997\\\", \\\"2003\\\", \\\"2015\\\", \\\"future\\\"\"}\n- hand: TEXT — {\"original_column_name\": \"hand\", \"column_name\": \"\", \"column_description\": \"The starting maximum hand size total modifier. \", \"data_format\": \"text\", \"value_description\": \"A + or - character precedes an integer. \\ncommonsense evidence:\\npositive maximum hand size: +1, +2, ....\\nnegative maximum hand size: -1, ....\\nneural maximum hand size: 0....\"}\n- hasAlternativeDeckLimit: INTEGER NOT NULL — {\"original_column_name\": \"hasAlternativeDeckLimit\", \"column_name\": \"has Alternative Deck Limit\", \"column_description\": \"If the card allows a value other than 4 copies in a deck.\", \"data_format\": \"integer\", \"value_description\": \"0: disallow 1: allow\"}\n- hasContentWarning: INTEGER NOT NULL — {\"original_column_name\": \"hasContentWarning\", \"column_name\": \"has Content Warning\", \"column_description\": \"If the card marked by Wizards of the Coast (opens new window) for having sensitive content. See this official article (opens new window) for more information.\", \"data_format\": \"integer\", \"value_description\": \"0: doesn't have 1: has sensitve content or Wizards of the Coast\\ncommonsense evidence:\\nCards with this property may have missing or degraded properties and values. \"}\n- hasFoil: INTEGER NOT NULL — {\"original_column_name\": \"hasFoil\", \"column_name\": \"has Foil\", \"column_description\": \"If the card can be found in foil\", \"data_format\": \"integer\", \"value_description\": \"0: cannot be found 1: can be found\"}\n- hasNonFoil: INTEGER NOT NULL — {\"original_column_name\": \"hasNonFoil\", \"column_name\": \"has Non Foil\", \"column_description\": \"If the card can be found in non-foil\", \"data_format\": \"integer\", \"value_description\": \"0: cannot be found 1: can be found\"}\n- isAlternative: INTEGER NOT NULL — {\"original_column_name\": \"isAlternative\", \"column_name\": \"is Alternative\", \"column_description\": \"If the card is an alternate variation to an original printing\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isFullArt: INTEGER NOT NULL — {\"original_column_name\": \"isFullArt\", \"column_name\": \"is Full Art\", \"column_description\": \"If the card has full artwork.\", \"data_format\": \"integer\", \"value_description\": \"0: doesn't have, 1: has full artwork\"}\n- isOnlineOnly: INTEGER NOT NULL — {\"original_column_name\": \"isOnlineOnly\", \"column_name\": \"is Online Only\", \"column_description\": \"If the card is only available in online game variations.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isOversized: INTEGER NOT NULL — {\"original_column_name\": \"isOversized\", \"column_name\": \"is Oversized\", \"column_description\": \"If the card is oversized.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isPromo: INTEGER NOT NULL — {\"original_column_name\": \"isPromo\", \"column_name\": \"is Promotion\", \"column_description\": \"If the card is a promotional printing.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isReprint: INTEGER NOT NULL — {\"original_column_name\": \"isReprint\", \"column_name\": \"is Reprint\", \"column_description\": \"If the card has been reprinted.\", \"data_format\": \"integer\", \"value_description\": \"0: has not 1: has not been\"}\n- isReserved: INTEGER NOT NULL — {\"original_column_name\": \"isReserved\", \"column_name\": \"is Reserved\", \"column_description\": \"If the card is on the Magic: The Gathering Reserved List (opens new window)\", \"data_format\": \"integer\", \"value_description\": \"If the card is on the Magic, it will appear in The Gathering Reserved List\"}\n- isStarter: INTEGER NOT NULL — {\"original_column_name\": \"isStarter\", \"column_name\": \"is Starter\", \"column_description\": \"If the card is found in a starter deck such as Planeswalker/Brawl decks.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isStorySpotlight: INTEGER NOT NULL — {\"original_column_name\": \"isStorySpotlight\", \"column_name\": \"is Story Spotlight\", \"column_description\": \"If the card is a Story Spotlight card.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isTextless: INTEGER NOT NULL — {\"original_column_name\": \"isTextless\", \"column_name\": \"is Text less\", \"column_description\": \"If the card does not have a text box.\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\n0: has a text box;\\n1: doesn't have a text box;\"}\n- isTimeshifted: INTEGER NOT NULL — {\"original_column_name\": \"isTimeshifted\", \"column_name\": \"is Time shifted\", \"column_description\": \"If the card is time shifted\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\nIf the card is \\\"timeshifted\\\", a feature of certain sets where a card will have a different frameVersion.\"}\n- keywords: TEXT — {\"original_column_name\": \"keywords\", \"column_name\": \"\", \"column_description\": \"A list of keywords found on the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- layout: TEXT — {\"original_column_name\": \"layout\", \"column_name\": \"\", \"column_description\": \"The type of card layout. For a token card, this will be \\\"token\\\"\", \"data_format\": \"text\", \"value_description\": \"\"}\n- leadershipSkills: TEXT — {\"original_column_name\": \"leadershipSkills\", \"column_name\": \"leadership Skills\", \"column_description\": \"A list of formats the card is legal to be a commander in\", \"data_format\": \"text\", \"value_description\": \"\"}\n- life: TEXT — {\"original_column_name\": \"life\", \"column_name\": \"\", \"column_description\": \"The starting life total modifier. A plus or minus character precedes an integer.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- loyalty: TEXT — {\"original_column_name\": \"loyalty\", \"column_name\": \"\", \"column_description\": \"The starting loyalty value of the card.\", \"data_format\": \"text\", \"value_description\": \"Used only on cards with \\\"Planeswalker\\\" in its types. empty means unkown\"}\n- manaCost: TEXT — {\"original_column_name\": \"manaCost\", \"column_name\": \"mana Cost \", \"column_description\": \"The mana cost of the card wrapped in brackets for each value.\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\nmanaCost is unconverted mana cost\"}\n- mcmId: TEXT — {\"original_column_name\": \"mcmId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mcmMetaId: TEXT — {\"original_column_name\": \"mcmMetaId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgArenaId: TEXT — {\"original_column_name\": \"mtgArenaId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgjsonV4Id: TEXT — {\"original_column_name\": \"mtgjsonV4Id\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgoFoilId: TEXT — {\"original_column_name\": \"mtgoFoilId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgoId: TEXT — {\"original_column_name\": \"mtgoId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- multiverseId: TEXT — {\"original_column_name\": \"multiverseId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- name: TEXT — {\"original_column_name\": \"name\", \"column_name\": \"\", \"column_description\": \"The name of the card.\", \"data_format\": \"text\", \"value_description\": \"Cards with multiple faces, like \\\"Split\\\" and \\\"Meld\\\" cards are given a delimiter.\"}\n- number: TEXT — {\"original_column_name\": \"number\", \"column_name\": \"\", \"column_description\": \"The number of the card\", \"data_format\": \"text\", \"value_description\": \"\"}\n- originalReleaseDate: TEXT — {\"original_column_name\": \"originalReleaseDate\", \"column_name\": \"\", \"column_description\": \"original Release Date\", \"data_format\": \"text\", \"value_description\": \"The original release date in ISO 8601(opens new window) format for a promotional card printed outside of a cycle window, such as Secret Lair Drop promotions.\"}\n- originalText: TEXT — {\"original_column_name\": \"originalText\", \"column_name\": \"\", \"column_description\": \"original Text\", \"data_format\": \"text\", \"value_description\": \"The text on the card as originally printed.\"}\n- originalType: TEXT — {\"original_column_name\": \"originalType\", \"column_name\": \"\", \"column_description\": \"original Type\", \"data_format\": \"text\", \"value_description\": \"The type of the card as originally printed. Includes any supertypes and subtypes.\"}\n- otherFaceIds: TEXT — {\"original_column_name\": \"otherFaceIds\", \"column_name\": \"\", \"column_description\": \"other Face Ids\", \"data_format\": \"text\", \"value_description\": \"A list of card UUID's to this card's counterparts, such as transformed or melded faces.\"}\n- power: TEXT — {\"original_column_name\": \"power\", \"column_name\": \"\", \"column_description\": \"The power of the card.\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\n∞ means infinite power\\nnull or * refers to unknown power\"}\n- printings: TEXT — {\"original_column_name\": \"printings\", \"column_name\": \"\", \"column_description\": \"A list of set printing codes the card was printed in, formatted in uppercase.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- promoTypes: TEXT — {\"original_column_name\": \"promoTypes\", \"column_name\": \"promo Types\", \"column_description\": \"A list of promotional types for a card.\", \"data_format\": \"text\", \"value_description\": \"\\\"arenaleague\\\", \\\"boosterfun\\\", \\\"boxtopper\\\", \\\"brawldeck\\\", \\\"bundle\\\", \\\"buyabox\\\", \\\"convention\\\", \\\"datestamped\\\", \\\"draculaseries\\\", \\\"draftweekend\\\", \\\"duels\\\", \\\"event\\\", \\\"fnm\\\", \\\"gameday\\\", \\\"gateway\\\", \\\"giftbox\\\", \\\"gilded\\\", \\\"godzillaseries\\\", \\\"instore\\\", \\\"intropack\\\", \\\"jpwalker\\\", \\\"judgegift\\\", \\\"league\\\", \\\"mediainsert\\\", \\\"neonink\\\", \\\"openhouse\\\", \\\"planeswalkerstamped\\\", \\\"playerrewards\\\", \\\"playpromo\\\", \\\"premiereshop\\\", \\\"prerelease\\\", \\\"promopack\\\", \\\"release\\\", \\\"setpromo\\\", \\\"stamped\\\", \\\"textured\\\", \\\"themepack\\\", \\\"thick\\\", \\\"tourney\\\", \\\"wizardsplaynetwork\\\"\"}\n- purchaseUrls: TEXT — {\"original_column_name\": \"purchaseUrls\", \"column_name\": \"purchase Urls\", \"column_description\": \"Links that navigate to websites where the card can be purchased.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- rarity: TEXT — {\"original_column_name\": \"rarity\", \"column_name\": \"\", \"column_description\": \"The card printing rarity.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- scryfallId: TEXT — {\"original_column_name\": \"scryfallId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- scryfallIllustrationId: TEXT — {\"original_column_name\": \"scryfallIllustrationId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- scryfallOracleId: TEXT — {\"original_column_name\": \"scryfallOracleId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- setCode: TEXT — {\"original_column_name\": \"setCode\", \"column_name\": \"Set Code\", \"column_description\": \"The set printing code that the card is from.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- side: TEXT — {\"original_column_name\": \"side\", \"column_name\": \"\", \"column_description\": \"The identifier of the card side. \", \"data_format\": \"text\", \"value_description\": \"Used on cards with multiple faces on the same card.\\ncommonsense evidence:\\nif this value is empty, then it means this card doesn't have multiple faces on the same card.\"}\n- subtypes: TEXT — {\"original_column_name\": \"subtypes\", \"column_name\": \"\", \"column_description\": \"A list of card subtypes found after em-dash.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- supertypes: TEXT — {\"original_column_name\": \"supertypes\", \"column_name\": \"super types\", \"column_description\": \"A list of card supertypes found before em-dash.\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\nlist of all types should be the union of subtypes and supertypes\"}\n- tcgplayerProductId: TEXT — {\"original_column_name\": \"tcgplayerProductId\", \"column_name\": \"tcg player ProductId\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\n- text: TEXT — {\"original_column_name\": \"text\", \"column_name\": \"\", \"column_description\": \"The rules text of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- toughness: TEXT — {\"original_column_name\": \"toughness\", \"column_name\": \"\", \"column_description\": \"The toughness of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- type: TEXT — {\"original_column_name\": \"type\", \"column_name\": \"\", \"column_description\": \"The type of the card as visible, including any supertypes and subtypes.\", \"data_format\": \"text\", \"value_description\": \"\\\"Artifact\\\", \\\"Card\\\", \\\"Conspiracy\\\", \\\"Creature\\\", \\\"Dragon\\\", \\\"Dungeon\\\", \\\"Eaturecray\\\", \\\"Elemental\\\", \\\"Elite\\\", \\\"Emblem\\\", \\\"Enchantment\\\", \\\"Ever\\\", \\\"Goblin\\\", \\\"Hero\\\", \\\"Instant\\\", \\\"Jaguar\\\", \\\"Knights\\\", \\\"Land\\\", \\\"Phenomenon\\\", \\\"Plane\\\", \\\"Planeswalker\\\", \\\"Scariest\\\", \\\"Scheme\\\", \\\"See\\\", \\\"Sorcery\\\", \\\"Sticker\\\", \\\"Summon\\\", \\\"Token\\\", \\\"Tribal\\\", \\\"Vanguard\\\", \\\"Wolf\\\", \\\"You’ll\\\", \\\"instant\\\"\"}\n- types: TEXT — {\"original_column_name\": \"types\", \"column_name\": \"\", \"column_description\": \"A list of all card types of the card, including Un‑sets and gameplay variants.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- uuid: TEXT NOT NULL — {\"original_column_name\": \"uuid\", \"column_name\": \"\", \"column_description\": \"The universal unique identifier (v5) generated by MTGJSON. Each entry is unique.\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- variations: TEXT — {\"original_column_name\": \"variations\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\n- watermark: TEXT — {\"original_column_name\": \"watermark\", \"column_name\": \"\", \"column_description\": \"The name of the watermark on the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "foreign_data"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "foreign_data (table)\n- id: INTEGER NOT NULL — {\"original_column_name\": \"id\", \"column_name\": \"\", \"column_description\": \"unique id number identifying this row of data\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- flavorText: TEXT — {\"original_column_name\": \"flavorText\", \"column_name\": \"flavor Text\", \"column_description\": \"The foreign flavor text of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- language: TEXT — {\"original_column_name\": \"language\", \"column_name\": \"\", \"column_description\": \"The foreign language of card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- multiverseid: INTEGER — {\"original_column_name\": \"multiverseid\", \"column_name\": \"\", \"column_description\": \"The foreign multiverse identifier of the card.\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- name: TEXT — {\"original_column_name\": \"name\", \"column_name\": \"\", \"column_description\": \"The foreign name of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- text: TEXT — {\"original_column_name\": \"text\", \"column_name\": \"\", \"column_description\": \"The foreign text ruling of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- type: TEXT — {\"original_column_name\": \"type\", \"column_name\": \"\", \"column_description\": \"The foreign type of the card. Includes any supertypes and subtypes.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- uuid: TEXT — {\"original_column_name\": \"uuid\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "Pt2ot2ppz-1ID4Guq7GNo0UdqQKLM65KFCrHeAiZTao",
+                "sql": "SELECT c.types, MIN(c.type) AS example_type, COUNT(*) AS card_count\nFROM cards AS c\nWHERE c.watermark = 'boros'\n  AND c.uuid IN (SELECT fd.uuid FROM foreign_data AS fd WHERE fd.language <> 'English')\nGROUP BY c.types"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): types=str; example_type=str; card_count=int\ntypes | example_type | card_count\n--- | --- | ---\nArtifact | Artifact | 7\nCreature | Creature — Angel | 71\nEnchantment | Enchantment | 4\nInstant | Instant | 28\nLand | Land | 9\nSorcery | Sorcery | 7\nSQL: SELECT c.types, MIN(c.type) AS example_type, COUNT(*) AS card_count\nFROM cards AS c\nWHERE c.watermark = 'boros'\n  AND c.uuid IN (SELECT fd.uuid FROM foreign_data AS fd WHERE fd.language <> 'English')\nGROUP BY c.types\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"yJYaMsvOruj7Ea4h21D38afcl0LAKd1H4AhLcBm7J7E\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "yJYaMsvOruj7Ea4h21D38afcl0LAKd1H4AhLcBm7J7E",
+                "expected_columns": [
+                  "card_type",
+                  "card_count"
+                ],
+                "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT fd.uuid\n          FROM foreign_data AS fd\n          WHERE fd.language <> 'English'\n            AND fd.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): card_type=str; card_count=int\ncard_type | card_count\n--- | ---\nCreature | 71\nSQL: WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT fd.uuid\n          FROM foreign_data AS fd\n          WHERE fd.language <> 'English'\n            AND fd.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT fd.uuid\n          FROM foreign_data AS fd\n          WHERE fd.language <> 'English'\n            AND fd.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH type_counts AS (\n    SELECT c.types AS card_type, COUNT(*) AS card_count\n    FROM cards AS c\n    WHERE c.watermark = 'boros'\n      AND c.uuid IN (\n          SELECT fd.uuid\n          FROM foreign_data AS fd\n          WHERE fd.language <> 'English'\n            AND fd.language <> ''\n      )\n    GROUP BY c.types\n)\nSELECT card_type, card_count\nFROM type_counts\nWHERE card_count = (SELECT MAX(card_count) FROM type_counts)\nORDER BY card_type\nLIMIT 1000",
+          "seconds": 34.27760162507184
+        },
+        "result": {
+          "columns": [
+            "card_type",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "Creature",
+              "71"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "447dc32e5bf636101affb8d2cea2a2e2762bd4cb599f9ead3a2a47187f4fe577"
+        }
+      }
+    },
+    {
+      "input": {
+        "instance_id": "bird107",
+        "db": "card_games",
+        "question": "I'm assembling a Japanese-language boros deck and want to check which cards need careful rules review. For every card that has a boros watermark and a Japanese printing, please give me: the Japanese card name, the English card type, and the total number of official rulings recorded for that card. A card is identified by its Japanese name together with its English card type - printings that share both count as one card, and if either differs they should be listed as separate cards. The ruling total should add up all ruling entries across every printing of that card, and if a card has no rulings, list it with a total of 0.",
+        "evidence": "Boros watermark means the watermark is marked 'boros' on the card; a Japanese printing is the foreign data entry in Japanese; rulings are the official rules clarifications recorded for a card."
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,12 +1,12 @@\n SELECT\n-    j.name AS japanese_name,\n+    f.name AS japanese_name,\n     c.type AS english_card_type,\n-    COUNT(DISTINCT r.id) AS total_rulings\n-FROM main.foreign_data AS j\n-JOIN main.cards AS c ON c.uuid = j.uuid\n+    COUNT(DISTINCT r.id) AS ruling_total\n+FROM main.foreign_data AS f\n+JOIN main.cards AS c ON c.uuid = f.uuid\n LEFT JOIN main.rulings AS r ON r.uuid = c.uuid\n-WHERE j.language = 'Japanese'\n-GROUP BY j.name, c.type\n+WHERE f.language = 'Japanese'\n+GROUP BY f.name, c.type\n HAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\n-ORDER BY total_rulings DESC, japanese_name, english_card_type\n+ORDER BY ruling_total DESC, f.name, c.type\n LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "8b5b0f491961f1c28061c0dab920157e86e35e25d3eefe796e9a1e79a6feb5e6",
+        "record": {
+          "instance_id": "bird107",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "82c7b3df28ce5b77a59c21e7e0651a984af5f185daacd8d7f5d8d863d8f20320",
+          "events_sha256": "fe4fe163402a702bd450721c554c8d8d65d5116a01ce8e028701e0099d958390",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 164579,
+              "cached_input_tokens": 142976,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 624,
+              "reasoning_output_tokens": 54
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"BnppbXZ-4syu_CMfs3el-fou7j2o5bHyO5f7dMMwzYc\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "foreign_data"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "foreign_data (table)\n- id: INTEGER NOT NULL\n- flavorText: TEXT\n- language: TEXT\n- multiverseid: INTEGER\n- name: TEXT\n- text: TEXT\n- type: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "rulings"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "rulings (table)\n- id: INTEGER NOT NULL\n- date: DATE\n- text: TEXT\n- uuid: TEXT\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "BnppbXZ-4syu_CMfs3el-fou7j2o5bHyO5f7dMMwzYc",
+                "expected_columns": [
+                  "japanese_name",
+                  "english_card_type",
+                  "total_rulings"
+                ],
+                "sql": "SELECT\n    j.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS total_rulings\nFROM main.foreign_data AS j\nJOIN main.cards AS c ON c.uuid = j.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE j.language = 'Japanese'\nGROUP BY j.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY total_rulings DESC, japanese_name, english_card_type;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "96 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=96; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): japanese_name=str; english_card_type=str; total_rulings=int\njapanese_name | english_card_type | total_rulings\n--- | --- | ---\nボロスのギルド門 | Land — Gate | 18\n太陽打ちの槌 | Artifact — Equipment | 15\nボロスの魔除け | Instant | 14\nボロスの駐屯地 | Land | 12\n光り輝く炎 | Sorcery | 12\n手練れの戦術 | Instant | 12\n照らす光 | Instant | 12\n浄化の光線 | Instant | 10\n炎まといの報復者 | Creature — Angel | 10\nボロスの反攻者 | Creature — Minotaur Wizard | 9\nウォジェクの護衛 | Creature — Human Soldier | 8\n前線の衛生兵 | Creature — Human Cleric | 8\nボロスの精鋭 | Creature — Human Soldier | 6\n恐慌の扇動 | Sorcery | 6\n戦導者オレリア | Legendary Creature — Angel | 6\n果敢なスカイジェク | Creature — Human Knight | 6\n正義の模範、オレリア | Legendary Creature — Angel | 6\n爆弾部隊 | Creature — Human Soldier | 6\n聖なる鋳造所 | Land — Mountain Plains | 6\n軍の要塞、サンホーム | Land | 6\n軍勢の忠節者 | Creature — Goblin Soldier | 6\nボロスの布陣者 | Creature — Minotaur Soldier | 5\n真火の隊長 | Creature — Human Knight | 5\nボロスの大天使、ラジア | Legendary Creature — Angel | 4\nボロスの魔鍵 | Artifact | 4\n戦場操作 | Instant | 4\n稲妻のらせん | Instant | 4\n軍勢の光 | Creature — Angel | 4\n軍勢の切先、タージク | Legendary Creature — Human Soldier | 4\n軍勢の戦親分 | Creature — Goblin Soldier | 4\nウォジェクの矛槍兵 | Creature — Human Soldier | 3\nオルドルーンの古参兵 | Creature — Minotaur Soldier | 3\nオレリアの憤怒 | Instant | 3\nサンホームのギルド魔道士 | Creature — Human Wizard | 3\nサンホームの重鎮 | Creature — Human Soldier | 3\nボロスの挑戦者 | Creature — Human Soldier | 3\nボロスの猛犬 | Creature — Dog | 3\n刃の教官 | Creature — Human Soldier | 3\n戦心の歩兵 | Creature — Elemental Soldier | 3\n栄光の好機 | Instant | 3\n槌落とし | Creature — Giant Soldier | 3\n火拳の打撃者 | Creature — Human Soldier | 3\n炎の血族の盲信者 | Creature — Elemental Berserker | 3\n炎まといの天使 | Creature — Angel | 3\n突発的な兵長 | Creature — Minotaur Soldier | 3\n航行隊の猛士 | Creature — Human Soldier | 3\n軍勢の刃、タージク | Legendary Creature — Human Soldier | 3\nウォジェクの古参兵、アグルス・コス | Legendary Creature — Human Soldier | 2\nラジアの浄化 | Sorcery | 2\n反応 // 反正 | Instant | 2\nSQL: SELECT\n    j.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS total_rulings\nFROM main.foreign_data AS j\nJOIN main.cards AS c ON c.uuid = j.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE j.language = 'Japanese'\nGROUP BY j.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY total_rulings DESC, japanese_name, english_card_type\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT\n    j.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS total_rulings\nFROM main.foreign_data AS j\nJOIN main.cards AS c ON c.uuid = j.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE j.language = 'Japanese'\nGROUP BY j.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY total_rulings DESC, japanese_name, english_card_type\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 96,
+          "sql": "SELECT\n    j.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS total_rulings\nFROM main.foreign_data AS j\nJOIN main.cards AS c ON c.uuid = j.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE j.language = 'Japanese'\nGROUP BY j.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY total_rulings DESC, japanese_name, english_card_type\nLIMIT 1000",
+          "seconds": 24.624692916986533
+        },
+        "result": {
+          "columns": [
+            "japanese_name",
+            "english_card_type",
+            "total_rulings"
+          ],
+          "row_count": 96,
+          "preview": [
+            [
+              "ボロスのギルド門",
+              "Land — Gate",
+              "18"
+            ],
+            [
+              "太陽打ちの槌",
+              "Artifact — Equipment",
+              "15"
+            ],
+            [
+              "ボロスの魔除け",
+              "Instant",
+              "14"
+            ],
+            [
+              "ボロスの駐屯地",
+              "Land",
+              "12"
+            ],
+            [
+              "光り輝く炎",
+              "Sorcery",
+              "12"
+            ],
+            [
+              "手練れの戦術",
+              "Instant",
+              "12"
+            ],
+            [
+              "照らす光",
+              "Instant",
+              "12"
+            ],
+            [
+              "浄化の光線",
+              "Instant",
+              "10"
+            ],
+            [
+              "炎まといの報復者",
+              "Creature — Angel",
+              "10"
+            ],
+            [
+              "ボロスの反攻者",
+              "Creature — Minotaur Wizard",
+              "9"
+            ],
+            [
+              "ウォジェクの護衛",
+              "Creature — Human Soldier",
+              "8"
+            ],
+            [
+              "前線の衛生兵",
+              "Creature — Human Cleric",
+              "8"
+            ],
+            [
+              "ボロスの精鋭",
+              "Creature — Human Soldier",
+              "6"
+            ],
+            [
+              "恐慌の扇動",
+              "Sorcery",
+              "6"
+            ],
+            [
+              "戦導者オレリア",
+              "Legendary Creature — Angel",
+              "6"
+            ],
+            [
+              "果敢なスカイジェク",
+              "Creature — Human Knight",
+              "6"
+            ],
+            [
+              "正義の模範、オレリア",
+              "Legendary Creature — Angel",
+              "6"
+            ],
+            [
+              "爆弾部隊",
+              "Creature — Human Soldier",
+              "6"
+            ],
+            [
+              "聖なる鋳造所",
+              "Land — Mountain Plains",
+              "6"
+            ],
+            [
+              "軍の要塞、サンホーム",
+              "Land",
+              "6"
+            ]
+          ],
+          "preview_truncated": true,
+          "csv_sha256": "2af58a48e19304da19b91ed604ff3ba4804adc1f75adcef0afaec669383d67bf"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "499a54bd89ed832f41a865b3ec17abfe31f012c1069dfc84f3588650a3558167",
+        "record": {
+          "instance_id": "bird107",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "initial_metadata_store_sha256": "e36c55200fc902a548c5f5c6dda40e4287e20c95a7f8d277559d75a4e6d46033",
+          "prompt_sha256": "82c7b3df28ce5b77a59c21e7e0651a984af5f185daacd8d7f5d8d863d8f20320",
+          "events_sha256": "2f04970188df64a982244a70edbe7f67c524f81f2aba67545cc87b494fcf6a0f",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 155275,
+              "cached_input_tokens": 134016,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 641,
+              "reasoning_output_tokens": 73
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "rulings"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "rulings (table)\n- id: INTEGER NOT NULL — {\"original_column_name\": \"id\", \"column_name\": \"\", \"column_description\": \"unique id identifying this ruling\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- date: DATE — {\"original_column_name\": \"date\", \"column_name\": \"\", \"column_description\": \"date \", \"data_format\": \"date\", \"value_description\": \"\"}\n- text: TEXT — {\"original_column_name\": \"text\", \"column_name\": \"\", \"column_description\": \"description about this ruling\", \"data_format\": \"text\", \"value_description\": \"\"}\n- uuid: TEXT — {\"original_column_name\": \"uuid\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL — {\"original_column_name\": \"id\", \"column_name\": \"unique id number identifying the cards\", \"column_description\": \"\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- artist: TEXT — {\"original_column_name\": \"artist\", \"column_name\": \"\", \"column_description\": \"The name of the artist that illustrated the card art.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- asciiName: TEXT — {\"original_column_name\": \"asciiName\", \"column_name\": \"ascii Name\", \"column_description\": \"The ASCII(opens new window) (Basic/128) code formatted card name with no special unicode characters.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- availability: TEXT — {\"original_column_name\": \"availability\", \"column_name\": \"\", \"column_description\": \"A list of the card's available printing types.\", \"data_format\": \"text\", \"value_description\": \"\\\"arena\\\", \\\"dreamcast\\\", \\\"mtgo\\\", \\\"paper\\\", \\\"shandalar\\\"\"}\n- borderColor: TEXT — {\"original_column_name\": \"borderColor\", \"column_name\": \"border Color\", \"column_description\": \"The color of the card border.\", \"data_format\": \"text\", \"value_description\": \"\\\"black\\\", \\\"borderless\\\", \\\"gold\\\", \\\"silver\\\", \\\"white\\\"\"}\n- cardKingdomFoilId: TEXT — {\"original_column_name\": \"cardKingdomFoilId\", \"column_name\": \"card Kingdom Foil Id\", \"column_description\": \"card Kingdom Foil Id\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\ncardKingdomFoilId, when paired with cardKingdomId that is not Null, is incredibly powerful. \"}\n- cardKingdomId: TEXT — {\"original_column_name\": \"cardKingdomId\", \"column_name\": \"card Kingdom Id\", \"column_description\": \"card Kingdom Id\", \"data_format\": \"text\", \"value_description\": \"A list of all the colors in the color indicator\"}\n- colorIdentity: TEXT — {\"original_column_name\": \"colorIdentity\", \"column_name\": \"color Identity\", \"column_description\": \"A list of all the colors found in manaCost, colorIndicator, and text\", \"data_format\": \"text\", \"value_description\": \"\"}\n- colorIndicator: TEXT — {\"original_column_name\": \"colorIndicator\", \"column_name\": \"color Indicator\", \"column_description\": \"A list of all the colors in the color indicator (The symbol prefixed to a card's types).\", \"data_format\": \"text\", \"value_description\": \"\"}\n- colors: TEXT — {\"original_column_name\": \"colors\", \"column_name\": \"\", \"column_description\": \"A list of all the colors in manaCost and colorIndicator. \", \"data_format\": \"text\", \"value_description\": \"Some cards may not have values, such as cards with \\\"Devoid\\\" in its text.\"}\n- convertedManaCost: REAL — {\"original_column_name\": \"convertedManaCost\", \"column_name\": \"converted Mana Cost\", \"column_description\": \"The converted mana cost of the card. Use the manaValue property.\", \"data_format\": \"real\", \"value_description\": \"if value is higher, it means that this card cost more converted mana \"}\n- duelDeck: TEXT — {\"original_column_name\": \"duelDeck\", \"column_name\": \"duel Deck\", \"column_description\": \"The indicator for which duel deck the card is in.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- edhrecRank: INTEGER — {\"original_column_name\": \"edhrecRank\", \"column_name\": \"rec Rank in edh\", \"column_description\": \"The card rank on EDHRec\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- faceConvertedManaCost: REAL — {\"original_column_name\": \"faceConvertedManaCost\", \"column_name\": \"face Converted Mana Cost\", \"column_description\": \"The converted mana cost or mana value for the face for either half or part of the card. \", \"data_format\": \"real\", \"value_description\": \"if value is higher, it means that this card cost more converted mana for the face\"}\n- faceName: TEXT — {\"original_column_name\": \"faceName\", \"column_name\": \"face Name\", \"column_description\": \"The name on the face of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- flavorName: TEXT — {\"original_column_name\": \"flavorName\", \"column_name\": \"flavor Name\", \"column_description\": \"The promotional card name printed above the true card name on special cards that has no game function.\", \"data_format\": \"text\", \"value_description\": \"The promotional card name printed above the true card name on special cards that has no game function.\"}\n- flavorText: TEXT — {\"original_column_name\": \"flavorText\", \"column_name\": \"flavor Text\", \"column_description\": \"The italicized text found below the rules text that has no game function.\", \"data_format\": \"text\", \"value_description\": \"The italicized text found below the rules text that has no game function.\"}\n- frameEffects: TEXT — {\"original_column_name\": \"frameEffects\", \"column_name\": \"frame Effects\", \"column_description\": \"The visual frame effects.\", \"data_format\": \"text\", \"value_description\": \"\\\"colorshifted\\\", \\\"companion\\\", \\\"compasslanddfc\\\", \\\"devoid\\\", \\\"draft\\\", \\\"etched\\\", \\\"extendedart\\\", \\\"fullart\\\", \\\"inverted\\\", \\\"legendary\\\", \\\"lesson\\\", \\\"miracle\\\", \\\"mooneldrazidfc\\\", \\\"nyxtouched\\\", \\\"originpwdfc\\\", \\\"showcase\\\", \\\"snow\\\", \\\"sunmoondfc\\\", \\\"textless\\\", \\\"tombstone\\\", \\\"waxingandwaningmoondfc\\\"\"}\n- frameVersion: TEXT — {\"original_column_name\": \"frameVersion\", \"column_name\": \"frame Version\", \"column_description\": \"The version of the card frame style.\", \"data_format\": \"text\", \"value_description\": \"\\\"1993\\\", \\\"1997\\\", \\\"2003\\\", \\\"2015\\\", \\\"future\\\"\"}\n- hand: TEXT — {\"original_column_name\": \"hand\", \"column_name\": \"\", \"column_description\": \"The starting maximum hand size total modifier. \", \"data_format\": \"text\", \"value_description\": \"A + or - character precedes an integer. \\ncommonsense evidence:\\npositive maximum hand size: +1, +2, ....\\nnegative maximum hand size: -1, ....\\nneural maximum hand size: 0....\"}\n- hasAlternativeDeckLimit: INTEGER NOT NULL — {\"original_column_name\": \"hasAlternativeDeckLimit\", \"column_name\": \"has Alternative Deck Limit\", \"column_description\": \"If the card allows a value other than 4 copies in a deck.\", \"data_format\": \"integer\", \"value_description\": \"0: disallow 1: allow\"}\n- hasContentWarning: INTEGER NOT NULL — {\"original_column_name\": \"hasContentWarning\", \"column_name\": \"has Content Warning\", \"column_description\": \"If the card marked by Wizards of the Coast (opens new window) for having sensitive content. See this official article (opens new window) for more information.\", \"data_format\": \"integer\", \"value_description\": \"0: doesn't have 1: has sensitve content or Wizards of the Coast\\ncommonsense evidence:\\nCards with this property may have missing or degraded properties and values. \"}\n- hasFoil: INTEGER NOT NULL — {\"original_column_name\": \"hasFoil\", \"column_name\": \"has Foil\", \"column_description\": \"If the card can be found in foil\", \"data_format\": \"integer\", \"value_description\": \"0: cannot be found 1: can be found\"}\n- hasNonFoil: INTEGER NOT NULL — {\"original_column_name\": \"hasNonFoil\", \"column_name\": \"has Non Foil\", \"column_description\": \"If the card can be found in non-foil\", \"data_format\": \"integer\", \"value_description\": \"0: cannot be found 1: can be found\"}\n- isAlternative: INTEGER NOT NULL — {\"original_column_name\": \"isAlternative\", \"column_name\": \"is Alternative\", \"column_description\": \"If the card is an alternate variation to an original printing\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isFullArt: INTEGER NOT NULL — {\"original_column_name\": \"isFullArt\", \"column_name\": \"is Full Art\", \"column_description\": \"If the card has full artwork.\", \"data_format\": \"integer\", \"value_description\": \"0: doesn't have, 1: has full artwork\"}\n- isOnlineOnly: INTEGER NOT NULL — {\"original_column_name\": \"isOnlineOnly\", \"column_name\": \"is Online Only\", \"column_description\": \"If the card is only available in online game variations.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isOversized: INTEGER NOT NULL — {\"original_column_name\": \"isOversized\", \"column_name\": \"is Oversized\", \"column_description\": \"If the card is oversized.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isPromo: INTEGER NOT NULL — {\"original_column_name\": \"isPromo\", \"column_name\": \"is Promotion\", \"column_description\": \"If the card is a promotional printing.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isReprint: INTEGER NOT NULL — {\"original_column_name\": \"isReprint\", \"column_name\": \"is Reprint\", \"column_description\": \"If the card has been reprinted.\", \"data_format\": \"integer\", \"value_description\": \"0: has not 1: has not been\"}\n- isReserved: INTEGER NOT NULL — {\"original_column_name\": \"isReserved\", \"column_name\": \"is Reserved\", \"column_description\": \"If the card is on the Magic: The Gathering Reserved List (opens new window)\", \"data_format\": \"integer\", \"value_description\": \"If the card is on the Magic, it will appear in The Gathering Reserved List\"}\n- isStarter: INTEGER NOT NULL — {\"original_column_name\": \"isStarter\", \"column_name\": \"is Starter\", \"column_description\": \"If the card is found in a starter deck such as Planeswalker/Brawl decks.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isStorySpotlight: INTEGER NOT NULL — {\"original_column_name\": \"isStorySpotlight\", \"column_name\": \"is Story Spotlight\", \"column_description\": \"If the card is a Story Spotlight card.\", \"data_format\": \"integer\", \"value_description\": \"0: is not 1: is\"}\n- isTextless: INTEGER NOT NULL — {\"original_column_name\": \"isTextless\", \"column_name\": \"is Text less\", \"column_description\": \"If the card does not have a text box.\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\n0: has a text box;\\n1: doesn't have a text box;\"}\n- isTimeshifted: INTEGER NOT NULL — {\"original_column_name\": \"isTimeshifted\", \"column_name\": \"is Time shifted\", \"column_description\": \"If the card is time shifted\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\nIf the card is \\\"timeshifted\\\", a feature of certain sets where a card will have a different frameVersion.\"}\n- keywords: TEXT — {\"original_column_name\": \"keywords\", \"column_name\": \"\", \"column_description\": \"A list of keywords found on the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- layout: TEXT — {\"original_column_name\": \"layout\", \"column_name\": \"\", \"column_description\": \"The type of card layout. For a token card, this will be \\\"token\\\"\", \"data_format\": \"text\", \"value_description\": \"\"}\n- leadershipSkills: TEXT — {\"original_column_name\": \"leadershipSkills\", \"column_name\": \"leadership Skills\", \"column_description\": \"A list of formats the card is legal to be a commander in\", \"data_format\": \"text\", \"value_description\": \"\"}\n- life: TEXT — {\"original_column_name\": \"life\", \"column_name\": \"\", \"column_description\": \"The starting life total modifier. A plus or minus character precedes an integer.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- loyalty: TEXT — {\"original_column_name\": \"loyalty\", \"column_name\": \"\", \"column_description\": \"The starting loyalty value of the card.\", \"data_format\": \"text\", \"value_description\": \"Used only on cards with \\\"Planeswalker\\\" in its types. empty means unkown\"}\n- manaCost: TEXT — {\"original_column_name\": \"manaCost\", \"column_name\": \"mana Cost \", \"column_description\": \"The mana cost of the card wrapped in brackets for each value.\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\nmanaCost is unconverted mana cost\"}\n- mcmId: TEXT — {\"original_column_name\": \"mcmId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mcmMetaId: TEXT — {\"original_column_name\": \"mcmMetaId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgArenaId: TEXT — {\"original_column_name\": \"mtgArenaId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgjsonV4Id: TEXT — {\"original_column_name\": \"mtgjsonV4Id\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgoFoilId: TEXT — {\"original_column_name\": \"mtgoFoilId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- mtgoId: TEXT — {\"original_column_name\": \"mtgoId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- multiverseId: TEXT — {\"original_column_name\": \"multiverseId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- name: TEXT — {\"original_column_name\": \"name\", \"column_name\": \"\", \"column_description\": \"The name of the card.\", \"data_format\": \"text\", \"value_description\": \"Cards with multiple faces, like \\\"Split\\\" and \\\"Meld\\\" cards are given a delimiter.\"}\n- number: TEXT — {\"original_column_name\": \"number\", \"column_name\": \"\", \"column_description\": \"The number of the card\", \"data_format\": \"text\", \"value_description\": \"\"}\n- originalReleaseDate: TEXT — {\"original_column_name\": \"originalReleaseDate\", \"column_name\": \"\", \"column_description\": \"original Release Date\", \"data_format\": \"text\", \"value_description\": \"The original release date in ISO 8601(opens new window) format for a promotional card printed outside of a cycle window, such as Secret Lair Drop promotions.\"}\n- originalText: TEXT — {\"original_column_name\": \"originalText\", \"column_name\": \"\", \"column_description\": \"original Text\", \"data_format\": \"text\", \"value_description\": \"The text on the card as originally printed.\"}\n- originalType: TEXT — {\"original_column_name\": \"originalType\", \"column_name\": \"\", \"column_description\": \"original Type\", \"data_format\": \"text\", \"value_description\": \"The type of the card as originally printed. Includes any supertypes and subtypes.\"}\n- otherFaceIds: TEXT — {\"original_column_name\": \"otherFaceIds\", \"column_name\": \"\", \"column_description\": \"other Face Ids\", \"data_format\": \"text\", \"value_description\": \"A list of card UUID's to this card's counterparts, such as transformed or melded faces.\"}\n- power: TEXT — {\"original_column_name\": \"power\", \"column_name\": \"\", \"column_description\": \"The power of the card.\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\n∞ means infinite power\\nnull or * refers to unknown power\"}\n- printings: TEXT — {\"original_column_name\": \"printings\", \"column_name\": \"\", \"column_description\": \"A list of set printing codes the card was printed in, formatted in uppercase.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- promoTypes: TEXT — {\"original_column_name\": \"promoTypes\", \"column_name\": \"promo Types\", \"column_description\": \"A list of promotional types for a card.\", \"data_format\": \"text\", \"value_description\": \"\\\"arenaleague\\\", \\\"boosterfun\\\", \\\"boxtopper\\\", \\\"brawldeck\\\", \\\"bundle\\\", \\\"buyabox\\\", \\\"convention\\\", \\\"datestamped\\\", \\\"draculaseries\\\", \\\"draftweekend\\\", \\\"duels\\\", \\\"event\\\", \\\"fnm\\\", \\\"gameday\\\", \\\"gateway\\\", \\\"giftbox\\\", \\\"gilded\\\", \\\"godzillaseries\\\", \\\"instore\\\", \\\"intropack\\\", \\\"jpwalker\\\", \\\"judgegift\\\", \\\"league\\\", \\\"mediainsert\\\", \\\"neonink\\\", \\\"openhouse\\\", \\\"planeswalkerstamped\\\", \\\"playerrewards\\\", \\\"playpromo\\\", \\\"premiereshop\\\", \\\"prerelease\\\", \\\"promopack\\\", \\\"release\\\", \\\"setpromo\\\", \\\"stamped\\\", \\\"textured\\\", \\\"themepack\\\", \\\"thick\\\", \\\"tourney\\\", \\\"wizardsplaynetwork\\\"\"}\n- purchaseUrls: TEXT — {\"original_column_name\": \"purchaseUrls\", \"column_name\": \"purchase Urls\", \"column_description\": \"Links that navigate to websites where the card can be purchased.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- rarity: TEXT — {\"original_column_name\": \"rarity\", \"column_name\": \"\", \"column_description\": \"The card printing rarity.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- scryfallId: TEXT — {\"original_column_name\": \"scryfallId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- scryfallIllustrationId: TEXT — {\"original_column_name\": \"scryfallIllustrationId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- scryfallOracleId: TEXT — {\"original_column_name\": \"scryfallOracleId\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- setCode: TEXT — {\"original_column_name\": \"setCode\", \"column_name\": \"Set Code\", \"column_description\": \"The set printing code that the card is from.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- side: TEXT — {\"original_column_name\": \"side\", \"column_name\": \"\", \"column_description\": \"The identifier of the card side. \", \"data_format\": \"text\", \"value_description\": \"Used on cards with multiple faces on the same card.\\ncommonsense evidence:\\nif this value is empty, then it means this card doesn't have multiple faces on the same card.\"}\n- subtypes: TEXT — {\"original_column_name\": \"subtypes\", \"column_name\": \"\", \"column_description\": \"A list of card subtypes found after em-dash.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- supertypes: TEXT — {\"original_column_name\": \"supertypes\", \"column_name\": \"super types\", \"column_description\": \"A list of card supertypes found before em-dash.\", \"data_format\": \"text\", \"value_description\": \"commonsense evidence:\\nlist of all types should be the union of subtypes and supertypes\"}\n- tcgplayerProductId: TEXT — {\"original_column_name\": \"tcgplayerProductId\", \"column_name\": \"tcg player ProductId\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\n- text: TEXT — {\"original_column_name\": \"text\", \"column_name\": \"\", \"column_description\": \"The rules text of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- toughness: TEXT — {\"original_column_name\": \"toughness\", \"column_name\": \"\", \"column_description\": \"The toughness of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- type: TEXT — {\"original_column_name\": \"type\", \"column_name\": \"\", \"column_description\": \"The type of the card as visible, including any supertypes and subtypes.\", \"data_format\": \"text\", \"value_description\": \"\\\"Artifact\\\", \\\"Card\\\", \\\"Conspiracy\\\", \\\"Creature\\\", \\\"Dragon\\\", \\\"Dungeon\\\", \\\"Eaturecray\\\", \\\"Elemental\\\", \\\"Elite\\\", \\\"Emblem\\\", \\\"Enchantment\\\", \\\"Ever\\\", \\\"Goblin\\\", \\\"Hero\\\", \\\"Instant\\\", \\\"Jaguar\\\", \\\"Knights\\\", \\\"Land\\\", \\\"Phenomenon\\\", \\\"Plane\\\", \\\"Planeswalker\\\", \\\"Scariest\\\", \\\"Scheme\\\", \\\"See\\\", \\\"Sorcery\\\", \\\"Sticker\\\", \\\"Summon\\\", \\\"Token\\\", \\\"Tribal\\\", \\\"Vanguard\\\", \\\"Wolf\\\", \\\"You’ll\\\", \\\"instant\\\"\"}\n- types: TEXT — {\"original_column_name\": \"types\", \"column_name\": \"\", \"column_description\": \"A list of all card types of the card, including Un‑sets and gameplay variants.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- uuid: TEXT NOT NULL — {\"original_column_name\": \"uuid\", \"column_name\": \"\", \"column_description\": \"The universal unique identifier (v5) generated by MTGJSON. Each entry is unique.\", \"data_format\": \"text\", \"value_description\": \"NOT USEFUL\"}\n- variations: TEXT — {\"original_column_name\": \"variations\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\n- watermark: TEXT — {\"original_column_name\": \"watermark\", \"column_name\": \"\", \"column_description\": \"The name of the watermark on the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "foreign_data"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "foreign_data (table)\n- id: INTEGER NOT NULL — {\"original_column_name\": \"id\", \"column_name\": \"\", \"column_description\": \"unique id number identifying this row of data\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- flavorText: TEXT — {\"original_column_name\": \"flavorText\", \"column_name\": \"flavor Text\", \"column_description\": \"The foreign flavor text of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- language: TEXT — {\"original_column_name\": \"language\", \"column_name\": \"\", \"column_description\": \"The foreign language of card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- multiverseid: INTEGER — {\"original_column_name\": \"multiverseid\", \"column_name\": \"\", \"column_description\": \"The foreign multiverse identifier of the card.\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- name: TEXT — {\"original_column_name\": \"name\", \"column_name\": \"\", \"column_description\": \"The foreign name of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- text: TEXT — {\"original_column_name\": \"text\", \"column_name\": \"\", \"column_description\": \"The foreign text ruling of the card.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- type: TEXT — {\"original_column_name\": \"type\", \"column_name\": \"\", \"column_description\": \"The foreign type of the card. Includes any supertypes and subtypes.\", \"data_format\": \"text\", \"value_description\": \"\"}\n- uuid: TEXT — {\"original_column_name\": \"uuid\", \"column_name\": \"\", \"column_description\": \"\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (id)\nFOREIGN KEY (uuid) REFERENCES cards (uuid)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"0BijT2ct4tZc2rbC0JV87-H_q7uRvZecrRFljZT9s3Q\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "sql": "SELECT\n    f.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS ruling_total\nFROM main.foreign_data AS f\nJOIN main.cards AS c ON c.uuid = f.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE f.language = 'Japanese'\nGROUP BY f.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY ruling_total DESC, f.name, c.type;",
+                "definition_check_id": "0BijT2ct4tZc2rbC0JV87-H_q7uRvZecrRFljZT9s3Q",
+                "expected_columns": [
+                  "japanese_name",
+                  "english_card_type",
+                  "ruling_total"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "96 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=96; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): japanese_name=str; english_card_type=str; ruling_total=int\njapanese_name | english_card_type | ruling_total\n--- | --- | ---\nボロスのギルド門 | Land — Gate | 18\n太陽打ちの槌 | Artifact — Equipment | 15\nボロスの魔除け | Instant | 14\nボロスの駐屯地 | Land | 12\n光り輝く炎 | Sorcery | 12\n手練れの戦術 | Instant | 12\n照らす光 | Instant | 12\n浄化の光線 | Instant | 10\n炎まといの報復者 | Creature — Angel | 10\nボロスの反攻者 | Creature — Minotaur Wizard | 9\nウォジェクの護衛 | Creature — Human Soldier | 8\n前線の衛生兵 | Creature — Human Cleric | 8\nボロスの精鋭 | Creature — Human Soldier | 6\n恐慌の扇動 | Sorcery | 6\n戦導者オレリア | Legendary Creature — Angel | 6\n果敢なスカイジェク | Creature — Human Knight | 6\n正義の模範、オレリア | Legendary Creature — Angel | 6\n爆弾部隊 | Creature — Human Soldier | 6\n聖なる鋳造所 | Land — Mountain Plains | 6\n軍の要塞、サンホーム | Land | 6\n軍勢の忠節者 | Creature — Goblin Soldier | 6\nボロスの布陣者 | Creature — Minotaur Soldier | 5\n真火の隊長 | Creature — Human Knight | 5\nボロスの大天使、ラジア | Legendary Creature — Angel | 4\nボロスの魔鍵 | Artifact | 4\n戦場操作 | Instant | 4\n稲妻のらせん | Instant | 4\n軍勢の光 | Creature — Angel | 4\n軍勢の切先、タージク | Legendary Creature — Human Soldier | 4\n軍勢の戦親分 | Creature — Goblin Soldier | 4\nウォジェクの矛槍兵 | Creature — Human Soldier | 3\nオルドルーンの古参兵 | Creature — Minotaur Soldier | 3\nオレリアの憤怒 | Instant | 3\nサンホームのギルド魔道士 | Creature — Human Wizard | 3\nサンホームの重鎮 | Creature — Human Soldier | 3\nボロスの挑戦者 | Creature — Human Soldier | 3\nボロスの猛犬 | Creature — Dog | 3\n刃の教官 | Creature — Human Soldier | 3\n戦心の歩兵 | Creature — Elemental Soldier | 3\n栄光の好機 | Instant | 3\n槌落とし | Creature — Giant Soldier | 3\n火拳の打撃者 | Creature — Human Soldier | 3\n炎の血族の盲信者 | Creature — Elemental Berserker | 3\n炎まといの天使 | Creature — Angel | 3\n突発的な兵長 | Creature — Minotaur Soldier | 3\n航行隊の猛士 | Creature — Human Soldier | 3\n軍勢の刃、タージク | Legendary Creature — Human Soldier | 3\nウォジェクの古参兵、アグルス・コス | Legendary Creature — Human Soldier | 2\nラジアの浄化 | Sorcery | 2\n反応 // 反正 | Instant | 2\nSQL: SELECT\n    f.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS ruling_total\nFROM main.foreign_data AS f\nJOIN main.cards AS c ON c.uuid = f.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE f.language = 'Japanese'\nGROUP BY f.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY ruling_total DESC, f.name, c.type\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT\n    f.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS ruling_total\nFROM main.foreign_data AS f\nJOIN main.cards AS c ON c.uuid = f.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE f.language = 'Japanese'\nGROUP BY f.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY ruling_total DESC, f.name, c.type\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 96,
+          "sql": "SELECT\n    f.name AS japanese_name,\n    c.type AS english_card_type,\n    COUNT(DISTINCT r.id) AS ruling_total\nFROM main.foreign_data AS f\nJOIN main.cards AS c ON c.uuid = f.uuid\nLEFT JOIN main.rulings AS r ON r.uuid = c.uuid\nWHERE f.language = 'Japanese'\nGROUP BY f.name, c.type\nHAVING MAX(CASE WHEN c.watermark = 'boros' THEN 1 ELSE 0 END) = 1\nORDER BY ruling_total DESC, f.name, c.type\nLIMIT 1000",
+          "seconds": 30.915322500048205
+        },
+        "result": {
+          "columns": [
+            "japanese_name",
+            "english_card_type",
+            "ruling_total"
+          ],
+          "row_count": 96,
+          "preview": [
+            [
+              "ボロスのギルド門",
+              "Land — Gate",
+              "18"
+            ],
+            [
+              "太陽打ちの槌",
+              "Artifact — Equipment",
+              "15"
+            ],
+            [
+              "ボロスの魔除け",
+              "Instant",
+              "14"
+            ],
+            [
+              "ボロスの駐屯地",
+              "Land",
+              "12"
+            ],
+            [
+              "光り輝く炎",
+              "Sorcery",
+              "12"
+            ],
+            [
+              "手練れの戦術",
+              "Instant",
+              "12"
+            ],
+            [
+              "照らす光",
+              "Instant",
+              "12"
+            ],
+            [
+              "浄化の光線",
+              "Instant",
+              "10"
+            ],
+            [
+              "炎まといの報復者",
+              "Creature — Angel",
+              "10"
+            ],
+            [
+              "ボロスの反攻者",
+              "Creature — Minotaur Wizard",
+              "9"
+            ],
+            [
+              "ウォジェクの護衛",
+              "Creature — Human Soldier",
+              "8"
+            ],
+            [
+              "前線の衛生兵",
+              "Creature — Human Cleric",
+              "8"
+            ],
+            [
+              "ボロスの精鋭",
+              "Creature — Human Soldier",
+              "6"
+            ],
+            [
+              "恐慌の扇動",
+              "Sorcery",
+              "6"
+            ],
+            [
+              "戦導者オレリア",
+              "Legendary Creature — Angel",
+              "6"
+            ],
+            [
+              "果敢なスカイジェク",
+              "Creature — Human Knight",
+              "6"
+            ],
+            [
+              "正義の模範、オレリア",
+              "Legendary Creature — Angel",
+              "6"
+            ],
+            [
+              "爆弾部隊",
+              "Creature — Human Soldier",
+              "6"
+            ],
+            [
+              "聖なる鋳造所",
+              "Land — Mountain Plains",
+              "6"
+            ],
+            [
+              "軍の要塞、サンホーム",
+              "Land",
+              "6"
+            ]
+          ],
+          "preview_truncated": true,
+          "csv_sha256": "7afbfa56cdcc4dc2eee116338c281145000a6d13310ac729689b3a21540c3483"
+        }
+      }
+    },
+    {
+      "input": {
+        "instance_id": "bird148",
+        "db": "codebase_community",
+        "question": "I'm reviewing the history of the question 'Why square the difference instead of taking the absolute value in standard deviation?'. For that post, who left the most edit comments, and how many did they leave? Please give me each editor's display name along with their number of edit comments on that post. If several editors are tied for the most, list each of them with their count. Also, please count every revision as its own event, even when successive revisions carry the same note.",
+        "evidence": "An edit comment is the note an editor records together with a revision of a post, not a comment posted under the post."
+      },
+      "transition": "0 -> 0",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,14 +1,14 @@\n WITH editor_counts AS (\n     SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n-    FROM main.posts AS p\n-    JOIN main.postHistory AS h ON h.PostId = p.Id\n+    FROM posts AS p\n+    JOIN postHistory AS h ON h.PostId = p.Id\n     WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n       AND TRIM(h.Comment) <> ''\n     GROUP BY h.UserId\n )\n SELECT u.DisplayName, e.edit_comment_count\n FROM editor_counts AS e\n-JOIN main.users AS u ON u.Id = e.UserId\n+JOIN users AS u ON u.Id = e.UserId\n WHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\n ORDER BY u.DisplayName\n LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "0cfe5ac5d13169c582dc3b7b204dde009000298db8bf987cd9e26397e00cbd0a",
+        "record": {
+          "instance_id": "bird148",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "4a3ac698e6ecbb44fac29b051324d188709c320f37444f2880b4459cde93faae",
+          "events_sha256": "26b143056f5b61d0b787c168347f156c16b69182555b77f8c7cbf7066c46590a",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 200829,
+              "cached_input_tokens": 184064,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 731,
+              "reasoning_output_tokens": 14
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"jhYGAedZ8-YwItr3i7ImbYm1q7EAw4Xoc55kbDurPuQ\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "posts"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "posts (table)\n- Id: INTEGER NOT NULL\n- PostTypeId: INTEGER\n- AcceptedAnswerId: INTEGER\n- CreaionDate: DATETIME\n- Score: INTEGER\n- ViewCount: INTEGER\n- Body: TEXT\n- OwnerUserId: INTEGER\n- LasActivityDate: DATETIME\n- Title: TEXT\n- Tags: TEXT\n- AnswerCount: INTEGER\n- CommentCount: INTEGER\n- FavoriteCount: INTEGER\n- LastEditorUserId: INTEGER\n- LastEditDate: DATETIME\n- CommunityOwnedDate: DATETIME\n- ParentId: INTEGER\n- ClosedDate: DATETIME\n- OwnerDisplayName: TEXT\n- LastEditorDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "postHistory"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "postHistory (table)\n- Id: INTEGER NOT NULL\n- PostHistoryTypeId: INTEGER\n- PostId: INTEGER\n- RevisionGUID: TEXT\n- CreationDate: DATETIME\n- UserId: INTEGER\n- Text: TEXT\n- Comment: TEXT\n- UserDisplayName: TEXT\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "users"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "users (table)\n- Id: INTEGER NOT NULL\n- Reputation: INTEGER\n- CreationDate: DATETIME\n- DisplayName: TEXT\n- LastAccessDate: DATETIME\n- WebsiteUrl: TEXT\n- Location: TEXT\n- AboutMe: TEXT\n- Views: INTEGER\n- UpVotes: INTEGER\n- DownVotes: INTEGER\n- AccountId: INTEGER\n- Age: INTEGER\n- ProfileImageUrl: TEXT\nPRIMARY KEY (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "jhYGAedZ8-YwItr3i7ImbYm1q7EAw4Xoc55kbDurPuQ",
+                "sql": "SELECT p.Id, h.PostHistoryTypeId, h.RevisionGUID, h.Comment, h.UserId, u.DisplayName\nFROM main.posts AS p\nJOIN main.postHistory AS h ON h.PostId = p.Id\nLEFT JOIN main.users AS u ON u.Id = h.UserId\nWHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\nORDER BY h.Id"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "8 row(s):\nResult coverage: fetched_rows=8; displayed_rows=8; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Id=int; PostHistoryTypeId=int; RevisionGUID=str; Comment=str; UserId=int; DisplayName=str\nId | PostHistoryTypeId | RevisionGUID | Comment | UserId | DisplayName\n--- | --- | --- | --- | --- | ---\n118 | 2 | 73b29f38-18d0-4de0-8e6a-d577fed6ecd0 |  | 83 | c4il\n118 | 1 | 73b29f38-18d0-4de0-8e6a-d577fed6ecd0 |  | 83 | c4il\n118 | 3 | 73b29f38-18d0-4de0-8e6a-d577fed6ecd0 |  | 83 | c4il\n118 | 4 | 1d7716e8-ba6c-4741-9368-fb18c91e932d | edited title | 83 | c4il\n118 | 5 | abeb8885-7874-407d-8527-4c5e30d916f3 | TeXified the formulas. | 919 | whuber\n118 | 5 | aa356495-ccc9-4b74-9866-7662f0ab8f99 | deleted 5 characters in body; edited title | 88 | mbq\n118 | 4 | aa356495-ccc9-4b74-9866-7662f0ab8f99 | deleted 5 characters in body; edited title | 88 | mbq\n118 | 4 | 97cd9574-b690-46e2-9744-3048dec88a79 | edited title | 88 | mbq\nSQL: SELECT p.Id, h.PostHistoryTypeId, h.RevisionGUID, h.Comment, h.UserId, u.DisplayName\nFROM main.posts AS p\nJOIN main.postHistory AS h ON h.PostId = p.Id\nLEFT JOIN main.users AS u ON u.Id = h.UserId\nWHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\nORDER BY h.Id\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"7VdL3_fiAzigmxwy9nX5bNBcAUgztCXdU7QXtG16e84\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "7VdL3_fiAzigmxwy9nX5bNBcAUgztCXdU7QXtG16e84",
+                "expected_columns": [
+                  "DisplayName",
+                  "edit_comment_count"
+                ],
+                "sql": "WITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM main.posts AS p\n    JOIN main.postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN main.users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DisplayName=str; edit_comment_count=int\nDisplayName | edit_comment_count\n--- | ---\nmbq | 2\nSQL: WITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM main.posts AS p\n    JOIN main.postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN main.users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM main.posts AS p\n    JOIN main.postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN main.users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM main.posts AS p\n    JOIN main.postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN main.users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT 1000",
+          "seconds": 32.55318408308085
+        },
+        "result": {
+          "columns": [
+            "DisplayName",
+            "edit_comment_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "mbq",
+              "2"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "fcbfe75b638653f6a05cdfb10cd3f40f8b85aa9383f8eff49e292285bdd6df2a"
+        }
+      },
+      "after": {
+        "score": 0,
+        "record_sha256": "c2dd6e2f17764d55ea9c9ea2d073e78cde0639760df42510e659189eec87c229",
+        "record": {
+          "instance_id": "bird148",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "initial_metadata_store_sha256": "8c511919de045b6b427ff83b2e76ea6c2a7ca25903c022ea629bbdf831160d5b",
+          "prompt_sha256": "4a3ac698e6ecbb44fac29b051324d188709c320f37444f2880b4459cde93faae",
+          "events_sha256": "bc7d7a38ee83a469c09876772dae33d5913d8ab2ab5b470bcd9d4c0a893262ae",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 209590,
+              "cached_input_tokens": 190592,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 829,
+              "reasoning_output_tokens": 112
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "postHistory"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "postHistory (table)\n- Id: INTEGER NOT NULL — {\"original_column_name\": \"Id\", \"column_name\": \"\", \"column_description\": \"the post history id\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- PostHistoryTypeId: INTEGER — {\"original_column_name\": \"PostHistoryTypeId\", \"column_name\": \"Post History Type Id\", \"column_description\": \"the id of the post history type\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- PostId: INTEGER — {\"original_column_name\": \"PostId\", \"column_name\": \"Post Id\", \"column_description\": \"the unique id of the post\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- RevisionGUID: TEXT — {\"original_column_name\": \"RevisionGUID\", \"column_name\": \"Revision GUID\", \"column_description\": \"the revision globally unique id of the post\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- CreationDate: DATETIME — {\"original_column_name\": \"CreationDate\", \"column_name\": \"Creation Date\", \"column_description\": \"the creation date of the post\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- UserId: INTEGER — {\"original_column_name\": \"UserId\", \"column_name\": \"User Id\", \"column_description\": \"the user who post the post\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- Text: TEXT — {\"original_column_name\": \"Text\", \"column_name\": \"\", \"column_description\": \"the detailed content of the post\", \"data_format\": \"text\", \"value_description\": \"\"}\n- Comment: TEXT — {\"original_column_name\": \"Comment\", \"column_name\": \"\", \"column_description\": \"comments of the post\", \"data_format\": \"text\", \"value_description\": \"\"}\n- UserDisplayName: TEXT — {\"original_column_name\": \"UserDisplayName\", \"column_name\": \"User Display Name\", \"column_description\": \"user's display name\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (Id)\nFOREIGN KEY (PostId) REFERENCES posts (Id)\nFOREIGN KEY (UserId) REFERENCES users (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "posts"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "posts (table)\n- Id: INTEGER NOT NULL — {\"original_column_name\": \"Id\", \"column_name\": \"\", \"column_description\": \"the post id\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- PostTypeId: INTEGER — {\"original_column_name\": \"PostTypeId\", \"column_name\": \"Post Type Id\", \"column_description\": \"the id of the post type\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- AcceptedAnswerId: INTEGER — {\"original_column_name\": \"AcceptedAnswerId\", \"column_name\": \"Accepted Answer Id\", \"column_description\": \"the accepted answer id of the post \", \"data_format\": \"integer\", \"value_description\": \"\"}\n- CreaionDate: DATETIME — {\"original_column_name\": \"CreaionDate\", \"column_name\": \"Creation Date\", \"column_description\": \"the creation date of the post\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- Score: INTEGER — {\"original_column_name\": \"Score\", \"column_name\": \"\", \"column_description\": \"the score of the post\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- ViewCount: INTEGER — {\"original_column_name\": \"ViewCount\", \"column_name\": \"View Count\", \"column_description\": \"the view count of the post\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\nHigher view count means the post has higher popularity\"}\n- Body: TEXT — {\"original_column_name\": \"Body\", \"column_name\": \"\", \"column_description\": \"the body of the post\", \"data_format\": \"text\", \"value_description\": \"\"}\n- OwnerUserId: INTEGER — {\"original_column_name\": \"OwnerUserId\", \"column_name\": \"Owner User Id\", \"column_description\": \"the id of the owner user\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- LasActivityDate: DATETIME — {\"original_column_name\": \"LasActivityDate\", \"column_name\": \"Last Activity Date\", \"column_description\": \"the last activity date\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- Title: TEXT — {\"original_column_name\": \"Title\", \"column_name\": \"\", \"column_description\": \"the title of the post\", \"data_format\": \"text\", \"value_description\": \"\"}\n- Tags: TEXT — {\"original_column_name\": \"Tags\", \"column_name\": \"\", \"column_description\": \"the tag of the post\", \"data_format\": \"text\", \"value_description\": \"\"}\n- AnswerCount: INTEGER — {\"original_column_name\": \"AnswerCount\", \"column_name\": \"Answer Count\", \"column_description\": \"the total number of answers of the post\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- CommentCount: INTEGER — {\"original_column_name\": \"CommentCount\", \"column_name\": \"Comment Count\", \"column_description\": \"the total number of comments of the post\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- FavoriteCount: INTEGER — {\"original_column_name\": \"FavoriteCount\", \"column_name\": \"Favorite Count\", \"column_description\": \"the total number of favorites of the post\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\nmore favorite count refers to more valuable posts. \"}\n- LastEditorUserId: INTEGER — {\"original_column_name\": \"LastEditorUserId\", \"column_name\": \"Last Editor User Id\", \"column_description\": \"the id of the last editor\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- LastEditDate: DATETIME — {\"original_column_name\": \"LastEditDate\", \"column_name\": \"Last Edit Date\", \"column_description\": \"the last edit date\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- CommunityOwnedDate: DATETIME — {\"original_column_name\": \"CommunityOwnedDate\", \"column_name\": \"Community Owned Date\", \"column_description\": \"the community owned date\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- ParentId: INTEGER — {\"original_column_name\": \"ParentId\", \"column_name\": \"ParentId\", \"column_description\": \"the id of the parent post\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\nIf the parent id is null, the post is the root post. Otherwise, the post is the child post of other post. \"}\n- ClosedDate: DATETIME — {\"original_column_name\": \"ClosedDate\", \"column_name\": \"Closed Date\", \"column_description\": \"the closed date of the post\", \"data_format\": \"data_format\", \"value_description\": \"commonsense evidence:\\nif ClosedDate is null or empty, it means this post is not well-finished\\nif CloseDate is not null or empty, it means this post has well-finished.\"}\n- OwnerDisplayName: TEXT — {\"original_column_name\": \"OwnerDisplayName\", \"column_name\": \"Owner Display Name\", \"column_description\": \"the display name of the post owner\", \"data_format\": \"text\", \"value_description\": \"\"}\n- LastEditorDisplayName: TEXT — {\"original_column_name\": \"LastEditorDisplayName\", \"column_name\": \"Last Editor Display Name\", \"column_description\": \"the display name of the last editor\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (Id)\nFOREIGN KEY (LastEditorUserId) REFERENCES users (Id)\nFOREIGN KEY (OwnerUserId) REFERENCES users (Id)\nFOREIGN KEY (ParentId) REFERENCES posts (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"WkpSHT2FQMviGbTyBHrJINrQHRtMSDUFVcfEvwYvlHI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "users"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "users (table)\n- Id: INTEGER NOT NULL — {\"original_column_name\": \"Id\", \"column_name\": \"\", \"column_description\": \"the user id\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- Reputation: INTEGER — {\"original_column_name\": \"Reputation\", \"column_name\": \"\", \"column_description\": \"the user's reputation\", \"data_format\": \"integer\", \"value_description\": \"commonsense evidence:\\nThe user with higher reputation has more influence. \"}\n- CreationDate: DATETIME — {\"original_column_name\": \"CreationDate\", \"column_name\": \"Creation Date\", \"column_description\": \"the creation date of the user account\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- DisplayName: TEXT — {\"original_column_name\": \"DisplayName\", \"column_name\": \"Display Name\", \"column_description\": \"the user's display name\", \"data_format\": \"text\", \"value_description\": \"\"}\n- LastAccessDate: DATETIME — {\"original_column_name\": \"LastAccessDate\", \"column_name\": \"Last Access Date\", \"column_description\": \"the last access date of the user account\", \"data_format\": \"datetime\", \"value_description\": \"\"}\n- WebsiteUrl: TEXT — {\"original_column_name\": \"WebsiteUrl\", \"column_name\": \"Website Url\", \"column_description\": \"the website url of the user account\", \"data_format\": \"text\", \"value_description\": \"\"}\n- Location: TEXT — {\"original_column_name\": \"Location\", \"column_name\": \"\", \"column_description\": \"user's location\", \"data_format\": \"text\", \"value_description\": \"\"}\n- AboutMe: TEXT — {\"original_column_name\": \"AboutMe\", \"column_name\": \"About Me\", \"column_description\": \"the self introduction of the user\", \"data_format\": \"text\", \"value_description\": \"\"}\n- Views: INTEGER — {\"original_column_name\": \"Views\", \"column_name\": \"\", \"column_description\": \"the number of views \", \"data_format\": \"integer\", \"value_description\": \"\"}\n- UpVotes: INTEGER — {\"original_column_name\": \"UpVotes\", \"column_name\": \"\", \"column_description\": \"the number of upvotes\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- DownVotes: INTEGER — {\"original_column_name\": \"DownVotes\", \"column_name\": \"\", \"column_description\": \"the number of downvotes\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- AccountId: INTEGER — {\"original_column_name\": \"AccountId\", \"column_name\": \"Account Id\", \"column_description\": \"the unique id of the account\", \"data_format\": \"integer\", \"value_description\": \"\"}\n- Age: INTEGER — {\"original_column_name\": \"Age\", \"column_name\": \"\", \"column_description\": \"user's age\", \"data_format\": \"integer\", \"value_description\": \" teenager: 13-18\\n adult: 19-65\\n elder: > 65\"}\n- ProfileImageUrl: TEXT — {\"original_column_name\": \"ProfileImageUrl\", \"column_name\": \"Profile Image Url\", \"column_description\": \"the profile image url\", \"data_format\": \"text\", \"value_description\": \"\"}\nPRIMARY KEY (Id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "WkpSHT2FQMviGbTyBHrJINrQHRtMSDUFVcfEvwYvlHI",
+                "sql": "SELECT p.Id, h.Id AS HistoryId, h.RevisionGUID, h.PostHistoryTypeId, h.Comment, h.UserId, h.UserDisplayName, u.DisplayName\nFROM posts AS p\nJOIN postHistory AS h ON h.PostId = p.Id\nLEFT JOIN users AS u ON u.Id = h.UserId\nWHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\nORDER BY h.Id"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "8 row(s):\nResult coverage: fetched_rows=8; displayed_rows=8; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): Id=int; HistoryId=int; RevisionGUID=str; PostHistoryTypeId=int; Comment=str; UserId=int; UserDisplayName=str; DisplayName=str\nId | HistoryId | RevisionGUID | PostHistoryTypeId | Comment | UserId | UserDisplayName | DisplayName\n--- | --- | --- | --- | --- | --- | --- | ---\n118 | 243 | 73b29f38-18d0-4de0-8e6a-d577fed6ecd0 | 2 |  | 83 |  | c4il\n118 | 244 | 73b29f38-18d0-4de0-8e6a-d577fed6ecd0 | 1 |  | 83 |  | c4il\n118 | 245 | 73b29f38-18d0-4de0-8e6a-d577fed6ecd0 | 3 |  | 83 |  | c4il\n118 | 435 | 1d7716e8-ba6c-4741-9368-fb18c91e932d | 4 | edited title | 83 |  | c4il\n118 | 12390 | abeb8885-7874-407d-8527-4c5e30d916f3 | 5 | TeXified the formulas. | 919 |  | whuber\n118 | 12391 | aa356495-ccc9-4b74-9866-7662f0ab8f99 | 5 | deleted 5 characters in body; edited title | 88 |  | mbq\n118 | 12392 | aa356495-ccc9-4b74-9866-7662f0ab8f99 | 4 | deleted 5 characters in body; edited title | 88 |  | mbq\n118 | 39344 | 97cd9574-b690-46e2-9744-3048dec88a79 | 4 | edited title | 88 |  | mbq\nSQL: SELECT p.Id, h.Id AS HistoryId, h.RevisionGUID, h.PostHistoryTypeId, h.Comment, h.UserId, h.UserDisplayName, u.DisplayName\nFROM posts AS p\nJOIN postHistory AS h ON h.PostId = p.Id\nLEFT JOIN users AS u ON u.Id = h.UserId\nWHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\nORDER BY h.Id\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"J292Ho57Qvz_9xj_BYzaw-_6YxuejUtlsj5L-PVAMYA\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "J292Ho57Qvz_9xj_BYzaw-_6YxuejUtlsj5L-PVAMYA",
+                "sql": "WITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM posts AS p\n    JOIN postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName",
+                "expected_columns": [
+                  "DisplayName",
+                  "edit_comment_count"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): DisplayName=str; edit_comment_count=int\nDisplayName | edit_comment_count\n--- | ---\nmbq | 2\nSQL: WITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM posts AS p\n    JOIN postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM posts AS p\n    JOIN postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH editor_counts AS (\n    SELECT h.UserId, COUNT(DISTINCT h.RevisionGUID) AS edit_comment_count\n    FROM posts AS p\n    JOIN postHistory AS h ON h.PostId = p.Id\n    WHERE p.Title = 'Why square the difference instead of taking the absolute value in standard deviation?'\n      AND TRIM(h.Comment) <> ''\n    GROUP BY h.UserId\n)\nSELECT u.DisplayName, e.edit_comment_count\nFROM editor_counts AS e\nJOIN users AS u ON u.Id = e.UserId\nWHERE e.edit_comment_count = (SELECT MAX(edit_comment_count) FROM editor_counts)\nORDER BY u.DisplayName\nLIMIT 1000",
+          "seconds": 36.83991158299614
+        },
+        "result": {
+          "columns": [
+            "DisplayName",
+            "edit_comment_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "mbq",
+              "2"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "fcbfe75b638653f6a05cdfb10cd3f40f8b85aa9383f8eff49e292285bdd6df2a"
+        }
+      }
+    }
+  ]
+}
