@@ -1,0 +1,31 @@
+{
+  "sql": "WITH kinds AS (SELECT name,version,L1_model,MAX(status='strong') AS strong,MAX(status='soft') AS soft FROM stack_ok GROUP BY name,version,L1_model) SELECT L1_model,SUM(strong),SUM(soft),SUM(strong AND soft),SUM(soft AND NOT strong) FROM kinds GROUP BY L1_model",
+  "columns": [
+    "L1_model",
+    "strong",
+    "soft",
+    "both",
+    "soft_only"
+  ],
+  "rows": [
+    [
+      "regression",
+      37,
+      21,
+      4,
+      17
+    ],
+    [
+      "tree",
+      6,
+      5,
+      1,
+      4
+    ]
+  ],
+  "db_sha256": "eb683890921eb597f176692fe6ac9fb544dde3fd78084d019bf82cd0e6efe780",
+  "reference_sha256": "af3936a3f06d0148c560a6781446bd98c758195d8c61cc2976b74435928f594e",
+  "reference_csv": "STATUS,L1_MODEL,OCCURRENCES\nsoft,regression,17\nstrong,regression,37\n",
+  "finding": "Four regression models have both statuses at different steps:21soft becomes17soft-only when strong takes precedence;37strong unchanged. Reference agrees with exclusivity.",
+  "limit": "Offline diagnostic only, not a model repair or input. Question does not explicitly state cross-step precedence; do not inject the reference-derived priority into production."
+}

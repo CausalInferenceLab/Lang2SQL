@@ -1,0 +1,174 @@
+{
+  "instance_id": "local360",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "2f6b00573238df6e5b78c38f1c93d01314d6b837c5424209f897cb39fc9c6416",
+  "events_sha256": "7b23afee40b2c11dd7088298e421b1c993a3cefade5af8665ee48b75401c829c",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 271383,
+      "cached_input_tokens": 253056,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 7157,
+      "reasoning_output_tokens": 5977
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "activity_log"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "activity_log (table)\n- stamp: VARCHAR(255)\n- session: VARCHAR(255)\n- action: VARCHAR(255)\n- option: VARCHAR(255)\n- path: VARCHAR(255)\n- search_type: VARCHAR(255)"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"SQk_adqvClbKoIXOolziC6A81vVnwuPRj8J-9gWSYG4\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "SQk_adqvClbKoIXOolziC6A81vVnwuPRj8J-9gWSYG4",
+        "sql": "SELECT session, path, search_type, action, \"option\", COUNT(*) AS event_rows,\n       MIN(stamp) AS first_stamp, MAX(stamp) AS last_stamp\nFROM main.activity_log\nGROUP BY session, path, search_type, action, \"option\"\nORDER BY session, first_stamp, path;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "61 row(s):\nResult coverage: fetched_rows=61; displayed_rows=50; fetch_truncated=false; display_truncated=true; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): session=str; path=str; search_type=str; action=str; option=str; event_rows=int; first_stamp=str; last_stamp=str\nsession | path | search_type | action | option | event_rows | first_stamp | last_stamp\n--- | --- | --- | --- | --- | --- | --- | ---\n0fe39581 | /search_list | Area-S | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n0fe39581 | /search_list/ | Area-S | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n111f2996 | /search_list | Pref | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n111f2996 | /search_list/ | Pref | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n111f2996 | /search_input |  | view | page | 10 | 2017-01-09 12:19:11 | 2017-01-09 12:21:14\n111f2996 | /search_input/ |  | view | page | 4 | 2017-01-09 12:19:11 | 2017-01-09 12:21:14\n111f2996 |  |  | view | page | 3 | 2017-01-09 12:20:10 | 2017-01-09 12:20:10\n111f2996 | / |  | view | page | 4 | 2017-01-09 12:20:10 | 2017-01-09 12:20:10\n1cf7678e | /detail |  | view | detail | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n1cf7678e | /detail/ |  | view | detail | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n1cf7678e |  |  | view | page | 3 | 2017-01-09 12:19:04 | 2017-01-09 12:19:04\n1cf7678e | / |  | view | page | 4 | 2017-01-09 12:19:04 | 2017-01-09 12:19:04\n36dd0df7 | /search_list | Pref-with-Job | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n36dd0df7 | /search_list/ | Pref-with-Job | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n36dd0df7 | /detail |  | view | detail | 5 | 2017-01-09 12:19:49 | 2017-01-09 12:19:49\n36dd0df7 | /detail/ |  | view | detail | 2 | 2017-01-09 12:19:49 | 2017-01-09 12:19:49\n3efe001c | /detail |  | view | detail | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n3efe001c | /detail/ |  | view | detail | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n47db0370 | /search_list | Area-S | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n47db0370 | /search_list/ | Area-S | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n5d5b0997 | /detail |  | view | detail | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n5d5b0997 | /detail/ |  | view | detail | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n5eb2e107 | /detail |  | view | detail | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n5eb2e107 | /detail/ |  | view | detail | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n87b5725f | /detail |  | view | detail | 10 | 2017-01-09 12:18:43 | 2017-01-09 12:24:13\n87b5725f | /detail/ |  | view | detail | 4 | 2017-01-09 12:18:43 | 2017-01-09 12:24:13\n87b5725f | /search_list | Line | view | search | 5 | 2017-01-09 12:20:22 | 2017-01-09 12:20:22\n87b5725f | /search_list/ | Line | view | search | 2 | 2017-01-09 12:20:22 | 2017-01-09 12:20:22\n87b5725f |  |  | view | page | 6 | 2017-01-09 12:20:46 | 2017-01-09 12:25:25\n87b5725f | / |  | view | page | 8 | 2017-01-09 12:20:46 | 2017-01-09 12:25:25\n87b5725f | /search_input |  | view | page | 5 | 2017-01-09 12:21:26 | 2017-01-09 12:21:26\n87b5725f | /search_input/ |  | view | page | 2 | 2017-01-09 12:21:26 | 2017-01-09 12:21:26\n87b5725f | /search_list | Station-with-Job | view | search | 5 | 2017-01-09 12:22:51 | 2017-01-09 12:22:51\n87b5725f | /search_list/ | Station-with-Job | view | search | 2 | 2017-01-09 12:22:51 | 2017-01-09 12:22:51\n8cc03a54 | /search_list | Area-L | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n8cc03a54 | /search_list/ | Area-L | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n8cc03a54 | /input | Area-L | view | page | 5 | 2017-01-09 12:18:44 | 2017-01-09 12:18:44\n8cc03a54 | /confirm | Area-L | view | page | 5 | 2017-01-09 12:18:45 | 2017-01-09 12:18:45\n8cc03a54 | /complete | Area-L | view | page | 5 | 2017-01-09 12:18:46 | 2017-01-09 12:18:46\n989004ea | /search_list | Area-L-with-Job | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n989004ea | /search_list/ | Area-L-with-Job | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n989004ea | /search_input |  | view | page | 5 | 2017-01-09 12:19:27 | 2017-01-09 12:19:27\n989004ea | /search_input/ |  | view | page | 2 | 2017-01-09 12:19:27 | 2017-01-09 12:19:27\n989004ea | /search_list | Pref | view | search | 5 | 2017-01-09 12:20:03 | 2017-01-09 12:20:03\n989004ea | /search_list/ | Pref | view | search | 2 | 2017-01-09 12:20:03 | 2017-01-09 12:20:03\n9afaf87c | /search_list |  | view | search | 5 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n9afaf87c | /search_list/ |  | view | search | 2 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n9afaf87c | /detail |  | view | detail | 5 | 2017-01-09 12:20:18 | 2017-01-09 12:20:18\n9afaf87c | /detail/ |  | view | detail | 4 | 2017-01-09 12:20:18 | 2017-01-09 12:21:39\n9afaf87c | /input |  | view | page | 5 | 2017-01-09 12:21:39 | 2017-01-09 12:21:39\nSQL: SELECT session, path, search_type, action, \"option\", COUNT(*) AS event_rows,\n       MIN(stamp) AS first_stamp, MAX(stamp) AS last_stamp\nFROM main.activity_log\nGROUP BY session, path, search_type, action, \"option\"\nORDER BY session, first_stamp, path\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"_s-x75RdXny_9hQwFMP542S9JXBuaPhbQIdsOPPHWgw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "_s-x75RdXny_9hQwFMP542S9JXBuaPhbQIdsOPPHWgw",
+        "sql": "WITH cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target,\n           MIN(CASE WHEN path IN ('/detail/', '/complete/') THEN stamp END) AS first_slash_target\n    FROM main.activity_log\n    GROUP BY session\n)\nSELECT c.session, c.first_target, c.first_slash_target, COUNT(*) AS total_rows,\n       COUNT(CASE WHEN a.search_type <> '' THEN 1 END) AS typed_rows,\n       COUNT(CASE WHEN a.search_type <> '' AND (c.first_target IS NULL OR a.stamp < c.first_target) THEN 1 END) AS typed_before,\n       COUNT(CASE WHEN a.stamp < c.first_target THEN 1 END) AS any_before,\n       MIN(a.stamp) AS first_stamp,\n       MAX(a.stamp) AS last_stamp\nFROM cutoffs AS c\nJOIN main.activity_log AS a ON c.session = a.session\nGROUP BY c.session, c.first_target, c.first_slash_target\nORDER BY c.session"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "16 row(s):\nResult coverage: fetched_rows=16; displayed_rows=16; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): session=str; first_target=NoneType,str; first_slash_target=NoneType,str; total_rows=int; typed_rows=int; typed_before=int; any_before=int; first_stamp=str; last_stamp=str\nsession | first_target | first_slash_target | total_rows | typed_rows | typed_before | any_before | first_stamp | last_stamp\n--- | --- | --- | --- | --- | --- | --- | --- | ---\n0fe39581 | None | None | 7 | 7 | 7 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n111f2996 | None | None | 28 | 7 | 7 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:21:14\n1cf7678e | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 14 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:19:04\n36dd0df7 | 2017-01-09 12:19:49 | 2017-01-09 12:19:49 | 14 | 7 | 7 | 7 | 2017-01-09 12:18:43 | 2017-01-09 12:19:49\n3efe001c | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n47db0370 | None | None | 7 | 7 | 7 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n5d5b0997 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n5eb2e107 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\n87b5725f | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 49 | 14 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:25:25\n8cc03a54 | 2017-01-09 12:18:46 | None | 22 | 22 | 17 | 17 | 2017-01-09 12:18:43 | 2017-01-09 12:18:46\n989004ea | None | None | 21 | 14 | 14 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:20:03\n9afaf87c | 2017-01-09 12:20:18 | 2017-01-09 12:20:18 | 33 | 2 | 0 | 7 | 2017-01-09 12:18:43 | 2017-01-09 12:23:00\ncabf98e8 | None | None | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\nd45ec190 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\neee2bb21 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\nfe05e1d8 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43 | 7 | 0 | 0 | 0 | 2017-01-09 12:18:43 | 2017-01-09 12:18:43\nSQL: WITH cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target,\n           MIN(CASE WHEN path IN ('/detail/', '/complete/') THEN stamp END) AS first_slash_target\n    FROM main.activity_log\n    GROUP BY session\n)\nSELECT c.session, c.first_target, c.first_slash_target, COUNT(*) AS total_rows,\n       COUNT(CASE WHEN a.search_type <> '' THEN 1 END) AS typed_rows,\n       COUNT(CASE WHEN a.search_type <> '' AND (c.first_target IS NULL OR a.stamp < c.first_target) THEN 1 END) AS typed_before,\n       COUNT(CASE WHEN a.stamp < c.first_target THEN 1 END) AS any_before,\n       MIN(a.stamp) AS first_stamp,\n       MAX(a.stamp) AS last_stamp\nFROM cutoffs AS c\nJOIN main.activity_log AS a ON c.session = a.session\nGROUP BY c.session, c.first_target, c.first_slash_target\nORDER BY c.session\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_7",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"mFf9-ZENXw9233XA7fv_9H-f006C_lHU-DxK_pBdlXw\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_8",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "mFf9-ZENXw9233XA7fv_9H-f006C_lHU-DxK_pBdlXw",
+        "expected_columns": [
+          "session",
+          "path",
+          "search_type"
+        ],
+        "sql": "WITH session_cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target_stamp\n    FROM main.activity_log\n    GROUP BY session\n),\ncounted_events AS (\n    SELECT s.session,\n           e.path,\n           e.search_type,\n           COUNT(e.search_type) OVER (PARTITION BY s.session) AS event_count\n    FROM session_cutoffs AS s\n    LEFT JOIN main.activity_log AS e\n      ON e.session = s.session\n     AND e.search_type <> ''\n     AND (s.first_target_stamp IS NULL OR e.stamp < s.first_target_stamp)\n)\nSELECT DISTINCT session, path, search_type\nFROM counted_events\nWHERE event_count = (SELECT MIN(event_count) FROM counted_events)\nORDER BY session, path, search_type\nLIMIT -1"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "10 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=10; displayed_rows=10; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): session=str; path=NoneType; search_type=NoneType\nsession | path | search_type\n--- | --- | ---\n1cf7678e | None | None\n3efe001c | None | None\n5d5b0997 | None | None\n5eb2e107 | None | None\n87b5725f | None | None\n9afaf87c | None | None\ncabf98e8 | None | None\nd45ec190 | None | None\neee2bb21 | None | None\nfe05e1d8 | None | None\nSQL: WITH session_cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target_stamp\n    FROM main.activity_log\n    GROUP BY session\n),\ncounted_events AS (\n    SELECT s.session,\n           e.path,\n           e.search_type,\n           COUNT(e.search_type) OVER (PARTITION BY s.session) AS event_count\n    FROM session_cutoffs AS s\n    LEFT JOIN main.activity_log AS e\n      ON e.session = s.session\n     AND e.search_type <> ''\n     AND (s.first_target_stamp IS NULL OR e.stamp < s.first_target_stamp)\n)\nSELECT DISTINCT session, path, search_type\nFROM counted_events\nWHERE event_count = (SELECT MIN(event_count) FROM counted_events)\nORDER BY session, path, search_type\nLIMIT -1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH session_cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target_stamp\n    FROM main.activity_log\n    GROUP BY session\n),\ncounted_events AS (\n    SELECT s.session,\n           e.path,\n           e.search_type,\n           COUNT(e.search_type) OVER (PARTITION BY s.session) AS event_count\n    FROM session_cutoffs AS s\n    LEFT JOIN main.activity_log AS e\n      ON e.session = s.session\n     AND e.search_type <> ''\n     AND (s.first_target_stamp IS NULL OR e.stamp < s.first_target_stamp)\n)\nSELECT DISTINCT session, path, search_type\nFROM counted_events\nWHERE event_count = (SELECT MIN(event_count) FROM counted_events)\nORDER BY session, path, search_type\nLIMIT -1\n```",
+  "event_parse_errors": [],
+  "rows": 10,
+  "sql": "WITH session_cutoffs AS (\n    SELECT session,\n           MIN(CASE WHEN path IN ('/detail', '/complete') THEN stamp END) AS first_target_stamp\n    FROM main.activity_log\n    GROUP BY session\n),\ncounted_events AS (\n    SELECT s.session,\n           e.path,\n           e.search_type,\n           COUNT(e.search_type) OVER (PARTITION BY s.session) AS event_count\n    FROM session_cutoffs AS s\n    LEFT JOIN main.activity_log AS e\n      ON e.session = s.session\n     AND e.search_type <> ''\n     AND (s.first_target_stamp IS NULL OR e.stamp < s.first_target_stamp)\n)\nSELECT DISTINCT session, path, search_type\nFROM counted_events\nWHERE event_count = (SELECT MIN(event_count) FROM counted_events)\nORDER BY session, path, search_type\nLIMIT -1",
+  "seconds": 166.5313657920342
+}

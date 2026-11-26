@@ -1,0 +1,129 @@
+{
+  "instance_id": "local302",
+  "profile": "codex-mcp",
+  "model": "gpt-6.2-astra",
+  "status": "predicted",
+  "calls": [],
+  "prompt_sha256": "f83fc208de806ea162703c7a01f753ca1f440cc14ddcde9233d976fbd63386a4",
+  "events_sha256": "67916c245a1af46a69596219db3f2cdb70f26b211cc9c6a7c84556a8b597bd8b",
+  "cli_exit_code": 0,
+  "cli_usage": [
+    {
+      "input_tokens": 191310,
+      "cached_input_tokens": 176000,
+      "cache_write_input_tokens": 0,
+      "output_tokens": 1165,
+      "reasoning_output_tokens": 23
+    }
+  ],
+  "mcp_calls": [
+    {
+      "id": "item_1",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "explore_schema",
+      "arguments": {
+        "table": "cleaned_weekly_sales"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "cleaned_weekly_sales (table)\n- week_date_formatted: TEXT\n- week_date: TEXT\n- region: TEXT\n- platform: TEXT\n- segment: TEXT\n- customer_type: TEXT\n- transactions: INTEGER\n- sales: INTEGER\n- week_number: INTEGER\n- month_number: INTEGER\n- calendar_year: INTEGER\n- age_band: TEXT\n- demographic: TEXT\n- avg_transaction: REAL"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_2",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"FSqEbK0N69ufFzq4NbxbkThe7F-l6EG400Dn5RPD-70\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_3",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "FSqEbK0N69ufFzq4NbxbkThe7F-l6EG400Dn5RPD-70",
+        "sql": "SELECT week_date >= '2020-06-15' AS after_start, MIN(week_date) AS first_week,\n       MAX(week_date) AS last_week, COUNT(DISTINCT week_date) AS weeks,\n       MIN(sales) AS min_sales, COUNT(*) - COUNT(sales) AS missing_sales\nFROM main.cleaned_weekly_sales\nWHERE week_date >= date('2020-06-15', '-84 days')\n  AND week_date < date('2020-06-15', '+84 days')\nGROUP BY after_start;"
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "2 row(s):\nResult coverage: fetched_rows=2; displayed_rows=2; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): after_start=int; first_week=str; last_week=str; weeks=int; min_sales=int; missing_sales=int\nafter_start | first_week | last_week | weeks | min_sales | missing_sales\n--- | --- | --- | --- | --- | ---\n0 | 2020-03-23 | 2020-06-08 | 12 | 49 | 0\n1 | 2020-06-15 | 2020-08-31 | 12 | 99 | 0\nSQL: SELECT week_date >= '2020-06-15' AS after_start, MIN(week_date) AS first_week,\n       MAX(week_date) AS last_week, COUNT(DISTINCT week_date) AS weeks,\n       MIN(sales) AS min_sales, COUNT(*) - COUNT(sales) AS missing_sales\nFROM main.cleaned_weekly_sales\nWHERE week_date >= date('2020-06-15', '-84 days')\n  AND week_date < date('2020-06-15', '+84 days')\nGROUP BY after_start\nLIMIT 1000"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_4",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "resolve_business_terms",
+      "arguments": {
+        "terms": []
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "{\"definition_check_id\": \"3j98UTyuc0ri_a_a8XNWsX3yyRJk2-G9R21gho-6Hw8\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    },
+    {
+      "id": "item_5",
+      "type": "mcp_tool_call",
+      "server": "lang2sql",
+      "tool": "run_sql",
+      "arguments": {
+        "definition_check_id": "3j98UTyuc0ri_a_a8XNWsX3yyRJk2-G9R21gho-6Hw8",
+        "sql": "WITH weekly AS (\n    SELECT region, platform, age_band, demographic, customer_type, sales,\n           week_date >= '2020-06-15' AS is_after\n    FROM main.cleaned_weekly_sales\n    WHERE week_date >= date('2020-06-15', '-84 days')\n      AND week_date < date('2020-06-15', '+84 days')\n),\nattributes(attribute_type, attribute_value, is_after, sales) AS (\n    SELECT 'region', region, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'platform', platform, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'age_band', age_band, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'demographic', demographic, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'customer_type', customer_type, is_after, sales FROM weekly\n),\nvalue_totals AS (\n    SELECT attribute_type, attribute_value,\n           SUM(CASE WHEN is_after = 0 THEN sales ELSE 0 END) AS sales_before,\n           SUM(CASE WHEN is_after = 1 THEN sales ELSE 0 END) AS sales_after\n    FROM attributes\n    GROUP BY attribute_type, attribute_value\n),\ntype_averages AS (\n    SELECT attribute_type,\n           AVG(100.0 * (sales_after - sales_before) / NULLIF(sales_before, 0))\n               AS average_percentage_change\n    FROM value_totals\n    GROUP BY attribute_type\n)\nSELECT attribute_type, average_percentage_change\nFROM type_averages\nWHERE average_percentage_change < 0\nORDER BY average_percentage_change, attribute_type\nLIMIT 1",
+        "expected_rows": 1
+      },
+      "result": {
+        "content": [
+          {
+            "type": "text",
+            "text": "1 row(s):\nOutput row count validated (executed SQL only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): attribute_type=str; average_percentage_change=float\nattribute_type | average_percentage_change\n--- | ---\ndemographic | -2.00866186358965\nSQL: WITH weekly AS (\n    SELECT region, platform, age_band, demographic, customer_type, sales,\n           week_date >= '2020-06-15' AS is_after\n    FROM main.cleaned_weekly_sales\n    WHERE week_date >= date('2020-06-15', '-84 days')\n      AND week_date < date('2020-06-15', '+84 days')\n),\nattributes(attribute_type, attribute_value, is_after, sales) AS (\n    SELECT 'region', region, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'platform', platform, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'age_band', age_band, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'demographic', demographic, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'customer_type', customer_type, is_after, sales FROM weekly\n),\nvalue_totals AS (\n    SELECT attribute_type, attribute_value,\n           SUM(CASE WHEN is_after = 0 THEN sales ELSE 0 END) AS sales_before,\n           SUM(CASE WHEN is_after = 1 THEN sales ELSE 0 END) AS sales_after\n    FROM attributes\n    GROUP BY attribute_type, attribute_value\n),\ntype_averages AS (\n    SELECT attribute_type,\n           AVG(100.0 * (sales_after - sales_before) / NULLIF(sales_before, 0))\n               AS average_percentage_change\n    FROM value_totals\n    GROUP BY attribute_type\n)\nSELECT attribute_type, average_percentage_change\nFROM type_averages\nWHERE average_percentage_change < 0\nORDER BY average_percentage_change, attribute_type\nLIMIT 1"
+          }
+        ],
+        "structured_content": null
+      },
+      "error": null,
+      "status": "completed"
+    }
+  ],
+  "answer": "```sql\nWITH weekly AS (\n    SELECT region, platform, age_band, demographic, customer_type, sales,\n           week_date >= '2020-06-15' AS is_after\n    FROM main.cleaned_weekly_sales\n    WHERE week_date >= date('2020-06-15', '-84 days')\n      AND week_date < date('2020-06-15', '+84 days')\n),\nattributes(attribute_type, attribute_value, is_after, sales) AS (\n    SELECT 'region', region, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'platform', platform, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'age_band', age_band, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'demographic', demographic, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'customer_type', customer_type, is_after, sales FROM weekly\n),\nvalue_totals AS (\n    SELECT attribute_type, attribute_value,\n           SUM(CASE WHEN is_after = 0 THEN sales ELSE 0 END) AS sales_before,\n           SUM(CASE WHEN is_after = 1 THEN sales ELSE 0 END) AS sales_after\n    FROM attributes\n    GROUP BY attribute_type, attribute_value\n),\ntype_averages AS (\n    SELECT attribute_type,\n           AVG(100.0 * (sales_after - sales_before) / NULLIF(sales_before, 0))\n               AS average_percentage_change\n    FROM value_totals\n    GROUP BY attribute_type\n)\nSELECT attribute_type, average_percentage_change\nFROM type_averages\nWHERE average_percentage_change < 0\nORDER BY average_percentage_change, attribute_type\nLIMIT 1\n```",
+  "event_parse_errors": [],
+  "rows": 1,
+  "sql": "WITH weekly AS (\n    SELECT region, platform, age_band, demographic, customer_type, sales,\n           week_date >= '2020-06-15' AS is_after\n    FROM main.cleaned_weekly_sales\n    WHERE week_date >= date('2020-06-15', '-84 days')\n      AND week_date < date('2020-06-15', '+84 days')\n),\nattributes(attribute_type, attribute_value, is_after, sales) AS (\n    SELECT 'region', region, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'platform', platform, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'age_band', age_band, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'demographic', demographic, is_after, sales FROM weekly\n    UNION ALL\n    SELECT 'customer_type', customer_type, is_after, sales FROM weekly\n),\nvalue_totals AS (\n    SELECT attribute_type, attribute_value,\n           SUM(CASE WHEN is_after = 0 THEN sales ELSE 0 END) AS sales_before,\n           SUM(CASE WHEN is_after = 1 THEN sales ELSE 0 END) AS sales_after\n    FROM attributes\n    GROUP BY attribute_type, attribute_value\n),\ntype_averages AS (\n    SELECT attribute_type,\n           AVG(100.0 * (sales_after - sales_before) / NULLIF(sales_before, 0))\n               AS average_percentage_change\n    FROM value_totals\n    GROUP BY attribute_type\n)\nSELECT attribute_type, average_percentage_change\nFROM type_averages\nWHERE average_percentage_change < 0\nORDER BY average_percentage_change, attribute_type\nLIMIT 1",
+  "seconds": 41.63678316597361
+}

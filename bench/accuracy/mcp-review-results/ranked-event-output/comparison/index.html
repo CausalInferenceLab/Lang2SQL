@@ -1,0 +1,422 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lang2SQL trace comparison</title><style>body{font:16px system-ui;margin:24px;color:#172033;background:#f5f7fb}.pair{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr));gap:16px}section,details{padding:12px;background:white;border:1px solid #ccd4df;border-radius:6px;margin:8px 0}summary{cursor:pointer;font-weight:600}pre{white-space:pre-wrap;overflow-wrap:anywhere;font-size:13px}</style><body><h1>Lang2SQL trace comparison</h1><pre>Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.</pre><pre>{
+  &quot;0 -&gt; 1&quot;: 1
+}</pre><details><summary>Provenance and settings</summary><pre>[
+  {
+    &quot;path&quot;: &quot;/Users/seyoung/workspace/benchmarks/codex-mcp-unobserved-20261127/checkpoints/009/bird&quot;,
+    &quot;manifest_sha256&quot;: &quot;81c09c6c9cf0eb19bd9752bdb3c68df197a11f5abc6f2830208ba6472be06ecf&quot;,
+    &quot;scores_sha256&quot;: &quot;517a46791b4d327be9e0beff7861be843c1aff542a0eaa4139e9d54181f24033&quot;,
+    &quot;settings&quot;: {
+      &quot;profiles&quot;: [
+        {
+          &quot;name&quot;: &quot;codex-mcp&quot;,
+          &quot;model&quot;: &quot;gpt-6.2-astra&quot;,
+          &quot;reasoning_effort&quot;: &quot;high&quot;
+        }
+      ],
+      &quot;backend&quot;: &quot;ChatGPT login -&gt; Codex CLI -&gt; production Lang2SQL MCP&quot;,
+      &quot;revision&quot;: &quot;0c7953905ee455c7611652924cb341e596d7937a&quot;,
+      &quot;codex_version&quot;: &quot;codex-cli 0.170.0&quot;,
+      &quot;sources&quot;: {
+        &quot;bench/accuracy/codex_mcp.py&quot;: &quot;561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0&quot;,
+        &quot;src/lang2sql/frontends/mcp/server.py&quot;: &quot;0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb&quot;
+      },
+      &quot;schema_document_sha256&quot;: &quot;5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b&quot;,
+      &quot;review_source&quot;: null,
+      &quot;failure_selection&quot;: null,
+      &quot;split&quot;: &quot;development&quot;,
+      &quot;concurrency&quot;: 2,
+      &quot;case_timeout&quot;: 600.0,
+      &quot;sql_timeout&quot;: 30,
+      &quot;max_rows&quot;: 100000,
+      &quot;api_calls&quot;: null,
+      &quot;usage_unit&quot;: &quot;one Codex CLI invocation per question; internal model-call count unavailable&quot;
+    }
+  },
+  {
+    &quot;path&quot;: &quot;/Users/seyoung/workspace/benchmarks/codex-mcp-ranked-event-output-20261127/bird-gpt-6.2-astra&quot;,
+    &quot;manifest_sha256&quot;: &quot;b2496348c85aab184b3e5e155b7effecd80f5ab865add946a35b01f81da30b37&quot;,
+    &quot;scores_sha256&quot;: &quot;8709a0e5349d8ee95d7fa134736da4c4e19b09d6de08678483922e220c4b40bf&quot;,
+    &quot;settings&quot;: {
+      &quot;profiles&quot;: [
+        {
+          &quot;name&quot;: &quot;codex-mcp&quot;,
+          &quot;model&quot;: &quot;gpt-6.2-astra&quot;,
+          &quot;reasoning_effort&quot;: &quot;high&quot;
+        }
+      ],
+      &quot;backend&quot;: &quot;ChatGPT login -&gt; Codex CLI -&gt; production Lang2SQL MCP&quot;,
+      &quot;revision&quot;: &quot;cf328f6891f48cdc81969304f0933e20b6f4c4a4&quot;,
+      &quot;codex_version&quot;: &quot;codex-cli 0.170.0&quot;,
+      &quot;sources&quot;: {
+        &quot;bench/accuracy/codex_mcp.py&quot;: &quot;561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0&quot;,
+        &quot;src/lang2sql/frontends/mcp/server.py&quot;: &quot;0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb&quot;
+      },
+      &quot;schema_document_sha256&quot;: &quot;5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b&quot;,
+      &quot;review_source&quot;: null,
+      &quot;failure_selection&quot;: null,
+      &quot;split&quot;: &quot;development&quot;,
+      &quot;concurrency&quot;: 1,
+      &quot;case_timeout&quot;: 600,
+      &quot;sql_timeout&quot;: 30,
+      &quot;max_rows&quot;: 100000,
+      &quot;api_calls&quot;: null,
+      &quot;usage_unit&quot;: &quot;one Codex CLI invocation per question; internal model-call count unavailable&quot;
+    }
+  }
+]</pre></details><details id="bird299"><summary>bird299: 0 -&gt; 1</summary><pre>{
+  &quot;instance_id&quot;: &quot;bird299&quot;,
+  &quot;db&quot;: &quot;student_club&quot;,
+  &quot;question&quot;: &quot;Which closed events are tied for the highest ratio of total spending to total budget amount?&quot;,
+  &quot;evidence&quot;: &quot;&quot;
+}</pre><h3>SQL diff</h3><pre>--- before.sql
++++ after.sql
+@@ -1,15 +1,13 @@
+ WITH event_ratios AS (
+-    SELECT e.event_id,
+-           e.event_name,
+-           SUM(CAST(ROUND(b.spent * 100) AS INTEGER))
+-               / NULLIF(100.0 * SUM(b.amount), 0) AS spending_to_budget_ratio
++    SELECT e.event_name,
++           SUM(b.spent) * 1.0 / NULLIF(SUM(b.amount), 0) AS spending_ratio
+     FROM main.event AS e
+     JOIN main.budget AS b ON b.link_to_event = e.event_id
+     WHERE e.status = &#x27;Closed&#x27;
+     GROUP BY e.event_id, e.event_name
+ )
+-SELECT event_id, event_name, spending_to_budget_ratio
++SELECT event_name
+ FROM event_ratios
+-WHERE spending_to_budget_ratio = (SELECT MAX(spending_to_budget_ratio) FROM event_ratios)
+-ORDER BY event_name, event_id
++WHERE spending_ratio = (SELECT MAX(spending_ratio) FROM event_ratios)
++ORDER BY event_name
+ LIMIT 1000</pre><div class="pair"><section><h3>before: score 0</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 35.412199040991254
+}</pre><h4>Final SQL / answer</h4><pre>WITH event_ratios AS (
+    SELECT e.event_id,
+           e.event_name,
+           SUM(CAST(ROUND(b.spent * 100) AS INTEGER))
+               / NULLIF(100.0 * SUM(b.amount), 0) AS spending_to_budget_ratio
+    FROM main.event AS e
+    JOIN main.budget AS b ON b.link_to_event = e.event_id
+    WHERE e.status = &#x27;Closed&#x27;
+    GROUP BY e.event_id, e.event_name
+)
+SELECT event_id, event_name, spending_to_budget_ratio
+FROM event_ratios
+WHERE spending_to_budget_ratio = (SELECT MAX(spending_to_budget_ratio) FROM event_ratios)
+ORDER BY event_name, event_id
+LIMIT 1000</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;event_id&quot;,
+    &quot;event_name&quot;,
+    &quot;spending_to_budget_ratio&quot;
+  ],
+  &quot;row_count&quot;: 3,
+  &quot;preview&quot;: [
+    [
+      &quot;recJ4Witp9tpjaugn&quot;,
+      &quot;Officers meeting - November&quot;,
+      &quot;1.01&quot;
+    ],
+    [
+      &quot;recc8dizaKrSz3GmH&quot;,
+      &quot;Officers meeting - October&quot;,
+      &quot;1.01&quot;
+    ],
+    [
+      &quot;recMKjJbWRgSQqf4Y&quot;,
+      &quot;Officers meeting - September&quot;,
+      &quot;1.01&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;8ba043111bb875e82542518de077ab4e95a75472604cd5957f3f9ee70e2a372a&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;budget&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;B052akuseQpW08Zbb5FqXbPWMOn6_rk7YNYCbCb_x6o\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;event&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;B052akuseQpW08Zbb5FqXbPWMOn6_rk7YNYCbCb_x6o&quot;,
+      &quot;sql&quot;: &quot;SELECT e.status, b.event_status, typeof(b.spent) AS spent_type, typeof(b.amount) AS amount_type,\n       COUNT(*) AS budget_lines, COUNT(DISTINCT b.budget_id) AS distinct_lines,\n       SUM(b.spent &lt;&gt; ROUND(b.spent, 2)) AS subcent_lines, MIN(b.amount) AS min_amount\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nGROUP BY e.status, b.event_status, typeof(b.spent), typeof(b.amount)&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): status=str; event_status=str; spent_type=str; amount_type=str; budget_lines=int; distinct_lines=int; subcent_lines=int; min_amount=int\nstatus | event_status | spent_type | amount_type | budget_lines | distinct_lines | subcent_lines | min_amount\n--- | --- | --- | --- | --- | --- | --- | ---\nClosed | Closed | real | integer | 22 | 22 | 0 | 10\nOpen | Open | real | integer | 23 | 23 | 0 | 10\nPlanning | Planning | real | integer | 7 | 7 | 0 | 10\nSQL: SELECT e.status, b.event_status, typeof(b.spent) AS spent_type, typeof(b.amount) AS amount_type,\n       COUNT(*) AS budget_lines, COUNT(DISTINCT b.budget_id) AS distinct_lines,\n       SUM(b.spent &lt;&gt; ROUND(b.spent, 2)) AS subcent_lines, MIN(b.amount) AS min_amount\nFROM main.budget AS b\nJOIN main.event AS e ON e.event_id = b.link_to_event\nGROUP BY e.status, b.event_status, typeof(b.spent), typeof(b.amount)\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;_C_y6JcXQyMCeQ0Hh3pLQ2NVyQk6rrbLWSzTpCS1GbI\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;_C_y6JcXQyMCeQ0Hh3pLQ2NVyQk6rrbLWSzTpCS1GbI&quot;,
+      &quot;sql&quot;: &quot;WITH event_ratios AS (\n    SELECT e.event_id,\n           e.event_name,\n           SUM(CAST(ROUND(b.spent * 100) AS INTEGER))\n               / NULLIF(100.0 * SUM(b.amount), 0) AS spending_to_budget_ratio\n    FROM main.event AS e\n    JOIN main.budget AS b ON b.link_to_event = e.event_id\n    WHERE e.status = &#x27;Closed&#x27;\n    GROUP BY e.event_id, e.event_name\n)\nSELECT event_id, event_name, spending_to_budget_ratio\nFROM event_ratios\nWHERE spending_to_budget_ratio = (SELECT MAX(spending_to_budget_ratio) FROM event_ratios)\nORDER BY event_name, event_id&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_id=str; event_name=str; spending_to_budget_ratio=float\nevent_id | event_name | spending_to_budget_ratio\n--- | --- | ---\nrecJ4Witp9tpjaugn | Officers meeting - November | 1.01\nrecc8dizaKrSz3GmH | Officers meeting - October | 1.01\nrecMKjJbWRgSQqf4Y | Officers meeting - September | 1.01\nSQL: WITH event_ratios AS (\n    SELECT e.event_id,\n           e.event_name,\n           SUM(CAST(ROUND(b.spent * 100) AS INTEGER))\n               / NULLIF(100.0 * SUM(b.amount), 0) AS spending_to_budget_ratio\n    FROM main.event AS e\n    JOIN main.budget AS b ON b.link_to_event = e.event_id\n    WHERE e.status = &#x27;Closed&#x27;\n    GROUP BY e.event_id, e.event_name\n)\nSELECT event_id, event_name, spending_to_budget_ratio\nFROM event_ratios\nWHERE spending_to_budget_ratio = (SELECT MAX(spending_to_budget_ratio) FROM event_ratios)\nORDER BY event_name, event_id\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section><section><h3>after: score 1</h3><pre>{
+  &quot;status&quot;: &quot;predicted&quot;,
+  &quot;error_type&quot;: null,
+  &quot;error_message&quot;: null,
+  &quot;seconds&quot;: 28.623975291964598
+}</pre><h4>Final SQL / answer</h4><pre>WITH event_ratios AS (
+    SELECT e.event_name,
+           SUM(b.spent) * 1.0 / NULLIF(SUM(b.amount), 0) AS spending_ratio
+    FROM main.event AS e
+    JOIN main.budget AS b ON b.link_to_event = e.event_id
+    WHERE e.status = &#x27;Closed&#x27;
+    GROUP BY e.event_id, e.event_name
+)
+SELECT event_name
+FROM event_ratios
+WHERE spending_ratio = (SELECT MAX(spending_ratio) FROM event_ratios)
+ORDER BY event_name
+LIMIT 1000</pre><h4>Result preview (up to 20 rows; full row count below)</h4><pre>{
+  &quot;columns&quot;: [
+    &quot;event_name&quot;
+  ],
+  &quot;row_count&quot;: 3,
+  &quot;preview&quot;: [
+    [
+      &quot;Officers meeting - November&quot;
+    ],
+    [
+      &quot;Officers meeting - October&quot;
+    ],
+    [
+      &quot;Officers meeting - September&quot;
+    ]
+  ],
+  &quot;preview_truncated&quot;: false,
+  &quot;csv_sha256&quot;: &quot;89e62612688e604a8a957775c6c326476a97abe9f2c2299f294c87c4d5b0da78&quot;
+}</pre><details><summary>Every MCP call: arguments and results</summary><pre>[
+  {
+    &quot;id&quot;: &quot;item_1&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;budget&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;budget (table)\n- budget_id: TEXT\n- category: TEXT\n- spent: REAL\n- remaining: REAL\n- amount: INTEGER\n- event_status: TEXT\n- link_to_event: TEXT\nPRIMARY KEY (budget_id)\nFOREIGN KEY (link_to_event) REFERENCES event (event_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_2&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;explore_schema&quot;,
+    &quot;arguments&quot;: {
+      &quot;table&quot;: &quot;event&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;event (table)\n- event_id: TEXT\n- event_name: TEXT\n- event_date: TEXT\n- type: TEXT\n- notes: TEXT\n- location: TEXT\n- status: TEXT\nPRIMARY KEY (event_id)&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_3&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;4MZ3dx5ex5MUwArqckCHuTg1ACoOoKAElPHlwWZguPM\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_4&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;4MZ3dx5ex5MUwArqckCHuTg1ACoOoKAElPHlwWZguPM&quot;,
+      &quot;sql&quot;: &quot;SELECT e.status, b.event_status, typeof(b.spent) AS spent_type,\n       typeof(b.amount) AS amount_type, COUNT(*) AS budget_lines\nFROM main.event AS e\nJOIN main.budget AS b ON b.link_to_event = e.event_id\nGROUP BY e.status, b.event_status, typeof(b.spent), typeof(b.amount);&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): status=str; event_status=str; spent_type=str; amount_type=str; budget_lines=int\nstatus | event_status | spent_type | amount_type | budget_lines\n--- | --- | --- | --- | ---\nClosed | Closed | real | integer | 22\nOpen | Open | real | integer | 23\nPlanning | Planning | real | integer | 7\nSQL: SELECT e.status, b.event_status, typeof(b.spent) AS spent_type,\n       typeof(b.amount) AS amount_type, COUNT(*) AS budget_lines\nFROM main.event AS e\nJOIN main.budget AS b ON b.link_to_event = e.event_id\nGROUP BY e.status, b.event_status, typeof(b.spent), typeof(b.amount)\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_5&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;resolve_business_terms&quot;,
+    &quot;arguments&quot;: {
+      &quot;terms&quot;: []
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;{\&quot;definition_check_id\&quot;: \&quot;GUzK6GYFy8-RmS7tMoBzBi4YqHaOZ_n1dNV93VKKbdU\&quot;, \&quot;definitions\&quot;: [], \&quot;instruction\&quot;: \&quot;For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\&quot;}&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  },
+  {
+    &quot;id&quot;: &quot;item_6&quot;,
+    &quot;type&quot;: &quot;mcp_tool_call&quot;,
+    &quot;server&quot;: &quot;lang2sql&quot;,
+    &quot;tool&quot;: &quot;run_sql&quot;,
+    &quot;arguments&quot;: {
+      &quot;definition_check_id&quot;: &quot;GUzK6GYFy8-RmS7tMoBzBi4YqHaOZ_n1dNV93VKKbdU&quot;,
+      &quot;expected_columns&quot;: [
+        &quot;event_name&quot;
+      ],
+      &quot;sql&quot;: &quot;WITH event_ratios AS (\n    SELECT e.event_name,\n           SUM(b.spent) * 1.0 / NULLIF(SUM(b.amount), 0) AS spending_ratio\n    FROM main.event AS e\n    JOIN main.budget AS b ON b.link_to_event = e.event_id\n    WHERE e.status = &#x27;Closed&#x27;\n    GROUP BY e.event_id, e.event_name\n)\nSELECT event_name\nFROM event_ratios\nWHERE spending_ratio = (SELECT MAX(spending_ratio) FROM event_ratios)\nORDER BY event_name\nLIMIT 1000&quot;
+    },
+    &quot;result&quot;: {
+      &quot;content&quot;: [
+        {
+          &quot;type&quot;: &quot;text&quot;,
+          &quot;text&quot;: &quot;3 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=3; displayed_rows=3; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): event_name=str\nevent_name\n---\nOfficers meeting - November\nOfficers meeting - October\nOfficers meeting - September\nSQL: WITH event_ratios AS (\n    SELECT e.event_name,\n           SUM(b.spent) * 1.0 / NULLIF(SUM(b.amount), 0) AS spending_ratio\n    FROM main.event AS e\n    JOIN main.budget AS b ON b.link_to_event = e.event_id\n    WHERE e.status = &#x27;Closed&#x27;\n    GROUP BY e.event_id, e.event_name\n)\nSELECT event_name\nFROM event_ratios\nWHERE spending_ratio = (SELECT MAX(spending_ratio) FROM event_ratios)\nORDER BY event_name\nLIMIT 1000&quot;
+        }
+      ],
+      &quot;structured_content&quot;: null
+    },
+    &quot;error&quot;: null,
+    &quot;status&quot;: &quot;completed&quot;
+  }
+]</pre></details></section></div></details></body></html>

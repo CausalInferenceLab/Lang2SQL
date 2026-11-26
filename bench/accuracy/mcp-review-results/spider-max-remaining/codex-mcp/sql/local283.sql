@@ -1,0 +1,34 @@
+WITH team_matches (season, league_id, team_api_id, goals_for, goals_against) AS (
+    SELECT season, league_id, home_team_api_id, home_team_goal, away_team_goal
+    FROM main."Match"
+    UNION ALL
+    SELECT season, league_id, away_team_api_id, away_team_goal, home_team_goal
+    FROM main."Match"
+),
+season_totals AS (
+    SELECT season, league_id, team_api_id,
+           SUM(CASE
+                   WHEN goals_for > goals_against THEN 3
+                   WHEN goals_for = goals_against THEN 1
+                   ELSE 0
+               END) AS total_points
+    FROM team_matches
+    GROUP BY season, league_id, team_api_id
+),
+ranked_teams AS (
+    SELECT season, league_id, team_api_id, total_points,
+           RANK() OVER (PARTITION BY season ORDER BY total_points DESC) AS points_rank
+    FROM season_totals
+)
+SELECT r.season,
+       t.team_long_name AS champion_team,
+       l.name AS league,
+       c.name AS country,
+       r.total_points
+FROM ranked_teams AS r
+JOIN main.Team AS t ON t.team_api_id = r.team_api_id
+JOIN main.League AS l ON l.id = r.league_id
+JOIN main.Country AS c ON c.id = l.country_id
+WHERE r.points_rank = 1
+ORDER BY r.season, t.team_long_name
+LIMIT 1000
