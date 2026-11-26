@@ -215,3 +215,19 @@ changed literals are not accepted. Repeated input aliases bind to their latest
 successful execution. A success-looking row header without an execution footer
 is insufficient evidence. Original answer text and raw events remain available
 alongside the bound `record.sql`; no reference answer determines this binding.
+
+### Calendar interval compiler probe
+
+`calendar_interval_sql(dialect="sqlite")` is a read-only SQL compiler exposed by
+both tool runtimes. It returns CTEs consuming
+`calendar_input(row_id, start_date, end_date)` and producing `calendar_interval`
+with `direction`, `years`, remaining `months`, and remaining `days`. Dates are
+ordered first, whole months use month-end clamping, and invalid ISO dates retain
+the row with NULL components. This is an absolute calendar duration convention,
+not SQL Server boundary counting or signed PostgreSQL AGE. It performs no DB
+access; the composed query must still pass the existing `run_sql` definition and
+read-only guards. No SQLite extension/UDF is needed by exported SQL or grading.
+
+The `experiments/calendar-interval` protocol freezes a fresh Astra/high retry of
+one prior Spider failure. Neither diagnostic answers nor reference results are
+passed to inference. Its outcome is a repair rate on that case, not full accuracy.

@@ -27,7 +27,8 @@ def test_v1_tools_registered():
     _, ctx = _ctx()
     names = {s.name for s in ctx.tools.specs()}
     assert names == {
-        "run_sql",
+        "calendar_interval_sql",
+            "run_sql",
         "explore_schema",
         "enrich_schema",
         "term_custom",

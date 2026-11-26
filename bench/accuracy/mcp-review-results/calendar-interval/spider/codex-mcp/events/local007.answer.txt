@@ -1,0 +1,41 @@
+```sql
+WITH player_dates AS (
+    SELECT MIN(debut, final_game) AS start_date,
+           MAX(debut, final_game) AS end_date
+    FROM main.player
+    WHERE date(debut, '+0 days') = debut
+      AND date(final_game, '+0 days') = final_game
+),
+complete_months AS (
+    SELECT start_date, end_date,
+           12 * (strftime('%Y', end_date) - strftime('%Y', start_date))
+           + (strftime('%m', end_date) - strftime('%m', start_date))
+           - CASE
+                 WHEN strftime('%d', end_date) < strftime('%d', start_date)
+                  AND end_date < date(end_date, 'start of month', '+1 month', '-1 day')
+                 THEN 1 ELSE 0
+             END AS whole_months
+    FROM player_dates
+),
+anniversary_months AS (
+    SELECT start_date, end_date, whole_months,
+           date(start_date, 'start of month', printf('+%d months', whole_months)) AS month_start
+    FROM complete_months
+),
+calendar_parts AS (
+    SELECT whole_months / 12 AS years,
+           whole_months % 12 AS months,
+           julianday(end_date) - julianday(MIN(
+               date(month_start, printf('+%d days', strftime('%d', start_date) - 1)),
+               date(month_start, '+1 month', '-1 day')
+           )) AS days
+    FROM anniversary_months
+)
+SELECT ROUND(AVG(
+           ROUND(ABS(years), 2)
+           + ROUND(ABS(months) / 12.0, 2)
+           + ROUND(ABS(days) / 365.0, 2)
+       ), 2) AS average_career_span_years
+FROM calendar_parts
+LIMIT 1
+```
