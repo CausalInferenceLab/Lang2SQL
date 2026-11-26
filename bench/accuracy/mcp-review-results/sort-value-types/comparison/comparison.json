@@ -1,0 +1,384 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-unobserved-20261127/checkpoints/004/bird",
+      "manifest_sha256": "05ead9687035417b2bd703fe38c9de721ab383d34631a015761ecdb844db602c",
+      "scores_sha256": "051f8c7ad3447a2e8e12d275cf784dcc70b214b85076aca0dc6e53229021bd2b",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "0c7953905ee455c7611652924cb341e596d7937a",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-sort-value-types-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "2b5d81a3c5a28e969092f1f3dd6c8ffdc812f9c2fa502a8ad43b6a5adb4fff3d",
+      "scores_sha256": "fc6a5ba2e31d947fae85f41de83be5149c8c38f76dd1276594a3c5b53196b6af",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "88f3d1ca2bbd0a011bb2a8775eb043f971a0a138",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "561eded13c1b46c3e942ea3a2904da46c65629b4201d28f4fb7e75d12ccf58c0",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "5176e324a72e80a8a37a12285596d123e0ba6c310dceaa9f13a1e413ee88ff5b",
+        "review_source": null,
+        "failure_selection": null,
+        "split": "development",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 1": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird086",
+        "db": "card_games",
+        "question": "Among the Commander-leadable cards that the Card Kingdom catalog lists for both a foil printing and a regular non-foil printing – cards listed for only one of the two printings don't count – I want the single most recent card frame year (the latest calendar year among the frame versions), and the count of cards in that group whose frame version is that year. Please return just that one row: the frame year and its card count.",
+        "evidence": "A card 'may lead a Commander deck' if it can be the deck's commander – the one card that leads the deck and sets its color identity – not merely be included among the deck's other cards."
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -1,9 +1,9 @@\n-SELECT CAST(frameVersion AS INTEGER) AS frame_year, COUNT(*) AS card_count\n-FROM main.cards\n-WHERE INSTR(leadershipSkills, '''commander'': True') > 0\n-  AND cardKingdomFoilId IS NOT NULL\n-  AND cardKingdomId IS NOT NULL\n-  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'\n-GROUP BY frame_year\n-ORDER BY frame_year DESC\n+SELECT c.frameVersion AS frame_year, COUNT(*) AS card_count\n+FROM main.cards AS c\n+WHERE INSTR(c.leadershipSkills, '''commander'': True') > 0\n+  AND c.cardKingdomFoilId <> ''\n+  AND c.cardKingdomId <> ''\n+  AND c.frameVersion GLOB '[0-9][0-9][0-9][0-9]'\n+GROUP BY c.frameVersion\n+ORDER BY CAST(c.frameVersion AS INTEGER) DESC\n LIMIT 1",
+      "before": {
+        "score": 0,
+        "record_sha256": "98c5370b6c2bf7baec7706f2e2c1d381286d898add83a34b7f89daf63c1048ca",
+        "record": {
+          "instance_id": "bird086",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "33f40d537fb344f148b43701ea5f214c96ab9a7314e6787677323ae84d8871c9",
+          "events_sha256": "e71f016c062f1a14b6990d3ac384f9cbf3487a0f9c237255c6f66d3bdf1cedf6",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 182488,
+              "cached_input_tokens": 168576,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 669,
+              "reasoning_output_tokens": 0
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"I7a7CChCLf6PvYvkAX9jIY-XkHVb8Ll3A4wly8ABdDg\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "I7a7CChCLf6PvYvkAX9jIY-XkHVb8Ll3A4wly8ABdDg",
+                "sql": "SELECT leadershipSkills, GROUP_CONCAT(DISTINCT frameVersion) AS frames,\n       COUNT(*) AS rows, COUNT(cardKingdomFoilId) AS foil_ids, COUNT(cardKingdomId) AS regular_ids,\n       SUM(cardKingdomFoilId = '' OR cardKingdomId = '') AS blank_ids\nFROM main.cards\nGROUP BY leadershipSkills"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): leadershipSkills=NoneType,str; frames=str; rows=int; foil_ids=int; regular_ids=int; blank_ids=int\nleadershipSkills | frames | rows | foil_ids | regular_ids | blank_ids\n--- | --- | --- | --- | --- | ---\nNone | 2003,1993,2015,1997,future | 53072 | 26382 | 41047 | 0\n{'brawl': False, 'commander': False, 'oathbreaker': True} | 2015,2003 | 724 | 554 | 297 | 0\n{'brawl': False, 'commander': True, 'oathbreaker': False} | 2003,2015,1993,1997,future | 2660 | 1643 | 1529 | 0\n{'brawl': False, 'commander': True, 'oathbreaker': True} | 2015 | 45 | 15 | 17 | 0\n{'brawl': True, 'commander': False, 'oathbreaker': True} | 2015 | 66 | 63 | 58 | 0\n{'brawl': True, 'commander': True, 'oathbreaker': False} | 2015 | 255 | 255 | 252 | 0\nSQL: SELECT leadershipSkills, GROUP_CONCAT(DISTINCT frameVersion) AS frames,\n       COUNT(*) AS rows, COUNT(cardKingdomFoilId) AS foil_ids, COUNT(cardKingdomId) AS regular_ids,\n       SUM(cardKingdomFoilId = '' OR cardKingdomId = '') AS blank_ids\nFROM main.cards\nGROUP BY leadershipSkills\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"lIEgyDqTh0XzcRyJrrtHdRNg-cWcxFtCWcc4uMUIylM\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "lIEgyDqTh0XzcRyJrrtHdRNg-cWcxFtCWcc4uMUIylM",
+                "expected_columns": [
+                  "frame_year",
+                  "card_count"
+                ],
+                "sql": "SELECT CAST(frameVersion AS INTEGER) AS frame_year, COUNT(*) AS card_count\nFROM main.cards\nWHERE INSTR(leadershipSkills, '''commander'': True') > 0\n  AND cardKingdomFoilId IS NOT NULL\n  AND cardKingdomId IS NOT NULL\n  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY frame_year\nORDER BY frame_year DESC\nLIMIT 1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): frame_year=int; card_count=int\nframe_year | card_count\n--- | ---\n2015 | 820\nSQL: SELECT CAST(frameVersion AS INTEGER) AS frame_year, COUNT(*) AS card_count\nFROM main.cards\nWHERE INSTR(leadershipSkills, '''commander'': True') > 0\n  AND cardKingdomFoilId IS NOT NULL\n  AND cardKingdomId IS NOT NULL\n  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY frame_year\nORDER BY frame_year DESC\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT CAST(frameVersion AS INTEGER) AS frame_year, COUNT(*) AS card_count\nFROM main.cards\nWHERE INSTR(leadershipSkills, '''commander'': True') > 0\n  AND cardKingdomFoilId IS NOT NULL\n  AND cardKingdomId IS NOT NULL\n  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY frame_year\nORDER BY frame_year DESC\nLIMIT 1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT CAST(frameVersion AS INTEGER) AS frame_year, COUNT(*) AS card_count\nFROM main.cards\nWHERE INSTR(leadershipSkills, '''commander'': True') > 0\n  AND cardKingdomFoilId IS NOT NULL\n  AND cardKingdomId IS NOT NULL\n  AND frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY frame_year\nORDER BY frame_year DESC\nLIMIT 1",
+          "seconds": 31.881061540916562
+        },
+        "result": {
+          "columns": [
+            "frame_year",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "2015",
+              "820"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "2fb5b03fd8493a067eac36aa380fa7fad76da43390fa0ae35c1b6996b098eee7"
+        }
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "45e0e1780f0ecb1a9a1a02307df1ccc06bd09f5d1afe378daf878c5f87a8eb82",
+        "record": {
+          "instance_id": "bird086",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "33f40d537fb344f148b43701ea5f214c96ab9a7314e6787677323ae84d8871c9",
+          "events_sha256": "478efbd4a4900ed0cb383d69b1a836c646e2f59c8441566f8ef9d50ba2a477d5",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 168747,
+              "cached_input_tokens": 151296,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 672,
+              "reasoning_output_tokens": 0
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"2GaCv3dwhDvkoePw6e0oYqJoMhUi7Pd6cm7XDyXHQ64\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "2GaCv3dwhDvkoePw6e0oYqJoMhUi7Pd6cm7XDyXHQ64",
+                "sql": "SELECT c.leadershipSkills, GROUP_CONCAT(DISTINCT c.frameVersion) AS frame_versions,\n       COUNT(*) AS records, COUNT(NULLIF(c.cardKingdomId, '')) AS regular_ids,\n       COUNT(NULLIF(c.cardKingdomFoilId, '')) AS foil_ids\nFROM main.cards AS c\nGROUP BY c.leadershipSkills"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "6 row(s):\nResult coverage: fetched_rows=6; displayed_rows=6; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): leadershipSkills=NoneType,str; frame_versions=str; records=int; regular_ids=int; foil_ids=int\nleadershipSkills | frame_versions | records | regular_ids | foil_ids\n--- | --- | --- | --- | ---\nNone | 2003,1993,2015,1997,future | 53072 | 41047 | 26382\n{'brawl': False, 'commander': False, 'oathbreaker': True} | 2015,2003 | 724 | 297 | 554\n{'brawl': False, 'commander': True, 'oathbreaker': False} | 2003,2015,1993,1997,future | 2660 | 1529 | 1643\n{'brawl': False, 'commander': True, 'oathbreaker': True} | 2015 | 45 | 17 | 15\n{'brawl': True, 'commander': False, 'oathbreaker': True} | 2015 | 66 | 58 | 63\n{'brawl': True, 'commander': True, 'oathbreaker': False} | 2015 | 255 | 252 | 255\nSQL: SELECT c.leadershipSkills, GROUP_CONCAT(DISTINCT c.frameVersion) AS frame_versions,\n       COUNT(*) AS records, COUNT(NULLIF(c.cardKingdomId, '')) AS regular_ids,\n       COUNT(NULLIF(c.cardKingdomFoilId, '')) AS foil_ids\nFROM main.cards AS c\nGROUP BY c.leadershipSkills\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"IY4O7NloJ14nBLpINKCp-36mdPieBvR20n3wkLDCDnE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "IY4O7NloJ14nBLpINKCp-36mdPieBvR20n3wkLDCDnE",
+                "expected_columns": [
+                  "frame_year",
+                  "card_count"
+                ],
+                "sql": "SELECT c.frameVersion AS frame_year, COUNT(*) AS card_count\nFROM main.cards AS c\nWHERE INSTR(c.leadershipSkills, '''commander'': True') > 0\n  AND c.cardKingdomFoilId <> ''\n  AND c.cardKingdomId <> ''\n  AND c.frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY c.frameVersion\nORDER BY CAST(c.frameVersion AS INTEGER) DESC\nLIMIT 1"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): frame_year=str; card_count=int\nframe_year | card_count\n--- | ---\n2015 | 820\nSQL: SELECT c.frameVersion AS frame_year, COUNT(*) AS card_count\nFROM main.cards AS c\nWHERE INSTR(c.leadershipSkills, '''commander'': True') > 0\n  AND c.cardKingdomFoilId <> ''\n  AND c.cardKingdomId <> ''\n  AND c.frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY c.frameVersion\nORDER BY CAST(c.frameVersion AS INTEGER) DESC\nLIMIT 1"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nSELECT c.frameVersion AS frame_year, COUNT(*) AS card_count\nFROM main.cards AS c\nWHERE INSTR(c.leadershipSkills, '''commander'': True') > 0\n  AND c.cardKingdomFoilId <> ''\n  AND c.cardKingdomId <> ''\n  AND c.frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY c.frameVersion\nORDER BY CAST(c.frameVersion AS INTEGER) DESC\nLIMIT 1\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "SELECT c.frameVersion AS frame_year, COUNT(*) AS card_count\nFROM main.cards AS c\nWHERE INSTR(c.leadershipSkills, '''commander'': True') > 0\n  AND c.cardKingdomFoilId <> ''\n  AND c.cardKingdomId <> ''\n  AND c.frameVersion GLOB '[0-9][0-9][0-9][0-9]'\nGROUP BY c.frameVersion\nORDER BY CAST(c.frameVersion AS INTEGER) DESC\nLIMIT 1",
+          "seconds": 35.00169858301524
+        },
+        "result": {
+          "columns": [
+            "frame_year",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "2015",
+              "820"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "2fb5b03fd8493a067eac36aa380fa7fad76da43390fa0ae35c1b6996b098eee7"
+        }
+      }
+    }
+  ]
+}
