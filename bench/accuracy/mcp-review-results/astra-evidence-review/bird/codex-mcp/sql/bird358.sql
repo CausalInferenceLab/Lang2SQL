@@ -1,0 +1,5 @@
+SELECT COUNT(DISTINCT p.id) AS publisher_count
+FROM main.superhero AS s
+JOIN main.publisher AS p ON p.id = s.publisher_id
+WHERE s.height_cm > 200
+LIMIT 1
