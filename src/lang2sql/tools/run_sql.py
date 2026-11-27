@@ -32,15 +32,15 @@ class RunSQL:
         return ToolSpec(
             name="run_sql",
             description=(
-                "Run a single read-only SQL query (SELECT/WITH only) and return "
-                "rows. Queries are checked by a safety gate before execution."
+                "Run a single SQL statement and return rows. A safety gate checks it "
+                "first: SELECT/WITH only, unless the operator enabled writes."
             ),
             parameters={
                 "type": "object",
                 "properties": {
                     "sql": {
                         "type": "string",
-                        "description": "a single SELECT or WITH query",
+                        "description": "one SQL statement (SELECT/WITH unless writes are enabled)",
                     },
                     "metric_term": {
                         "type": "string",
@@ -175,7 +175,7 @@ class RunSQL:
                     call_id="",
                     is_error=True,
                     stop_turn=True,
-                    content="요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 조회 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
+                    content="요청한 데이터에 접근할 수 없습니다. 현재 DB 계정에 이 작업 권한이 없거나 테이블이 존재하지 않습니다. DB 관리자에게 확인해 주세요.",
                 )
             raise
         logger.info("run_sql completed scope=%s rows=%d", scope, len(rows))

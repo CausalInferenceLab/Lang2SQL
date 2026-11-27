@@ -34,7 +34,9 @@ class ResolveBusinessTerms:
                 "Returns exact current-scope definitions and a single-use "
                 "definition_check_id. If missing or unconfirmed, ask the user for the exact "
                 "definition and scope; NEVER invent/register a definition just to unblock SQL. "
-                "Do not replace unknown terms with familiar synonyms. Schema discovery uses explore_schema."
+                "Do not replace unknown terms with familiar synonyms. Schema discovery uses explore_schema. "
+                "Submit an empty list only when the request has no business term at all "
+                "(e.g. counting rows, listing tables, or a table/row change the user spelled out)."
             ),
             parameters={
                 "type": "object",
@@ -42,7 +44,6 @@ class ResolveBusinessTerms:
                     "terms": {
                         "type": "array",
                         "items": {"type": "string"},
-                        "minItems": 1,
                     }
                 },
                 "required": ["terms"],
@@ -88,17 +89,15 @@ class ResolveBusinessTerms:
                 "DEFINITION_REQUIRED: " + reason + ". SQL was NOT executed. "
                 "Ask the user for the exact business definition and intended team/org/user scope. "
                 "Do not infer a definition or register a guessed definition. "
-                "After explicit user clarification, save with term_custom and resolve_business_terms again."
+                "After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
             ),
         )
 
     async def run(self, args, ctx):
         self.receipt = None
         terms = args.get("terms")
-        if (
-            not isinstance(terms, list)
-            or not terms
-            or any(not isinstance(t, str) or not t.strip() for t in terms)
+        if not isinstance(terms, list) or any(
+            not isinstance(t, str) or not t.strip() for t in terms
         ):
             return await self.reject(ctx, "Supply all business terms as nonempty names")
         definitions = self.definitions(terms, ctx)

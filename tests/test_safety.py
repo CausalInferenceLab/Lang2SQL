@@ -19,6 +19,8 @@ Only the statement-shape violations (#1-5, #12) BLOCK; #9/#10/#11 PASS.
 
 from __future__ import annotations
 
+import pytest
+
 from lang2sql.core.ports.safety import SafetyContext, Verdict
 from lang2sql.safety import SafetyPipeline
 
@@ -178,3 +180,38 @@ def test_case_08_huge_table_gets_limit():
     decision = SafetyPipeline().evaluate("SELECT * FROM huge_table", ctx)
     assert decision.verdict is Verdict.PASS
     assert "LIMIT 1000" in decision.sql.upper()
+
+
+# --- operator-enabled writes (--allow-write) ---------------------------------
+
+
+@pytest.mark.parametrize(
+    "sql",
+    [
+        "CREATE TABLE t (id INT)",
+        "INSERT INTO t VALUES (1)",
+        "UPDATE t SET id = 2",
+        "DELETE FROM t",
+        "DROP TABLE t",
+    ],
+)
+def test_write_statements_block_by_default_and_pass_when_enabled(sql):
+    assert SafetyPipeline().evaluate(sql, SafetyContext()).verdict is Verdict.BLOCK
+    decision = SafetyPipeline(allow_write=True).evaluate(sql, SafetyContext())
+    assert decision.verdict is Verdict.PASS
+    assert decision.sql == sql  # no LIMIT/FETCH appended to a write
+
+
+@pytest.mark.parametrize(
+    "sql",
+    ["GRANT SELECT ON t TO x", "INSERT INTO t VALUES (1); DROP TABLE t"],
+)
+def test_write_mode_still_blocks_grant_and_multi_statement(sql):
+    decision = SafetyPipeline(allow_write=True).evaluate(sql, SafetyContext())
+    assert decision.verdict is Verdict.BLOCK
+
+
+def test_write_mode_keeps_row_limit_on_reads():
+    ctx = SafetyContext(row_limit=10, extras={"dialect": "oracle"})
+    decision = SafetyPipeline(allow_write=True).evaluate("SELECT * FROM t", ctx)
+    assert decision.sql.endswith("FETCH FIRST 10 ROWS ONLY")

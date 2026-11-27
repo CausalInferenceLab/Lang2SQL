@@ -13,11 +13,13 @@ Blocking DB calls run in a worker thread to keep the async event loop free.
 from __future__ import annotations
 
 import asyncio
+import re
 from typing import Any
 
 from ...core.ports.explorer import Column, DataAccessError, Table
 
-_ORACLE_ACCESS_ERRORS = frozenset({942, 1031})
+_ORACLE_PLAIN_NAME = re.compile(r"[A-Za-z][A-Za-z0-9_$#]*")
+_ORACLE_ACCESS_ERRORS = frozenset({942, 1031, 41900})  # 41900: 23ai missing object privilege
 
 
 class SqlAlchemyExplorer:
@@ -102,6 +104,10 @@ class SqlAlchemyExplorer:
         if self._schema and name.upper().startswith(self._schema.upper() + "."):
             name = name[len(self._schema) + 1 :]
         if self.dialect == "oracle":
+            # Unquoted Oracle identifiers are case-insensitive; normalize_name
+            # would treat a lowercase spelling as a quoted case-sensitive name.
+            if _ORACLE_PLAIN_NAME.fullmatch(name):
+                name = name.upper()
             name = self._get_engine().dialect.normalize_name(name)
         kind = "view" if name in insp.get_view_names(schema=self._schema) else "table"
         cols = [
@@ -137,6 +143,10 @@ class SqlAlchemyExplorer:
                     ) from exc
                 raise
             if not result.returns_rows:
-                return []
+                # Only operator-enabled writes reach here; the gate keeps
+                # read-only sessions on SELECT/WITH, which always return rows.
+                affected = result.rowcount
+                conn.commit()
+                return [{"rows_affected": affected}] if affected >= 0 else []
             rows = result.mappings().fetchmany(limit)
             return [dict(r) for r in rows]
