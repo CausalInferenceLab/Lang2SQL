@@ -17,7 +17,7 @@ from lang2sql.tenancy.tool_runtime import ExternalAgentLLM, build_tool_context
 
 
 @asynccontextmanager
-async def connected(db, store, *, team="finance"):
+async def connected(db, store, *, team="finance", extra=()):
     env = dict(os.environ)
     env["LANG2SQL_DB_URL"] = f"sqlite:///{db}"
     env.pop("LANG2SQL_DB_SCHEMA", None)
@@ -34,6 +34,7 @@ async def connected(db, store, *, team="finance"):
             team,
             "--store",
             str(store),
+            *extra,
         ],
         env=env,
     )
@@ -77,6 +78,7 @@ async def test_stdio_schema_sql_memory_and_errors(tmp_path):
             "remember",
             "recall_memory",
             "resolve_business_terms",
+            "save_column_notes",
         }
         schema = await client.call_tool("explore_schema", {})
         assert not schema.isError and "orders" in schema.content[0].text
@@ -166,8 +168,10 @@ async def test_missing_definition_never_reaches_database(tmp_path):
             {"sql": "SELECT * FROM orders", "definition_check_id": "fabricated"},
         )
         assert guessed.isError and "NOT executed" in guessed.content[0].text
-        empty = await client.call_tool("resolve_business_terms", {"terms": []})
-        assert empty.isError
+        mixed = await client.call_tool(
+            "resolve_business_terms", {"terms": ["loyal_customer", "  "]}
+        )
+        assert mixed.isError
     with sqlite3.connect(store) as conn:
         assert (
             conn.execute(
@@ -255,3 +259,61 @@ async def test_memory_survives_stdio_restart_and_isolates_team(tmp_path):
     async with connected(db, store, team="finance") as client:
         result = await client.call_tool("recall_memory", {"query": "cutoff"})
         assert "No remembered notes" in result.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_writes_depend_on_operator_flag(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "metadata.db"
+    async with connected(db, store) as client:
+        blocked = await checked_sql(client, "CREATE TABLE notes (id INTEGER)")
+        assert blocked.isError and "BLOCKED by whitelist" in blocked.content[0].text
+    async with connected(db, store, extra=["--allow-write"]) as client:
+        for sql in (
+            "CREATE TABLE notes (id INTEGER, body TEXT)",
+            "INSERT INTO notes VALUES (1, 'a')",
+            "UPDATE notes SET body = 'b' WHERE id = 1",
+        ):
+            result = await checked_sql(client, sql)
+            assert not result.isError, result.content[0].text
+        read = await checked_sql(client, "SELECT body FROM notes")
+        assert "b" in read.content[0].text
+        deleted = await checked_sql(client, "DELETE FROM notes")
+        assert "rows_affected" in deleted.content[0].text
+    with sqlite3.connect(db) as conn:  # committed, visible to another connection
+        assert conn.execute("SELECT COUNT(*) FROM notes").fetchone() == (0,)
+
+
+@pytest.mark.asyncio
+async def test_column_notes_need_admin_and_show_in_schema(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "metadata.db"
+    notes = {"table": "orders", "notes": {"AMOUNT": "주문 금액(원)"}}
+    async with connected(db, store) as client:
+        denied = await client.call_tool("save_column_notes", notes)
+        assert denied.isError and "admin" in denied.content[0].text
+    async with connected(db, store, extra=["--admin"]) as client:
+        unknown = await client.call_tool(
+            "save_column_notes", {"table": "orders", "notes": {"nope": "x"}}
+        )
+        assert unknown.isError and "nope" in unknown.content[0].text
+        saved = await client.call_tool("save_column_notes", notes)
+        assert not saved.isError, saved.content[0].text
+    async with connected(db, store) as client:  # a later, non-admin session
+        schema = await client.call_tool("explore_schema", {"table": "orders"})
+        assert "amount: INTEGER — 주문 금액(원)" in schema.content[0].text
+
+
+@pytest.mark.asyncio
+async def test_plain_request_without_business_terms_runs_once(tmp_path):
+    db = fixture_db(tmp_path)
+    store = tmp_path / "metadata.db"
+    async with connected(db, store) as client:
+        check = await client.call_tool("resolve_business_terms", {"terms": []})
+        receipt = json.loads(check.content[0].text)
+        assert receipt["definitions"] == []
+        args = {"sql": "SELECT COUNT(*) AS n FROM orders", "definition_check_id": receipt["definition_check_id"]}
+        first = await client.call_tool("run_sql", args)
+        assert not first.isError and "2" in first.content[0].text
+        reused = await client.call_tool("run_sql", args)
+        assert reused.isError and "NOT executed" in reused.content[0].text

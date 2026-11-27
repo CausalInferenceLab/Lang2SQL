@@ -35,6 +35,12 @@ _DML_DDL = frozenset(
 # Statements we allow to *start* a query.
 _ALLOWED_START = ("SELECT", "WITH")
 
+# With operator-enabled writes, one data/table statement may run. The DB
+# account's own privileges still decide what actually succeeds.
+_WRITE_START = frozenset(
+    {"INSERT", "UPDATE", "DELETE", "MERGE", "CREATE", "DROP", "ALTER", "TRUNCATE"}
+)
+
 # A line comment runs to end-of-line; a block comment is /* ... */ (non-greedy,
 # spanning newlines).
 _LINE_COMMENT = re.compile(r"--[^\n]*")
@@ -63,7 +69,13 @@ def _split_statements(sql: str) -> list[str]:
 
 
 class WhitelistLayer:
-    """SELECT/WITH-only gate. Implements ``SafetyLayerPort``."""
+    """SELECT/WITH gate; ``allow_write`` also admits one write statement.
+
+    Implements ``SafetyLayerPort``.
+    """
+
+    def __init__(self, allow_write: bool = False) -> None:
+        self._allow_write = allow_write
 
     @property
     def name(self) -> str:
@@ -93,6 +105,14 @@ class WhitelistLayer:
             )
 
         statement = statements[0]
+
+        first = _WORD.match(statement)
+        if (
+            self._allow_write
+            and first is not None
+            and first.group(0).upper() in _WRITE_START
+        ):
+            return SafetyDecision(verdict=Verdict.PASS, sql=sql, layer=self.name)
 
         # An EXPLAIN wrapper is allowed only when it fronts a read-only query.
         # Strip a leading EXPLAIN (and EXPLAIN ANALYZE / EXPLAIN VERBOSE etc.)
