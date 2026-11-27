@@ -1,0 +1,20 @@
+```sql
+WITH eligible_frames AS (
+    SELECT
+        frameVersion,
+        COUNT(*) AS card_count,
+        CASE frameVersion
+            WHEN 'future' THEN 2007
+            WHEN '2015' THEN 2014
+            ELSE CAST(frameVersion AS INTEGER)
+        END AS introduction_year
+    FROM main.cards
+    GROUP BY frameVersion
+    HAVING COUNT(*) FILTER (WHERE convertedManaCost = 0) > 0
+)
+SELECT frameVersion, card_count
+FROM eligible_frames
+WHERE introduction_year = (SELECT MAX(introduction_year) FROM eligible_frames)
+ORDER BY frameVersion
+LIMIT 1000
+```

@@ -1,0 +1,423 @@
+{
+  "scope": "Recorded score transitions on matched selected cases only; not full accuracy or proof of causality. CSV previews are text, not native SQL types. No semantic failure cause is inferred automatically.",
+  "sources": [
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-bird-full-context-validation-20261127/checkpoints/001/bird",
+      "manifest_sha256": "38183dca92fc36dd6b2ce180292bf2639e874b9a1f6ea059ee1fd04b2ef0d00e",
+      "scores_sha256": "f911002a97ae59d92643d3e5c8ef8dfa7fd952c1053c2fc28b6ae3361f0093eb",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "0b6250ff917b23a2659dc96d722094ba7840778b",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "4812960452c27952ee3873575d97fb2dceaccafbdc57cca94afa3770f50297fc",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "7f3a02f99f90eadd69974fe5f45ca5d4abf90a1549e4deb46ae24b0093bde9c6",
+        "case_selection": {
+          "split": "all",
+          "input_cases": 500,
+          "selected_cases": 500,
+          "expected_cases": 500
+        },
+        "review_source": null,
+        "failure_selection": null,
+        "split": "all",
+        "concurrency": 2,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    },
+    {
+      "path": "/Users/seyoung/workspace/benchmarks/codex-mcp-card-frame-document-20261127/bird-gpt-6.2-astra",
+      "manifest_sha256": "35a36ec42a61dc3646e36848fb381bbd1c1db67219135b74c960f75213624cb3",
+      "scores_sha256": "04047cd2c5856294de9fdc45fd2802826cce134bbf1e7270cb438d6f48807c68",
+      "settings": {
+        "profiles": [
+          {
+            "name": "codex-mcp",
+            "model": "gpt-6.2-astra",
+            "reasoning_effort": "high"
+          }
+        ],
+        "backend": "ChatGPT login -> Codex CLI -> production Lang2SQL MCP",
+        "revision": "c0b5ff54b3edce5b02d405e042eda9a34832e03f",
+        "codex_version": "codex-cli 0.170.0",
+        "sources": {
+          "bench/accuracy/codex_mcp.py": "4812960452c27952ee3873575d97fb2dceaccafbdc57cca94afa3770f50297fc",
+          "src/lang2sql/frontends/mcp/server.py": "0836ca4631f321c3f3a2c7524e71f6f31e60ac77286633833af6810d3443ddcb"
+        },
+        "schema_document_sha256": "68be30a7d9e1101d2373ecbf23966200e9cb0a13fb7fa48a3a6eac267e860d67",
+        "case_selection": {
+          "split": "all",
+          "input_cases": 1,
+          "selected_cases": 1,
+          "expected_cases": 1
+        },
+        "review_source": null,
+        "failure_selection": null,
+        "split": "all",
+        "concurrency": 1,
+        "case_timeout": 600.0,
+        "sql_timeout": 30,
+        "max_rows": 100000,
+        "api_calls": null,
+        "usage_unit": "one Codex CLI invocation per question; internal model-call count unavailable"
+      }
+    }
+  ],
+  "transitions": {
+    "0 -> 1": 1
+  },
+  "cases": [
+    {
+      "input": {
+        "instance_id": "bird069",
+        "db": "card_games",
+        "question": "I'm putting together a showcase of zero-mana-cost cards. What is the newest frame version used by any card with a converted mana cost of 0? Please give me that frame version value, and the number of cards in the database that use that frame version. The count should cover all cards in the database, not just the zero-cost ones. If several frame versions tie as the newest, give me each of them with its own count.",
+        "evidence": "Frame version: the edition of the card frame style a printing uses."
+      },
+      "transition": "0 -> 1",
+      "sql_diff": "--- before.sql\n+++ after.sql\n@@ -0,0 +1,18 @@\n+WITH eligible_frames AS (\n+    SELECT\n+        frameVersion,\n+        COUNT(*) AS card_count,\n+        CASE frameVersion\n+            WHEN 'future' THEN 2007\n+            WHEN '2015' THEN 2014\n+            ELSE CAST(frameVersion AS INTEGER)\n+        END AS introduction_year\n+    FROM main.cards\n+    GROUP BY frameVersion\n+    HAVING COUNT(*) FILTER (WHERE convertedManaCost = 0) > 0\n+)\n+SELECT frameVersion, card_count\n+FROM eligible_frames\n+WHERE introduction_year = (SELECT MAX(introduction_year) FROM eligible_frames)\n+ORDER BY frameVersion\n+LIMIT 1000",
+      "before": {
+        "score": 0,
+        "record_sha256": "45d77024c02c1f1845eb2a1f466dd60be5d9c55e637d2a04b8415abda62c4fca",
+        "record": {
+          "instance_id": "bird069",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "failed",
+          "calls": [],
+          "prompt_sha256": "89862ee9f2f56d3432cd4ba207c4e58274f2c81df8ec333b7474b257349c27c9",
+          "events_sha256": "b02e814982759df9efc57f9366b07afa31ae8089a504eaf07f56b828a7113bbe",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 233956,
+              "cached_input_tokens": 212736,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 870,
+              "reasoning_output_tokens": 329
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"efsaZwJcXX82AtL3OSR49c0nfIgYclxg7W81bqIb-xk\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": [
+                  "newest frame version"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"newest frame version\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "failed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "efsaZwJcXX82AtL3OSR49c0nfIgYclxg7W81bqIb-xk",
+                "sql": "SELECT frameVersion, COUNT(*) AS cards, COUNT(CASE WHEN convertedManaCost = 0 THEN 1 END) AS zero_cost_cards\nFROM main.cards\nGROUP BY frameVersion;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "DEFINITION_REQUIRED: Resolve definitions before every SQL execution; missing, invalid or already-used check. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "failed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"R0AXfcIonwD1vymuzxmJ6y-5lwSYfnT7-JB07kS49bE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_6",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "R0AXfcIonwD1vymuzxmJ6y-5lwSYfnT7-JB07kS49bE",
+                "sql": "SELECT frameVersion, COUNT(*) AS cards, COUNT(CASE WHEN convertedManaCost = 0 THEN 1 END) AS zero_cost_cards\nFROM main.cards\nGROUP BY frameVersion;"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "5 row(s):\nResult coverage: fetched_rows=5; displayed_rows=5; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): frameVersion=str; cards=int; zero_cost_cards=int\nframeVersion | cards | zero_cost_cards\n--- | --- | ---\n1993 | 5510 | 577\n1997 | 9257 | 1032\n2003 | 16462 | 2351\n2015 | 25500 | 3359\nfuture | 93 | 8\nSQL: SELECT frameVersion, COUNT(*) AS cards, COUNT(CASE WHEN convertedManaCost = 0 THEN 1 END) AS zero_cost_cards\nFROM main.cards\nGROUP BY frameVersion\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_7",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": [
+                  "frame version",
+                  "frame version ordering"
+                ]
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "DEFINITION_REQUIRED: No confirmed definition in this scope for: [\"frame version\", \"frame version ordering\"]. SQL was NOT executed. Ask the user for the exact business definition and intended team/org/user scope. Do not infer a definition or register a guessed definition. After explicit user clarification, stage the definition with context_candidates. An operator must approve it before you resolve_business_terms again."
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "failed"
+            }
+          ],
+          "answer": "How should `future` rank against `2015`? Both appear on zero-cost cards, and the supplied documentation lists the frame labels without defining their chronological order.",
+          "event_parse_errors": [],
+          "error_type": "ValueError",
+          "error_message": "Final answer must contain exactly one SQL block; no last-tool fallback",
+          "seconds": 36.43735241598915
+        },
+        "result": null
+      },
+      "after": {
+        "score": 1,
+        "record_sha256": "4b3e29431299ef31c05c9dea0b3c1bc65d7a95aab397e647700e649ed254c057",
+        "record": {
+          "instance_id": "bird069",
+          "profile": "codex-mcp",
+          "model": "gpt-6.2-astra",
+          "status": "predicted",
+          "calls": [],
+          "prompt_sha256": "43e5f46bf069de068b5c7c15bfb1084dd4163cfcbb3d18673a66172363f8b1e3",
+          "events_sha256": "1985b9b493f6890c20c7c3ca858f51b097dcdef473986b46a5bc678049b08feb",
+          "cli_exit_code": 0,
+          "cli_usage": [
+            {
+              "input_tokens": 235769,
+              "cached_input_tokens": 214272,
+              "cache_write_input_tokens": 0,
+              "output_tokens": 657,
+              "reasoning_output_tokens": 0
+            }
+          ],
+          "mcp_calls": [
+            {
+              "id": "item_1",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "explore_schema",
+              "arguments": {
+                "table": "cards"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "cards (table)\n- id: INTEGER NOT NULL\n- artist: TEXT\n- asciiName: TEXT\n- availability: TEXT\n- borderColor: TEXT\n- cardKingdomFoilId: TEXT\n- cardKingdomId: TEXT\n- colorIdentity: TEXT\n- colorIndicator: TEXT\n- colors: TEXT\n- convertedManaCost: REAL\n- duelDeck: TEXT\n- edhrecRank: INTEGER\n- faceConvertedManaCost: REAL\n- faceName: TEXT\n- flavorName: TEXT\n- flavorText: TEXT\n- frameEffects: TEXT\n- frameVersion: TEXT\n- hand: TEXT\n- hasAlternativeDeckLimit: INTEGER NOT NULL\n- hasContentWarning: INTEGER NOT NULL\n- hasFoil: INTEGER NOT NULL\n- hasNonFoil: INTEGER NOT NULL\n- isAlternative: INTEGER NOT NULL\n- isFullArt: INTEGER NOT NULL\n- isOnlineOnly: INTEGER NOT NULL\n- isOversized: INTEGER NOT NULL\n- isPromo: INTEGER NOT NULL\n- isReprint: INTEGER NOT NULL\n- isReserved: INTEGER NOT NULL\n- isStarter: INTEGER NOT NULL\n- isStorySpotlight: INTEGER NOT NULL\n- isTextless: INTEGER NOT NULL\n- isTimeshifted: INTEGER NOT NULL\n- keywords: TEXT\n- layout: TEXT\n- leadershipSkills: TEXT\n- life: TEXT\n- loyalty: TEXT\n- manaCost: TEXT\n- mcmId: TEXT\n- mcmMetaId: TEXT\n- mtgArenaId: TEXT\n- mtgjsonV4Id: TEXT\n- mtgoFoilId: TEXT\n- mtgoId: TEXT\n- multiverseId: TEXT\n- name: TEXT\n- number: TEXT\n- originalReleaseDate: TEXT\n- originalText: TEXT\n- originalType: TEXT\n- otherFaceIds: TEXT\n- power: TEXT\n- printings: TEXT\n- promoTypes: TEXT\n- purchaseUrls: TEXT\n- rarity: TEXT\n- scryfallId: TEXT\n- scryfallIllustrationId: TEXT\n- scryfallOracleId: TEXT\n- setCode: TEXT\n- side: TEXT\n- subtypes: TEXT\n- supertypes: TEXT\n- tcgplayerProductId: TEXT\n- text: TEXT\n- toughness: TEXT\n- type: TEXT\n- types: TEXT\n- uuid: TEXT NOT NULL\n- variations: TEXT\n- watermark: TEXT\nPRIMARY KEY (id)"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_2",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"bNn9kqljbgP1aAf6YsraX68jFxsulWYRoRIWqBoy7UI\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_3",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "bNn9kqljbgP1aAf6YsraX68jFxsulWYRoRIWqBoy7UI",
+                "sql": "SELECT frameVersion, COUNT(*) AS total, COUNT(*) FILTER (WHERE convertedManaCost = 0) AS zero_cost FROM main.cards GROUP BY frameVersion"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "5 row(s):\nResult coverage: fetched_rows=5; displayed_rows=5; fetch_truncated=false; display_truncated=false; sql_rewritten=true; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): frameVersion=str; total=int; zero_cost=int\nframeVersion | total | zero_cost\n--- | --- | ---\n1993 | 5510 | 577\n1997 | 9257 | 1032\n2003 | 16462 | 2351\n2015 | 25500 | 3359\nfuture | 93 | 8\nSQL: SELECT frameVersion, COUNT(*) AS total, COUNT(*) FILTER (WHERE convertedManaCost = 0) AS zero_cost FROM main.cards GROUP BY frameVersion\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_4",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "resolve_business_terms",
+              "arguments": {
+                "terms": []
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "{\"definition_check_id\": \"g0k4Z8huSFdHct95IIEjjNeAGezWg-zzR8uTOicDhEE\", \"definitions\": [], \"instruction\": \"For oracle_view the operator has confirmed the contract: call run_sql with this definition_check_id, period_start and exclusive period_end, without sql. An explicit calendar year/month is sufficient to derive these dates. Ask only if the period or business meaning is actually unclear. For text definitions use SQL. Discover schema and use qualified table names before run_sql. A receipt is not proof of SQL semantic correctness.\"}"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            },
+            {
+              "id": "item_5",
+              "type": "mcp_tool_call",
+              "server": "lang2sql",
+              "tool": "run_sql",
+              "arguments": {
+                "definition_check_id": "g0k4Z8huSFdHct95IIEjjNeAGezWg-zzR8uTOicDhEE",
+                "expected_columns": [
+                  "frameVersion",
+                  "card_count"
+                ],
+                "sql": "WITH eligible_frames AS (\n    SELECT\n        frameVersion,\n        COUNT(*) AS card_count,\n        CASE frameVersion\n            WHEN 'future' THEN 2007\n            WHEN '2015' THEN 2014\n            ELSE CAST(frameVersion AS INTEGER)\n        END AS introduction_year\n    FROM main.cards\n    GROUP BY frameVersion\n    HAVING COUNT(*) FILTER (WHERE convertedManaCost = 0) > 0\n)\nSELECT frameVersion, card_count\nFROM eligible_frames\nWHERE introduction_year = (SELECT MAX(introduction_year) FROM eligible_frames)\nORDER BY frameVersion\nLIMIT 1000"
+              },
+              "result": {
+                "content": [
+                  {
+                    "type": "text",
+                    "text": "1 row(s):\nOutput columns validated (projection only).\nResult coverage: fetched_rows=1; displayed_rows=1; fetch_truncated=false; display_truncated=false; sql_rewritten=false; query_timeout_enforced=true; query_timeout_scope=sqlite_vm. Counts refer to the executed SQL, not the source table size.\nObserved value types (displayed rows): frameVersion=str; card_count=int\nframeVersion | card_count\n--- | ---\n2015 | 25500\nSQL: WITH eligible_frames AS (\n    SELECT\n        frameVersion,\n        COUNT(*) AS card_count,\n        CASE frameVersion\n            WHEN 'future' THEN 2007\n            WHEN '2015' THEN 2014\n            ELSE CAST(frameVersion AS INTEGER)\n        END AS introduction_year\n    FROM main.cards\n    GROUP BY frameVersion\n    HAVING COUNT(*) FILTER (WHERE convertedManaCost = 0) > 0\n)\nSELECT frameVersion, card_count\nFROM eligible_frames\nWHERE introduction_year = (SELECT MAX(introduction_year) FROM eligible_frames)\nORDER BY frameVersion\nLIMIT 1000"
+                  }
+                ],
+                "structured_content": null
+              },
+              "error": null,
+              "status": "completed"
+            }
+          ],
+          "answer": "```sql\nWITH eligible_frames AS (\n    SELECT\n        frameVersion,\n        COUNT(*) AS card_count,\n        CASE frameVersion\n            WHEN 'future' THEN 2007\n            WHEN '2015' THEN 2014\n            ELSE CAST(frameVersion AS INTEGER)\n        END AS introduction_year\n    FROM main.cards\n    GROUP BY frameVersion\n    HAVING COUNT(*) FILTER (WHERE convertedManaCost = 0) > 0\n)\nSELECT frameVersion, card_count\nFROM eligible_frames\nWHERE introduction_year = (SELECT MAX(introduction_year) FROM eligible_frames)\nORDER BY frameVersion\nLIMIT 1000\n```",
+          "event_parse_errors": [],
+          "rows": 1,
+          "sql": "WITH eligible_frames AS (\n    SELECT\n        frameVersion,\n        COUNT(*) AS card_count,\n        CASE frameVersion\n            WHEN 'future' THEN 2007\n            WHEN '2015' THEN 2014\n            ELSE CAST(frameVersion AS INTEGER)\n        END AS introduction_year\n    FROM main.cards\n    GROUP BY frameVersion\n    HAVING COUNT(*) FILTER (WHERE convertedManaCost = 0) > 0\n)\nSELECT frameVersion, card_count\nFROM eligible_frames\nWHERE introduction_year = (SELECT MAX(introduction_year) FROM eligible_frames)\nORDER BY frameVersion\nLIMIT 1000",
+          "seconds": 32.08817324996926
+        },
+        "result": {
+          "columns": [
+            "frameVersion",
+            "card_count"
+          ],
+          "row_count": 1,
+          "preview": [
+            [
+              "2015",
+              "25500"
+            ]
+          ],
+          "preview_truncated": false,
+          "csv_sha256": "3d3c6c978944123019b39b78d8ad6a05598689aa1c0b31449a2c58ea9cca79bc"
+        }
+      }
+    }
+  ]
+}
