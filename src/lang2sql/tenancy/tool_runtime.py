@@ -18,6 +18,7 @@ from ..tools.explore_schema import ExploreSchema
 from ..tools.recall_memory import RecallMemory
 from ..tools.remember import Remember
 from ..tools.run_sql import RunSQL
+from ..tools.save_column_notes import SaveColumnNotes
 from ..tools.semantic_federation import SemanticFederationTool
 
 
@@ -33,6 +34,7 @@ def build_tool_context(
     explorer: ExplorerPort | None = None,
     metadata_url: str | None = None,
     initialize_metadata: bool = False,
+    allow_write: bool = False,
 ) -> HarnessContext:
     """Bind one connection and identity for the lifetime of a local tool process."""
     database = explorer if explorer is not None else explorer_from_env()
@@ -58,6 +60,7 @@ def build_tool_context(
             SemanticFederationTool(),
             Remember(memory),
             RecallMemory(memory),
+            SaveColumnNotes(),
         ]
     )
     return HarnessContext(
@@ -66,7 +69,7 @@ def build_tool_context(
         tools=registry,
         session=Session(identity=identity),
         explorer=database,
-        safety=SafetyPipeline(),
+        safety=SafetyPipeline(allow_write=allow_write),
         audit=store,
         store=store,
     )

@@ -10,6 +10,10 @@ import re
 
 from ...core.ports.safety import SafetyContext, SafetyDecision, Verdict
 
+_READ_START = re.compile(
+    r"\s*(?:(?:--[^\n]*\n|/\*.*?\*/)\s*)*(?:SELECT|WITH|EXPLAIN)\b",
+    re.IGNORECASE | re.DOTALL,
+)
 _LIMIT_RE = re.compile(r"\bLIMIT\s+\d+", re.IGNORECASE)
 _FETCH_RE = re.compile(
     r"\bFETCH\s+(?:FIRST|NEXT)\s+(?:\d+\s+)?ROWS?\s+(?:ONLY|WITH\s+TIES)", re.IGNORECASE
@@ -47,6 +51,10 @@ class RowLimitLayer:
         return "row_limit"
 
     def check(self, sql: str, ctx: SafetyContext) -> SafetyDecision:
+        if not _READ_START.match(sql):
+            # Write statements (only reachable with operator-enabled writes)
+            # return no rows; a FETCH/LIMIT suffix would break them.
+            return SafetyDecision(verdict=Verdict.PASS, sql=sql, layer=self.name)
         oracle = ctx.extras.get("dialect") == "oracle"
         if oracle:
             sql = sql.rstrip().rstrip(";")

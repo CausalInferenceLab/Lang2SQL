@@ -21,17 +21,22 @@ from ..core.ports.safety import (
 from .layers import RowLimitLayer, TimeoutLayer, WhitelistLayer
 
 
-def _default_layers() -> list[SafetyLayerPort]:
+def _default_layers(allow_write: bool = False) -> list[SafetyLayerPort]:
     # Whitelist (reject) → RowLimit (rewrite) → Timeout (exec config).
-    return [WhitelistLayer(), RowLimitLayer(), TimeoutLayer()]
+    return [WhitelistLayer(allow_write), RowLimitLayer(), TimeoutLayer()]
 
 
 class SafetyPipeline:
     """Ordered safety layers. Implements ``SafetyPipelinePort``."""
 
-    def __init__(self, layers: Sequence[SafetyLayerPort] | None = None) -> None:
+    def __init__(
+        self,
+        layers: Sequence[SafetyLayerPort] | None = None,
+        *,
+        allow_write: bool = False,
+    ) -> None:
         self._layers: list[SafetyLayerPort] = (
-            list(layers) if layers is not None else _default_layers()
+            list(layers) if layers is not None else _default_layers(allow_write)
         )
 
     @property
