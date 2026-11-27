@@ -1,0 +1,13 @@
+WITH chlorine_neighbors AS (
+    SELECT c.atom_id2 AS atom_id
+    FROM connected AS c
+    JOIN atom AS a ON a.atom_id = c.atom_id
+    WHERE a.element = 'cl'
+    UNION
+    SELECT c.atom_id AS atom_id
+    FROM connected AS c
+    JOIN atom AS a ON a.atom_id = c.atom_id2
+    WHERE a.element = 'cl'
+)
+SELECT COUNT(*) AS atom_count
+FROM chlorine_neighbors;

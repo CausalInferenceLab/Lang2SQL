@@ -1,0 +1,10 @@
+SELECT
+    COUNT(DISTINCT CASE WHEN p.SEX = 'F' THEN p.ID END) AS women,
+    COUNT(DISTINCT CASE WHEN p.SEX = 'M' THEN p.ID END) AS men
+FROM Patient AS p
+WHERE EXISTS (
+    SELECT 1
+    FROM Laboratory AS l
+    WHERE l.ID = p.ID
+      AND CAST(l.RNP AS REAL) > 32
+);

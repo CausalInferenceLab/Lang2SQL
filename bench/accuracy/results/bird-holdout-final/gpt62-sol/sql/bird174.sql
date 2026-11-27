@@ -1,0 +1,28 @@
+WITH ranked_ratings AS (
+    SELECT player_api_id, overall_rating,
+           ROW_NUMBER() OVER (
+               PARTITION BY player_api_id
+               ORDER BY date DESC, id DESC
+           ) AS rn
+    FROM Player_Attributes
+    WHERE date < '2011-01-01'
+), match_counts AS (
+    SELECT r.player_api_id, COUNT(DISTINCT m.match_api_id) AS matches_played
+    FROM ranked_ratings AS r
+    LEFT JOIN Match AS m
+      ON m.season = '2010/2011'
+     AND r.player_api_id IN (
+         m.home_player_1, m.home_player_2, m.home_player_3,
+         m.home_player_4, m.home_player_5, m.home_player_6,
+         m.home_player_7, m.home_player_8, m.home_player_9,
+         m.home_player_10, m.home_player_11,
+         m.away_player_1, m.away_player_2, m.away_player_3,
+         m.away_player_4, m.away_player_5, m.away_player_6,
+         m.away_player_7, m.away_player_8, m.away_player_9,
+         m.away_player_10, m.away_player_11
+     )
+    WHERE r.rn = 1 AND r.overall_rating > 80
+    GROUP BY r.player_api_id
+)
+SELECT ROUND(AVG(matches_played), 2) AS average_matches
+FROM match_counts;
